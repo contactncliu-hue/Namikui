@@ -202,6 +202,13 @@ function deleteMember(id) {
 }
 
 // Initial Run
-document.addEventListener('DOMContentLoaded', () => {
+// --- INITIALIZATION ---
+// Call it immediately when the script loads so it doesn't miss DOMContentLoaded
+if (typeof supabase !== 'undefined') {
     loadDataFromCloud();
-});
+} else {
+    window.addEventListener('DOMContentLoaded', () => {
+        loadDataFromCloud();
+    });
+}
+
