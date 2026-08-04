@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dark War Survival - Alliance Management Tool</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <!-- Tesseract.js CDN for client-side Screenshot OCR -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <style>
+        :root {
+            /* Colors */
+            --color-bg-main: #f5f4ef;
+            --color-bg-card: #ffffff;
+            --color-bg-sidebar: #ffffff;
+            --color-primary: #3b52a4;
+            --color-primary-light: #eceff8;
+            --color-text-dark: #2b3044;
+            --color-text-muted: #8c93a6;
+            --color-text-light: #a0a6b5;
+            --color-border: #3b52a4;
+            --color-border-light: #e2e5ed;
+            --color-yellow-bg: #fffdf0;
+            --color-yellow-border: #e2cb6b;
+            --color-yellow-text: #b89117;
+            
+            /* Status / Rank Colors */
+            --color-rank-1-bar: #3b52a4;
+            --color-rank-2-bar: #d99f26;
+            --color-rank-3-bar: #c28b29;
+            --color-rank-low-bar: #a93226;
+            
+            /* Font Sizes */
+            --font-xs: 11px;
+            --font-sm: 13px;
+            --font-md: 15px;
+            --font-lg: 18px;
+            --font-xl: 22px;
+            --font-xxl: 28px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Open Sans', sans-serif;
+            background-color: var(--color-bg-main);
+            color: var(--color-text-dark);
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Layout */
+        .app {
+            display: flex;
+            width: 100%;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            width: 260px;
+            background-color: var(--color-bg-sidebar);
+            border-right: 2px solid var(--color-border);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            transition: transform 0.3s ease;
+            z-index: 100;
+        }
+
+        .sidebar__header {
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-bottom: 2px solid var(--color-border);
+        }
+
+        .sidebar__logo {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #a5c7f9, #2d55b8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 24px;
+            box-shadow: 0 4px 10px rgba(59, 82, 164, 0.2);
+        }
+
+        .sidebar__user {
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 700;
+            font-size: var(--font-sm);
+            color: #62697b;
+            letter-spacing: 0.5px;
+        }
+
+        .sidebar__user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background-color: #62697b;
+        }
+
+        .sidebar__nav {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .sidebar__section-title {
+            padding: 16px 20px 8px 20px;
+            font-size: var(--font-xs);
+            font-weight: 800;
+            color: #8c93a6;
+            letter-spacing: 0.5px;
+        }
+
+        .sidebar__menu {
+            list-style: none;
+        }
+
+        .sidebar__item {
+            display: flex;
+            align-items: center;
+            padding: 10px 20px;
+            color: #555b6e;
+            font-weight: 700;
+            font-size: var(--font-xs);
+            text-decoration: none;
+            letter-spacing: 0.5px;
+            gap: 12px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .sidebar__item:hover {
+            background-color: #f0f2f8;
+        }
+
+        .sidebar__item--active {
+            background-color: var(--color-primary);
+            color: white;
+        }
+
+        .sidebar__item--active:hover {
+            background-color: var(--color-primary);
+        }
+
+        .sidebar__icon {
+            width: 16px;
+            text-align: center;
+            display: inline-block;
+        }
+
+        /* Main Content */
+        .main {
+            flex-grow: 1;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            max-width: 1200px;
+        }
+
+        /* Mobile Header */
+        .mobile-header {
+            display: none;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: white;
+            border: 2px solid var(--color-border);
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+
+        .hamburger {
+            background: none;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            padding: 4px;
+        }
+
+        .hamburger__line {
+            width: 24px;
+            height: 3px;
+            background-color: var(--color-primary);
+            border-radius: 2px;
+            transition: 0.3s;
+        }
+
+        /* Header Bar */
+        .header-bar {
+            background-color: white;
+            border: 2px solid var(--color-border);
+            border-radius: 4px;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+        }
+
+        .header-bar::before {
+            content: '';
+            position: absolute;
+            left: 12px;
+            top: 12px;
+            bottom: 12px;
+            width: 4px;
+            background-color: #e2cb6b;
+            border-radius: 2px;
+        }
+
+        .header-bar__title-group {
+            padding-left: 12px;
+        }
+
+        .header-bar__title {
+            font-family: 'Fredoka One', cursive, sans-serif;
+            font-size: var(--font-xxl);
+            color: var(--color-primary);
+            letter-spacing: 1px;
+            line-height: 1;
+            text-transform: uppercase;
+        }
+
+        .header-bar__subtitle {
+            font-size: var(--font-xs);
+            font-weight: 800;
+            color: var(--color-primary);
+            letter-spacing: 1px;
+            margin-top: 4px;
+            display: flex;
+            gap: 20px;
+        }
+
+        .header-bar__stats {
+            color: var(--color-text-light);
+            font-weight: 600;
+        }
+
+        .btn-import {
+            background: white;
+            border: 2px solid var(--color-primary);
+            color: var(--color-primary);
+            font-weight: 800;
+            font-size: var(--font-xs);
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            letter-spacing: 0.5px;
+            transition: all 0.2s;
+        }
+
+        .btn-import:hover {
+            background-color: var(--color-primary);
+            color: white;
+        }
+
+        .btn-import:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* Controls Bar */
+        .controls-card {
+            background: white;
+            border: 2px solid var(--color-border);
+            border-radius: 4px;
+            padding: 12px;
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .btn-group {
+            display: flex;
+            border: 2px solid var(--color-primary);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .btn-toggle {
+            padding: 8px 16px;
+            font-weight: 800;
+            font-size: var(--font-xs);
+            border: none;
+            background: white;
+            color: var(--color-primary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-toggle--active {
+            background-color: var(--color-primary);
+            color: white;
+        }
+
+        .search-box {
+            flex-grow: 1;
+            max-width: 300px;
+            position: relative;
+        }
+
+        .search-box__input {
+            width: 100%;
+            padding: 8px 12px 8px 32px;
+            border: 1px solid #d1d5db;
+            background-color: #f7f6f0;
+            border-radius: 4px;
+            font-size: var(--font-sm);
+            color: var(--color-text-dark);
+            outline: none;
+        }
+
+        .search-box__icon {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #9ca3af;
+        }
+
+        .event-badge {
+            margin-left: auto;
+            background-color: var(--color-yellow-bg);
+            border: 1px solid var(--color-yellow-border);
+            padding: 6px 12px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: var(--font-xs);
+            font-weight: 800;
+            color: var(--color-yellow-text);
+        }
+
+        .event-badge__count {
+            color: #d9381e;
+            font-size: var(--font-md);
+            font-weight: 800;
+        }
+
+        /* KPI Cards */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            border: 2px solid var(--color-border);
+            border-radius: 4px;
+            background: white;
+            overflow: hidden;
+        }
+
+        .kpi-card {
+            padding: 12px 16px;
+            border-right: 1px solid var(--color-border-light);
+            background-color: #f4f6fb;
+        }
+
+        .kpi-card:last-child {
+            border-right: none;
+            background-color: var(--color-yellow-bg);
+        }
+
+        .kpi-card__label {
+            font-size: 10px;
+            font-weight: 800;
+            color: #8c93a6;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .kpi-card__value {
+            font-size: var(--font-xl);
+            font-weight: 800;
+            color: var(--color-primary);
+        }
+
+        .kpi-card:last-child .kpi-card__value {
+            color: var(--color-yellow-text);
+            font-size: var(--font-lg);
+        }
+
+        /* Data Table */
+        .table-card {
+            background: white;
+            border: 2px solid var(--color-border);
+            border-radius: 4px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: var(--font-sm);
+        }
+
+        .data-table th {
+            background-color: #eef2f9;
+            padding: 12px 16px;
+            font-size: 11px;
+            font-weight: 800;
+            color: #71788e;
+            text-transform: uppercase;
+            border-bottom: 1px solid var(--color-border-light);
+            white-space: nowrap;
+        }
+
+        .data-table th.sortable {
+            cursor: pointer;
+        }
+
+        .data-table th .sort-icon {
+            font-size: 10px;
+            margin-left: 2px;
+            color: #a0a6b5;
+        }
+
+        .data-table td {
+            padding: 10px 16px;
+            border-bottom: 1px solid #f0f2f5;
+            vertical-align: middle;
+            font-weight: 700;
+            color: #4a5060;
+        }
+
+        .col-rank { width: 50px; text-align: center; color: #a0a6b5; font-weight: 600; }
+        .col-name { font-weight: 800; color: #2b3044; }
+        .col-name .icon-plus { color: #d99f26; margin-right: 6px; font-weight: bold; }
+        .col-attended { width: 90px; text-align: center; font-size: var(--font-md); font-weight: 800; color: var(--color-primary); }
+        .col-rate { width: 80px; font-weight: 800; }
+        .col-diff { width: 90px; font-weight: 800; }
+        .col-event { width: 70px; text-align: center; }
+
+        .progress-bar {
+            height: 8px;
+            width: 100%;
+            background-color: #eef0f5;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-bar__fill {
+            height: 100%;
+            border-radius: 4px;
+        }
+
+        /* Row Color Schemes */
+        .row-rank-1 { background-color: #ffffff; }
+        .row-rank-1 .col-rank { color: #d99f26; }
+        .row-rank-1 .col-rate { color: var(--color-primary); }
+        .row-rank-1 .col-diff { color: var(--color-primary); }
+        .row-rank-1 .progress-bar__fill { background-color: var(--color-rank-1-bar); }
+
+        .row-rank-2 { background-color: #fffdf5; }
+        .row-rank-2 .col-rank { color: #d99f26; }
+        .row-rank-2 .col-rate { color: #d99f26; }
+        .row-rank-2 .col-diff { color: var(--color-primary); }
+        .row-rank-2 .progress-bar__fill { background-color: var(--color-rank-2-bar); }
+
+        .row-rank-3 { background-color: #fffdf5; }
+        .row-rank-3 .col-rank { color: #d99f26; }
+        .row-rank-3 .col-rate { color: #d99f26; }
+        .row-rank-3 .col-diff { color: var(--color-primary); }
+        .row-rank-3 .progress-bar__fill { background-color: var(--color-rank-3-bar); }
+
+        .row-mid .col-rate { color: #d99f26; }
+        .row-mid .col-diff { color: var(--color-primary); }
+        .row-mid .progress-bar__fill { background-color: var(--color-rank-2-bar); }
+
+        .row-low .col-rate { color: #a93226; }
+        .row-low .col-diff { color: #a93226; }
+        .row-low .progress-bar__fill { background-color: var(--color-rank-low-bar); }
+
+        .check-icon {
+            color: var(--color-primary);
+            font-weight: 800;
+            font-size: 14px;
+        }
+
+        .event-header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            line-height: 1.2;
+        }
+
+        .event-header__date { font-weight: 800; color: #4a5060; }
+        .event-header__sub { font-size: 9px; color: #a0a6b5; font-weight: 600; }
+
+        .table-footer {
+            background-color: #f8f9fa;
+            border-top: 2px solid var(--color-border-light);
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            font-size: var(--font-xs);
+            font-weight: 800;
+            color: #8c93a6;
+            text-transform: uppercase;
+        }
+
+        .table-footer__total-label {
+            width: 200px;
+        }
+
+        .table-footer__total-val {
+            font-size: var(--font-md);
+            color: var(--color-primary);
+            font-weight: 800;
+            margin-left: 50px;
+        }
+
+        .table-footer__stats {
+            margin-left: auto;
+            display: flex;
+            gap: 40px;
+            padding-right: 20px;
+            color: #d99f26;
+        }
+
+        /* Responsive Breakpoints */
+        @media (max-width: 1024px) {
+            .app {
+                flex-direction: column;
+            }
+
+            .mobile-header {
+                display: flex;
+            }
+
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                height: 100vh;
+                transform: translateX(-100%);
+                box-shadow: 4px 0 15px rgba(0,0,0,0.1);
+            }
+
+            .sidebar--open {
+                transform: translateX(0);
+            }
+
+            .kpi-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .kpi-card {
+                border-bottom: 1px solid var(--color-border-light);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main {
+                padding: 10px;
+            }
+
+            .header-bar {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+            }
+
+            .btn-import {
+                width: 100%;
+            }
+
+            .controls-card {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .search-box {
+                max-width: 100%;
+            }
+
+            .event-badge {
+                margin-left: 0;
+                justify-content: center;
+            }
+
+            .kpi-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .kpi-card {
+                border-right: none;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar__header">
+                <div class="sidebar__logo">娜美</div>
+            </div>
+
+            <div class="sidebar__user">
+                <div class="sidebar__user-avatar"></div>
+                <span>USERNAME</span>
+            </div>
+
+            <nav class="sidebar__nav">
+                <ul class="sidebar__menu">
+                    <li><a href="#" class="sidebar__item"><span class="sidebar__icon">⌂</span> HOME</a></li>
+                    <li><a href="#" class="sidebar__item"><span class="sidebar__icon">◎</span> NOTICE</a></li>
+                    <li><a href="#" class="sidebar__item"><span class="sidebar__icon">◎</span> BOARD</a></li>
+                    <li><a href="#" class="sidebar__item"><span class="sidebar__icon">◎</span> MEMBERS</a></li>
+                    <li><a href="#" class="sidebar__item"><span class="sidebar__icon">◎</span> BLACK GOLD</a></li>
+                    <li><a href="#" class="sidebar__item"><span class="sidebar__icon">◎</span> VS POINTS</a></li>
+                    <li>
+                        <a href="#" class="sidebar__item sidebar__item--active">
+                            <span class="sidebar__icon">📅</span> EVENT ATTENDANCE
+                        </a>
+                    </li>
+                </ul>
+
+                <div class="sidebar__section-title">ADMIN</div>
+                <ul class="sidebar__menu">
+                    <li><a href="#" class="sidebar__item"><span class="sidebar__icon">◎</span> DISCUSSION ROOM</a></li>
+                    <li><a href="#" class="sidebar__item"><span class="sidebar__icon">◎</span> QUESTIONS</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main">
+            <!-- Mobile Toggle Header -->
+            <div class="mobile-header">
+                <div class="sidebar__logo" style="width: 40px; height: 40px; font-size: 14px;">娜美</div>
+                <button class="hamburger" id="hamburgerBtn" aria-label="Toggle Navigation" aria-expanded="false">
+                    <span class="hamburger__line"></span>
+                    <span class="hamburger__line"></span>
+                    <span class="hamburger__line"></span>
+                </button>
+            </div>
+
+            <!-- Top Header Banner -->
+            <header class="header-bar">
+                <div class="header-bar__title-group">
+                    <h1 class="header-bar__title">Dark War Survival</h1>
+                    <div class="header-bar__subtitle">
+                        <span>ALLIANCE MANAGEMENT TOOL</span>
+                        <span class="header-bar__stats">14 EVENTS - 102 MEMBERS</span>
+                    </div>
+                </div>
+                <!-- Hidden file upload input for image OCR -->
+                <input type="file" id="screenshotInput" accept="image/*" style="display: none;">
+                <button class="btn-import" id="importBtn">IMPORT SCREENSHOT</button>
+            </header>
+
+            <!-- Control & Filters Bar -->
+            <section class="controls-card">
+                <div class="btn-group">
+                    <button class="btn-toggle btn-toggle--active">ATTENDANCE</button>
+                    <button class="btn-toggle">🏆 RANKING</button>
+                </div>
+
+                <div class="search-box">
+                    <span class="search-box__icon">🔍</span>
+                    <input type="text" class="search-box__input" id="searchInput" placeholder="Search member...">
+                </div>
+
+                <div class="btn-group">
+                    <button class="btn-toggle btn-toggle--active">% ATTENDANCE</button>
+                    <button class="btn-toggle">± DIFF</button>
+                </div>
+
+                <div class="event-badge">
+                    <span>% OF</span>
+                    <span class="event-badge__count">14</span>
+                    <span>EVENTS</span>
+                </div>
+            </section>
+
+            <!-- KPI Cards -->
+            <section class="kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-card__label">Members</div>
+                    <div class="kpi-card__value" id="kpiMembers">17</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-card__label">Avg Attendance</div>
+                    <div class="kpi-card__value" id="kpiAvgAttendance">8.7</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-card__label">Avg Rate</div>
+                    <div class="kpi-card__value" id="kpiAvgRate">62.2%</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-card__label">Pct Base</div>
+                    <div class="kpi-card__value">14 events</div>
+                </div>
+            </section>
+
+            <!-- Dynamic Table -->
+            <section class="table-card">
+                <div class="table-wrapper">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th class="col-rank">#</th>
+                                <th class="sortable">IN-GAME NAME <span class="sort-icon">⇅</span></th>
+                                <th class="sortable" style="text-align: center;">ATTENDED <span class="sort-icon">↓</span></th>
+                                <th class="sortable">ATTENDANCE % <span class="sort-icon">⇅</span></th>
+                                <th class="sortable">VS AVG <span class="sort-icon">⇅</span></th>
+                                <th class="col-event">
+                                    <div class="event-header">
+                                        <span class="event-header__date">06-17</span>
+                                        <span class="event-header__sub">0616 LV2</span>
+                                        <span class="sort-icon">⇅</span>
+                                    </div>
+                                </th>
+                                <th class="col-event">
+                                    <div class="event-header">
+                                        <span class="event-header__date">06-15</span>
+                                        <span class="event-header__sub">0615 LV3</span>
+                                        <span class="sort-icon">⇅</span>
+                                    </div>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody id="memberTableBody">
+                            <!-- Dynamically populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="table-footer">
+                    <div class="table-footer__total-label">TOTAL / MEMBERS</div>
+                    <div class="table-footer__total-val" id="kpiTotalAttended">148</div>
+                    <div class="table-footer__stats">
+                        <span>6</span>
+                        <span>4</span>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        // State Management
+        let totalEvents = 14;
+        let members = [
+            { name: "Lu Wei", attended: 13, hasPlus: true, events: [true, true] },
+            { name: "RRAVII", attended: 11, hasPlus: true, events: [false, true] },
+            { name: "Wiphad", attended: 10, hasPlus: true, events: [true, true] },
+            { name: "• ¥ DuDu ¥ •", attended: 9, hasPlus: false, events: [false, false] },
+            { name: "NúP", attended: 9, hasPlus: false, events: [true, false] },
+            { name: "Thò Mê Cô", attended: 9, hasPlus: false, events: [false, false] },
+            { name: "Thò • Tiny", attended: 9, hasPlus: false, events: [true, false] },
+            { name: "Thò Bảy Màu", attended: 9, hasPlus: false, events: [false, false] },
+            { name: "允雁Yun Yan", attended: 8, hasPlus: false, events: [false, false] },
+            { name: "• RUNA •", attended: 8, hasPlus: false, events: [false, false] },
+            { name: "slu7", attended: 8, hasPlus: false, events: [false, true] },
+            { name: "Thò Cùi Chỏ", attended: 8, hasPlus: false, events: [false, false] },
+            { name: "¥ Minh Đế ¥", attended: 8, hasPlus: false, events: [false, false] },
+            { name: "Thò Màu Đỏ", attended: 8, hasPlus: false, events: [false, false] },
+            { name: "Dino ——", attended: 7, hasPlus: false, events: [true, false] },
+            { name: "Lazy Farmer", attended: 7, hasPlus: false, events: [true, false] },
+            { name: "뱀new", attended: 7, hasPlus: false, events: [false, false] }
+        ];
+
+        // Dynamic Table Rendering Engine & Auto-Ranking
+        function renderTable(filterQuery = '') {
+            const tableBody = document.getElementById('memberTableBody');
+            tableBody.innerHTML = '';
+
+            // Calculate overall team metrics
+            const totalAttendedCount = members.reduce((sum, m) => sum + m.attended, 0);
+            const avgAttendance = members.length ? (totalAttendedCount / members.length) : 0;
+            const avgRate = (avgAttendance / totalEvents) * 100;
+
+            // Auto-Rank: Sort descending by attendance count
+            members.sort((a, b) => b.attended - a.attended);
+
+            // Filter members based on search box input
+            const filteredMembers = members.filter(m => m.name.toLowerCase().includes(filterQuery.toLowerCase()));
+
+            filteredMembers.forEach((member, index) => {
+                const rank = index + 1;
+                const rate = ((member.attended / totalEvents) * 100).toFixed(1);
+                const vsAvg = (rate - avgRate).toFixed(1);
+                const vsAvgFormatted = vsAvg >= 0 ? `+${vsAvg}%` : `${vsAvg}%`;
+
+                // Assign style theme according to rank
+                let rowClass = 'row-low';
+                if (rank === 1) rowClass = 'row-rank-1';
+                else if (rank === 2) rowClass = 'row-rank-2';
+                else if (rank === 3) rowClass = 'row-rank-3';
+                else if (rate >= 60) rowClass = 'row-mid';
+
+                const rowHTML = `
+                    <tr class="${rowClass}">
+                        <td class="col-rank">${rank}</td>
+                        <td class="col-name">${member.hasPlus ? '<span class="icon-plus">+</span> ' : ''}${member.name}</td>
+                        <td class="col-attended">${member.attended}</td>
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <div class="progress-bar"><div class="progress-bar__fill" style="width: ${rate}%;"></div></div>
+                                <span class="col-rate">${rate}%</span>
+                            </div>
+                        </td>
+                        <td class="col-diff">${vsAvgFormatted}</td>
+                        <td class="col-event">${member.events[0] ? '<span class="check-icon">✓</span>' : ''}</td>
+                        <td class="col-event">${member.events[1] ? '<span class="check-icon">✓</span>' : ''}</td>
+                    </tr>
+                `;
+                tableBody.insertAdjacentHTML('beforeend', rowHTML);
+            });
+
+            // Update KPI Overview Cards
+            document.getElementById('kpiMembers').innerText = members.length;
+            document.getElementById('kpiAvgAttendance').innerText = avgAttendance.toFixed(1);
+            document.getElementById('kpiAvgRate').innerText = `${avgRate.toFixed(1)}%`;
+            document.getElementById('kpiTotalAttended').innerText = totalAttendedCount;
+        }
+
+        // Tesseract OCR Import Logic
+        const importBtn = document.getElementById('importBtn');
+        const screenshotInput = document.getElementById('screenshotInput');
+
+        importBtn.addEventListener('click', () => screenshotInput.click());
+
+        screenshotInput.addEventListener('change', async (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            importBtn.innerText = 'PROCESSING...';
+            importBtn.disabled = true;
+
+            try {
+                // Perform OCR using Tesseract CDN
+                const { data: { text } } = await Tesseract.recognize(file, 'eng');
+
+                // Process lines for name + attendance count
+                const lines = text.split('\n');
+                let foundAny = false;
+
+                lines.forEach(line => {
+                    const match = line.match(/([a-zA-Z0-9•\s]+)\s+(\d{1,2})/);
+                    if (match) {
+                        const parsedName = match[1].trim();
+                        const parsedAttended = parseInt(match[2], 10);
+
+                        if (parsedName.length > 2 && parsedAttended <= totalEvents) {
+                            foundAny = true;
+                            const existing = members.find(m => m.name.toLowerCase() === parsedName.toLowerCase());
+                            if (existing) {
+                                existing.attended = parsedAttended;
+                            } else {
+                                members.push({ name: parsedName, attended: parsedAttended, hasPlus: false, events: [false, false] });
+                            }
+                        }
+                    }
+                });
+
+                renderTable();
+                alert(foundAny ? 'Screenshot successfully processed and alliance rankings updated!' : 'OCR completed. No new format matches found in image.');
+            } catch (error) {
+                console.error('OCR Error:', error);
+                alert('Error reading screenshot. Ensure image is clear.');
+            } finally {
+                importBtn.innerText = 'IMPORT SCREENSHOT';
+                importBtn.disabled = false;
+                screenshotInput.value = '';
+            }
+        });
+
+        // Search Filter Event
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            renderTable(e.target.value);
+        });
+
+        // Mobile Sidebar Toggle
+        const hamburgerBtn = document.getElementById('hamburgerBtn');
+        const sidebar = document.getElementById('sidebar');
+
+        hamburgerBtn.addEventListener('click', () => {
+            const isOpen = sidebar.classList.toggle('sidebar--open');
+            hamburgerBtn.setAttribute('aria-expanded', isOpen);
+        });
+
+        document.addEventListener('click', (event) => {
+            if (window.innerWidth <= 1024) {
+                if (!sidebar.contains(event.target) && !hamburgerBtn.contains(event.target) && sidebar.classList.contains('sidebar--open')) {
+                    sidebar.classList.remove('sidebar--open');
+                    hamburgerBtn.setAttribute('aria-expanded', 'false');
+                }
+            }
+        });
+
+        // Initial Render
+        renderTable();
+    </script>
+</body>
+</html>
