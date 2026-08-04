@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alliance Management Tool</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Fredoka+One&family=Montserrat:wght@600;700;800&family=Noto+Sans+SC:wght@900&family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <style>
+        :root {
+            /* Login Design Tokens */
+            --login-bg: #ffffff;
+            --login-primary-blue: #324796;
+            --login-light-blue: #c3d2f8;
+            --login-text-title: #2d4187;
+            --login-text-guest: #4f63a8;
+            --login-btn-bg: #f3a808;
+            --login-btn-hover: #e29a00;
+            --login-btn-text: #ffffff;
+            --login-star: #f3a808;
+
+            /* Dashboard Tokens */
+            --color-bg-main: #f5f4ef;
+            --color-bg-card: #ffffff;
+            --color-bg-sidebar: #ffffff;
+            --color-primary: #3b52a4;
+            --color-primary-light: #eceff8;
+            --color-text-dark: #2b3044;
+            --color-text-muted: #8c93a6;
+            --color-text-light: #a0a6b5;
+            --color-border: #3b52a4;
+            --color-border-light: #e2e5ed;
+            --color-yellow-bg: #fffdf0;
+            --color-yellow-border: #e2cb6b;
+            --color-yellow-text: #b89117;
+            --color-gold: #f3a808;
+
+            /* Typography Tokens */
+            --font-family-base: 'Montserrat', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            --font-family-title: 'Cinzel', serif;
+            --font-family-logo: 'Noto Sans SC', sans-serif;
+
+            --font-xs: 11px;
+            --font-sm: 13px;
+            --font-md: 15px;
+            --font-lg: 18px;
+            --font-xl: 22px;
+            --font-xxl: 28px;
+        }
+
+        /* Reset & Global */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Open Sans', sans-serif; background-color: var(--color-bg-main); color: var(--color-text-dark); min-height: 100vh; }
+
+        /* ==================== LOGIN SCREEN STYLES ==================== */
+        .login-page {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            background-color: var(--login-bg);
+            font-family: var(--font-family-base);
+        }
+
+        .login-header {
+            width: 100%;
+            padding: 16px 24px;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+        }
+
+        .nav__toggle {
+            display: none;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+            flex-direction: column;
+            gap: 5px;
+            z-index: 10;
+        }
+
+        .nav__toggle-line {
+            width: 25px;
+            height: 3px;
+            background-color: var(--login-primary-blue);
+            border-radius: 2px;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+
+        .nav__menu {
+            display: flex;
+            list-style: none;
+            gap: 24px;
+        }
+
+        .nav__link {
+            text-decoration: none;
+            color: var(--login-primary-blue);
+            font-weight: 700;
+            font-size: 14px;
+            transition: color 0.2s ease;
+        }
+
+        .nav__link:hover { color: var(--login-text-guest); }
+
+        .login-main {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+
+        .login-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            max-width: 480px;
+            width: 100%;
+        }
+
+        .login-card__logo-wrapper {
+            position: relative;
+            width: 180px;
+            height: 180px;
+            margin-bottom: 32px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .login-card__logo-circle {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background-color: var(--login-light-blue);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .login-card__logo-text {
+            font-family: var(--font-family-logo);
+            font-size: 80px;
+            font-weight: 900;
+            color: var(--login-primary-blue);
+            line-height: 1;
+            letter-spacing: -4px;
+            user-select: none;
+            text-shadow:
+                -3px -3px 0 #ffffff,
+                 3px -3px 0 #ffffff,
+                -3px  3px 0 #ffffff,
+                 3px  3px 0 #ffffff,
+                -3px  0px 0 #ffffff,
+                 3px  0px 0 #ffffff,
+                 0px -3px 0 #ffffff,
+                 0px  3px 0 #ffffff;
+        }
+
+        .login-card__logo-star {
+            position: absolute;
+            bottom: -6px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: var(--login-star);
+            font-size: 38px;
+            line-height: 1;
+            z-index: 2;
+        }
+
+        .login-card__title {
+            font-family: var(--font-family-title);
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--login-text-title);
+            letter-spacing: 1.5px;
+            margin-bottom: 32px;
+            text-transform: uppercase;
+            line-height: 1.3;
+        }
+
+        .login-card__button {
+            background-color: var(--login-btn-bg);
+            color: var(--login-btn-text);
+            border: none;
+            border-radius: 10px;
+            padding: 14px 0;
+            width: 180px;
+            font-family: var(--font-family-base);
+            font-size: 16px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(243, 168, 8, 0.2);
+            transition: background-color 0.2s ease, transform 0.1s ease;
+            margin-bottom: 32px;
+        }
+
+        .login-card__button:hover { background-color: var(--login-btn-hover); }
+        .login-card__button:active { transform: translateY(1px); }
+
+        .login-card__guest-link {
+            background: none;
+            border: none;
+            color: var(--login-text-guest);
+            font-family: var(--font-family-base);
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            line-height: 1.4;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: color 0.2s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .login-card__guest-link:hover { color: var(--login-primary-blue); text-decoration: underline; }
+
+        /* Modal Simple Styling */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.4);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-card {
+            background: white;
+            padding: 24px;
+            border-radius: 8px;
+            width: 100%;
+            max-width: 320px;
+            border: 2px solid var(--color-primary);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        .modal-card h3 { margin-bottom: 12px; color: var(--color-primary); font-size: 16px; }
+        .modal-card input { width: 100%; padding: 10px; margin-bottom: 16px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
+        .modal-card-btns { display: flex; justify-content: flex-end; gap: 8px; }
+
+        /* ==================== DASHBOARD STYLES ==================== */
+        .app { display: none; width: 100%; min-height: 100vh; }
+
+        .sidebar { width: 260px; background-color: var(--color-bg-sidebar); border-right: 2px solid var(--color-border); display: flex; flex-direction: column; flex-shrink: 0; transition: transform 0.3s ease; z-index: 100; }
+        .sidebar__header { padding: 20px; display: flex; justify-content: center; align-items: center; border-bottom: 2px solid var(--color-border); }
+        .sidebar__logo { width: 70px; height: 70px; border-radius: 50%; background: linear-gradient(135deg, #a5c7f9, #2d55b8); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 24px; box-shadow: 0 4px 10px rgba(59, 82, 164, 0.2); }
+        .sidebar__user { padding: 16px 20px; display: flex; align-items: center; gap: 12px; font-weight: 700; font-size: var(--font-sm); color: #62697b; }
+        .sidebar__user-avatar { width: 32px; height: 32px; border-radius: 50%; background-color: #62697b; }
+        .sidebar__nav { display: flex; flex-direction: column; gap: 4px; }
+        .sidebar__menu { list-style: none; }
+        .sidebar__item { display: flex; align-items: center; padding: 10px 20px; color: #555b6e; font-weight: 700; font-size: var(--font-xs); text-decoration: none; gap: 12px; cursor: pointer; transition: background 0.2s; }
+        .sidebar__item:hover { background-color: #f0f2f8; }
+        .sidebar__item--active { background-color: var(--color-primary); color: white; }
+        .sidebar__icon { width: 16px; text-align: center; display: inline-block; }
+
+        .main { flex-grow: 1; padding: 20px; display: flex; flex-direction: column; gap: 16px; max-width: 1200px; }
+        .mobile-header { display: none; justify-content: space-between; align-items: center; padding: 12px 16px; background: white; border: 2px solid var(--color-border); border-radius: 8px; margin-bottom: 12px; }
+        .hamburger { background: none; border: none; cursor: pointer; display: flex; flex-direction: column; gap: 4px; padding: 4px; }
+        .hamburger__line { width: 24px; height: 3px; background-color: var(--color-primary); border-radius: 2px; }
+
+        .header-bar { background-color: white; border: 2px solid var(--color-border); border-radius: 4px; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; position: relative; }
+        .header-bar::before { content: ''; position: absolute; left: 12px; top: 12px; bottom: 12px; width: 4px; background-color: #e2cb6b; border-radius: 2px; }
+        .header-bar__title-group { padding-left: 12px; }
+        .header-bar__title { font-family: 'Fredoka One', cursive, sans-serif; font-size: var(--font-xxl); color: var(--color-primary); line-height: 1; text-transform: uppercase; }
+        .header-bar__subtitle { font-size: var(--font-xs); font-weight: 800; color: var(--color-primary); margin-top: 4px; display: flex; gap: 20px; }
+        .header-bar__stats { color: var(--color-text-light); font-weight: 600; }
+        .header-bar__actions { display: flex; gap: 10px; align-items: center; }
+
+        .btn-action { background: white; border: 2px solid var(--color-primary); color: var(--color-primary); font-weight: 800; font-size: var(--font-xs); padding: 8px 16px; border-radius: 4px; cursor: pointer; transition: all 0.2s; }
+        .btn-action:hover { background-color: var(--color-primary); color: white; }
+        .btn-action--logout { background-color: #fce8e6; border-color: #d9381e; color: #d9381e; }
+
+        .admin-panel { background: #fffdf0; border: 2px dashed #d99f26; border-radius: 4px; padding: 12px 16px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+        .admin-panel__title { font-weight: 800; font-size: var(--font-xs); color: #b89117; text-transform: uppercase; letter-spacing: 0.5px; width: 100%; margin-bottom: 4px; }
+        .admin-panel__form { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        .admin-panel__input { padding: 6px 10px; border: 1px solid #d1d5db; border-radius: 4px; font-size: var(--font-xs); outline: none; }
+        .btn-admin { background: #3b52a4; color: white; border: none; font-weight: 800; font-size: var(--font-xs); padding: 7px 12px; border-radius: 4px; cursor: pointer; }
+        .btn-admin:hover { background: #2d4187; }
+
+        .controls-card { background: white; border: 2px solid var(--color-border); border-radius: 4px; padding: 12px; display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+        .btn-group { display: flex; border: 2px solid var(--color-primary); border-radius: 4px; overflow: hidden; }
+        .btn-toggle { padding: 8px 16px; font-weight: 800; font-size: var(--font-xs); border: none; background: white; color: var(--color-primary); cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.2s; }
+        .btn-toggle--active { background-color: var(--color-primary); color: white; }
+
+        .search-box { flex-grow: 1; max-width: 300px; position: relative; }
+        .search-box__input { width: 100%; padding: 8px 12px 8px 32px; border: 1px solid #d1d5db; background-color: #f7f6f0; border-radius: 4px; font-size: var(--font-sm); outline: none; }
+        .search-box__icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #9ca3af; }
+
+        .event-badge { margin-left: auto; background-color: var(--color-yellow-bg); border: 1px solid var(--color-yellow-border); padding: 6px 12px; border-radius: 4px; display: flex; align-items: center; gap: 8px; font-size: var(--font-xs); font-weight: 800; color: var(--color-yellow-text); }
+        .event-badge__count { color: #d9381e; font-size: var(--font-md); font-weight: 800; }
+
+        .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); border: 2px solid var(--color-border); border-radius: 4px; background: white; overflow: hidden; }
+        .kpi-card { padding: 12px 16px; border-right: 1px solid var(--color-border-light); background-color: #f4f6fb; }
+        .kpi-card:last-child { border-right: none; background-color: var(--color-yellow-bg); }
+        .kpi-card__label { font-size: 10px; font-weight: 800; color: #8c93a6; text-transform: uppercase; margin-bottom: 4px; }
+        .kpi-card__value { font-size: var(--font-xl); font-weight: 800; color: var(--color-primary); }
+
+        .table-card { background: white; border: 2px solid var(--color-border); border-radius: 4px; overflow: hidden; display: flex; flex-direction: column; }
+        .table-wrapper { overflow-x: auto; }
+        .data-table { width: 100%; border-collapse: collapse; text-align: left; font-size: var(--font-sm); }
+        .data-table th { background-color: #eef2f9; padding: 12px 16px; font-size: 11px; font-weight: 800; color: #71788e; text-transform: uppercase; border-bottom: 1px solid var(--color-border-light); white-space: nowrap; }
+        .data-table td { padding: 10px 16px; border-bottom: 1px solid #f0f2f5; vertical-align: middle; font-weight: 700; color: #4a5060; }
+
+        .col-rank { width: 50px; text-align: center; color: #a0a6b5; }
+        .col-name { font-weight: 800; color: #2b3044; }
+        .col-attended { width: 90px; text-align: center; font-size: var(--font-md); font-weight: 800; color: var(--color-primary); }
+        .col-rate { width: 80px; font-weight: 800; }
+        .col-diff { width: 90px; font-weight: 800; }
+        .col-event { width: 70px; text-align: center; }
+
+        .check-toggle { cursor: pointer; padding: 4px 8px; border-radius: 4px; user-select: none; transition: background 0.2s; }
+        .check-toggle:hover { background-color: #e2e5ed; }
+        .check-icon { color: var(--color-primary); font-weight: 800; font-size: 14px; }
+        .cross-icon { color: #ccc; font-weight: bold; }
+        .editable-num { cursor: pointer; border-bottom: 1px dashed var(--color-primary); }
+        .editable-num:hover { background: #f0f2f8; }
+
+        .progress-bar { height: 8px; width: 100%; background-color: #eef0f5; border-radius: 4px; overflow: hidden; }
+        .progress-bar__fill { height: 100%; border-radius: 4px; background-color: var(--color-primary); }
+
+        .ranking-cards-list { display: flex; flex-direction: column; gap: 10px; }
+        .ranking-card { background-color: #fdfcf7; border: 2px solid #d5cbac; border-radius: 4px; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; }
+        .ranking-card--rank-1 { border-color: #d99f26; background-color: #fffdf5; }
+        .ranking-card--rank-2 { border-color: #a8a3c0; background-color: #ffffff; }
+        .ranking-card__left { display: flex; align-items: center; gap: 16px; min-width: 200px; }
+        .ranking-card__badge { font-size: 20px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-weight: 800; }
+        .ranking-card__name { font-weight: 800; font-size: var(--font-md); color: #2b3044; }
+        .ranking-card__subtext { font-size: var(--font-xs); color: #8c93a6; font-weight: 600; }
+        .ranking-card__right { display: flex; align-items: center; gap: 20px; flex-grow: 1; justify-content: flex-end; max-width: 450px; }
+        .ranking-card__bar-wrapper { flex-grow: 1; max-width: 200px; }
+
+        .table-footer { background-color: #f8f9fa; border-top: 2px solid var(--color-border-light); padding: 12px 16px; display: flex; align-items: center; font-size: var(--font-xs); font-weight: 800; color: #8c93a6; }
+        .table-footer__total-val { font-size: var(--font-md); color: var(--color-primary); font-weight: 800; margin-left: 50px; }
+
+        /* Mobile Breakpoints */
+        @media (max-width: 1024px) {
+            .nav__toggle { display: flex; }
+            .nav__menu {
+                position: absolute;
+                top: 60px;
+                right: 24px;
+                background-color: var(--login-bg);
+                border: 1px solid var(--login-light-blue);
+                border-radius: 8px;
+                padding: 24px;
+                flex-direction: column;
+                gap: 16px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                opacity: 0;
+                visibility: hidden;
+                transform: translateY(-10px);
+                transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s ease;
+            }
+            .nav__menu--open { opacity: 1; visibility: visible; transform: translateY(0); }
+
+            .app { flex-direction: column; }
+            .mobile-header { display: flex; }
+            .sidebar { position: fixed; top: 0; left: 0; height: 100vh; transform: translateX(-100%); }
+            .sidebar--open { transform: translateX(0); }
+            .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        @media (max-width: 768px) {
+            .login-card__logo-wrapper { width: 150px; height: 150px; margin-bottom: 24px; }
+            .login-card__logo-text { font-size: 66px; }
+            .login-card__logo-star { font-size: 32px; bottom: -4px; }
+            .login-card__title { font-size: 18px; margin-bottom: 24px; }
+            .login-card__button { width: 160px; padding: 12px 0; margin-bottom: 24px; font-size: 15px; }
+            .login-card__guest-link { font-size: 13px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- SECTION 1: LOGIN PAGE -->
+    <div class="login-page" id="loginScreen">
+        <header class="login-header">
+            <nav class="nav" aria-label="Main Navigation">
+                <button class="nav__toggle" id="navToggle" aria-expanded="false" aria-label="Toggle navigation menu">
+                    <span class="nav__toggle-line"></span>
+                    <span class="nav__toggle-line"></span>
+                    <span class="nav__toggle-line"></span>
+                </button>
+                <ul class="nav__menu" id="navMenu">
+                    <li><a href="#" class="nav__link">Home</a></li>
+                    <li><a href="#" class="nav__link">Help</a></li>
+                </ul>
+            </nav>
+        </header>
+
+        <main class="login-main">
+            <section class="login-card">
+                <div class="login-card__logo-wrapper">
+                    <div class="login-card__logo-circle">
+                        <span class="login-card__logo-text">娜美</span>
+                    </div>
+                    <span class="login-card__logo-star">✦</span>
+                </div>
+
+                <h1 class="login-card__title">Alliance Management Tool</h1>
+
+                <button type="button" class="login-card__button" id="btnOpenLoginModal">LOG IN</button>
+
+                <button type="button" class="login-card__guest-link" id="btnGuestAccess">
+                    Proceed<br>as Guest
+                </button>
+            </section>
+        </main>
+    </div>
+
+    <!-- ADMIN AUTHENTICATION MODAL -->
+    <div class="modal-overlay" id="loginModal">
+        <div class="modal-card">
+            <h3>Admin Authentication</h3>
+            <input type="password" id="adminPasswordInput" placeholder="Enter Admin Password (Pass: admin)">
+            <div class="modal-card-btns">
+                <button class="btn-action" id="btnCancelModal">Cancel</button>
+                <button class="btn-admin" id="btnSubmitLogin">Login</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SECTION 2: MAIN DASHBOARD -->
+    <div class="app" id="appDashboard">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar__header"><div class="sidebar__logo">娜美</div></div>
+            <div class="sidebar__user">
+                <div class="sidebar__user-avatar"></div>
+                <span id="userRoleDisplay">ADMIN (STAFF)</span>
+            </div>
+            <nav class="sidebar__nav">
+                <ul class="sidebar__menu">
+                    <li><a href="#" class="sidebar__item"><span class="sidebar__icon">⌂</span> HOME</a></li>
+                    <li><a href="#" class="sidebar__item"><span class="sidebar__icon">◎</span> MEMBERS</a></li>
+                    <li><a href="#" class="sidebar__item sidebar__item--active"><span class="sidebar__icon">📅</span> EVENT ATTENDANCE</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main">
+            <div class="mobile-header">
+                <div class="sidebar__logo" style="width: 40px; height: 40px; font-size: 14px;">娜美</div>
+                <button class="hamburger" id="hamburgerBtn"><span class="hamburger__line"></span><span class="hamburger__line"></span><span class="hamburger__line"></span></button>
+            </div>
+
+            <!-- Header Banner -->
+            <header class="header-bar">
+                <div class="header-bar__title-group">
+                    <h1 class="header-bar__title">Dark War Survival</h1>
+                    <div class="header-bar__subtitle">
+                        <span>ALLIANCE MANAGEMENT TOOL</span>
+                        <span class="header-bar__stats" id="headerEventsCount">14 EVENTS - 12 MEMBERS</span>
+                    </div>
+                </div>
+                <div class="header-bar__actions">
+                    <input type="file" id="screenshotInput" accept="image/*" style="display: none;">
+                    <button class="btn-action" id="importBtn">IMPORT SCREENSHOT</button>
+                    <button class="btn-action btn-action--logout" id="btnLogout">LOG OUT</button>
+                </div>
+            </header>
+
+            <!-- Admin Panel -->
+            <section class="admin-panel" id="adminPanel">
+                <div class="admin-panel__title">⚙️ Admin Event & Attendance Tools</div>
+                
+                <div class="admin-panel__form">
+                    <input type="text" class="admin-panel__input" id="newDateInput" placeholder="Date (e.g. 06-18)">
+                    <input type="text" class="admin-panel__input" id="newSubtextInput" placeholder="Level/Title (e.g. 0618 LV4)">
+                    <button class="btn-admin" id="btnAddEvent">Add Event Column</button>
+                </div>
+
+                <div class="admin-panel__form" style="margin-left: auto;">
+                    <input type="text" class="admin-panel__input" id="newMemberInput" placeholder="New Player Name">
+                    <button class="btn-admin" id="btnAddMember">+ Add Player</button>
+                </div>
+            </section>
+
+            <!-- Filters -->
+            <section class="controls-card">
+                <div class="btn-group">
+                    <button class="btn-toggle btn-toggle--active" id="btnTabAttendance">ATTENDANCE</button>
+                    <button class="btn-toggle" id="btnTabRanking">🏆 RANKING</button>
+                </div>
+
+                <div class="search-box">
+                    <span class="search-box__icon">🔍</span>
+                    <input type="text" class="search-box__input" id="searchInput" placeholder="Search member...">
+                </div>
+
+                <div class="btn-group">
+                    <button class="btn-toggle btn-toggle--active" id="btnPctAttendance">% ATTENDANCE</button>
+                    <button class="btn-toggle btn-toggle--active" id="btnDiff">± DIFF</button>
+                </div>
+
+                <div class="event-badge">
+                    <span>% OF</span>
+                    <span class="event-badge__count" id="badgeEventsCount">14</span>
+                    <span>EVENTS</span>
+                </div>
+            </section>
+
+            <!-- KPIs -->
+            <section class="kpi-grid">
+                <div class="kpi-card"><div class="kpi-card__label">Members</div><div class="kpi-card__value" id="kpiMembers">12</div></div>
+                <div class="kpi-card"><div class="kpi-card__label">Avg Attendance</div><div class="kpi-card__value" id="kpiAvgAttendance">9.2</div></div>
+                <div class="kpi-card"><div class="kpi-card__label">Avg Rate</div><div class="kpi-card__value" id="kpiAvgRate">65.7%</div></div>
+                <div class="kpi-card"><div class="kpi-card__label">Pct Base</div><div class="kpi-card__value" id="kpiPctBase">14 events</div></div>
+            </section>
+
+            <!-- TAB 1: Attendance Table -->
+            <section class="table-card" id="viewAttendance">
+                <div class="table-wrapper">
+                    <table class="data-table">
+                        <thead><tr id="tableHeaderRow"></tr></thead>
+                        <tbody id="memberTableBody"></tbody>
+                    </table>
+                </div>
+
+                <div class="table-footer">
+                    <div style="width: 200px;">TOTAL / MEMBERS</div>
+                    <div class="table-footer__total-val" id="kpiTotalAttended">110</div>
+                </div>
+            </section>
+
+            <!-- TAB 2: Ranking Cards View -->
+            <section class="ranking-cards-list" id="viewRanking" style="display: none;"></section>
+        </main>
+    </div>
+
+    <script>
+        // State Management
+        let currentUser = { role: null };
+        let currentTab = 'attendance';
+        let showDiff = true;
+        let totalEvents = 14;
+
+        let eventDates = [
+            { id: 0, date: "06-17", subtext: "0616 LV2" },
+            { id: 1, date: "06-15", subtext: "0615 LV3" },
+            { id: 2, date: "06-14", subtext: "0614 LV3" }
+        ];
+
+        let members = [
+            { id: 1, name: "Lu Wei", attended: 13, hasPlus: true, events: [true, true, true] },
+            { id: 2, name: "RRAVII", attended: 11, hasPlus: true, events: [false, true, false] },
+            { id: 3, name: "Wiphad", attended: 10, hasPlus: true, events: [true, true, false] },
+            { id: 4, name: "• ¥ DuDu ¥ •", attended: 9, hasPlus: false, events: [false, false, false] },
+            { id: 5, name: "NúP", attended: 9, hasPlus: false, events: [true, false, false] },
+            { id: 6, name: "Thò Mê Cô", attended: 9, hasPlus: false, events: [false, false, false] },
+            { id: 7, name: "Thò • Tiny", attended: 9, hasPlus: false, events: [true, false, true] },
+            { id: 8, name: "Thò Bảy Màu", attended: 9, hasPlus: false, events: [false, false, true] },
+            { id: 9, name: "允雁Yun Yan", attended: 8, hasPlus: false, events: [false, false, false] },
+            { id: 10, name: "• RUNA •", attended: 8, hasPlus: false, events: [false, false, false] },
+            { id: 11, name: "slu7", attended: 8, hasPlus: false, events: [false, true, true] },
+            { id: 12, name: "Thò Cùi Chỏ", attended: 8, hasPlus: false, events: [false, false, false] }
+        ];
+
+        // --- AUTH & LOGIN CONTROLS ---
+        const loginScreen = document.getElementById('loginScreen');
+        const appDashboard = document.getElementById('appDashboard');
+        const loginModal = document.getElementById('loginModal');
+
+        // Nav Toggle Mobile Login Screen
+        const navToggle = document.getElementById('navToggle');
+        const navMenu = document.getElementById('navMenu');
+        if (navToggle && navMenu) {
+            navToggle.addEventListener('click', function() {
+                const isExpanded = navToggle.getAttribute('aria-expanded') === 'true';
+                navToggle.setAttribute('aria-expanded', !isExpanded);
+                navMenu.classList.toggle('nav__menu--open');
+            });
+        }
+
+        document.getElementById('btnOpenLoginModal').addEventListener('click', () => {
+            loginModal.style.display = 'flex';
+        });
+
+        document.getElementById('btnCancelModal').addEventListener('click', () => {
+            loginModal.style.display = 'none';
+        });
+
+        document.getElementById('btnSubmitLogin').addEventListener('click', () => {
+            const pass = document.getElementById('adminPasswordInput').value;
+            if (pass === 'admin') {
+                currentUser.role = 'admin';
+                loginModal.style.display = 'none';
+                enterDashboard();
+            } else {
+                alert('Invalid Password! (Default pass: admin)');
+            }
+        });
+
+        document.getElementById('btnGuestAccess').addEventListener('click', () => {
+            currentUser.role = 'member';
+            enterDashboard();
+        });
+
+        document.getElementById('btnLogout').addEventListener('click', () => {
+            currentUser.role = null;
+            appDashboard.style.display = 'none';
+            loginScreen.style.display = 'flex';
+            document.getElementById('adminPasswordInput').value = '';
+        });
+
+        function enterDashboard() {
+            loginScreen.style.display = 'none';
+            appDashboard.style.display = 'flex';
+            render();
+        }
+
+        // Render Function
+        function render() {
+            const filterQuery = document.getElementById('searchInput').value.toLowerCase();
+            const isAdmin = currentUser.role === 'admin';
+
+            document.getElementById('adminPanel').style.display = isAdmin ? 'flex' : 'none';
+            document.getElementById('importBtn').style.display = isAdmin ? 'block' : 'none';
+            document.getElementById('userRoleDisplay').innerText = isAdmin ? 'ADMIN (STAFF)' : 'MEMBER (READ-ONLY)';
+
+            members.sort((a, b) => b.attended - a.attended);
+
+            const totalAttendedCount = members.reduce((sum, m) => sum + m.attended, 0);
+            const avgAttendance = members.length ? (totalAttendedCount / members.length) : 0;
+            const avgRate = (avgAttendance / totalEvents) * 100;
+
+            const filteredMembers = members.filter(m => m.name.toLowerCase().includes(filterQuery));
+
+            document.getElementById('kpiMembers').innerText = members.length;
+            document.getElementById('kpiAvgAttendance').innerText = avgAttendance.toFixed(1);
+            document.getElementById('kpiAvgRate').innerText = `${avgRate.toFixed(1)}%`;
+            document.getElementById('kpiTotalAttended').innerText = totalAttendedCount;
+            document.getElementById('badgeEventsCount').innerText = totalEvents;
+            document.getElementById('kpiPctBase').innerText = `${totalEvents} events`;
+            document.getElementById('headerEventsCount').innerText = `${totalEvents} EVENTS - ${members.length} MEMBERS`;
+
+            if (currentTab === 'attendance') {
+                renderAttendanceTable(filteredMembers, avgRate, isAdmin);
+            } else {
+                renderRankingCards(filteredMembers, avgRate);
+            }
+        }
+
+        function renderAttendanceTable(filteredMembers, avgRate, isAdmin) {
+            const tableHeaderRow = document.getElementById('tableHeaderRow');
+            const tableBody = document.getElementById('memberTableBody');
+
+            let headerHTML = `
+                <th class="col-rank">#</th>
+                <th>IN-GAME NAME</th>
+                <th style="text-align: center;">ATTENDED</th>
+            `;
+
+            if (showDiff) {
+                headerHTML += `<th>ATTENDANCE %</th><th>VS AVG</th>`;
+            }
+
+            eventDates.forEach((ev, evIdx) => {
+                headerHTML += `
+                    <th class="col-event">
+                        <div style="display: flex; flex-direction: column; align-items: center;">
+                            <span style="font-weight: 800; color: #4a5060;">${ev.date}</span>
+                            <span style="font-size: 9px; color: #a0a6b5;">${ev.subtext}</span>
+                            ${isAdmin ? `<span style="color:#d9381e; cursor:pointer; font-size:10px;" onclick="removeEvent(${evIdx})">✕</span>` : ''}
+                        </div>
+                    </th>
+                `;
+            });
+
+            tableHeaderRow.innerHTML = headerHTML;
+            tableBody.innerHTML = '';
+
+            filteredMembers.forEach((member, index) => {
+                const rank = index + 1;
+                const rate = ((member.attended / totalEvents) * 100).toFixed(1);
+                const vsAvg = (rate - avgRate).toFixed(1);
+                const vsAvgFormatted = vsAvg >= 0 ? `+${vsAvg}%` : `${vsAvg}%`;
+
+                let rowHTML = `
+                    <tr>
+                        <td class="col-rank">${rank}</td>
+                        <td class="col-name">
+                            ${member.hasPlus ? '<span style="color:#d99f26; margin-right:4px;">+</span>' : ''}${member.name}
+                            ${isAdmin ? `<span style="font-size:10px; color:#9ca3af; cursor:pointer; margin-left:6px;" onclick="editMemberName(${member.id})">✏️</span>` : ''}
+                        </td>
+                        <td class="col-attended">
+                            <span class="${isAdmin ? 'editable-num' : ''}" onclick="${isAdmin ? `editAttendedCount(${member.id})` : ''}">
+                                ${member.attended}
+                            </span>
+                        </td>
+                `;
+
+                if (showDiff) {
+                    rowHTML += `
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <div class="progress-bar"><div class="progress-bar__fill" style="width: ${rate}%;"></div></div>
+                                <span class="col-rate">${rate}%</span>
+                            </div>
+                        </td>
+                        <td class="col-diff">${vsAvgFormatted}</td>
+                    `;
+                }
+
+                eventDates.forEach((ev, evIdx) => {
+                    const isChecked = member.events[evIdx];
+                    rowHTML += `
+                        <td class="col-event">
+                            <span class="check-toggle" onclick="${isAdmin ? `toggleAttendance(${member.id}, ${evIdx})` : ''}">
+                                ${isChecked ? '<span class="check-icon">✓</span>' : '<span class="cross-icon">—</span>'}
+                            </span>
+                        </td>
+                    `;
+                });
+
+                rowHTML += `</tr>`;
+                tableBody.insertAdjacentHTML('beforeend', rowHTML);
+            });
+        }
+
+        function renderRankingCards(filteredMembers, avgRate) {
+            const rankingView = document.getElementById('viewRanking');
+            rankingView.innerHTML = '';
+
+            filteredMembers.forEach((member, index) => {
+                const rank = index + 1;
+                const rate = ((member.attended / totalEvents) * 100).toFixed(1);
+                const vsAvg = (rate - avgRate).toFixed(1);
+                const vsAvgFormatted = vsAvg >= 0 ? `+${vsAvg}%` : `${vsAvg}%`;
+
+                let cardClass = rank === 1 ? 'ranking-card--rank-1' : (rank <= 3 ? 'ranking-card--rank-2' : '');
+                let badgeHTML = rank === 1 ? '🥇' : (rank === 2 ? '🥈' : (rank === 3 ? '🥉' : `#${rank}`));
+
+                const cardHTML = `
+                    <div class="ranking-card ${cardClass}">
+                        <div class="ranking-card__left">
+                            <div class="ranking-card__badge">${badgeHTML}</div>
+                            <div>
+                                <div class="ranking-card__name">${member.name}</div>
+                                <div class="ranking-card__subtext">${member.attended} / ${totalEvents} events</div>
+                            </div>
+                        </div>
+                        <div class="ranking-card__right">
+                            <div class="ranking-card__bar-wrapper">
+                                <div class="progress-bar"><div class="progress-bar__fill" style="width: ${rate}%;"></div></div>
+                            </div>
+                            <div style="font-weight: 800; width: 55px; text-align: right;">${rate}%</div>
+                            ${showDiff ? `<div style="font-weight: 800; width: 65px; text-align: right;">${vsAvgFormatted}</div>` : ''}
+                        </div>
+                    </div>
+                `;
+                rankingView.insertAdjacentHTML('beforeend', cardHTML);
+            });
+        }
+
+        // Admin Interactive Logic
+        window.toggleAttendance = function(memberId, eventIndex) {
+            const member = members.find(m => m.id === memberId);
+            if (!member) return;
+            const currentState = !!member.events[eventIndex];
+            member.events[eventIndex] = !currentState;
+            if (!currentState) member.attended += 1;
+            else if (member.attended > 0) member.attended -= 1;
+            render();
+        };
+
+        window.editAttendedCount = function(memberId) {
+            const member = members.find(m => m.id === memberId);
+            if (!member) return;
+            const val = prompt(`Update attended count for ${member.name}:`, member.attended);
+            if (val !== null && !isNaN(val)) {
+                member.attended = parseInt(val, 10);
+                render();
+            }
+        };
+
+        window.editMemberName = function(memberId) {
+            const member = members.find(m => m.id === memberId);
+            if (!member) return;
+            const newName = prompt(`Edit player name:`, member.name);
+            if (newName && newName.trim() !== '') {
+                member.name = newName.trim();
+                render();
+            }
+        };
+
+        document.getElementById('btnAddEvent').addEventListener('click', () => {
+            const dateInput = document.getElementById('newDateInput');
+            const subtextInput = document.getElementById('newSubtextInput');
+            if (!dateInput.value.trim()) return alert('Please enter an event date.');
+
+            eventDates.push({
+                id: Date.now(),
+                date: dateInput.value.trim(),
+                subtext: subtextInput.value.trim() || 'EVENT'
+            });
+            members.forEach(m => m.events.push(false));
+            dateInput.value = ''; subtextInput.value = '';
+            render();
+        });
+
+        window.removeEvent = function(eventIndex) {
+            if (confirm(`Remove event column "${eventDates[eventIndex].date}"?`)) {
+                eventDates.splice(eventIndex, 1);
+                members.forEach(m => m.events.splice(eventIndex, 1));
+                render();
+            }
+        };
+
+        document.getElementById('btnAddMember').addEventListener('click', () => {
+            const nameInput = document.getElementById('newMemberInput');
+            if (!nameInput.value.trim()) return;
+            members.push({
+                id: Date.now(),
+                name: nameInput.value.trim(),
+                attended: 0,
+                hasPlus: false,
+                events: new Array(eventDates.length).fill(false)
+            });
+            nameInput.value = '';
+            render();
+        });
+
+        // Navigation Tabs & Controls
+        document.getElementById('btnTabAttendance').addEventListener('click', () => {
+            currentTab = 'attendance';
+            document.getElementById('btnTabAttendance').classList.add('btn-toggle--active');
+            document.getElementById('btnTabRanking').classList.remove('btn-toggle--active');
+            document.getElementById('viewAttendance').style.display = 'flex';
+            document.getElementById('viewRanking').style.display = 'none';
+            render();
+        });
+
+        document.getElementById('btnTabRanking').addEventListener('click', () => {
+            currentTab = 'ranking';
+            document.getElementById('btnTabRanking').classList.add('btn-toggle--active');
+            document.getElementById('btnTabAttendance').classList.remove('btn-toggle--active');
+            document.getElementById('viewAttendance').style.display = 'none';
+            document.getElementById('viewRanking').style.display = 'flex';
+            render();
+        });
+
+        const toggleDiffState = () => {
+            showDiff = !showDiff;
+            document.getElementById('btnDiff').classList.toggle('btn-toggle--active', showDiff);
+            document.getElementById('btnPctAttendance').classList.toggle('btn-toggle--active', showDiff);
+            render();
+        };
+
+        document.getElementById('btnDiff').addEventListener('click', toggleDiffState);
+        document.getElementById('btnPctAttendance').addEventListener('click', toggleDiffState);
+        document.getElementById('searchInput').addEventListener('input', render);
+
+        // OCR Import Logic
+        const importBtn = document.getElementById('importBtn');
+        const screenshotInput = document.getElementById('screenshotInput');
+        importBtn.addEventListener('click', () => screenshotInput.click());
+
+        screenshotInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            importBtn.innerText = 'PROCESSING...';
+            importBtn.disabled = true;
+
+            try {
+                const { data: { text } } = await Tesseract.recognize(file, 'eng');
+                const lines = text.split('\n');
+                let updated = false;
+
+                lines.forEach(line => {
+                    const match = line.match(/([a-zA-Z0-9•\s]+)\s+(\d{1,2})/);
+                    if (match) {
+                        const parsedName = match[1].trim();
+                        const parsedAttended = parseInt(match[2], 10);
+
+                        if (parsedName.length > 2 && parsedAttended <= totalEvents) {
+                            updated = true;
+                            const existing = members.find(m => m.name.toLowerCase() === parsedName.toLowerCase());
+                            if (existing) {
+                                existing.attended = parsedAttended;
+                            } else {
+                                members.push({
+                                    id: Date.now() + Math.random(),
+                                    name: parsedName,
+                                    attended: parsedAttended,
+                                    hasPlus: false,
+                                    events: new Array(eventDates.length).fill(false)
+                                });
+                            }
+                        }
+                    }
+                });
+
+                render();
+                alert(updated ? 'Rankings updated successfully!' : 'No readable member data recognized.');
+            } catch (err) {
+                console.error(err);
+                alert('OCR Error processing image.');
+            } finally {
+                importBtn.innerText = 'IMPORT SCREENSHOT';
+                importBtn.disabled = false;
+                screenshotInput.value = '';
+            }
+        });
+
+        // Mobile drawer
+        document.getElementById('hamburgerBtn').addEventListener('click', () => {
+            document.getElementById('sidebar').classList.toggle('sidebar--open');
+        });
+    </script>
+</body>
+</html>
