@@ -3,7 +3,7 @@ const SUPABASE_URL = 'https://sqrrfslqwcgpsmzdovru.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_rb70-VY2GstWzdoXmoUkwg_Iw3EiqFO'; 
 
 const { createClient } = supabase;
-const db = createClient(https://sqrrfslqwcgpsmzdovru.supabase.co, sb_publishable_rb70-VY2GstWzdoXmoUkwg_Iw3EiqFO);
+const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // --- STATE MANAGEMENT ---
 let currentUser = { role: localStorage.getItem('amt_userRole') || null };
