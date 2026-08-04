@@ -39,12 +39,16 @@ async function saveData() {
     }
 
     try {
-        await db.from('app_data').upsert({ id: 1, key: 'eventDates', value: eventDates }, { onConflict: 'id' });
-        await db.from('app_data').upsert({ id: 2, key: 'members', value: members }, { onConflict: 'id' });
+        const { error: err1 } = await db.from('app_data').upsert({ id: 1, key: 'eventDates', value: eventDates }, { onConflict: 'id' });
+        if (err1) alert('Save Error (Events): ' + err1.message);
+
+        const { error: err2 } = await db.from('app_data').upsert({ id: 2, key: 'members', value: members }, { onConflict: 'id' });
+        if (err2) alert('Save Error (Members): ' + err2.message);
     } catch (err) {
         console.error('Error saving to cloud:', err);
     }
 }
+
 
 // --- DOM ELEMENTS ---
 const loginOverlay = document.getElementById('loginOverlay');
