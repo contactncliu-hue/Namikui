@@ -201,7 +201,6 @@ function deleteMember(id) {
     render();
 }
 
-// Initial Run
 // --- INITIALIZATION ---
 // Call it immediately when the script loads so it doesn't miss DOMContentLoaded
 if (typeof supabase !== 'undefined') {
