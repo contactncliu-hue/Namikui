@@ -1086,11 +1086,16 @@
             }
         });
 
-        // Mobile drawer
+                // Mobile drawer
         document.getElementById('hamburgerBtn').addEventListener('click', () => {
             document.getElementById('sidebar').classList.toggle('sidebar--open');
         });
     </script>
+
+    <!-- Supabase Library must load first -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <!-- Your main app script loads last -->
     <script src="app.js"></script>
 </body>
 </html>
