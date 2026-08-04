@@ -1092,10 +1092,17 @@
         });
     </script>
 
-    <!-- Supabase Library must load first -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+   <!-- 1. Load Supabase Library FIRST -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-    <!-- Your main app script loads last -->
-    <script src="app.js"></script>
+<!-- 2. Load your app.js SECOND -->
+<script src="app.js"></script>
+
+<!-- 3. Any other inline scripts last -->
+<script>
+    document.getElementById('hamburgerBtn').addEventListener('click', () => {
+        document.getElementById('sidebar').classList.toggle('sidebar--open');
+    });
+</script>
 </body>
 </html>
