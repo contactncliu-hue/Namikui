@@ -1,9 +1,9 @@
 // --- SUPABASE CONFIGURATION ---
-const SUPABASE_URL = 'YOUR_SUPABASE_PROJECT_URL'; // Paste your Project URL here
-const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY'; // Paste your anon public API key here
+const SUPABASE_URL = 'https://sqrrfslqwcgpsmzdovru.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_rb70-VY2GstWzdoXmoUkwg_Iw3EiqFO'; 
 
 const { createClient } = supabase;
-const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const db = createClient(https://sqrrfslqwcgpsmzdovru.supabase.co, sb_publishable_rb70-VY2GstWzdoXmoUkwg_Iw3EiqFO);
 
 // --- STATE MANAGEMENT ---
 let currentUser = { role: localStorage.getItem('amt_userRole') || null };
