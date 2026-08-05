@@ -328,16 +328,50 @@
             </section>
 
             <section id="viewMembers" class="app-view" style="display: none;">
-                <div class="generic-view-card">
+                <div class="generic-view-card" style="margin-bottom: 16px;">
                     <h2>Members Management Directory</h2>
-                    <p>Comprehensive register of active alliance fighters and active player specs.</p>
+                    <p style="font-size: var(--font-sm); color: #62697b; margin-top: 4px;">Comprehensive register of active alliance fighters and player specifications.</p>
+                </div>
+                <div class="table-card">
+                    <div class="table-wrapper">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th class="col-rank">#</th>
+                                    <th>FIGHTER NAME</th>
+                                    <th style="text-align: center;">ATTENDED COUNT</th>
+                                    <th>OVERALL RATE</th>
+                                </tr>
+                            </thead>
+                            <tbody id="membersDirectoryBody">
+                                <tr><td colspan="4" style="text-align: center; color: #8c93a6; padding: 24px;">No members registered yet.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </section>
 
             <section id="viewBlackgold" class="app-view" style="display: none;">
-                <div class="generic-view-card">
+                <div class="generic-view-card" style="margin-bottom: 16px;">
                     <h2>Black Gold Tracker</h2>
-                    <p>Integrated Black Gold resource management interface and logs.</p>
+                    <p style="font-size: var(--font-sm); color: #62697b; margin-top: 4px;">Integrated Black Gold resource management interface and logs.</p>
+                </div>
+                <div class="table-card">
+                    <div class="table-wrapper">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th class="col-rank">#</th>
+                                    <th>FIGHTER NAME</th>
+                                    <th style="text-align: center;">TOTAL ATTENDED</th>
+                                    <th>STATUS / RESOURCE</th>
+                                </tr>
+                            </thead>
+                            <tbody id="blackGoldTableBody">
+                                <tr><td colspan="4" style="text-align: center; color: #8c93a6; padding: 24px;">No data recorded yet.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </section>
 
@@ -585,6 +619,7 @@
                 }
 
                 document.getElementById('sidebar').classList.remove('sidebar--open');
+                render();
             });
         });
 
@@ -751,6 +786,8 @@
                 renderRankingCards(filteredMembers, avgRate, isManagementOrAdmin, totalEvents);
             }
 
+            renderMembersDirectory(filteredMembers, totalEvents);
+            renderBlackGoldTracker(filteredMembers, totalEvents);
             renderAuditTable();
         }
 
@@ -764,6 +801,56 @@
             if (rateNum >= 75) return 'attended-high';
             if (rateNum >= 50) return 'attended-mid';
             return 'attended-low';
+        }
+
+        function renderMembersDirectory(filteredMembers, totalEvents) {
+            const body = document.getElementById('membersDirectoryBody');
+            if (!body) return;
+            if (filteredMembers.length === 0) {
+                body.innerHTML = `<tr><td colspan="4" style="text-align: center; color: #8c93a6; padding: 24px;">No members registered yet.</td></tr>`;
+                return;
+            }
+            body.innerHTML = filteredMembers.map((m, idx) => {
+                const rank = idx + 1;
+                const rateNum = totalEvents > 0 ? parseFloat(((m.attended / totalEvents) * 100).toFixed(1)) : 0;
+                const colorClass = getProgressBarColorClass(rateNum);
+                const attendedColorClass = getAttendedColorClass(rateNum);
+                const rankClass = rank === 1 ? 'rank-1' : (rank === 2 ? 'rank-2' : (rank === 3 ? 'rank-3' : ''));
+                return `
+                    <tr class="${rankClass}">
+                        <td class="col-rank">${rank}</td>
+                        <td class="col-name">${m.name}</td>
+                        <td class="col-attended"><span class="${attendedColorClass}">${m.attended}</span></td>
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <div class="progress-bar"><div class="progress-bar__fill ${colorClass}" style="width: ${rateNum}%;"></div></div>
+                                <span style="font-weight: 800;">${rateNum}%</span>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function renderBlackGoldTracker(filteredMembers, totalEvents) {
+            const body = document.getElementById('blackGoldTableBody');
+            if (!body) return;
+            if (filteredMembers.length === 0) {
+                body.innerHTML = `<tr><td colspan="4" style="text-align: center; color: #8c93a6; padding: 24px;">No data recorded yet.</td></tr>`;
+                return;
+            }
+            body.innerHTML = filteredMembers.map((m, idx) => {
+                const rank = idx + 1;
+                const rankClass = rank === 1 ? 'rank-1' : (rank === 2 ? 'rank-2' : (rank === 3 ? 'rank-3' : ''));
+                return `
+                    <tr class="${rankClass}">
+                        <td class="col-rank">${rank}</td>
+                        <td class="col-name">${m.name}</td>
+                        <td class="col-attended"><span style="color: var(--color-primary); font-weight: 800;">${m.attended}</span></td>
+                        <td><span style="color: var(--color-yellow-text); font-weight: 800;">Active Resource Log</span></td>
+                    </tr>
+                `;
+            }).join('');
         }
 
         function renderAttendanceTable(filteredMembers, avgRate, isManagementOrAdmin, totalEvents, totalAttendedCount) {
