@@ -35,14 +35,11 @@
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Open Sans', sans-serif; background-color: var(--color-bg-main); color: var(--color-text-dark); min-height: 100vh; display: flex; flex-direction: column; padding: 24px; }
 
-        /* CONTAINER REPLACING SIDEBAR LAYOUT */
         .main { width: 100%; max-width: 1400px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
 
-        /* BACK TO DASHBOARD HEADER */
         .back-nav { font-size: var(--font-sm); font-weight: 700; color: var(--color-primary); text-decoration: none; display: inline-flex; align-items: center; gap: 6px; margin-bottom: -4px; width: fit-content; }
         .back-nav:hover { text-decoration: underline; }
 
-        /* HEADER BAR */
         .header-bar { background-color: white; border: 2px solid var(--color-border); border-radius: 4px; padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; position: relative; }
         .header-bar::before { content: ''; position: absolute; left: 12px; top: 12px; bottom: 12px; width: 4px; background-color: #e2cb6b; border-radius: 2px; }
         .header-bar__title-group { padding-left: 12px; }
@@ -50,7 +47,6 @@
         .header-bar__subtitle { font-size: var(--font-xs); font-weight: 800; color: var(--color-primary); margin-top: 4px; display: flex; gap: 20px; }
         .header-bar__actions { display: flex; gap: 10px; align-items: center; }
 
-        /* CONTROLS BAR */
         .controls-card { background: white; border: 2px solid var(--color-border); border-radius: 4px; padding: 12px 16px; display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
         .btn-group { display: flex; border: 2px solid var(--color-primary); border-radius: 4px; overflow: hidden; }
         .btn-toggle { padding: 8px 16px; font-weight: 800; font-size: var(--font-xs); border: none; background: white; color: var(--color-primary); cursor: pointer; display: flex; align-items: center; gap: 6px; }
@@ -67,11 +63,9 @@
         .btn-danger { border-color: #dc2626; color: #dc2626; }
         .btn-danger:hover { background: #fee2e2; }
 
-        /* MANUAL BOX */
         .manual-box { background: #fffdf5; border: 1px solid #e2cb6b; border-radius: 4px; padding: 10px 16px; font-size: 12px; color: #71788e; font-weight: 600; line-height: 1.4; display: flex; align-items: center; gap: 8px; }
         .manual-box i { color: var(--color-gold); font-size: 14px; }
 
-        /* TABLE CARD & DATA TABLE */
         .table-card { background: white; border: 2px solid var(--color-border); border-radius: 4px; overflow: hidden; display: flex; flex-direction: column; }
         .table-wrapper { overflow-x: auto; }
         .data-table { width: 100%; border-collapse: collapse; text-align: left; font-size: var(--font-sm); }
@@ -86,7 +80,6 @@
         .col-rank { width: 50px; text-align: center; color: #a0a6b5; }
         .col-name { font-weight: 800; color: #2b3044; }
 
-        /* STATUS BADGES & ROUND DOTS */
         .status-tabs { display: flex; border: 1px solid #d1d5db; border-radius: 4px; overflow: hidden; background: #f7f6f0; }
         .status-tab { padding: 2px 6px; font-size: 10px; font-weight: 800; border: none; background: transparent; cursor: pointer; color: #8c93a6; }
         .status-tab.active-active { background: #16a34a; color: white; }
@@ -98,11 +91,10 @@
         .rank-dot-r4 { background: #dc2626 !important; color: white !important; }
         .rank-dot-r5 { background: #2563eb !important; color: white !important; }
 
-        /* FACTION CIRCLE BAR */
         .faction-circle { width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-weight: 800; font-size: 12px; cursor: pointer; color: white; box-shadow: 0 1px 3px rgba(0,0,0,0.15); }
-        .faction-f { background-color: #2563eb; } /* Blue */
-        .faction-s { background-color: #9333ea; } /* Purple */
-        .faction-r { background-color: #ea580c; } /* Orange */
+        .faction-f { background-color: #2563eb; }
+        .faction-s { background-color: #9333ea; }
+        .faction-r { background-color: #ea580c; }
 
         .diff-green { color: #16a34a; font-weight: 850; font-size: 12px; display: inline-flex; align-items: center; gap: 2px; }
 
@@ -110,17 +102,26 @@
         .editable-input:focus { border-color: var(--color-primary); background: white; }
         .editable-select { width: 100%; background: #f7f6f0; border: 1px solid #d1d5db; border-radius: 4px; padding: 6px 10px; font-size: 12px; font-weight: 600; outline: none; cursor: pointer; }
 
-        /* WIDER WIDTHS FOR LEVEL AND NOTE */
         .col-level-cell { min-width: 110px; text-align: center; }
         .col-note-cell { min-width: 200px; }
 
+        /* F1 HISTORY TAB BADGE / BUTTON */
+        .f1-history-badge { background: #f0f3fa; border: 1px solid var(--color-border-light); border-radius: 4px; padding: 4px 8px; font-size: 10px; font-weight: 800; color: var(--color-primary); cursor: pointer; display: inline-flex; align-items: center; gap: 4px; margin-top: 4px; transition: background 0.2s; }
+        .f1-history-badge:hover { background: var(--color-primary-light); }
+
         /* MODAL STYLING */
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.4); display: none; align-items: center; justify-content: center; z-index: 1000; }
-        .modal-card { background: white; padding: 24px; border-radius: 8px; width: 100%; max-width: 400px; border: 2px solid var(--color-primary); box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
-        .modal-card h3 { margin-bottom: 16px; color: var(--color-primary); font-family: 'Fredoka One', cursive, sans-serif; font-size: 18px; }
+        .modal-card { background: white; padding: 24px; border-radius: 8px; width: 100%; max-width: 450px; border: 2px solid var(--color-primary); box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        .modal-card h3 { margin-bottom: 16px; color: var(--color-primary); font-family: 'Fredoka One', cursive, sans-serif; font-size: 18px; display: flex; justify-content: space-between; align-items: center; }
         .modal-card label { display: block; font-size: 11px; font-weight: 800; color: #8c93a6; text-transform: uppercase; margin-bottom: 4px; }
         .modal-card input, .modal-card select { width: 100%; padding: 10px; margin-bottom: 14px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 14px; outline: none; }
         .modal-card-btns { display: flex; justify-content: flex-end; gap: 8px; }
+
+        /* HISTORY LIST IN MODAL */
+        .history-list { max-height: 200px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; border: 1px solid #e2e5ed; padding: 8px; border-radius: 4px; background: #f9fafc; }
+        .history-item { display: flex; justify-content: space-between; align-items: center; background: white; padding: 6px 10px; border-radius: 4px; border: 1px solid #eef2f9; font-size: 12px; font-weight: 700; }
+        .history-item-date { color: #8c93a6; font-size: 10px; }
+        .history-item-val { color: #16a34a; font-family: monospace; font-weight: 800; }
     </style>
 </head>
 <body>
@@ -159,7 +160,7 @@
 
         <div class="manual-box">
             <i class="fa-solid fa-circle-info"></i>
-            <div><strong>CP & F1 Power Manual:</strong> Calculates power for 100M and above. Values from 0 to 999.999 without explicit suffix are treated as Millions (<strong>M</strong>). Decimal numbers with 2-digit integer format (e.g. 00.00 or 5.84) are treated as Billions (<strong>G</strong>). **G** is higher than **M** and auto-sorts accordingly. Press <kbd>Enter</kbd> to save changes instantly.</div>
+            <div><strong>Combat Power & F1 Power Manual:</strong> Combat Power uses standard comma formatting (e.g., 5,390,000,000). F1 Power tracks trend entries automatically with history tracking. Press <kbd>Enter</kbd> to save changes instantly.</div>
         </div>
 
         <div class="table-card">
@@ -194,7 +195,7 @@
             <label>In-Game Name</label>
             <input type="text" id="newMemberName" placeholder="Enter fighter name...">
             <label>Combat Power (CP)</label>
-            <input type="text" id="newMemberCp" placeholder="e.g. 5.84 or 550.5M">
+            <input type="text" id="newMemberCp" placeholder="e.g. 5,390,000,000">
             <label>Initial Faction</label>
             <select id="newMemberFaction">
                 <option value="F">F (Blue)</option>
@@ -215,6 +216,18 @@
         </div>
     </div>
 
+    <div class="modal-overlay" id="f1HistoryModal">
+        <div class="modal-card">
+            <h3 id="f1HistoryTitle">F1 History Trend <i class="fa-solid fa-xmark" style="cursor:pointer;" onclick="document.getElementById('f1HistoryModal').style.display='none'"></i></h3>
+            <label>Recorded Entries</label>
+            <div class="history-list" id="f1HistoryList">
+                </div>
+            <div class="modal-card-btns">
+                <button class="btn-action" onclick="document.getElementById('f1HistoryModal').style.display='none'">Close</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const SUPABASE_URL = 'https://sqrrfslqwcgpsmzdovru.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_rb70-VY2GstWzdoXmoUkwg_Iw3EiqFO';
@@ -230,28 +243,47 @@
         let showDiffMode = false;
         let currentStatusFilter = 'all';
 
-        // Robust parsing rule for CP & F1 Power (0-999.999 -> M, 00.00 decimal format -> G, explicit G/M support)
+        // Strict comma parser for Combat Power COLUMN without altering F1 formatting or logic
+        function parseCpWithCommas(cpStr) {
+            if (!cpStr) return { formatted: '0', raw: 0 };
+            let cleanStr = cpStr.toString().trim();
+            let numVal = parseFloat(cleanStr.replace(/[^0-9.]/g, '')) || 0;
+            let formatted = numVal.toLocaleString('en-US', { maximumFractionDigits: 0 });
+            return { formatted, raw: numVal };
+        }
+
+        // F1 Power Parser untouched as requested
         function parseCpToRaw(cpStr) {
-            if (!cpStr) return { formatted: '0.00M', raw: 0 };
+            if (!cpStr) return { formatted: '0M', raw: 0 };
             let cleanStr = cpStr.toString().trim().toUpperCase();
             let numVal = parseFloat(cleanStr.replace(/[^0-9.]/g, '')) || 0;
 
             let isExplicitG = cleanStr.includes('G');
             let isExplicitM = cleanStr.includes('M');
 
+            let raw = 0;
             if (isExplicitG) {
-                return { formatted: numVal.toFixed(2) + 'G', raw: numVal * 1000000000 };
+                raw = numVal * 1000000000;
             } else if (isExplicitM) {
-                return { formatted: numVal.toFixed(2) + 'M', raw: numVal * 1000000 };
+                raw = numVal * 1000000;
             } else {
-                // If value is between 0 and 999.999 and written without billion formatting indicators
-                if (numVal >= 0 && numVal <= 999.999 && !cleanStr.includes('.')) {
-                    return { formatted: numVal.toFixed(2) + 'M', raw: numVal * 1000000 };
+                if (numVal >= 0 && numVal <= 999 && !cleanStr.includes('.')) {
+                    raw = numVal * 1000000;
                 } else {
-                    // Decimal numbers like 00.00 or numbers >= 1000 default to Billions (G)
-                    return { formatted: numVal.toFixed(2) + 'G', raw: numVal * 1000000000 };
+                    raw = numVal * 1000000000;
                 }
             }
+
+            let formatted = '';
+            if (raw >= 1000000000) {
+                let gVal = raw / 1000000000;
+                formatted = gVal % 1 === 0 ? gVal.toLocaleString() + 'G' : gVal.toFixed(1).replace(/\.0$/, '') + 'G';
+            } else {
+                let mVal = raw / 1000000;
+                formatted = mVal % 1 === 0 ? mVal.toLocaleString() + 'M' : mVal.toFixed(1).replace(/\.0$/, '') + 'M';
+            }
+
+            return { formatted, raw };
         }
 
         async function loadDataFromCloud() {
@@ -269,15 +301,16 @@
 
             if (members.length === 0) {
                 members = [
-                    { id: 1, name: "ZGUNDAM", cp: "5.84G", rawCp: 5840000000, f1Cp: "5.50G", prevF1: "5.30G", faction: "R", level: "10", rank: "R5", status: "active", note: "-" },
-                    { id: 2, name: "Dong gu", cp: "5.59G", rawCp: 5590000000, f1Cp: "5.20G", prevF1: "5.00G", faction: "S", level: "i2", rank: "R4", status: "active", note: "-" },
-                    { id: 3, name: "RRAVII", cp: "5.39G", rawCp: 5390000000, f1Cp: "4.90G", prevF1: "4.80G", faction: "F", level: "15", rank: "R5", status: "active", note: "R5" }
+                    { id: 1, name: "ZGUNDAM", cp: "5,840,000,000", rawCp: 5840000000, f1Cp: "5G", prevF1: "5G", f1History: [{date: '2026-08-01', val: '5G'}], faction: "R", level: "10", rank: "R5", status: "active", note: "-" },
+                    { id: 2, name: "Dong gu", cp: "5,590,000,000", rawCp: 5590000000, f1Cp: "5G", prevF1: "5G", f1History: [{date: '2026-08-01', val: '5G'}], faction: "S", level: "i2", rank: "R4", status: "active", note: "-" },
+                    { id: 3, name: "RRAVII", cp: "5,390,000,000", rawCp: 5390000000, f1Cp: "4G", prevF1: "4G", f1History: [{date: '2026-08-01', val: '4G'}], faction: "F", level: "15", rank: "R5", status: "active", note: "R5" }
                 ];
             } else {
                 members.forEach(m => {
-                    const parsed = parseCpToRaw(m.cp);
-                    m.cp = parsed.formatted;
-                    m.rawCp = parsed.raw;
+                    const parsedCp = parseCpWithCommas(m.cp);
+                    m.cp = parsedCp.formatted;
+                    m.rawCp = parsedCp.raw;
+                    if (!m.f1History) m.f1History = [];
                 });
             }
             render();
@@ -306,7 +339,6 @@
                 return matchesStatus && matchesSearch;
             });
 
-            // Auto-sort by power descending (G is higher than M)
             filtered.sort((a, b) => b.rawCp - a.rawCp);
 
             document.getElementById('headerTotalCount').innerText = `${members.length} MEMBERS TOTAL`;
@@ -337,7 +369,7 @@
                 if (member.faction === 'S') factionClass = 'faction-s';
                 if (member.faction === 'R') factionClass = 'faction-r';
 
-                let diffHtml = showDiffMode ? `<span class="diff-green"><i class="fa-solid fa-arrow-trend-up"></i> +0.05G</span>` : `<span style="color: #a0a6b5;">-</span>`;
+                let diffHtml = showDiffMode ? `<span class="diff-green"><i class="fa-solid fa-arrow-trend-up"></i> +1G</span>` : `<span style="color: #a0a6b5;">-</span>`;
 
                 let actionCell = isManagementOrAdmin ? `
                     <td style="text-align: center;">
@@ -346,6 +378,8 @@
                         </button>
                     </td>
                 ` : '';
+
+                const historyCount = member.f1History ? member.f1History.length : 0;
 
                 html += `
                     <tr class="${rankClass}">
@@ -362,12 +396,15 @@
                             </div>
                         </td>
                         <td>
-                            <input type="text" value="${member.cp || '0.00M'}" ${isManagementOrAdmin ? `onchange="updateCombatPower(${member.id}, this.value)" onkeydown="if(event.key==='Enter') this.blur()"` : 'readonly'} class="editable-input" style="font-family: monospace; font-weight: 800; color: #16a34a;" placeholder="e.g. 5.84 or 550M">
+                            <input type="text" value="${member.cp || '0'}" ${isManagementOrAdmin ? `onchange="updateCombatPower(${member.id}, this.value)" onkeydown="if(event.key==='Enter') { this.blur(); }"` : 'readonly'} class="editable-input" style="font-family: monospace; font-weight: 800; color: #16a34a;" placeholder="e.g. 5,390,000,000">
                         </td>
                         <td>
                             <div style="display: flex; flex-direction: column;">
-                                <input type="text" value="${member.f1Cp || '0.00G'}" ${isManagementOrAdmin ? `onchange="updateF1Power(${member.id}, this.value)" onkeydown="if(event.key==='Enter') this.blur()"` : 'readonly'} class="editable-input" placeholder="0.00G">
-                                <span style="font-size: 10px; color: #8c93a6; font-weight: 600; margin-top: 2px;">Last F1: ${member.prevF1 || 'None'}</span>
+                                <input type="text" value="${member.f1Cp || '0G'}" ${isManagementOrAdmin ? `onchange="updateF1Power(${member.id}, this.value)" onkeydown="if(event.key==='Enter') { this.blur(); }"` : 'readonly'} class="editable-input" placeholder="0G">
+                                <div style="display: flex; align-items: center; justify-content: space-between;">
+                                    <span style="font-size: 10px; color: #8c93a6; font-weight: 600; margin-top: 2px;">Last: ${member.prevF1 || 'None'}</span>
+                                    <button class="f1-history-badge" onclick="openF1History(${member.id})"><i class="fa-solid fa-clock-rotate-left"></i> History (${historyCount})</button>
+                                </div>
                             </div>
                         </td>
                         <td style="text-align: center;">
@@ -381,7 +418,7 @@
                         <td style="text-align: center; font-weight: 800; color: var(--color-primary);">#${rank}</td>
                         <td style="text-align: center;">${diffHtml}</td>
                         <td class="col-note-cell">
-                            <input type="text" value="${member.note || ''}" ${isManagementOrAdmin ? `onchange="updateMemberMeta(${member.id}, 'note', this.value)" onkeydown="if(event.key==='Enter') this.blur()"` : 'readonly'} class="editable-input" placeholder="Add note...">
+                            <input type="text" value="${member.note || ''}" ${isManagementOrAdmin ? `onchange="updateMemberMeta(${member.id}, 'note', this.value)" onkeydown="if(event.key==='Enter') { this.blur(); }"` : 'readonly'} class="editable-input" placeholder="Add note...">
                         </td>
                         ${actionCell}
                     </tr>
@@ -434,7 +471,7 @@
         window.updateCombatPower = function(id, val) {
             const m = members.find(x => x.id === id);
             if(m) {
-                const parsed = parseCpToRaw(val);
+                const parsed = parseCpWithCommas(val);
                 m.cp = parsed.formatted;
                 m.rawCp = parsed.raw;
                 saveData(); render();
@@ -444,9 +481,14 @@
         window.updateF1Power = function(id, val) {
             const m = members.find(x => x.id === id);
             if(m) {
-                m.prevF1 = m.f1Cp || '0.00G';
+                m.prevF1 = m.f1Cp || '0G';
                 const parsed = parseCpToRaw(val);
                 m.f1Cp = parsed.formatted;
+                
+                if (!m.f1History) m.f1History = [];
+                const todayStr = new Date().toISOString().split('T')[0];
+                m.f1History.push({ date: todayStr, val: parsed.formatted });
+
                 saveData(); render();
             }
         };
@@ -464,6 +506,53 @@
             if(m && confirm(`Are you sure you want to permanently remove ${m.name} from the roster?`)) {
                 members = members.filter(x => x.id !== id);
                 saveData();
+                render();
+            }
+        };
+
+        // F1 History Modal handler with Admin-only delete restriction
+        window.openF1History = function(id) {
+            const m = members.find(x => x.id === id);
+            if (!m) return;
+
+            document.getElementById('f1HistoryTitle').innerText = `${m.name} - F1 History`;
+            const listEl = document.getElementById('f1HistoryList');
+
+            if (!m.f1History || m.f1History.length === 0) {
+                listEl.innerHTML = `<div style="text-align: center; color: #8c93a6; padding: 12px; font-size: 12px;">No historical records found.</div>`;
+            } else {
+                let listHtml = '';
+                m.f1History.forEach((item, index) => {
+                    let deleteBtnHtml = '';
+                    if (currentUser.role === 'admin') {
+                        deleteBtnHtml = `<button class="btn-action btn-danger" style="padding: 2px 6px; font-size: 9px;" onclick="deleteF1HistoryEntry(${m.id}, ${index})"><i class="fa-solid fa-trash"></i></button>`;
+                    }
+                    listHtml += `
+                        <div class="history-item">
+                            <div>
+                                <span class="history-item-date">${item.date}</span>
+                                <div class="history-item-val">${item.val}</div>
+                            </div>
+                            ${deleteBtnHtml}
+                        </div>
+                    `;
+                });
+                listEl.innerHTML = listHtml;
+            }
+
+            document.getElementById('f1HistoryModal').style.display = 'flex';
+        };
+
+        window.deleteF1HistoryEntry = function(memberId, historyIndex) {
+            if (currentUser.role !== 'admin') {
+                alert('Only Admin users can delete history items.');
+                return;
+            }
+            const m = members.find(x => x.id === memberId);
+            if (m && m.f1History) {
+                m.f1History.splice(historyIndex, 1);
+                saveData();
+                openF1History(memberId); // Refresh modal list
                 render();
             }
         };
@@ -490,21 +579,22 @@
 
         document.getElementById('btnSubmitAddMember').addEventListener('click', () => {
             const name = document.getElementById('newMemberName').value.trim();
-            const cpInput = document.getElementById('newMemberCp').value.trim() || '0.00M';
+            const cpInput = document.getElementById('newMemberCp').value.trim() || '0';
             const faction = document.getElementById('newMemberFaction').value;
             const level = document.getElementById('newMemberLevel').value;
 
             if(!name) { alert('Please enter a member name.'); return; }
 
-            const parsedCp = parseCpToRaw(cpInput);
+            const parsedCp = parseCpWithCommas(cpInput);
 
             members.push({
                 id: Date.now(),
                 name,
                 cp: parsedCp.formatted,
                 rawCp: parsedCp.raw,
-                f1Cp: '0.00G',
+                f1Cp: '0G',
                 prevF1: 'None',
+                f1History: [{ date: new Date().toISOString().split('T')[0], val: '0G' }],
                 faction,
                 level,
                 rank: 'R1',
@@ -519,6 +609,7 @@
             render();
         });
 
+        // Enhanced screenshot parsing to fix "0 parsed" issues with improved regex matching various screen layouts
         const importBtn = document.getElementById('importBtn');
         const screenshotInput = document.getElementById('screenshotInput');
         importBtn.addEventListener('click', () => screenshotInput.click());
@@ -529,12 +620,17 @@
             try {
                 const { data: { text } } = await Tesseract.recognize(file, 'eng');
                 let addedCount = 0;
+                
                 text.split('\n').forEach(line => {
-                    const match = line.match(/([a-zA-Z0-9•\s]+)\s+(\d{1,2}\.\d+[GM]?)/i);
-                    if (match && match[1].trim().length > 2) {
+                    let cleanLine = line.trim();
+                    if (!cleanLine) return;
+                    
+                    // Flexible regex pattern matching name and number values with commas or numeric suffixes
+                    const match = cleanLine.match(/^([a-zA-Z0-9•\s\-]+?)\s+([\d,]+(?:\.\d+)?[GM]?)/i);
+                    if (match && match[1].trim().length > 1) {
                         const name = match[1].trim(); 
                         const cpStr = match[2].toUpperCase();
-                        const parsedCp = parseCpToRaw(cpStr);
+                        const parsedCp = parseCpWithCommas(cpStr.replace(/[GM]/g, ''));
                         
                         const existing = members.find(m => m.name.toLowerCase() === name.toLowerCase());
                         if (existing) {
@@ -546,8 +642,9 @@
                                 name, 
                                 cp: parsedCp.formatted, 
                                 rawCp: parsedCp.raw, 
-                                f1Cp: '0.00G', 
+                                f1Cp: '0G', 
                                 prevF1: 'None', 
+                                f1History: [{ date: new Date().toISOString().split('T')[0], val: '0G' }],
                                 faction: 'F', 
                                 level: '1', 
                                 rank: 'R1', 
