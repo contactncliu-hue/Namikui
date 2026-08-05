@@ -67,6 +67,10 @@
         .btn-danger { border-color: #dc2626; color: #dc2626; }
         .btn-danger:hover { background: #fee2e2; }
 
+        /* MANUAL BOX */
+        .manual-box { background: #fffdf5; border: 1px solid #e2cb6b; border-radius: 4px; padding: 10px 16px; font-size: 12px; color: #71788e; font-weight: 600; line-height: 1.4; display: flex; align-items: center; gap: 8px; }
+        .manual-box i { color: var(--color-gold); font-size: 14px; }
+
         /* TABLE CARD & DATA TABLE */
         .table-card { background: white; border: 2px solid var(--color-border); border-radius: 4px; overflow: hidden; display: flex; flex-direction: column; }
         .table-wrapper { overflow-x: auto; }
@@ -153,6 +157,11 @@
             <button class="btn-action" id="btnToggleDiff"><i class="fa-solid fa-chart-line mr-1"></i> ± DIFF</button>
         </section>
 
+        <div class="manual-box">
+            <i class="fa-solid fa-circle-info"></i>
+            <div><strong>CP & F1 Power Manual:</strong> Calculates power for 100M and above. Values from 0 to 999.999 without explicit suffix are treated as Millions (<strong>M</strong>). Decimal numbers with 2-digit integer format (e.g. 00.00 or 5.84) are treated as Billions (<strong>G</strong>). **G** is higher than **M** and auto-sorts accordingly. Press <kbd>Enter</kbd> to save changes instantly.</div>
+        </div>
+
         <div class="table-card">
             <div class="table-wrapper">
                 <table class="data-table">
@@ -185,7 +194,7 @@
             <label>In-Game Name</label>
             <input type="text" id="newMemberName" placeholder="Enter fighter name...">
             <label>Combat Power (CP)</label>
-            <input type="text" id="newMemberCp" placeholder="e.g. 5.84 or 5.84G">
+            <input type="text" id="newMemberCp" placeholder="e.g. 5.84 or 550.5M">
             <label>Initial Faction</label>
             <select id="newMemberFaction">
                 <option value="F">F (Blue)</option>
@@ -221,7 +230,7 @@
         let showDiffMode = false;
         let currentStatusFilter = 'all';
 
-        // Helper function to parse CP string and assign correct scale (M vs G) + compute raw value
+        // Robust parsing rule for CP & F1 Power (0-999.999 -> M, 00.00 decimal format -> G, explicit G/M support)
         function parseCpToRaw(cpStr) {
             if (!cpStr) return { formatted: '0.00M', raw: 0 };
             let cleanStr = cpStr.toString().trim().toUpperCase();
@@ -235,13 +244,11 @@
             } else if (isExplicitM) {
                 return { formatted: numVal.toFixed(2) + 'M', raw: numVal * 1000000 };
             } else {
-                // Implicit rule: 0 - 999.999 assumed M, decimal numbers / >= 1000 or based on format (e.g. 00.00 format assumed G)
-                // If user enters format like 5.84 or similar decimal numbers < 1000, interpret as G if it has a decimal point layout representing billions, or use range threshold.
-                // Let's implement your exact request: "0-999.999 immediately assume it is M when decimal numbers 00.00 immediately assume it is G"
+                // If value is between 0 and 999.999 and written without billion formatting indicators
                 if (numVal >= 0 && numVal <= 999.999 && !cleanStr.includes('.')) {
                     return { formatted: numVal.toFixed(2) + 'M', raw: numVal * 1000000 };
                 } else {
-                    // Check if decimal numbers format like 00.00
+                    // Decimal numbers like 00.00 or numbers >= 1000 default to Billions (G)
                     return { formatted: numVal.toFixed(2) + 'G', raw: numVal * 1000000000 };
                 }
             }
@@ -267,7 +274,6 @@
                     { id: 3, name: "RRAVII", cp: "5.39G", rawCp: 5390000000, f1Cp: "4.90G", prevF1: "4.80G", faction: "F", level: "15", rank: "R5", status: "active", note: "R5" }
                 ];
             } else {
-                // Ensure legacy data is normalized with correct rawCp using the new rule
                 members.forEach(m => {
                     const parsed = parseCpToRaw(m.cp);
                     m.cp = parsed.formatted;
@@ -300,7 +306,7 @@
                 return matchesStatus && matchesSearch;
             });
 
-            // Automatically sort by power (rawCp) descending, G is higher than M
+            // Auto-sort by power descending (G is higher than M)
             filtered.sort((a, b) => b.rawCp - a.rawCp);
 
             document.getElementById('headerTotalCount').innerText = `${members.length} MEMBERS TOTAL`;
@@ -355,10 +361,12 @@
                                 <div class="rank-dot ${rankDotClass}" onclick="cycleRank(${member.id})" title="Click to cycle rank">${member.rank}</div>
                             </div>
                         </td>
-                        <td style="font-family: monospace; font-weight: 800; color: #16a34a;">${member.cp}</td>
+                        <td>
+                            <input type="text" value="${member.cp || '0.00M'}" ${isManagementOrAdmin ? `onchange="updateCombatPower(${member.id}, this.value)" onkeydown="if(event.key==='Enter') this.blur()"` : 'readonly'} class="editable-input" style="font-family: monospace; font-weight: 800; color: #16a34a;" placeholder="e.g. 5.84 or 550M">
+                        </td>
                         <td>
                             <div style="display: flex; flex-direction: column;">
-                                <input type="text" value="${member.f1Cp || '0.00G'}" ${isManagementOrAdmin ? `onchange="updateF1Power(${member.id}, this.value)"` : 'readonly'} class="editable-input" placeholder="0.00G">
+                                <input type="text" value="${member.f1Cp || '0.00G'}" ${isManagementOrAdmin ? `onchange="updateF1Power(${member.id}, this.value)" onkeydown="if(event.key==='Enter') this.blur()"` : 'readonly'} class="editable-input" placeholder="0.00G">
                                 <span style="font-size: 10px; color: #8c93a6; font-weight: 600; margin-top: 2px;">Last F1: ${member.prevF1 || 'None'}</span>
                             </div>
                         </td>
@@ -373,7 +381,7 @@
                         <td style="text-align: center; font-weight: 800; color: var(--color-primary);">#${rank}</td>
                         <td style="text-align: center;">${diffHtml}</td>
                         <td class="col-note-cell">
-                            <input type="text" value="${member.note || ''}" ${isManagementOrAdmin ? `onchange="updateMemberMeta(${member.id}, 'note', this.value)"` : 'readonly'} class="editable-input" placeholder="Add note...">
+                            <input type="text" value="${member.note || ''}" ${isManagementOrAdmin ? `onchange="updateMemberMeta(${member.id}, 'note', this.value)" onkeydown="if(event.key==='Enter') this.blur()"` : 'readonly'} class="editable-input" placeholder="Add note...">
                         </td>
                         ${actionCell}
                     </tr>
@@ -423,11 +431,22 @@
             }
         };
 
+        window.updateCombatPower = function(id, val) {
+            const m = members.find(x => x.id === id);
+            if(m) {
+                const parsed = parseCpToRaw(val);
+                m.cp = parsed.formatted;
+                m.rawCp = parsed.raw;
+                saveData(); render();
+            }
+        };
+
         window.updateF1Power = function(id, val) {
             const m = members.find(x => x.id === id);
             if(m) {
                 m.prevF1 = m.f1Cp || '0.00G';
-                m.f1Cp = val;
+                const parsed = parseCpToRaw(val);
+                m.f1Cp = parsed.formatted;
                 saveData(); render();
             }
         };
@@ -471,7 +490,7 @@
 
         document.getElementById('btnSubmitAddMember').addEventListener('click', () => {
             const name = document.getElementById('newMemberName').value.trim();
-            const cpInput = document.getElementById('newMemberCp').value.trim() || '0.00G';
+            const cpInput = document.getElementById('newMemberCp').value.trim() || '0.00M';
             const faction = document.getElementById('newMemberFaction').value;
             const level = document.getElementById('newMemberLevel').value;
 
