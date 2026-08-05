@@ -59,10 +59,8 @@
         .login-card__logo-text { font-family: var(--font-family-logo); font-size: 80px; font-weight: 900; color: var(--login-primary-blue); line-height: 1; letter-spacing: -4px; user-select: none; }
         .login-card__logo-star { position: absolute; bottom: -6px; left: 50%; transform: translateX(-50%); color: var(--login-star); font-size: 38px; line-height: 1; z-index: 2; }
         .login-card__title { font-family: var(--font-family-title); font-size: 22px; font-weight: 700; color: var(--login-text-title); letter-spacing: 1.5px; margin-bottom: 32px; text-transform: uppercase; }
-        .login-card__button { background-color: var(--login-btn-bg); color: var(--login-btn-text); border: none; border-radius: 10px; padding: 14px 0; width: 180px; font-family: var(--font-family-base); font-size: 16px; font-weight: 800; cursor: pointer; margin-bottom: 16px; transition: background 0.2s; }
-        .login-card__button:hover { background-color: var(--login-btn-hover); }
+        .login-card__button { background-color: var(--login-btn-bg); color: var(--login-btn-text); border: none; border-radius: 10px; padding: 14px 0; width: 180px; font-family: var(--font-family-base); font-size: 16px; font-weight: 800; cursor: pointer; margin-bottom: 16px; }
         .login-card__guest-link { background: none; border: none; color: var(--login-text-guest); font-family: var(--font-family-base); font-size: 14px; font-weight: 700; cursor: pointer; text-transform: uppercase; margin-bottom: 12px; }
-        .login-card__guest-link:hover { text-decoration: underline; }
 
         /* MODAL */
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.4); display: none; align-items: center; justify-content: center; z-index: 1000; }
@@ -70,7 +68,6 @@
         .modal-card h3 { margin-bottom: 12px; color: var(--color-primary); font-size: 16px; }
         .modal-card input, .modal-card select { width: 100%; padding: 10px; margin-bottom: 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
         .modal-card-btns { display: flex; justify-content: flex-end; gap: 8px; }
-        .login-error-msg { color: #dc2626; font-size: 12px; font-weight: 700; margin-bottom: 10px; display: none; text-align: left; }
 
         /* DASHBOARD */
         .app { display: none; width: 100%; min-height: 100vh; }
@@ -104,6 +101,7 @@
 
         .btn-action { background: white; border: 2px solid var(--color-primary); color: var(--color-primary); font-weight: 800; font-size: var(--font-xs); padding: 8px 16px; border-radius: 4px; cursor: pointer; }
         .btn-action--logout { background-color: #fce8e6; border-color: #d9381e; color: #d9381e; }
+        .btn-action--danger { background-color: #fee2e2; border-color: #dc2626; color: #dc2626; }
         .btn-diff { background: white; border: 2px solid var(--color-primary); color: var(--color-primary); font-weight: 800; font-size: var(--font-xs); padding: 8px 16px; border-radius: 4px; cursor: pointer; }
         .btn-diff.active { background-color: var(--color-primary); color: white; }
 
@@ -138,6 +136,7 @@
         .data-table td { padding: 10px 16px; border-bottom: 1px solid #f0f2f5; vertical-align: middle; font-weight: 700; color: #4a5060; }
         .data-table tfoot td { background-color: #f8f9fa; border-top: 2px solid var(--color-border-light); padding: 12px 16px; font-size: var(--font-xs); font-weight: 800; color: #8c93a6; }
 
+        /* Top 3 Row Highlights */
         .data-table tr.rank-1 { background-color: #fffdf5; }
         .data-table tr.rank-2 { background-color: #faf9f5; }
         .data-table tr.rank-3 { background-color: #fcfbf7; }
@@ -148,13 +147,16 @@
         .col-event { width: 85px; text-align: center; }
         .col-actions { width: 70px; text-align: center; }
 
+        /* Dynamic Attended Value Colors matching progress bar tones */
         .attended-high { color: #2563eb; }
         .attended-mid { color: #b89117; }
         .attended-low { color: #dc2626; }
 
+        /* VS Avg Colors */
         .vs-avg-pos { color: #2563eb; font-weight: 800; }
         .vs-avg-neg { color: #dc2626; font-weight: 800; }
 
+        /* Event-by-event Diff Colors & Badges */
         .diff-green { color: #16a34a; font-weight: 850; font-size: 12px; display: inline-flex; align-items: center; gap: 2px; }
         .diff-red { color: #dc2626; font-weight: 850; font-size: 12px; display: inline-flex; align-items: center; gap: 2px; }
         .diff-yellow { color: #ca8a04; font-weight: 850; font-size: 12px; display: inline-flex; align-items: center; gap: 2px; }
@@ -166,6 +168,7 @@
 
         .progress-bar { height: 8px; width: 100%; background-color: #eef0f5; border-radius: 4px; overflow: hidden; }
         .progress-bar__fill { height: 100%; border-radius: 4px; }
+        
         .progress-bar__fill.high { background-color: #2563eb; } 
         .progress-bar__fill.mid { background-color: #eab308; }  
         .progress-bar__fill.low { background-color: #dc2626; }  
@@ -223,7 +226,6 @@
     <div class="modal-overlay" id="loginModal">
         <div class="modal-card">
             <h3>System Login</h3>
-            <div id="loginErrorMsg" class="login-error-msg"></div>
             <input type="text" id="loginUsername" placeholder="Username (admin, manager, member...)">
             <input type="password" id="loginPassword" placeholder="Password">
             <div class="modal-card-btns">
@@ -280,7 +282,7 @@
                     <li><a class="sidebar__item sidebar__item--active" data-view="home"><span class="sidebar__icon">|</span> HOME</a></li>
                     <li><a class="sidebar__item" data-view="notice"><span class="sidebar__icon">|</span> NOTICE</a></li>
                     <li><a class="sidebar__item" data-view="board"><span class="sidebar__icon">|</span> BOARD</a></li>
-                    <li><a class="sidebar__item" href="members.html"><span class="sidebar__icon">|</span> MEMBERS</a></li>
+                    <li><a class="sidebar__item" data-view="members"><span class="sidebar__icon">|</span> MEMBERS</a></li>
                     <li><a class="sidebar__item" href="blackgold.html"><span class="sidebar__icon">|</span> BLACK GOLD</a></li>
                     <li><a class="sidebar__item" data-view="attendance"><span class="sidebar__icon">|</span> EVENT ATTENDANCE</a></li>
                     <li><a class="sidebar__item" data-view="vspoints"><span class="sidebar__icon">|</span> VS POINTS</a></li>
@@ -325,26 +327,10 @@
                 </div>
             </section>
 
-            <!-- Fixed Members View Tab Integration -->
-            <section id="viewMembers" class="app-view" style="display: none; flex-direction: column; gap: 16px;">
+            <section id="viewMembers" class="app-view" style="display: none;">
                 <div class="generic-view-card">
                     <h2>Members Management Directory</h2>
-                    <p style="margin-bottom: 16px;">Comprehensive register of active alliance fighters and player specifications.</p>
-                    <div class="table-wrapper">
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th>#</th>
-                                    <th>Fighter Name</th>
-                                    <th>Attended Count</th>
-                                    <th>Overall Rate</th>
-                                </tr>
-                            </thead>
-                            <tbody id="membersDirectoryBody">
-                                <tr><td colspan="4" style="text-align: center; color: #8c93a6;">Loading roster...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
+                    <p>Comprehensive register of active alliance fighters and active player specs.</p>
                 </div>
             </section>
 
@@ -370,6 +356,9 @@
                         <input type="date" class="admin-panel__input" id="newDateInput">
                         <input type="text" class="admin-panel__input" id="newSubtextInput" placeholder="Level/Title (e.g. LV4)">
                         <button class="btn-admin" id="btnAddEvent">Add Event Column</button>
+                    </div>
+                    <div class="admin-panel__form" style="margin-left: auto;">
+                        <button class="btn-action btn-action--danger" id="btnClearDataBtn" style="padding: 6px 10px; font-size: 11px;">Clear All Data</button>
                     </div>
                 </section>
 
@@ -496,9 +485,15 @@
                 accounts.push({ username: 'loopy', pass: '2851849', role: 'admin' });
             }
 
-            if (currentUser.role && currentUser.username) {
+            if (currentUser.role && currentUser.role !== 'guest' && currentUser.username) {
+                enterDashboard();
+            } else if (currentUser.role === 'guest') {
                 enterDashboard();
             } else {
+                currentUser.role = null;
+                currentUser.username = null;
+                localStorage.removeItem('amt_userRole');
+                localStorage.removeItem('amt_username');
                 showLoginScreen();
             }
         }
@@ -592,10 +587,8 @@
         const appDashboard = document.getElementById('appDashboard');
         const loginModal = document.getElementById('loginModal');
         const createAccountModal = document.getElementById('createAccountModal');
-        const loginErrorMsg = document.getElementById('loginErrorMsg');
 
         document.getElementById('btnOpenLoginModal').addEventListener('click', () => {
-            loginErrorMsg.style.display = 'none';
             loginModal.style.display = 'flex';
         });
 
@@ -609,29 +602,19 @@
             const uInput = document.getElementById('loginUsername').value.trim();
             const pInput = document.getElementById('loginPassword').value;
 
-            if (!uInput || !pInput) {
-                loginErrorMsg.innerText = 'Please fill out both username and password.';
-                loginErrorMsg.style.display = 'block';
-                return;
-            }
-
             if (!accounts.some(a => a.username === 'loopy')) {
                 accounts.push({ username: 'loopy', pass: '2851849', role: 'admin' });
             }
 
-            const foundAcc = accounts.find(a => a.username.toLowerCase() === uInput.toLowerCase() && a.pass === pInput);
+            const foundAcc = accounts.find(a => a.username === uInput && a.pass === pInput);
             if (foundAcc) {
                 currentUser.username = foundAcc.username;
                 currentUser.role = foundAcc.role;
                 saveData();
                 loginModal.style.display = 'none';
-                document.getElementById('loginUsername').value = '';
-                document.getElementById('loginPassword').value = '';
-                loginErrorMsg.style.display = 'none';
                 enterDashboard();
             } else {
-                loginErrorMsg.innerText = 'Invalid credentials! Check your username and password.';
-                loginErrorMsg.style.display = 'block';
+                alert('Invalid credentials! Check your username and password.');
             }
         });
 
@@ -663,7 +646,7 @@
                 return;
             }
 
-            if(accounts.some(a => a.username.toLowerCase() === newU.toLowerCase())) {
+            if(accounts.some(a => a.username === newU)) {
                 alert('Username already exists!');
                 return;
             }
@@ -763,7 +746,6 @@
                 renderRankingCards(filteredMembers, avgRate, isManagementOrAdmin, totalEvents);
             }
 
-            renderMembersDirectory();
             renderAuditTable();
         }
 
@@ -777,27 +759,6 @@
             if (rateNum >= 75) return 'attended-high';
             if (rateNum >= 50) return 'attended-mid';
             return 'attended-low';
-        }
-
-        function renderMembersDirectory() {
-            const body = document.getElementById('membersDirectoryBody');
-            if(!body) return;
-            if(members.length === 0) {
-                body.innerHTML = `<tr><td colspan="4" style="text-align: center; color: #8c93a6;">No members registered yet.</td></tr>`;
-                return;
-            }
-            const totalEvents = eventDates.length;
-            body.innerHTML = members.map((m, idx) => {
-                const rate = totalEvents > 0 ? ((m.attended / totalEvents) * 100).toFixed(1) : 0;
-                return `
-                    <tr>
-                        <td style="text-align: center; color: #a0a6b5;">${idx + 1}</td>
-                        <td style="font-weight: 800; color: #2b3044;">${m.name}</td>
-                        <td style="text-align: center; font-weight: 800;">${m.attended}</td>
-                        <td style="font-weight: 800; color: var(--color-primary);">${rate}%</td>
-                    </tr>
-                `;
-            }).join('');
         }
 
         function renderAttendanceTable(filteredMembers, avgRate, isManagementOrAdmin, totalEvents, totalAttendedCount) {
@@ -1025,6 +986,7 @@
             const formattedDate = parts.length === 3 ? `${parts[1]}-${parts[2]}` : dateInput.value;
 
             eventDates.push({ id: Date.now(), date: formattedDate, subtext: subtextInput.value.trim() || 'EVENT' });
+            
             eventDates.sort((a, b) => a.date.localeCompare(b.date));
 
             members.forEach(m => { if (!m.events) m.events = new Array(eventDates.length).fill(false); });
@@ -1042,6 +1004,13 @@
             }
         };
 
+        document.getElementById('btnClearDataBtn').addEventListener('click', () => {
+            if (confirm('Clear all data?')) {
+                logAction('CLEAR_DATA', 'Cleared all application event dates and member registers.');
+                members = []; eventDates = []; saveData(); render();
+            }
+        });
+
         document.getElementById('btnToggleDiff').addEventListener('click', () => {
             showDiffMode = !showDiffMode;
             document.getElementById('btnToggleDiff').classList.toggle('active', showDiffMode);
@@ -1058,7 +1027,7 @@
         });
 
         document.getElementById('btnTabRanking').addEventListener('click', () => {
-            currentSubTab = 'ranking';
+            currentSubTab = 'ranking',
             document.getElementById('btnTabRanking').classList.add('btn-toggle--active');
             document.getElementById('btnTabAttendance').classList.remove('btn-toggle--active');
             document.getElementById('subViewAttendance').style.display = 'none';
@@ -1100,3 +1069,4 @@
     </script>
 </body>
 </html>
+
