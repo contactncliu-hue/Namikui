@@ -179,14 +179,13 @@
         </div>
     </main>
 
-    <!-- ADD MEMBER MODAL -->
     <div class="modal-overlay" id="addMemberModal">
         <div class="modal-card">
             <h3>Add New Member</h3>
             <label>In-Game Name</label>
             <input type="text" id="newMemberName" placeholder="Enter fighter name...">
             <label>Combat Power (CP)</label>
-            <input type="text" id="newMemberCp" placeholder="e.g. 5.84G">
+            <input type="text" id="newMemberCp" placeholder="e.g. 5.84 or 5.84G">
             <label>Initial Faction</label>
             <select id="newMemberFaction">
                 <option value="F">F (Blue)</option>
@@ -222,6 +221,32 @@
         let showDiffMode = false;
         let currentStatusFilter = 'all';
 
+        // Helper function to parse CP string and assign correct scale (M vs G) + compute raw value
+        function parseCpToRaw(cpStr) {
+            if (!cpStr) return { formatted: '0.00M', raw: 0 };
+            let cleanStr = cpStr.toString().trim().toUpperCase();
+            let numVal = parseFloat(cleanStr.replace(/[^0-9.]/g, '')) || 0;
+
+            let isExplicitG = cleanStr.includes('G');
+            let isExplicitM = cleanStr.includes('M');
+
+            if (isExplicitG) {
+                return { formatted: numVal.toFixed(2) + 'G', raw: numVal * 1000000000 };
+            } else if (isExplicitM) {
+                return { formatted: numVal.toFixed(2) + 'M', raw: numVal * 1000000 };
+            } else {
+                // Implicit rule: 0 - 999.999 assumed M, decimal numbers / >= 1000 or based on format (e.g. 00.00 format assumed G)
+                // If user enters format like 5.84 or similar decimal numbers < 1000, interpret as G if it has a decimal point layout representing billions, or use range threshold.
+                // Let's implement your exact request: "0-999.999 immediately assume it is M when decimal numbers 00.00 immediately assume it is G"
+                if (numVal >= 0 && numVal <= 999.999 && !cleanStr.includes('.')) {
+                    return { formatted: numVal.toFixed(2) + 'M', raw: numVal * 1000000 };
+                } else {
+                    // Check if decimal numbers format like 00.00
+                    return { formatted: numVal.toFixed(2) + 'G', raw: numVal * 1000000000 };
+                }
+            }
+        }
+
         async function loadDataFromCloud() {
             try {
                 const { data, error } = await db.from('app_data').select('*');
@@ -241,6 +266,13 @@
                     { id: 2, name: "Dong gu", cp: "5.59G", rawCp: 5590000000, f1Cp: "5.20G", prevF1: "5.00G", faction: "S", level: "i2", rank: "R4", status: "active", note: "-" },
                     { id: 3, name: "RRAVII", cp: "5.39G", rawCp: 5390000000, f1Cp: "4.90G", prevF1: "4.80G", faction: "F", level: "15", rank: "R5", status: "active", note: "R5" }
                 ];
+            } else {
+                // Ensure legacy data is normalized with correct rawCp using the new rule
+                members.forEach(m => {
+                    const parsed = parseCpToRaw(m.cp);
+                    m.cp = parsed.formatted;
+                    m.rawCp = parsed.raw;
+                });
             }
             render();
         }
@@ -268,6 +300,7 @@
                 return matchesStatus && matchesSearch;
             });
 
+            // Automatically sort by power (rawCp) descending, G is higher than M
             filtered.sort((a, b) => b.rawCp - a.rawCp);
 
             document.getElementById('headerTotalCount').innerText = `${members.length} MEMBERS TOTAL`;
@@ -438,20 +471,19 @@
 
         document.getElementById('btnSubmitAddMember').addEventListener('click', () => {
             const name = document.getElementById('newMemberName').value.trim();
-            const cp = document.getElementById('newMemberCp').value.trim() || '0.00G';
+            const cpInput = document.getElementById('newMemberCp').value.trim() || '0.00G';
             const faction = document.getElementById('newMemberFaction').value;
             const level = document.getElementById('newMemberLevel').value;
 
             if(!name) { alert('Please enter a member name.'); return; }
 
-            let rawCp = parseFloat(cp) * (cp.includes('G') ? 1000000000 : 1000000);
-            if(isNaN(rawCp)) rawCp = 1000;
+            const parsedCp = parseCpToRaw(cpInput);
 
             members.push({
                 id: Date.now(),
                 name,
-                cp,
-                rawCp,
+                cp: parsedCp.formatted,
+                rawCp: parsedCp.raw,
                 f1Cp: '0.00G',
                 prevF1: 'None',
                 faction,
@@ -479,22 +511,22 @@
                 const { data: { text } } = await Tesseract.recognize(file, 'eng');
                 let addedCount = 0;
                 text.split('\n').forEach(line => {
-                    const match = line.match(/([a-zA-Z0-9•\s]+)\s+(\d{1,2}\.\d+[GM])/i);
+                    const match = line.match(/([a-zA-Z0-9•\s]+)\s+(\d{1,2}\.\d+[GM]?)/i);
                     if (match && match[1].trim().length > 2) {
                         const name = match[1].trim(); 
                         const cpStr = match[2].toUpperCase();
-                        let rawVal = parseFloat(cpStr) * (cpStr.includes('G') ? 1000000000 : 1000000);
+                        const parsedCp = parseCpToRaw(cpStr);
                         
                         const existing = members.find(m => m.name.toLowerCase() === name.toLowerCase());
                         if (existing) {
-                            existing.cp = cpStr;
-                            existing.rawCp = rawVal;
+                            existing.cp = parsedCp.formatted;
+                            existing.rawCp = parsedCp.raw;
                         } else {
                             members.push({ 
                                 id: Date.now() + Math.random(), 
                                 name, 
-                                cp: cpStr, 
-                                rawCp: rawVal, 
+                                cp: parsedCp.formatted, 
+                                rawCp: parsedCp.raw, 
                                 f1Cp: '0.00G', 
                                 prevF1: 'None', 
                                 faction: 'F', 
