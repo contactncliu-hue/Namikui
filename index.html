@@ -156,10 +156,10 @@
         .vs-avg-pos { color: #2563eb; font-weight: 800; }
         .vs-avg-neg { color: #dc2626; font-weight: 800; }
 
-        /* Diff Colors & Badges */
-        .diff-pos { color: #16a34a; font-weight: 850; font-size: 12px; }
-        .diff-neg { color: #dc2626; font-weight: 850; font-size: 12px; }
-        .diff-zero { color: #ca8a04; font-weight: 850; font-size: 12px; }
+        /* Event-by-event Diff Colors & Badges */
+        .diff-green { color: #16a34a; font-weight: 850; font-size: 12px; display: inline-flex; align-items: center; gap: 2px; }
+        .diff-red { color: #dc2626; font-weight: 850; font-size: 12px; display: inline-flex; align-items: center; gap: 2px; }
+        .diff-yellow { color: #ca8a04; font-weight: 850; font-size: 12px; display: inline-flex; align-items: center; gap: 2px; }
 
         .check-toggle { cursor: pointer; padding: 4px 8px; border-radius: 4px; user-select: none; }
         .check-icon { color: var(--color-primary); font-weight: 800; font-size: 14px; }
@@ -185,8 +185,8 @@
         .ranking-card--rank-3 .ranking-card__badge { background: #c28859; color: white; }
         .ranking-card__name { font-weight: 800; font-size: var(--font-md); color: #2b3044; }
         .ranking-card__subtext { font-size: var(--font-xs); color: #8c93a6; font-weight: 600; }
-        .ranking-card__right { display: flex; align-items: center; gap: 20px; flex-grow: 1; justify-content: flex-end; max-width: 520px; }
-        .ranking-card__bar-wrapper { flex-grow: 1; max-width: 180px; }
+        .ranking-card__right { display: flex; align-items: center; gap: 20px; flex-grow: 1; justify-content: flex-end; max-width: 580px; }
+        .ranking-card__bar-wrapper { flex-grow: 1; max-width: 160px; }
 
         .btn-icon-action { background: none; border: none; cursor: pointer; padding: 2px 4px; font-size: 13px; font-weight: 800; color: #dc2626; }
         .btn-icon-action:hover { opacity: 0.8; }
@@ -279,13 +279,13 @@
             </div>
             <nav class="sidebar__nav">
                 <ul class="sidebar__menu">
-                    <li><a class="sidebar__item sidebar__item--active" data-view="home"><span class="sidebar__icon">|</span> HOME</a></li>
-                    <li><a class="sidebar__item" data-view="notice"><span class="sidebar__icon">|</span> NOTICE</a></li>
-                    <li><a class="sidebar__item" data-view="board"><span class="sidebar__icon">|</span> BOARD</a></li>
-                    <li><a class="sidebar__item" data-view="members"><span class="sidebar__icon">|</span> MEMBERS</a></li>
-                    <li><a class="sidebar__item" href="blackgold.html"><span class="sidebar__icon">|</span> BLACK GOLD</a></li>
-                    <li><a class="sidebar__item" data-view="attendance"><span class="sidebar__icon">|</span> EVENT ATTENDANCE</a></li>
-                    <li><a class="sidebar__item" data-view="vspoints"><span class="sidebar__icon">|</span> VS POINTS</a></li>
+                    <li><a class="sidebar__item sidebar__item--active" data-view="home"><span class="sidebar__icon">✧</span> HOME</a></li>
+                    <li><a class="sidebar__item" data-view="notice"><span class="sidebar__icon">✧</span> NOTICE</a></li>
+                    <li><a class="sidebar__item" data-view="board"><span class="sidebar__icon">✧</span> BOARD</a></li>
+                    <li><a class="sidebar__item" data-view="members"><span class="sidebar__icon">✧</span> MEMBERS</a></li>
+                    <li><a class="sidebar__item" href="blackgold.html"><span class="sidebar__icon">✧</span> BLACK GOLD</a></li>
+                    <li><a class="sidebar__item" data-view="attendance"><span class="sidebar__icon">✧</span> EVENT ATTENDANCE</a></li>
+                    <li><a class="sidebar__item" data-view="vspoints"><span class="sidebar__icon">✧</span> VS POINTS</a></li>
                 </ul>
                 <div class="sidebar__section-title" id="adminSectionHeader" style="display: none;">MANAGEMENT & ADMIN</div>
                 <ul class="sidebar__menu" id="adminMenuContainer">
@@ -356,9 +356,6 @@
                         <input type="date" class="admin-panel__input" id="newDateInput">
                         <input type="text" class="admin-panel__input" id="newSubtextInput" placeholder="Level/Title (e.g. LV4)">
                         <button class="btn-admin" id="btnAddEvent">Add Event Column</button>
-                    </div>
-                    <div class="admin-panel__form" style="margin-left: auto;">
-                        <button class="btn-action btn-action--danger" id="btnClearDataBtn" style="padding: 6px 10px; font-size: 11px;">Clear All Data</button>
                     </div>
                 </section>
 
@@ -814,7 +811,34 @@
 
                 eventDates.forEach((ev, evIdx) => {
                     const isChecked = member.events && member.events[evIdx];
-                    rowHTML += `<td class="col-event"><span class="check-toggle" onclick="${isManagementOrAdmin ? `toggleAttendance(${member.id}, ${evIdx})` : ''}">${isChecked ? '<span class="check-icon">✓</span>' : '<span class="cross-icon">—</span>'}</span></td>`;
+                    
+                    let changeBadgeHTML = '';
+                    if (showDiffMode) {
+                        if (evIdx > 0) {
+                            const prevChecked = member.events && member.events[evIdx - 1];
+                            if (!prevChecked && isChecked) {
+                                changeBadgeHTML = `<div style="font-size: 10px; margin-top: 2px;"><span class="diff-green">▲ Up</span></div>`;
+                            } else if (prevChecked && !isChecked) {
+                                changeBadgeHTML = `<div style="font-size: 10px; margin-top: 2px;"><span class="diff-red">▼ Down</span></div>`;
+                            } else {
+                                changeBadgeHTML = `<div style="font-size: 10px; margin-top: 2px;"><span class="diff-yellow">▬ Same</span></div>`;
+                            }
+                        } else {
+                            if (isChecked) {
+                                changeBadgeHTML = `<div style="font-size: 10px; margin-top: 2px;"><span class="diff-green">▲ Up</span></div>`;
+                            } else {
+                                changeBadgeHTML = `<div style="font-size: 10px; margin-top: 2px;"><span class="diff-yellow">▬ Same</span></div>`;
+                            }
+                        }
+                    }
+
+                    rowHTML += `
+                        <td class="col-event">
+                            <div style="display: flex; flex-direction: column; align-items: center;">
+                                <span class="check-toggle" onclick="${isManagementOrAdmin ? `toggleAttendance(${member.id}, ${evIdx})` : ''}">${isChecked ? '<span class="check-icon">✓</span>' : '<span class="cross-icon">—</span>'}</span>
+                                ${changeBadgeHTML}
+                            </div>
+                        </td>`;
                 });
 
                 if (isManagementOrAdmin) rowHTML += `<td class="col-actions"><button class="btn-icon-action" onclick="deleteMember(${member.id})">Delete</button></td>`;
@@ -837,11 +861,6 @@
             const rankingView = document.getElementById('subViewRanking');
             rankingView.innerHTML = '';
             
-            // Calculate team average attendance rate per event if available, or compare against previous event / overall progression.
-            // Let's compute event-over-event shift or team average benchmark delta for the ranking tab cards.
-            // Requirement asks: "Add arrow down up to see difference per event attended to monitor changes add colors codes green, red, yellow"
-            // We can calculate the change between this member's attendance rate and the immediate previous event, or overall event progression shift.
-            
             filteredMembers.forEach((member, index) => {
                 const rank = index + 1;
                 const rateNum = totalEvents > 0 ? parseFloat(((member.attended / totalEvents) * 100).toFixed(1)) : 0;
@@ -853,7 +872,6 @@
                 let cardClass = rank === 1 ? 'ranking-card--rank-1' : (rank === 2 ? 'ranking-card--rank-2' : (rank === 3 ? 'ranking-card--rank-3' : ''));
                 let badgeText = `${rank}`;
 
-                // Calculate event progression diff (comparing last event vs previous event, or trend across events)
                 let diffVal = 0;
                 if (member.events && member.events.length >= 2) {
                     const lastVal = member.events[member.events.length - 1] ? 1 : 0;
@@ -864,12 +882,14 @@
                 }
 
                 let diffHtml = '';
-                if (diffVal > 0) {
-                    diffHtml = `<span class="diff-pos">▲ +1</span>`;
-                } else if (diffVal < 0) {
-                    diffHtml = `<span class="diff-neg">▼ -1</span>`;
-                } else {
-                    diffHtml = `<span class="diff-zero">▬ 0</span>`;
+                if (showDiffMode) {
+                    if (diffVal > 0) {
+                        diffHtml = `<span class="diff-green">▲ Up</span>`;
+                    } else if (diffVal < 0) {
+                        diffHtml = `<span class="diff-red">▼ Down</span>`;
+                    } else {
+                        diffHtml = `<span class="diff-yellow">▬ Same</span>`;
+                    }
                 }
 
                 rankingView.insertAdjacentHTML('beforeend', `
@@ -888,7 +908,7 @@
                                 </div>
                             </div>
                             <div style="font-weight: 800; width: 55px; text-align: right;">${rateNum}%</div>
-                            <div style="width: 50px; text-align: center;">${diffHtml}</div>
+                            <div style="width: 70px; text-align: center;">${diffHtml}</div>
                             ${showDiffMode ? `<div style="width: 65px; text-align: right;"><span class="${vsAvgClass}">${vsAvgString}</span></div>` : ''}
                             ${isManagementOrAdmin ? `<button class="btn-icon-action" onclick="deleteMember(${member.id})">Delete</button>` : ''}
                         </div>
@@ -980,13 +1000,6 @@
                 saveData(); render();
             }
         };
-
-        document.getElementById('btnClearDataBtn').addEventListener('click', () => {
-            if (confirm('Clear all data?')) {
-                logAction('CLEAR_DATA', 'Cleared all application event dates and member registers.');
-                members = []; eventDates = []; saveData(); render();
-            }
-        });
 
         document.getElementById('btnToggleDiff').addEventListener('click', () => {
             showDiffMode = !showDiffMode;
