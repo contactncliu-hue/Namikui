@@ -3,380 +3,569 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Members Management - Roster Dashboard</title>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome for Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Tesseract.js for Screenshot OCR Processing -->
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@v5/dist/tesseract.min.js"></script>
-    <!-- Supabase Client Library -->
+    <title>Loopy's Playground - Members Management</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Fredoka+One&family=Montserrat:wght@600;700;800&family=Noto+Sans+SC:wght@900&family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <style>
-        body { background-color: #0f172a; color: #f8fafc; font-family: ui-sans-serif, system-ui, sans-serif; }
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: #1e293b; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+        :root {
+            --color-bg-main: #f5f4ef;
+            --color-bg-card: #ffffff;
+            --color-bg-sidebar: #ffffff;
+            --color-primary: #3b52a4;
+            --color-primary-light: #eceff8;
+            --color-text-dark: #2b3044;
+            --color-text-muted: #8c93a6;
+            --color-text-light: #a0a6b5;
+            --color-border: #3b52a4;
+            --color-border-light: #e2e5ed;
+            --color-yellow-bg: #fffdf0;
+            --color-yellow-border: #e2cb6b;
+            --color-yellow-text: #b89117;
+            --color-gold: #f3a808;
+
+            --font-family-base: 'Montserrat', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            --font-family-title: 'Cinzel', serif;
+            --font-family-logo: 'Noto Sans SC', sans-serif;
+
+            --font-xs: 11px;
+            --font-sm: 13px;
+            --font-md: 15px;
+            --font-lg: 18px;
+            --font-xl: 22px;
+            --font-xxl: 28px;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Open Sans', sans-serif; background-color: var(--color-bg-main); color: var(--color-text-dark); min-height: 100vh; display: flex; }
+
+        /* SIDEBAR (Uniformity Styling) */
+        .sidebar { width: 260px; background-color: var(--color-bg-sidebar); border-right: 2px solid var(--color-border); display: flex; flex-direction: column; flex-shrink: 0; position: fixed; height: 100vh; z-index: 100; }
+        .sidebar__header { padding: 20px; display: flex; justify-content: center; align-items: center; border-bottom: 2px solid var(--color-border); }
+        .sidebar__logo { width: 70px; height: 70px; border-radius: 50%; background: linear-gradient(135deg, #a5c7f9, #2d55b8); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 24px; font-family: var(--font-family-logo); }
+        .sidebar__user { padding: 16px 20px; display: flex; align-items: center; gap: 12px; font-weight: 700; font-size: var(--font-sm); color: #62697b; border-bottom: 1px solid var(--color-border-light); }
+        .sidebar__user-avatar { width: 32px; height: 32px; border-radius: 50%; background-color: var(--color-primary); color: white; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+        .sidebar__nav { display: flex; flex-direction: column; gap: 4px; overflow-y: auto; padding-bottom: 20px; flex-grow: 1; }
+        .sidebar__menu { list-style: none; }
+        .sidebar__item { display: flex; align-items: center; padding: 10px 20px; color: #555b6e; font-weight: 700; font-size: var(--font-xs); text-decoration: none; gap: 12px; cursor: pointer; transition: background 0.2s; }
+        .sidebar__item:hover { background-color: #f0f2f8; }
+        .sidebar__item--active { background-color: var(--color-primary); color: white; }
+        .sidebar__icon { width: 16px; text-align: center; }
+
+        /* MAIN CONTENT AREA */
+        .main { margin-left: 260px; flex-grow: 1; padding: 24px; display: flex; flex-direction: column; gap: 16px; max-width: calc(100vw - 260px); }
+
+        /* HEADER BAR (Matching Black Gold Style) */
+        .header-bar { background-color: white; border: 2px solid var(--color-border); border-radius: 4px; padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; position: relative; }
+        .header-bar::before { content: ''; position: absolute; left: 12px; top: 12px; bottom: 12px; width: 4px; background-color: #e2cb6b; border-radius: 2px; }
+        .header-bar__title-group { padding-left: 12px; }
+        .header-bar__title { font-family: 'Fredoka One', cursive, sans-serif; font-size: var(--font-xxl); color: var(--color-primary); line-height: 1; text-transform: uppercase; }
+        .header-bar__subtitle { font-size: var(--font-xs); font-weight: 800; color: var(--color-primary); margin-top: 4px; display: flex; gap: 20px; }
+        .header-bar__actions { display: flex; gap: 10px; align-items: center; }
+
+        /* CONTROLS BAR */
+        .controls-card { background: white; border: 2px solid var(--color-border); border-radius: 4px; padding: 12px 16px; display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+        .btn-group { display: flex; border: 2px solid var(--color-primary); border-radius: 4px; overflow: hidden; }
+        .btn-toggle { padding: 8px 16px; font-weight: 800; font-size: var(--font-xs); border: none; background: white; color: var(--color-primary); cursor: pointer; display: flex; align-items: center; gap: 6px; }
+        .btn-toggle--active { background-color: var(--color-primary); color: white; }
+
+        .search-box { flex-grow: 1; max-width: 300px; position: relative; }
+        .search-box__input { width: 100%; padding: 8px 12px 8px 32px; border: 1px solid #d1d5db; background-color: #f7f6f0; border-radius: 4px; font-size: var(--font-sm); outline: none; }
+        .search-box__icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #9ca3af; font-size: 12px; }
+
+        .btn-action { background: white; border: 2px solid var(--color-primary); color: var(--color-primary); font-weight: 800; font-size: var(--font-xs); padding: 8px 16px; border-radius: 4px; cursor: pointer; transition: all 0.2s; }
+        .btn-action:hover { background: var(--color-primary-light); }
+        .btn-gold { background: var(--color-gold); border-color: #d99f26; color: white; }
+        .btn-gold:hover { background: #e29a00; }
+
+        /* TABLE CARD & DATA TABLE */
+        .table-card { background: white; border: 2px solid var(--color-border); border-radius: 4px; overflow: hidden; display: flex; flex-direction: column; }
+        .table-wrapper { overflow-x: auto; }
+        .data-table { width: 100%; border-collapse: collapse; text-align: left; font-size: var(--font-sm); }
+        .data-table th { background-color: #eef2f9; padding: 12px 16px; font-size: 11px; font-weight: 800; color: #71788e; text-transform: uppercase; border-bottom: 1px solid var(--color-border-light); white-space: nowrap; }
+        .data-table td { padding: 10px 16px; border-bottom: 1px solid #f0f2f5; vertical-align: middle; font-weight: 700; color: #4a5060; }
+        .data-table tfoot td { background-color: #f8f9fa; border-top: 2px solid var(--color-border-light); padding: 12px 16px; font-size: var(--font-xs); font-weight: 800; color: #8c93a6; }
+
+        .data-table tr.rank-1 { background-color: #fffdf5; }
+        .data-table tr.rank-2 { background-color: #faf9f5; }
+        .data-table tr.rank-3 { background-color: #fcfbf7; }
+
+        .col-rank { width: 50px; text-align: center; color: #a0a6b5; }
+        .col-name { font-weight: 800; color: #2b3044; }
+
+        /* STATUS BADGES & ROUND DOTS */
+        .status-tabs { display: flex; border: 1px solid #d1d5db; border-radius: 4px; overflow: hidden; background: #f7f6f0; }
+        .status-tab { padding: 2px 6px; font-size: 10px; font-weight: 800; border: none; background: transparent; cursor: pointer; color: #8c93a6; }
+        .status-tab.active-active { background: #16a34a; color: white; }
+        .status-tab.active-inactive { background: #ca8a04; color: white; }
+        .status-tab.active-removed { background: #dc2626; color: white; }
+
+        .rank-dot { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; cursor: pointer; user-select: none; border: 1px solid rgba(0,0,0,0.1); }
+        .rank-dot-r1, .rank-dot-r2, .rank-dot-r3 { background: #eef2f9; color: var(--color-primary); }
+        .rank-dot-r4 { background: #dc2626 !important; color: white !important; }
+        .rank-dot-r5 { background: #2563eb !important; color: white !important; }
+
+        /* FACTION CIRCLE BAR */
+        .faction-circle { width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-weight: 800; font-size: 12px; cursor: pointer; color: white; box-shadow: 0 1px 3px rgba(0,0,0,0.15); }
+        .faction-f { background-color: #2563eb; } /* Blue for F */
+        .faction-s { background-color: #9333ea; } /* Purple for S */
+        .faction-e { background-color: #ea580c; } /* Orange for E */
+
+        .diff-green { color: #16a34a; font-weight: 850; font-size: 12px; display: inline-flex; align-items: center; gap: 2px; }
+        .diff-red { color: #dc2626; font-weight: 850; font-size: 12px; display: inline-flex; align-items: center; gap: 2px; }
+        .diff-yellow { color: #ca8a04; font-weight: 850; font-size: 12px; display: inline-flex; align-items: center; gap: 2px; }
+
+        .editable-input { width: 100%; background: #f7f6f0; border: 1px solid #d1d5db; border-radius: 4px; padding: 4px 8px; font-size: 12px; font-weight: 600; outline: none; }
+        .editable-input:focus { border-color: var(--color-primary); background: white; }
+        .editable-select { width: 100%; background: #f7f6f0; border: 1px solid #d1d5db; border-radius: 4px; padding: 4px 6px; font-size: 12px; font-weight: 600; outline: none; cursor: pointer; }
+
+        /* MODAL STYLING */
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.4); display: none; align-items: center; justify-content: center; z-index: 1000; }
+        .modal-card { background: white; padding: 24px; border-radius: 8px; width: 100%; max-width: 400px; border: 2px solid var(--color-primary); box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        .modal-card h3 { margin-bottom: 16px; color: var(--color-primary); font-family: 'Fredoka One', cursive, sans-serif; font-size: 18px; }
+        .modal-card label { display: block; font-size: 11px; font-weight: 800; color: #8c93a6; text-transform: uppercase; margin-bottom: 4px; }
+        .modal-card input, .modal-card select { width: 100%; padding: 10px; margin-bottom: 14px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 14px; outline: none; }
+        .modal-card-btns { display: flex; justify-content: flex-end; gap: 8px; }
+
+        @media (max-width: 1024px) {
+            .sidebar { width: 70px; }
+            .sidebar__user, .sidebar__item span:not(.sidebar__icon), .sidebar__header .sidebar__logo { display: none; }
+            .main { margin-left: 70px; max-width: calc(100vw - 70px); }
+        }
     </style>
 </head>
-<body class="min-h-screen flex flex-col">
+<body>
 
-    <!-- Top Header / Navigation Bar -->
-    <header class="bg-slate-900 border-b border-slate-800 px-6 py-4 flex flex-wrap justify-between items-center gap-4">
-        <div class="flex items-center space-x-4">
-            <a href="index.html" class="text-slate-400 hover:text-white transition flex items-center gap-2">
-                <i class="fa-solid fa-arrow-left"></i> Back to Index
-            </a>
-            <h1 class="text-xl font-bold tracking-wide text-white"><i class="fa-solid fa-users text-indigo-500 mr-2"></i> MEMBERS ROSTER</h1>
-            <span id="member-count-badge" class="bg-indigo-950 text-indigo-400 border border-indigo-800 text-xs px-2.5 py-1 rounded-full font-medium">0 members total</span>
-        </div>
-        <div class="flex items-center gap-3">
-            <span id="user-role-display" class="text-xs uppercase px-3 py-1 bg-slate-800 border border-slate-700 rounded text-slate-300 font-semibold">Role: Guest</span>
-            <button onclick="openUploadModal()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-2 shadow-lg shadow-indigo-600/20">
-                <i class="fa-solid fa-upload"></i> Upload Screenshot
-            </button>
-        </div>
-    </header>
-
-    <!-- Main Content Container -->
-    <main class="flex-1 max-w-7xl w-full mx-auto p-6 space-y-6">
-
-        <!-- Controls Bar: Status Filter Tabs & Search -->
-        <div class="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4 bg-slate-900/60 p-4 rounded-xl border border-slate-800 backdrop-blur">
-            <!-- Player Status Tabs -->
-            <div class="flex items-center gap-2 bg-slate-950 p-1 rounded-lg border border-slate-800 w-fit">
-                <button onclick="setStatusFilter('all')" id="filter-tab-all" class="px-4 py-1.5 rounded-md text-xs font-semibold transition bg-indigo-600 text-white">All</button>
-                <button onclick="setStatusFilter('active')" id="filter-tab-active" class="px-4 py-1.5 rounded-md text-xs font-semibold transition text-slate-400 hover:text-white">Active</button>
-                <button onclick="setStatusFilter('inactive')" id="filter-tab-inactive" class="px-4 py-1.5 rounded-md text-xs font-semibold transition text-slate-400 hover:text-white">Inactive</button>
-                <button onclick="setStatusFilter('removed')" id="filter-tab-removed" class="px-4 py-1.5 rounded-md text-xs font-semibold transition text-slate-400 hover:text-white">Removed</button>
-            </div>
-
-            <!-- Search Bar -->
-            <div class="relative flex-1 max-w-md">
-                <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 text-sm"></i>
-                <input type="text" id="member-search" oninput="renderTable()" placeholder="Search name, UID, CP..." class="w-full bg-slate-950 border border-slate-800 rounded-lg pl-10 pr-4 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition">
+    <!-- SIDEBAR NAVIGATION (Uniformity Maintained) -->
+    <aside class="sidebar">
+        <div class="sidebar__header"><div class="sidebar__logo">娜美</div></div>
+        <div class="sidebar__user">
+            <div class="sidebar__user-avatar" id="userAvatarIcon">U</div>
+            <div>
+                <div id="userRoleDisplay" style="font-size: 11px; text-transform: uppercase;">USERNAME</div>
+                <div id="userPermissionBadge" style="font-size: 9px; color: #8c93a6;">Role</div>
             </div>
         </div>
+        <nav class="sidebar__nav">
+            <ul class="sidebar__menu">
+                <li><a class="sidebar__item" href="index.html"><span class="sidebar__icon"><i class="fa-solid fa-house"></i></span> HOME</a></li>
+                <li><a class="sidebar__item sidebar__item--active" href="members.html"><span class="sidebar__icon"><i class="fa-solid fa-users"></i></span> MEMBERS</a></li>
+                <li><a class="sidebar__item" href="blackgold.html"><span class="sidebar__icon"><i class="fa-solid fa-coins"></i></span> BLACK GOLD</a></li>
+            </ul>
+        </nav>
+    </aside>
 
-        <!-- Members Table Card -->
-        <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-xl">
-            <div class="overflow-x-auto custom-scrollbar">
-                <table class="w-full text-left border-collapse">
+    <!-- MAIN CONTENT -->
+    <main class="main">
+        <header class="header-bar">
+            <div class="header-bar__title-group">
+                <h1 class="header-bar__title">Members Management</h1>
+                <div class="header-bar__subtitle">
+                    <span id="headerTotalCount">0 MEMBERS TOTAL</span>
+                    <span>ROSTER & COMBAT DIRECTORY</span>
+                </div>
+            </div>
+            <div class="header-bar__actions">
+                <input type="file" id="screenshotInput" accept="image/*" style="display: none;">
+                <button class="btn-action" id="importBtn" style="display: none;"><i class="fa-solid fa-upload mr-1"></i> UPLOAD SCREENSHOT</button>
+                <button class="btn-action btn-gold" id="btnAddMemberModal" style="display: none;"><i class="fa-solid fa-user-plus mr-1"></i> ADD MEMBER</button>
+            </div>
+        </header>
+
+        <section class="controls-card">
+            <div class="btn-group">
+                <button class="btn-toggle btn-toggle--active" onclick="setStatusFilter('all')" id="tabAll">ALL</button>
+                <button class="btn-toggle" onclick="setStatusFilter('active')" id="tabActive">ACTIVE</button>
+                <button class="btn-toggle" onclick="setStatusFilter('inactive')" id="tabInactive">INACTIVE</button>
+                <button class="btn-toggle" onclick="setStatusFilter('removed')" id="tabRemoved">REMOVED</button>
+            </div>
+            <div class="search-box">
+                <span class="search-box__icon"><i class="fa-solid fa-magnifying-glass"></i></span>
+                <input type="text" class="search-box__input" id="searchInput" placeholder="Search member, CP...">
+            </div>
+            <button class="btn-action" id="btnToggleDiff"><i class="fa-solid fa-chart-line mr-1"></i> ± DIFF</button>
+        </section>
+
+        <div class="table-card">
+            <div class="table-wrapper">
+                <table class="data-table">
                     <thead>
-                        <tr class="bg-slate-950/80 text-slate-400 text-xs font-semibold uppercase tracking-wider border-b border-slate-800">
-                            <th class="py-3.5 px-4 w-12 text-center">#</th>
-                            <th class="py-3.5 px-4">In-Game Name</th>
-                            <th class="py-3.5 px-4">Combat Power (CP)</th>
-                            <th class="py-3.5 px-4">F1 Power</th>
-                            <th class="py-3.5 px-4 text-center">Tier Bar</th>
-                            <th class="py-3.5 px-4 text-center">Rank</th>
-                            <th class="py-3.5 px-4 text-center">Diff</th>
-                            <th class="py-3.5 px-4">Note (Admin Only)</th>
+                        <tr>
+                            <th class="col-rank">#</th>
+                            <th>In-Game Name</th>
+                            <th>Combat Power (CP)</th>
+                            <th>F1 Power</th>
+                            <th style="text-align: center;">Faction</th>
+                            <th style="text-align: center;">Level</th>
+                            <th style="text-align: center;">ID</th>
+                            <th style="text-align: center;">Rank</th>
+                            <th style="text-align: center;">Diff</th>
+                            <th>Note</th>
                         </tr>
                     </thead>
-                    <tbody id="members-table-body" class="divide-y divide-slate-800/60 text-sm">
-                        <!-- Populated via JavaScript -->
+                    <tbody id="memberTableBody">
+                        <tr><td colspan="10" style="text-align: center; color: #8c93a6;">Loading roster...</td></tr>
                     </tbody>
+                    <tfoot id="tableFooterRow"></tfoot>
                 </table>
-            </div>
-            <!-- Table Footer Statistics -->
-            <div class="bg-slate-950 px-6 py-3 border-t border-slate-800 flex justify-between items-center text-xs text-slate-400">
-                <span id="table-row-count">0 / 0 shown</span>
-                <span id="table-avg-cp">avg CP: 0</span>
             </div>
         </div>
     </main>
 
-    <!-- Upload & OCR Processing Modal -->
-    <div id="upload-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 space-y-6 shadow-2xl relative">
-            <div class="flex justify-between items-center">
-                <h3 class="text-lg font-bold text-white"><i class="fa-solid fa-cloud-arrow-up text-indigo-500 mr-2"></i> Upload Roster Screenshot</h3>
-                <button onclick="closeUploadModal()" class="text-slate-400 hover:text-white text-lg"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            <div class="border-2 border-dashed border-slate-700 hover:border-indigo-500 rounded-xl p-8 text-center cursor-pointer transition bg-slate-950/50" onclick="document.getElementById('ocr-file-input').click()">
-                <input type="file" id="ocr-file-input" accept="image/*" class="hidden" onchange="handleImageUpload(event)">
-                <i class="fa-solid fa-image text-3xl text-indigo-400 mb-3"></i>
-                <p class="text-sm font-medium text-slate-300">Click to upload or drag & drop game roster image</p>
-                <p class="text-xs text-slate-500 mt-1">Supports PNG, JPG (Auto-extracts Names, CP & House Levels)</p>
-            </div>
-            <div id="ocr-status-box" class="hidden space-y-3">
-                <div class="flex justify-between text-xs text-slate-400">
-                    <span id="ocr-status-text">Processing image via OCR...</span>
-                    <span id="ocr-progress-pct">0%</span>
-                </div>
-                <div class="w-full bg-slate-950 rounded-full h-2 overflow-hidden border border-slate-800">
-                    <div id="ocr-progress-bar" class="bg-indigo-600 h-full w-0 transition-all duration-300"></div>
-                </div>
-            </div>
-            <div class="flex justify-end gap-3 pt-2">
-                <button onclick="closeUploadModal()" class="px-4 py-2 rounded-lg text-sm bg-slate-800 text-slate-300 hover:bg-slate-700 font-medium transition">Cancel</button>
+    <!-- ADD MEMBER MODAL (Admin & Management Only) -->
+    <div class="modal-overlay" id="addMemberModal">
+        <div class="modal-card">
+            <h3>Add New Member</h3>
+            <label>In-Game Name</label>
+            <input type="text" id="newMemberName" placeholder="Enter fighter name...">
+            <label>Combat Power (CP)</label>
+            <input type="text" id="newMemberCp" placeholder="e.g. 5.84G">
+            <label>Initial Faction Tier</label>
+            <select id="newMemberFaction">
+                <option value="F">F (Blue)</option>
+                <option value="S">S (Purple)</option>
+                <option value="E">E (Orange)</option>
+            </select>
+            <label>Level (LVL 1-30)</label>
+            <select id="newMemberLevel">
+                <script>
+                    for(let i=1; i<=30; i++) document.write(`<option value="LVL ${i}">LVL ${i}</option>`);
+                </script>
+            </select>
+            <label>ID (ID 1-10)</label>
+            <select id="newMemberIdGroup">
+                <script>
+                    for(let i=1; i<=10; i++) document.write(`<option value="ID ${i}">ID ${i}</option>`);
+                </script>
+            </select>
+            <div class="modal-card-btns">
+                <button class="btn-action" onclick="document.getElementById('addMemberModal').style.display='none'">Cancel</button>
+                <button class="btn-action btn-gold" id="btnSubmitAddMember">Save Member</button>
             </div>
         </div>
     </div>
 
-    <!-- Script Application Logic -->
     <script>
-        // Supabase Initialization Configuration (Replace with your actual keys if needed)
-        const SUPABASE_URL = 'YOUR_SUPABASE_URL';
-        const SUPABASE_KEY = 'YOUR_SUPABASE_ANON_KEY';
-        let supabaseClient = null;
-        try {
-            if (SUPABASE_URL !== 'YOUR_SUPABASE_URL') {
-                supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-            }
-        } catch(e) { console.warn("Supabase init skipped/failed, running local state fallback."); }
+        const SUPABASE_URL = 'https://sqrrfslqwcgpsmzdovru.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_rb70-VY2GstWzdoXmoUkwg_Iw3EiqFO';
+        const { createClient } = supabase;
+        const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // Local Storage fallback & state
-        let membersData = JSON.parse(localStorage.getItem('roster_members_data')) || [
-            { id: 1, name: "ZGUNDAM", cp: "5.84G", rawCp: 5840000000, f1Cp: "5.50G", prevF1: "5.30G", tier: "E", rank: "R5", status: "active", note: "-" },
-            { id: 2, name: "Dong gu", cp: "5.59G", rawCp: 5590000000, f1Cp: "5.20G", prevF1: "5.00G", tier: "S", rank: "R4", status: "active", note: "-" },
-            { id: 3, name: "RRAVII", cp: "5.39G", rawCp: 5390000000, f1Cp: "4.90G", prevF1: "4.80G", tier: "F", rank: "R5", status: "active", note: "R5" },
-            { id: 4, name: "temple82_템플", cp: "5.33G", rawCp: 5330000000, f1Cp: "4.85G", prevF1: "4.70G", tier: "E", rank: "R3", status: "active", note: "-" },
-            { id: 5, name: "Thò Bày Màu", cp: "4.68G", rawCp: 4680000000, f1Cp: "4.20G", prevF1: "4.10G", tier: "S", rank: "R2", status: "active", note: "mama" }
-        ];
+        // Current session user role configuration
+        let currentUser = {
+            username: localStorage.getItem('amt_username') || 'loopy',
+            role: localStorage.getItem('amt_userRole') || 'admin'
+        };
 
-        let currentUserRole = localStorage.getItem('roster_user_role') || 'admin'; // 'admin', 'management', or 'member'
+        let members = [];
+        let showDiffMode = false;
         let currentStatusFilter = 'all';
 
-        function initApp() {
-            updateRoleDisplay();
-            renderTable();
-        }
-
-        function updateRoleDisplay() {
-            const roleEl = document.getElementById('user-role-display');
-            roleEl.innerText = `Role: ${currentUserRole}`;
-        }
-
-        function setStatusFilter(status) {
-            currentStatusFilter = status;
-            ['all', 'active', 'inactive', 'removed'].forEach(s => {
-                const btn = document.getElementById(`filter-tab-${s}`);
-                if (s === status) {
-                    btn.className = "px-4 py-1.5 rounded-md text-xs font-semibold transition bg-indigo-600 text-white";
-                } else {
-                    btn.className = "px-4 py-1.5 rounded-md text-xs font-semibold transition text-slate-400 hover:text-white";
+        async function loadDataFromCloud() {
+            try {
+                const { data, error } = await db.from('app_data').select('*');
+                if (error) throw error;
+                if (data && data.length > 0) {
+                    data.forEach(row => {
+                        if (row.key === 'members') members = row.value || [];
+                    });
                 }
-            });
-            renderTable();
+            } catch (err) {
+                console.error('Error loading data:', err);
+            }
+
+            if (members.length === 0) {
+                members = [
+                    { id: 1, name: "ZGUNDAM", cp: "5.84G", rawCp: 5840000000, f1Cp: "5.50G", prevF1: "5.30G", faction: "E", level: "LVL 10", idGroup: "ID 1", rank: "R5", status: "active", note: "-" },
+                    { id: 2, name: "Dong gu", cp: "5.59G", rawCp: 5590000000, f1Cp: "5.20G", prevF1: "5.00G", faction: "S", level: "LVL 10", idGroup: "ID 2", rank: "R4", status: "active", note: "-" },
+                    { id: 3, name: "RRAVII", cp: "5.39G", rawCp: 5390000000, f1Cp: "4.90G", prevF1: "4.80G", faction: "F", level: "LVL 10", idGroup: "ID 3", rank: "R5", status: "active", note: "R5" }
+                ];
+            }
+            render();
         }
 
-        function cycleRank(id) {
-            const ranks = ["R1", "R2", "R3", "R4", "R5"];
-            const member = membersData.find(m => m.id === id);
-            if (member) {
-                let currentIdx = ranks.indexOf(member.rank);
-                member.rank = ranks[(currentIdx + 1) % ranks.length];
-                saveAndRefresh();
+        async function saveData() {
+            try {
+                await db.from('app_data').upsert({ id: 2, key: 'members', value: members }, { onConflict: 'id' });
+            } catch (err) {
+                console.error('Save error:', err);
             }
         }
 
-        function cycleTier(id) {
-            const tiers = ["F", "S", "E"];
-            const member = membersData.find(m => m.id === id);
-            if (member) {
-                let currentIdx = tiers.indexOf(member.tier);
-                member.tier = tiers[(currentIdx + 1) % tiers.length];
-                saveAndRefresh();
-            }
-        }
-
-        function updateMemberField(id, field, value) {
-            const member = membersData.find(m => m.id === id);
-            if (member) {
-                if (field === 'f1Cp') {
-                    member.prevF1 = member.f1Cp || '0G';
-                    member.f1Cp = value;
-                } else {
-                    member[field] = value;
-                }
-                saveAndRefresh();
-            }
-        }
-
-        function setPlayerStatus(id, status) {
-            const member = membersData.find(m => m.id === id);
-            if(member) {
-                member.status = status;
-                saveAndRefresh();
-            }
-        }
-
-        function saveAndRefresh() {
-            localStorage.setItem('roster_members_data', JSON.stringify(membersData));
-            renderTable();
-        }
-
-        function renderTable() {
-            const tbody = document.getElementById('members-table-body');
-            const searchVal = document.getElementById('member-search').value.toLowerCase();
+        function render() {
+            const isManagementOrAdmin = currentUser.role === 'admin' || currentUser.role === 'management';
             
-            // Filter data
-            let filtered = membersData.filter(m => {
+            // Sidebar User Info
+            document.getElementById('userRoleDisplay').innerText = (currentUser.username || 'Admin').toUpperCase();
+            document.getElementById('userPermissionBadge').innerText = `Role: ${(currentUser.role || 'admin').toUpperCase()}`;
+            document.getElementById('userAvatarIcon').innerText = (currentUser.username || 'A').charAt(0).toUpperCase();
+
+            // Management/Admin action visibility
+            document.getElementById('importBtn').style.display = isManagementOrAdmin ? 'flex' : 'none';
+            document.getElementById('btnAddMemberModal').style.display = isManagementOrAdmin ? 'flex' : 'none';
+
+            const filterQuery = document.getElementById('searchInput').value.toLowerCase();
+
+            // Filter by status & search query
+            let filtered = members.filter(m => {
                 const matchesStatus = currentStatusFilter === 'all' || m.status === currentStatusFilter;
-                const matchesSearch = m.name.toLowerCase().includes(searchVal) || m.cp.toLowerCase().includes(searchVal);
+                const matchesSearch = m.name.toLowerCase().includes(filterQuery) || m.cp.toLowerCase().includes(filterQuery);
                 return matchesStatus && matchesSearch;
             });
 
-            // Sort by raw CP descending for ranking
             filtered.sort((a, b) => b.rawCp - a.rawCp);
 
-            document.getElementById('member-count-badge').innerText = `${membersData.length} members total`;
-            document.getElementById('table-row-count').innerText = `${filtered.length} / ${membersData.length} shown`;
+            document.getElementById('headerTotalCount').innerText = `${members.length} MEMBERS TOTAL`;
+
+            const tbody = document.getElementById('memberTableBody');
+            const tableFooterRow = document.getElementById('tableFooterRow');
 
             if (filtered.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="8" class="text-center py-8 text-slate-500">No members found.</td></tr>`;
-                document.getElementById('table-avg-cp').innerText = `avg CP: 0`;
+                tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; padding: 24px; color: #8c93a6;">No members found.</td></tr>`;
+                tableFooterRow.innerHTML = '';
                 return;
             }
 
             let html = '';
-            filtered.forEach((m, index) => {
-                // Determine rank styling
-                let rankClass = "bg-slate-800 text-slate-300 hover:bg-slate-700";
-                if (m.rank === 'R4') rankClass = "bg-red-600 text-white shadow-md shadow-red-600/30";
-                if (m.rank === 'R5') rankClass = "bg-blue-600 text-white shadow-md shadow-blue-600/30";
+            filtered.forEach((member, index) => {
+                const rank = index + 1;
+                const rankClass = rank === 1 ? 'rank-1' : (rank === 2 ? 'rank-2' : (rank === 3 ? 'rank-3' : ''));
 
-                // Tier circle bar color styling (F = Blue, S = Purple, E = Orange)
-                let tierBg = "bg-blue-600 text-white";
-                if (m.tier === 'S') tierBg = "bg-purple-600 text-white";
-                if (m.tier === 'E') tierBg = "bg-orange-600 text-white";
+                // Status tab highlight classes
+                const isAct = member.status === 'active';
+                const isInact = member.status === 'inactive';
+                const isRem = member.status === 'removed';
 
-                // Status tab button highlights before name
-                const isAct = m.status === 'active';
-                const isInact = m.status === 'inactive';
-                const isRem = m.status === 'removed';
+                // Rank round dot class
+                let rankDotClass = 'rank-dot-r1';
+                if (member.rank === 'R4') rankDotClass = 'rank-dot-r4';
+                if (member.rank === 'R5') rankDotClass = 'rank-dot-r5';
+
+                // Faction Circle Bar class (F=Blue, S=Purple, E=Orange)
+                let factionClass = 'faction-f';
+                if (member.faction === 'S') factionClass = 'faction-s';
+                if (member.faction === 'E') factionClass = 'faction-e';
+
+                // Diff arrow computation
+                let diffHtml = '';
+                if (showDiffMode) {
+                    diffHtml = `<span class="diff-green"><i class="fa-solid fa-arrow-trend-up"></i> +0.05G</span>`;
+                } else {
+                    diffHtml = `<span style="color: #a0a6b5;">-</span>`;
+                }
 
                 html += `
-                    <tr class="hover:bg-slate-800/40 transition">
-                        <td class="py-3 px-4 text-center font-mono text-slate-500">${index + 1}</td>
-                        <td class="py-3 px-4">
-                            <div class="flex items-center gap-3">
-                                <!-- Status Clickable Tabs before name -->
-                                <div class="flex items-center bg-slate-950 p-0.5 rounded border border-slate-800 text-[10px]">
-                                    <button onclick="setPlayerStatus(${m.id}, 'active')" class="px-1.5 py-0.5 rounded ${isAct ? 'bg-emerald-600 text-white font-bold' : 'text-slate-500 hover:text-slate-300'}" title="Active">A</button>
-                                    <button onclick="setPlayerStatus(${m.id}, 'inactive')" class="px-1.5 py-0.5 rounded ${isInact ? 'bg-amber-600 text-white font-bold' : 'text-slate-500 hover:text-slate-300'}" title="Inactive">I</button>
-                                    <button onclick="setPlayerStatus(${m.id}, 'removed')" class="px-1.5 py-0.5 rounded ${isRem ? 'bg-rose-600 text-white font-bold' : 'text-slate-500 hover:text-slate-300'}" title="Removed">R</button>
+                    <tr class="${rankClass}">
+                        <td class="col-rank">${rank}</td>
+                        <td class="col-name">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <!-- Active/Inactive/Removed status tabs before name -->
+                                <div class="status-tabs">
+                                    <button onclick="setPlayerStatus(${member.id}, 'active')" class="status-tab ${isAct ? 'active-active' : ''}" title="Active">A</button>
+                                    <button onclick="setPlayerStatus(${member.id}, 'inactive')" class="status-tab ${isInact ? 'active-inactive' : ''}" title="Inactive">I</button>
+                                    <button onclick="setPlayerStatus(${member.id}, 'removed')" class="status-tab ${isRem ? 'active-removed' : ''}" title="Removed">R</button>
                                 </div>
-                                <span class="font-semibold text-white">${m.name}</span>
-                                <!-- Round dot after name to cycle R1-R5 -->
-                                <button onclick="cycleRank(${m.id})" class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition ${rankClass}" title="Click to change rank">
-                                    ${m.rank}
-                                </button>
+                                <span>${member.name}</span>
+                                <!-- Round dot after name toggles R1-R5 -->
+                                <div class="rank-dot ${rankDotClass}" onclick="cycleRank(${member.id})" title="Click to cycle rank">${member.rank}</div>
                             </div>
                         </td>
-                        <td class="py-3 px-4 font-mono font-medium text-emerald-400">
-                            <span class="bg-emerald-950/80 border border-emerald-800/60 px-2.5 py-1 rounded text-xs">${m.cp}</span>
-                        </td>
-                        <td class="py-3 px-4">
-                            <div class="flex flex-col">
-                                <input type="text" value="${m.f1Cp || '0G'}" onchange="updateMemberField(${m.id}, 'f1Cp', this.value)" class="bg-slate-950 border border-slate-800 rounded px-2 py-1 text-xs font-mono text-slate-200 focus:outline-none focus:border-indigo-500 w-28" placeholder="0.00G">
-                                <span class="text-[10px] text-slate-500 mt-0.5">Last F1: ${m.prevF1 || 'None'}</span>
+                        <td style="font-family: monospace; font-weight: 800; color: #16a34a;">${member.cp}</td>
+                        <td>
+                            <div style="display: flex; flex-direction: column;">
+                                <input type="text" value="${member.f1Cp || '0.00G'}" ${isManagementOrAdmin ? `onchange="updateF1Power(${member.id}, this.value)"` : 'readonly'} class="editable-input" placeholder="0.00G">
+                                <span style="font-size: 10px; color: #8c93a6; font-weight: 600; margin-top: 2px;">Last F1: ${member.prevF1 || 'None'}</span>
                             </div>
                         </td>
-                        <td class="py-3 px-4 text-center">
-                            <button onclick="cycleTier(${m.id})" class="w-8 h-8 rounded-full inline-flex items-center justify-center text-xs font-bold shadow transition ${tierBg}" title="Click to cycle tier (F, S, E)">
-                                ${m.tier}
-                            </button>
+                        <td style="text-align: center;">
+                            <div class="faction-circle ${factionClass}" onclick="cycleFaction(${member.id})" title="Click to cycle faction (F, S, E)">${member.faction || 'F'}</div>
                         </td>
-                        <td class="py-3 px-4 text-center font-bold text-slate-300">
-                            #${index + 1}
+                        <td style="text-align: center;">
+                            <select class="editable-select" ${isManagementOrAdmin ? `onchange="updateMemberMeta(${member.id}, 'level', this.value)"` : 'disabled'}>
+                                ${generateLevelOptions(member.level)}
+                            </select>
                         </td>
-                        <td class="py-3 px-4 text-center">
-                            <span class="text-emerald-400 text-xs font-semibold flex items-center justify-center gap-1">
-                                <i class="fa-solid fa-arrow-trend-up"></i> +0.05G
-                            </span>
+                        <td style="text-align: center;">
+                            <select class="editable-select" ${isManagementOrAdmin ? `onchange="updateMemberMeta(${member.id}, 'idGroup', this.value)"` : 'disabled'}>
+                                ${generateIdOptions(member.idGroup)}
+                            </select>
                         </td>
-                        <td class="py-3 px-4">
-                            <input type="text" value="${m.note || ''}" onchange="updateMemberField(${m.id}, 'note', this.value)" class="bg-slate-950/50 border border-slate-800/80 rounded px-2 py-1 text-xs text-slate-300 focus:outline-none focus:border-indigo-500 w-full" placeholder="Add note...">
+                        <td style="text-align: center; font-weight: 800; color: var(--color-primary);">#${rank}</td>
+                        <td style="text-align: center;">${diffHtml}</td>
+                        <td>
+                            <input type="text" value="${member.note || ''}" ${isManagementOrAdmin ? `onchange="updateMemberMeta(${member.id}, 'note', this.value)"` : 'readonly'} class="editable-input" placeholder="Add note...">
                         </td>
                     </tr>
                 `;
             });
+
             tbody.innerHTML = html;
+            tableFooterRow.innerHTML = `<tr><td colspan="10" style="font-weight: 800; color: #8c93a6;">Showing ${filtered.length} of ${members.length} members</td></tr>`;
         }
 
-        // Modal controls
-        function openUploadModal() { document.getElementById('upload-modal').classList.remove('hidden'); }
-        function closeUploadModal() { 
-            document.getElementById('upload-modal').classList.add('hidden'); 
-            document.getElementById('ocr-status-box').classList.add('hidden');
-        }
-
-        // OCR Handler via Tesseract.js
-        async function handleImageUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const statusBox = document.getElementById('ocr-status-box');
-            const statusText = document.getElementById('ocr-status-text');
-            const progressBar = document.getElementById('ocr-progress-bar');
-            const progressPct = document.getElementById('ocr-progress-pct');
-
-            statusBox.classList.remove('hidden');
-            statusText.innerText = "Initializing OCR Engine...";
-
-            try {
-                const worker = await Tesseract.createWorker('eng');
-                statusText.innerText = "Scanning image text...";
-                
-                const ret = await worker.recognize(file);
-                await worker.terminate();
-
-                statusText.innerText = "Parsing extracted roster lines...";
-                parseOcrText(ret.data.text);
-
-                progressPct.innerText = "100%";
-                progressBar.style.width = "100%";
-
-                setTimeout(() => {
-                    closeUploadModal();
-                    renderTable();
-                    alert("Screenshot processed and members updated successfully!");
-                }, 800);
-
-            } catch (err) {
-                console.error(err);
-                statusText.innerText = "OCR Parsing failed. Try a clearer screenshot.";
+        function generateLevelOptions(currentVal) {
+            let opts = '';
+            for(let i=1; i<=30; i++) {
+                let val = `LVL ${i}`;
+                opts += `<option value="${val}" ${currentVal === val ? 'selected' : ''}>${val}</option>`;
             }
+            return opts;
         }
 
-        // Simple line parser for extracted names and combat power values
-        function parseOcrText(text) {
-            const lines = text.split('\n');
-            lines.forEach(line => {
-                line = line.trim();
-                if (line.length < 3) return;
-                // Simple pattern match for CP numbers containing G or M (e.g., 5.84G)
-                const cpMatch = line.match(/(\d+\.\d+[GM])/i);
-                if (cpMatch) {
-                    let cpStr = cpMatch[1].toUpperCase();
-                    let nameStr = line.replace(cpMatch[0], '').trim().replace(/^[#\d\.\-\s]+/, '');
-                    if (nameStr.length < 2) nameStr = "Player " + (membersData.length + 1);
+        function generateIdOptions(currentVal) {
+            let opts = '';
+            for(let i=1; i<=10; i++) {
+                let val = `ID ${i}`;
+                opts += `<option value="${val}" ${currentVal === val ? 'selected' : ''}>${val}</option>`;
+            }
+            return opts;
+        }
 
-                    let rawVal = parseFloat(cpStr) * (cpStr.includes('G') ? 1000000000 : 1000000);
+        window.setPlayerStatus = function(id, status) {
+            const m = members.find(x => x.id === id);
+            if(m) { m.status = status; saveData(); render(); }
+        };
 
-                    // Add new parsed member if not duplicate name
-                    if (!membersData.some(m => m.name.toLowerCase() === nameStr.toLowerCase())) {
-                        membersData.push({
-                            id: membersData.length + 1,
-                            name: nameStr,
-                            cp: cpStr,
-                            rawCp: rawVal,
-                            f1Cp: "0.00G",
-                            prevF1: "None",
-                            tier: "F",
-                            rank: "R1",
-                            status: "active",
-                            note: ""
-                        });
-                    }
-                }
+        window.cycleRank = function(id) {
+            const ranks = ["R1", "R2", "R3", "R4", "R5"];
+            const m = members.find(x => x.id === id);
+            if(m) {
+                let idx = ranks.indexOf(m.rank);
+                m.rank = ranks[(idx + 1) % ranks.length];
+                saveData(); render();
+            }
+        };
+
+        window.cycleFaction = function(id) {
+            const factions = ["F", "S", "E"];
+            const m = members.find(x => x.id === id);
+            if(m) {
+                let idx = factions.indexOf(m.faction || "F");
+                m.faction = factions[(idx + 1) % factions.length];
+                saveData(); render();
+            }
+        };
+
+        window.updateF1Power = function(id, val) {
+            const m = members.find(x => x.id === id);
+            if(m) {
+                m.prevF1 = m.f1Cp || '0.00G';
+                m.f1Cp = val;
+                saveData(); render();
+            }
+        };
+
+        window.updateMemberMeta = function(id, field, val) {
+            const m = members.find(x => x.id === id);
+            if(m) {
+                m[field] = val;
+                saveData(); render();
+            }
+        };
+
+        window.setStatusFilter = function(status) {
+            currentStatusFilter = status;
+            ['all', 'active', 'inactive', 'removed'].forEach(s => {
+                document.getElementById(`tab${s.charAt(0).toUpperCase() + s.slice(1)}`).classList.toggle('btn-toggle--active', s === status);
             });
-        }
+            render();
+        };
 
-        window.onload = initApp;
+        document.getElementById('btnToggleDiff').addEventListener('click', () => {
+            showDiffMode = !showDiffMode;
+            document.getElementById('btnToggleDiff').classList.toggle('active', showDiffMode);
+            render();
+        });
+
+        document.getElementById('searchInput').addEventListener('input', render);
+
+        // Add Member Modal Handling (Admin & Management Only)
+        document.getElementById('btnAddMemberModal').addEventListener('click', () => {
+            document.getElementById('addMemberModal').style.display = 'flex';
+        });
+
+        document.getElementById('btnSubmitAddMember').addEventListener('click', () => {
+            const name = document.getElementById('newMemberName').value.trim();
+            const cp = document.getElementById('newMemberCp').value.trim() || '0.00G';
+            const faction = document.getElementById('newMemberFaction').value;
+            const level = document.getElementById('newMemberLevel').value;
+            const idGroup = document.getElementById('newMemberIdGroup').value;
+
+            if(!name) { alert('Please enter a member name.'); return; }
+
+            let rawCp = parseFloat(cp) * (cp.includes('G') ? 1000000000 : 1000000);
+            if(isNaN(rawCp)) rawCp = 1000;
+
+            members.push({
+                id: Date.now(),
+                name,
+                cp,
+                rawCp,
+                f1Cp: '0.00G',
+                prevF1: 'None',
+                faction,
+                level,
+                idGroup,
+                rank: 'R1',
+                status: 'active',
+                note: ''
+            });
+
+            saveData();
+            document.getElementById('addMemberModal').style.display = 'none';
+            document.getElementById('newMemberName').value = '';
+            document.getElementById('newMemberCp').value = '';
+            render();
+        });
+
+        // Screenshot OCR Import Integration
+        const importBtn = document.getElementById('importBtn');
+        const screenshotInput = document.getElementById('screenshotInput');
+        importBtn.addEventListener('click', () => screenshotInput.click());
+        screenshotInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            importBtn.innerText = 'PROCESSING...'; importBtn.disabled = true;
+            try {
+                const { data: { text } } = await Tesseract.recognize(file, 'eng');
+                let addedCount = 0;
+                text.split('\n').forEach(line => {
+                    const match = line.match(/([a-zA-Z0-9•\s]+)\s+(\d{1,2}\.\d+[GM])/i);
+                    if (match && match[1].trim().length > 2) {
+                        const name = match[1].trim(); 
+                        const cpStr = match[2].toUpperCase();
+                        let rawVal = parseFloat(cpStr) * (cpStr.includes('G') ? 1000000000 : 1000000);
+                        
+                        const existing = members.find(m => m.name.toLowerCase() === name.toLowerCase());
+                        if (existing) {
+                            existing.cp = cpStr;
+                            existing.rawCp = rawVal;
+                        } else {
+                            members.push({ 
+                                id: Date.now() + Math.random(), 
+                                name, 
+                                cp: cpStr, 
+                                rawCp: rawVal, 
+                                f1Cp: '0.00G', 
+                                prevF1: 'None', 
+                                faction: 'F', 
+                                level: 'LVL 1', 
+                                idGroup: 'ID 1', 
+                                rank: 'R1', 
+                                status: 'active', 
+                                note: '' 
+                            });
+                        }
+                        addedCount++;
+                    }
+                });
+                saveData(); render(); alert(`OCR import completed! Successfully parsed ${addedCount} entries.`);
+            } catch (err) { alert('OCR Error during processing'); }
+            finally { importBtn.innerText = 'UPLOAD SCREENSHOT'; importBtn.disabled = false; screenshotInput.value = ''; }
+        });
+
+        window.addEventListener('DOMContentLoaded', loadDataFromCloud);
     </script>
 </body>
 </html>
