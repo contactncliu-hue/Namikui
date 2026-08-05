@@ -161,7 +161,7 @@
 
         <div class="manual-box">
             <i class="fa-solid fa-circle-info"></i>
-            <div><strong>Combat Power & F1 Power Manual:</strong> Combat Power uses standard comma formatting (e.g., 5,390,000,000). F1 Power automatically handles G/M parsing and sorting. Press <kbd>Enter</kbd> to save changes instantly.</div>
+            <div><strong>Combat Power & F1 Power Manual:</strong> Combat Power uses standard comma formatting (0-00,000,000,000). F1 Power automatically handles G/M parsing and sorting (0-999.999 assumes Millions / M; decimal numbers like 00.00 assume Billions / G; G is higher than M). Note: This calculates power 100M and above. Press <kbd>Enter</kbd> to save changes instantly.</div>
         </div>
 
         <div class="table-card">
@@ -344,7 +344,7 @@
                 return matchesStatus && matchesSearch;
             });
 
-            // CRITICAL: Auto sort exclusively based on F1 Power (f1Raw descending, G is higher than M)
+            // Auto sort exclusively based on F1 Power (f1Raw descending, G is higher than M)
             filtered.sort((a, b) => (b.f1Raw || 0) - (a.f1Raw || 0));
 
             document.getElementById('headerTotalCount').innerText = `${members.length} MEMBERS TOTAL`;
@@ -360,7 +360,7 @@
 
             let html = '';
             filtered.forEach((member, index) => {
-                const rank = index + 1; // Ranks are assigned automatically based on F1 sorting position
+                const rank = index + 1;
                 const rankClass = rank === 1 ? 'rank-1' : (rank === 2 ? 'rank-2' : (rank === 3 ? 'rank-3' : ''));
 
                 const isAct = member.status === 'active';
@@ -375,7 +375,6 @@
                 if (member.faction === 'S') factionClass = 'faction-s';
                 if (member.faction === 'R') factionClass = 'faction-r';
 
-                // Diff calculation comparing current F1 raw value with the previous history entry
                 let diffHtml = `<span style="color: #a0a6b5;">-</span>`;
                 if (showDiffMode && member.f1History && member.f1History.length >= 2) {
                     let latestRaw = member.f1Raw || 0;
@@ -507,7 +506,6 @@
                 if (!m.f1History) m.f1History = [];
                 const todayStr = new Date().toISOString().split('T')[0];
                 
-                // Avoid duplicate consecutive entries for the same day
                 if (m.f1History.length > 0 && m.f1History[m.f1History.length - 1].date === todayStr) {
                     m.f1History[m.f1History.length - 1].val = parsed.formatted;
                 } else {
@@ -650,11 +648,12 @@
                     let cleanLine = line.trim();
                     if (!cleanLine) return;
                     
-                    const match = cleanLine.match(/^([a-zA-Z0-9•\s\-]+?)\s+([\d,]+(?:\.\d+)?[GM]?)/i);
+                    // Enhanced OCR regex to robustly capture Name and standard/shortened CP formats (supporting G, M, commas, or decimals)
+                    const match = cleanLine.match(/^([a-zA-Z0-9•\s\-]+?)\s+([\d,]+(?:\.\d+)?[GGMm]?)/i);
                     if (match && match[1].trim().length > 1) {
                         const name = match[1].trim(); 
-                        const cpStr = match[2].toUpperCase();
-                        const parsedCp = parseCpWithCommas(cpStr.replace(/[GM]/g, ''));
+                        const cpStr = match[2];
+                        const parsedCp = parseCpWithCommas(cpStr);
                         
                         const existing = members.find(m => m.name.toLowerCase() === name.toLowerCase());
                         if (existing) {
