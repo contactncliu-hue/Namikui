@@ -97,6 +97,7 @@
         .faction-r { background-color: #ea580c; }
 
         .diff-green { color: #16a34a; font-weight: 850; font-size: 12px; display: inline-flex; align-items: center; gap: 2px; }
+        .diff-red { color: #dc2626; font-weight: 850; font-size: 12px; display: inline-flex; align-items: center; gap: 2px; }
 
         .editable-input { width: 100%; background: #f7f6f0; border: 1px solid #d1d5db; border-radius: 4px; padding: 6px 10px; font-size: 12px; font-weight: 600; outline: none; }
         .editable-input:focus { border-color: var(--color-primary); background: white; }
@@ -160,7 +161,7 @@
 
         <div class="manual-box">
             <i class="fa-solid fa-circle-info"></i>
-            <div><strong>Combat Power & F1 Power Manual:</strong> Combat Power uses standard comma formatting (e.g., 5,390,000,000). F1 Power tracks trend entries automatically with history tracking. Press <kbd>Enter</kbd> to save changes instantly.</div>
+            <div><strong>Combat Power & F1 Power Manual:</strong> Combat Power uses standard comma formatting (e.g., 5,390,000,000). F1 Power automatically handles G/M parsing and sorting. Press <kbd>Enter</kbd> to save changes instantly.</div>
         </div>
 
         <div class="table-card">
@@ -220,8 +221,7 @@
         <div class="modal-card">
             <h3 id="f1HistoryTitle">F1 History Trend <i class="fa-solid fa-xmark" style="cursor:pointer;" onclick="document.getElementById('f1HistoryModal').style.display='none'"></i></h3>
             <label>Recorded Entries</label>
-            <div class="history-list" id="f1HistoryList">
-                </div>
+            <div class="history-list" id="f1HistoryList"></div>
             <div class="modal-card-btns">
                 <button class="btn-action" onclick="document.getElementById('f1HistoryModal').style.display='none'">Close</button>
             </div>
@@ -243,7 +243,7 @@
         let showDiffMode = false;
         let currentStatusFilter = 'all';
 
-        // Strict comma parser for Combat Power COLUMN without altering F1 formatting or logic
+        // Strict comma parser for Combat Power COLUMN
         function parseCpWithCommas(cpStr) {
             if (!cpStr) return { formatted: '0', raw: 0 };
             let cleanStr = cpStr.toString().trim();
@@ -252,7 +252,7 @@
             return { formatted, raw: numVal };
         }
 
-        // F1 Power Parser untouched as requested
+        // F1 Power Parser: 0-999.999 = Millions (M), decimals/00.00 or G = Billions (G)
         function parseCpToRaw(cpStr) {
             if (!cpStr) return { formatted: '0M', raw: 0 };
             let cleanStr = cpStr.toString().trim().toUpperCase();
@@ -301,15 +301,20 @@
 
             if (members.length === 0) {
                 members = [
-                    { id: 1, name: "ZGUNDAM", cp: "5,840,000,000", rawCp: 5840000000, f1Cp: "5G", prevF1: "5G", f1History: [{date: '2026-08-01', val: '5G'}], faction: "R", level: "10", rank: "R5", status: "active", note: "-" },
-                    { id: 2, name: "Dong gu", cp: "5,590,000,000", rawCp: 5590000000, f1Cp: "5G", prevF1: "5G", f1History: [{date: '2026-08-01', val: '5G'}], faction: "S", level: "i2", rank: "R4", status: "active", note: "-" },
-                    { id: 3, name: "RRAVII", cp: "5,390,000,000", rawCp: 5390000000, f1Cp: "4G", prevF1: "4G", f1History: [{date: '2026-08-01', val: '4G'}], faction: "F", level: "15", rank: "R5", status: "active", note: "R5" }
+                    { id: 1, name: "ZGUNDAM", cp: "5,840,000,000", rawCp: 5840000000, f1Cp: "5G", f1Raw: 5000000000, f1History: [{date: '2026-08-01', val: '5G'}], faction: "R", level: "10", rank: "R5", status: "active", note: "-" },
+                    { id: 2, name: "Dong gu", cp: "5,590,000,000", rawCp: 5590000000, f1Cp: "5G", f1Raw: 5000000000, f1History: [{date: '2026-08-01', val: '5G'}], faction: "S", level: "i2", rank: "R4", status: "active", note: "-" },
+                    { id: 3, name: "RRAVII", cp: "5,390,000,000", rawCp: 5390000000, f1Cp: "4G", f1Raw: 4000000000, f1History: [{date: '2026-08-01', val: '4G'}], faction: "F", level: "15", rank: "R5", status: "active", note: "R5" }
                 ];
             } else {
                 members.forEach(m => {
                     const parsedCp = parseCpWithCommas(m.cp);
                     m.cp = parsedCp.formatted;
                     m.rawCp = parsedCp.raw;
+                    
+                    const parsedF1 = parseCpToRaw(m.f1Cp || '0G');
+                    m.f1Cp = parsedF1.formatted;
+                    m.f1Raw = parsedF1.raw;
+
                     if (!m.f1History) m.f1History = [];
                 });
             }
@@ -339,7 +344,8 @@
                 return matchesStatus && matchesSearch;
             });
 
-            filtered.sort((a, b) => b.rawCp - a.rawCp);
+            // CRITICAL: Auto sort exclusively based on F1 Power (f1Raw descending, G is higher than M)
+            filtered.sort((a, b) => (b.f1Raw || 0) - (a.f1Raw || 0));
 
             document.getElementById('headerTotalCount').innerText = `${members.length} MEMBERS TOTAL`;
 
@@ -354,7 +360,7 @@
 
             let html = '';
             filtered.forEach((member, index) => {
-                const rank = index + 1;
+                const rank = index + 1; // Ranks are assigned automatically based on F1 sorting position
                 const rankClass = rank === 1 ? 'rank-1' : (rank === 2 ? 'rank-2' : (rank === 3 ? 'rank-3' : ''));
 
                 const isAct = member.status === 'active';
@@ -369,7 +375,23 @@
                 if (member.faction === 'S') factionClass = 'faction-s';
                 if (member.faction === 'R') factionClass = 'faction-r';
 
-                let diffHtml = showDiffMode ? `<span class="diff-green"><i class="fa-solid fa-arrow-trend-up"></i> +1G</span>` : `<span style="color: #a0a6b5;">-</span>`;
+                // Diff calculation comparing current F1 raw value with the previous history entry
+                let diffHtml = `<span style="color: #a0a6b5;">-</span>`;
+                if (showDiffMode && member.f1History && member.f1History.length >= 2) {
+                    let latestRaw = member.f1Raw || 0;
+                    let prevEntry = member.f1History[member.f1History.length - 2];
+                    let prevRaw = parseCpToRaw(prevEntry.val).raw;
+                    let diffVal = latestRaw - prevRaw;
+                    
+                    if (diffVal > 0) {
+                        let formattedDiff = diffVal >= 1000000000 ? (diffVal / 1000000000).toFixed(1) + 'G' : (diffVal / 1000000).toFixed(0) + 'M';
+                        diffHtml = `<span class="diff-green"><i class="fa-solid fa-arrow-trend-up"></i> +${formattedDiff}</span>`;
+                    } else if (diffVal < 0) {
+                        let absDiff = Math.abs(diffVal);
+                        let formattedDiff = absDiff >= 1000000000 ? (absDiff / 1000000000).toFixed(1) + 'G' : (absDiff / 1000000).toFixed(0) + 'M';
+                        diffHtml = `<span class="diff-red"><i class="fa-solid fa-arrow-trend-down"></i> -${formattedDiff}</span>`;
+                    }
+                }
 
                 let actionCell = isManagementOrAdmin ? `
                     <td style="text-align: center;">
@@ -401,10 +423,7 @@
                         <td>
                             <div style="display: flex; flex-direction: column;">
                                 <input type="text" value="${member.f1Cp || '0G'}" ${isManagementOrAdmin ? `onchange="updateF1Power(${member.id}, this.value)" onkeydown="if(event.key==='Enter') { this.blur(); }"` : 'readonly'} class="editable-input" placeholder="0G">
-                                <div style="display: flex; align-items: center; justify-content: space-between;">
-                                    <span style="font-size: 10px; color: #8c93a6; font-weight: 600; margin-top: 2px;">Last: ${member.prevF1 || 'None'}</span>
-                                    <button class="f1-history-badge" onclick="openF1History(${member.id})"><i class="fa-solid fa-clock-rotate-left"></i> History (${historyCount})</button>
-                                </div>
+                                <button class="f1-history-badge" onclick="openF1History(${member.id})"><i class="fa-solid fa-clock-rotate-left"></i> History (${historyCount})</button>
                             </div>
                         </td>
                         <td style="text-align: center;">
@@ -481,13 +500,19 @@
         window.updateF1Power = function(id, val) {
             const m = members.find(x => x.id === id);
             if(m) {
-                m.prevF1 = m.f1Cp || '0G';
                 const parsed = parseCpToRaw(val);
                 m.f1Cp = parsed.formatted;
+                m.f1Raw = parsed.raw;
                 
                 if (!m.f1History) m.f1History = [];
                 const todayStr = new Date().toISOString().split('T')[0];
-                m.f1History.push({ date: todayStr, val: parsed.formatted });
+                
+                // Avoid duplicate consecutive entries for the same day
+                if (m.f1History.length > 0 && m.f1History[m.f1History.length - 1].date === todayStr) {
+                    m.f1History[m.f1History.length - 1].val = parsed.formatted;
+                } else {
+                    m.f1History.push({ date: todayStr, val: parsed.formatted });
+                }
 
                 saveData(); render();
             }
@@ -510,7 +535,6 @@
             }
         };
 
-        // F1 History Modal handler with Admin-only delete restriction
         window.openF1History = function(id) {
             const m = members.find(x => x.id === id);
             if (!m) return;
@@ -552,7 +576,7 @@
             if (m && m.f1History) {
                 m.f1History.splice(historyIndex, 1);
                 saveData();
-                openF1History(memberId); // Refresh modal list
+                openF1History(memberId);
                 render();
             }
         };
@@ -586,15 +610,17 @@
             if(!name) { alert('Please enter a member name.'); return; }
 
             const parsedCp = parseCpWithCommas(cpInput);
+            const initialF1 = parseCpToRaw('0G');
+            const todayStr = new Date().toISOString().split('T')[0];
 
             members.push({
                 id: Date.now(),
                 name,
                 cp: parsedCp.formatted,
                 rawCp: parsedCp.raw,
-                f1Cp: '0G',
-                prevF1: 'None',
-                f1History: [{ date: new Date().toISOString().split('T')[0], val: '0G' }],
+                f1Cp: initialF1.formatted,
+                f1Raw: initialF1.raw,
+                f1History: [{ date: todayStr, val: initialF1.formatted }],
                 faction,
                 level,
                 rank: 'R1',
@@ -609,7 +635,6 @@
             render();
         });
 
-        // Enhanced screenshot parsing to fix "0 parsed" issues with improved regex matching various screen layouts
         const importBtn = document.getElementById('importBtn');
         const screenshotInput = document.getElementById('screenshotInput');
         importBtn.addEventListener('click', () => screenshotInput.click());
@@ -625,7 +650,6 @@
                     let cleanLine = line.trim();
                     if (!cleanLine) return;
                     
-                    // Flexible regex pattern matching name and number values with commas or numeric suffixes
                     const match = cleanLine.match(/^([a-zA-Z0-9•\s\-]+?)\s+([\d,]+(?:\.\d+)?[GM]?)/i);
                     if (match && match[1].trim().length > 1) {
                         const name = match[1].trim(); 
@@ -637,14 +661,15 @@
                             existing.cp = parsedCp.formatted;
                             existing.rawCp = parsedCp.raw;
                         } else {
+                            const defaultF1 = parseCpToRaw('0G');
                             members.push({ 
                                 id: Date.now() + Math.random(), 
                                 name, 
                                 cp: parsedCp.formatted, 
                                 rawCp: parsedCp.raw, 
-                                f1Cp: '0G', 
-                                prevF1: 'None', 
-                                f1History: [{ date: new Date().toISOString().split('T')[0], val: '0G' }],
+                                f1Cp: defaultF1.formatted, 
+                                f1Raw: defaultF1.raw, 
+                                f1History: [{ date: new Date().toISOString().split('T')[0], val: defaultF1.formatted }],
                                 faction: 'F', 
                                 level: '1', 
                                 rank: 'R1', 
