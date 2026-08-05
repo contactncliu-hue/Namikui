@@ -3,593 +3,380 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Loopy's Playground - Members Management</title>
+    <title>Members Management - Roster Dashboard</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Tesseract.js for Screenshot OCR Processing -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@v5/dist/tesseract.min.js"></script>
+    <!-- Supabase Client Library -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Fredoka+One&family=Montserrat:wght@600;700;800&family=Noto+Sans+SC:wght@900&family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <style>
-        :root {
-            --color-bg-main: #f5f4ef;
-            --color-bg-card: #ffffff;
-            --color-bg-sidebar: #ffffff;
-            --color-primary: #3b52a4;
-            --color-primary-light: #eceff8;
-            --color-text-dark: #2b3044;
-            --color-text-muted: #8c93a6;
-            --color-text-light: #a0a6b5;
-            --color-border: #3b52a4;
-            --color-border-light: #e2e5ed;
-            --color-yellow-bg: #fffdf0;
-            --color-yellow-border: #e2cb6b;
-            --color-yellow-text: #b89117;
-            --color-gold: #f3a808;
-
-            --font-family-base: 'Montserrat', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            --font-family-title: 'Cinzel', serif;
-            --font-family-logo: 'Noto Sans SC', sans-serif;
-
-            --font-xs: 11px;
-            --font-sm: 13px;
-            --font-md: 15px;
-            --font-lg: 18px;
-            --font-xl: 22px;
-            --font-xxl: 28px;
-        }
-
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Open Sans', sans-serif; background-color: var(--color-bg-main); color: var(--color-text-dark); min-height: 100vh; }
-
-        /* LOGIN & MODAL SCREENS */
-        .login-page { display: flex; flex-direction: column; min-height: 100vh; background-color: #ffffff; font-family: var(--font-family-base); }
-        .login-main { flex: 1; display: flex; align-items: center; justify-content: center; padding: 24px; }
-        .login-card { display: flex; flex-direction: column; align-items: center; text-align: center; max-width: 480px; width: 100%; }
-        .login-card__logo-wrapper { position: relative; width: 180px; height: 180px; margin-bottom: 32px; display: flex; justify-content: center; align-items: center; }
-        .login-card__logo-circle { width: 100%; height: 100%; border-radius: 50%; background-color: #c3d2f8; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
-        .login-card__logo-text { font-family: var(--font-family-logo); font-size: 80px; font-weight: 900; color: #324796; line-height: 1; }
-        .login-card__logo-star { position: absolute; bottom: -6px; left: 50%; transform: translateX(-50%); color: #f3a808; font-size: 38px; line-height: 1; z-index: 2; }
-        .login-card__title { font-family: var(--font-family-title); font-size: 22px; font-weight: 700; color: #2d4187; letter-spacing: 1.5px; margin-bottom: 32px; text-transform: uppercase; }
-        .login-card__button { background-color: #f3a808; color: #ffffff; border: none; border-radius: 10px; padding: 14px 0; width: 180px; font-family: var(--font-family-base); font-size: 16px; font-weight: 800; cursor: pointer; margin-bottom: 16px; }
-        .login-card__guest-link { background: none; border: none; color: #4f63a8; font-family: var(--font-family-base); font-size: 14px; font-weight: 700; cursor: pointer; text-transform: uppercase; margin-bottom: 12px; }
-
-        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.4); display: none; align-items: center; justify-content: center; z-index: 1000; }
-        .modal-card { background: white; padding: 24px; border-radius: 8px; width: 100%; max-width: 360px; border: 2px solid var(--color-primary); }
-        .modal-card h3 { margin-bottom: 12px; color: var(--color-primary); font-size: 16px; }
-        .modal-card input, .modal-card select { width: 100%; padding: 10px; margin-bottom: 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
-        .modal-card-btns { display: flex; justify-content: flex-end; gap: 8px; }
-        .login-error-msg { color: #dc2626; font-size: 12px; font-weight: 700; margin-bottom: 10px; display: none; }
-
-        /* APP LAYOUT */
-        .app { display: none; width: 100%; min-height: 100vh; }
-        .sidebar { width: 260px; background-color: var(--color-bg-sidebar); border-right: 2px solid var(--color-border); display: flex; flex-direction: column; flex-shrink: 0; }
-        .sidebar__header { padding: 20px; display: flex; justify-content: center; align-items: center; border-bottom: 2px solid var(--color-border); }
-        .sidebar__logo { width: 70px; height: 70px; border-radius: 50%; background: linear-gradient(135deg, #a5c7f9, #2d55b8); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 24px; }
-        .sidebar__user { padding: 16px 20px; display: flex; align-items: center; gap: 12px; font-weight: 700; font-size: var(--font-sm); color: #62697b; border-bottom: 1px solid var(--color-border-light); }
-        .sidebar__user-avatar { width: 32px; height: 32px; border-radius: 50%; background-color: var(--color-primary); color: white; display: flex; align-items: center; justify-content: center; font-size: 12px; }
-        .sidebar__nav { display: flex; flex-direction: column; gap: 4px; overflow-y: auto; padding-bottom: 20px; flex-grow: 1; }
-        .sidebar__footer { padding: 12px 20px; border-top: 1px solid var(--color-border-light); margin-top: auto; }
-        .sidebar__menu { list-style: none; }
-        .sidebar__item { display: flex; align-items: center; padding: 10px 20px; color: #555b6e; font-weight: 700; font-size: var(--font-xs); text-decoration: none; gap: 12px; cursor: pointer; }
-        .sidebar__item:hover { background-color: #f0f2f8; }
-        .sidebar__item--active { background-color: var(--color-primary); color: white; }
-        .sidebar__item--logout { color: #d9381e; }
-        .sidebar__icon { width: 16px; text-align: center; }
-
-        .main { flex-grow: 1; padding: 20px; display: flex; flex-direction: column; gap: 16px; max-width: 1300px; }
-        .header-card { background: white; border: 2px solid var(--color-border); border-radius: 4px; padding: 20px; display: flex; justify-content: space-between; align-items: center; }
-        .header-card h1 { font-family: 'Fredoka One', cursive, sans-serif; font-size: var(--font-xxl); color: var(--color-primary); text-transform: uppercase; }
-        .header-card p { font-size: var(--font-xs); font-weight: 800; color: var(--color-text-muted); text-transform: uppercase; margin-top: 4px; }
-
-        /* MANAGEMENT PANELS */
-        .admin-controls-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-        .admin-panel { background: #fffdf0; border: 2px dashed #d99f26; border-radius: 4px; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
-        .admin-panel__title { font-weight: 800; font-size: var(--font-xs); color: #b89117; text-transform: uppercase; }
-        .admin-panel__form { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-        .admin-panel__input { padding: 7px 10px; border: 1px solid #d1d5db; border-radius: 4px; font-size: var(--font-xs); outline: none; background: white; }
-        .btn-admin { background: #3b52a4; color: white; border: none; font-weight: 800; font-size: var(--font-xs); padding: 8px 14px; border-radius: 4px; cursor: pointer; }
-
-        /* CONTROLS & SEARCH */
-        .controls-card { background: white; border: 2px solid var(--color-border); border-radius: 4px; padding: 12px; display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
-        .btn-group { display: flex; border: 2px solid var(--color-primary); border-radius: 4px; overflow: hidden; }
-        .btn-toggle { padding: 8px 16px; font-weight: 800; font-size: var(--font-xs); border: none; background: white; color: var(--color-primary); cursor: pointer; }
-        .btn-toggle--active { background-color: var(--color-primary); color: white; }
-        .search-box { flex-grow: 1; max-width: 350px; position: relative; }
-        .search-box__input { width: 100%; padding: 8px 12px 8px 32px; border: 1px solid #d1d5db; background-color: #f7f6f0; border-radius: 4px; font-size: var(--font-sm); outline: none; }
-        .search-box__icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #9ca3af; }
-
-        /* DATA TABLE */
-        .table-card { background: white; border: 2px solid var(--color-border); border-radius: 4px; overflow: hidden; display: flex; flex-direction: column; }
-        .table-wrapper { overflow-x: auto; }
-        .data-table { width: 100%; border-collapse: collapse; text-align: left; font-size: var(--font-sm); }
-        .data-table th { background-color: #eef2f9; padding: 12px 14px; font-size: 11px; font-weight: 800; color: #71788e; text-transform: uppercase; border-bottom: 1px solid var(--color-border-light); white-space: nowrap; }
-        .data-table td { padding: 10px 14px; border-bottom: 1px solid #f0f2f5; vertical-align: middle; font-weight: 700; color: #4a5060; }
-        
-        .col-rank { width: 50px; text-align: center; color: #a0a6b5; }
-        .col-name { font-weight: 800; color: #2b3044; display: flex; align-items: center; gap: 8px; }
-        .col-cp { width: 130px; font-weight: 800; }
-        .col-f1 { width: 150px; }
-        .col-status { width: 90px; text-align: center; }
-        .col-role { width: 60px; text-align: center; }
-        .col-note { min-width: 150px; }
-
-        /* BADGES & HOUSE CIRCLES */
-        .cp-badge { background-color: #16a34a; color: white; padding: 4px 10px; border-radius: 4px; font-weight: 800; font-size: 12px; display: inline-block; }
-        .house-circle { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 800; font-size: 11px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor: pointer; }
-        .house-blue { background-color: #2563eb; }
-        .house-purple { background-color: #9333ea; }
-        .house-orange { background-color: #ea580c; }
-
-        .status-dot { padding: 4px 8px; border-radius: 12px; font-size: 10px; font-weight: 800; cursor: pointer; border: none; text-transform: uppercase; }
-        .status-active { background-color: #dcfce7; color: #16a34a; }
-        .status-inactive { background-color: #fef9c3; color: #ca8a04; }
-        .status-removed { background-color: #fee2e2; color: #dc2626; }
-
-        .role-badge { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; cursor: pointer; user-select: none; }
-        .role-r1, .role-r2, .role-r3 { background-color: #e5e7eb; color: #374151; }
-        .role-r4 { background-color: #dc2626; color: white; }
-        .role-r5 { background-color: #2563eb; color: white; }
-
-        .diff-green { color: #16a34a; font-weight: 800; font-size: 11px; display: inline-flex; align-items: center; gap: 2px; }
-        .diff-red { color: #dc2626; font-weight: 800; font-size: 11px; display: inline-flex; align-items: center; gap: 2px; }
-        .diff-yellow { color: #ca8a04; font-weight: 800; font-size: 11px; display: inline-flex; align-items: center; gap: 2px; }
-        .editable-cell { cursor: pointer; border-bottom: 1px dashed var(--color-primary); }
-
-        @media (max-width: 1024px) {
-            .app { flex-direction: column; }
-            .sidebar { width: 100%; height: auto; }
-            .admin-controls-grid { grid-template-columns: 1fr; }
-        }
+        body { background-color: #0f172a; color: #f8fafc; font-family: ui-sans-serif, system-ui, sans-serif; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #1e293b; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
     </style>
 </head>
-<body>
+<body class="min-h-screen flex flex-col">
 
-    <!-- LOGIN SCREEN -->
-    <div class="login-page" id="loginScreen">
-        <main class="login-main">
-            <section class="login-card">
-                <div class="login-card__logo-wrapper">
-                    <div class="login-card__logo-circle">
-                        <span class="login-card__logo-text">娜美</span>
-                    </div>
-                    <span class="login-card__logo-star">✦</span>
+    <!-- Top Header / Navigation Bar -->
+    <header class="bg-slate-900 border-b border-slate-800 px-6 py-4 flex flex-wrap justify-between items-center gap-4">
+        <div class="flex items-center space-x-4">
+            <a href="index.html" class="text-slate-400 hover:text-white transition flex items-center gap-2">
+                <i class="fa-solid fa-arrow-left"></i> Back to Index
+            </a>
+            <h1 class="text-xl font-bold tracking-wide text-white"><i class="fa-solid fa-users text-indigo-500 mr-2"></i> MEMBERS ROSTER</h1>
+            <span id="member-count-badge" class="bg-indigo-950 text-indigo-400 border border-indigo-800 text-xs px-2.5 py-1 rounded-full font-medium">0 members total</span>
+        </div>
+        <div class="flex items-center gap-3">
+            <span id="user-role-display" class="text-xs uppercase px-3 py-1 bg-slate-800 border border-slate-700 rounded text-slate-300 font-semibold">Role: Guest</span>
+            <button onclick="openUploadModal()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-2 shadow-lg shadow-indigo-600/20">
+                <i class="fa-solid fa-upload"></i> Upload Screenshot
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-6 space-y-6">
+
+        <!-- Controls Bar: Status Filter Tabs & Search -->
+        <div class="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4 bg-slate-900/60 p-4 rounded-xl border border-slate-800 backdrop-blur">
+            <!-- Player Status Tabs -->
+            <div class="flex items-center gap-2 bg-slate-950 p-1 rounded-lg border border-slate-800 w-fit">
+                <button onclick="setStatusFilter('all')" id="filter-tab-all" class="px-4 py-1.5 rounded-md text-xs font-semibold transition bg-indigo-600 text-white">All</button>
+                <button onclick="setStatusFilter('active')" id="filter-tab-active" class="px-4 py-1.5 rounded-md text-xs font-semibold transition text-slate-400 hover:text-white">Active</button>
+                <button onclick="setStatusFilter('inactive')" id="filter-tab-inactive" class="px-4 py-1.5 rounded-md text-xs font-semibold transition text-slate-400 hover:text-white">Inactive</button>
+                <button onclick="setStatusFilter('removed')" id="filter-tab-removed" class="px-4 py-1.5 rounded-md text-xs font-semibold transition text-slate-400 hover:text-white">Removed</button>
+            </div>
+
+            <!-- Search Bar -->
+            <div class="relative flex-1 max-w-md">
+                <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 text-sm"></i>
+                <input type="text" id="member-search" oninput="renderTable()" placeholder="Search name, UID, CP..." class="w-full bg-slate-950 border border-slate-800 rounded-lg pl-10 pr-4 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition">
+            </div>
+        </div>
+
+        <!-- Members Table Card -->
+        <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-xl">
+            <div class="overflow-x-auto custom-scrollbar">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-950/80 text-slate-400 text-xs font-semibold uppercase tracking-wider border-b border-slate-800">
+                            <th class="py-3.5 px-4 w-12 text-center">#</th>
+                            <th class="py-3.5 px-4">In-Game Name</th>
+                            <th class="py-3.5 px-4">Combat Power (CP)</th>
+                            <th class="py-3.5 px-4">F1 Power</th>
+                            <th class="py-3.5 px-4 text-center">Tier Bar</th>
+                            <th class="py-3.5 px-4 text-center">Rank</th>
+                            <th class="py-3.5 px-4 text-center">Diff</th>
+                            <th class="py-3.5 px-4">Note (Admin Only)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="members-table-body" class="divide-y divide-slate-800/60 text-sm">
+                        <!-- Populated via JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+            <!-- Table Footer Statistics -->
+            <div class="bg-slate-950 px-6 py-3 border-t border-slate-800 flex justify-between items-center text-xs text-slate-400">
+                <span id="table-row-count">0 / 0 shown</span>
+                <span id="table-avg-cp">avg CP: 0</span>
+            </div>
+        </div>
+    </main>
+
+    <!-- Upload & OCR Processing Modal -->
+    <div id="upload-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 space-y-6 shadow-2xl relative">
+            <div class="flex justify-between items-center">
+                <h3 class="text-lg font-bold text-white"><i class="fa-solid fa-cloud-arrow-up text-indigo-500 mr-2"></i> Upload Roster Screenshot</h3>
+                <button onclick="closeUploadModal()" class="text-slate-400 hover:text-white text-lg"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="border-2 border-dashed border-slate-700 hover:border-indigo-500 rounded-xl p-8 text-center cursor-pointer transition bg-slate-950/50" onclick="document.getElementById('ocr-file-input').click()">
+                <input type="file" id="ocr-file-input" accept="image/*" class="hidden" onchange="handleImageUpload(event)">
+                <i class="fa-solid fa-image text-3xl text-indigo-400 mb-3"></i>
+                <p class="text-sm font-medium text-slate-300">Click to upload or drag & drop game roster image</p>
+                <p class="text-xs text-slate-500 mt-1">Supports PNG, JPG (Auto-extracts Names, CP & House Levels)</p>
+            </div>
+            <div id="ocr-status-box" class="hidden space-y-3">
+                <div class="flex justify-between text-xs text-slate-400">
+                    <span id="ocr-status-text">Processing image via OCR...</span>
+                    <span id="ocr-progress-pct">0%</span>
                 </div>
-                <h1 class="login-card__title">Members Management</h1>
-                <button type="button" class="login-card__button" id="btnOpenLoginModal">LOG IN</button>
-                <button type="button" class="login-card__guest-link" id="btnGuestAccess">Proceed as Guest</button>
-            </section>
-        </main>
-    </div>
-
-    <!-- LOGIN MODAL -->
-    <div class="modal-overlay" id="loginModal">
-        <div class="modal-card">
-            <h3>System Login</h3>
-            <div id="loginErrorMsg" class="login-error-msg"></div>
-            <input type="text" id="loginUsername" placeholder="Username (admin, manager, member...)">
-            <input type="password" id="loginPassword" placeholder="Password">
-            <div class="modal-card-btns">
-                <button class="btn-admin" style="background:#62697b;" id="btnCancelModal">Cancel</button>
-                <button class="btn-admin" id="btnSubmitLogin">Login</button>
+                <div class="w-full bg-slate-950 rounded-full h-2 overflow-hidden border border-slate-800">
+                    <div id="ocr-progress-bar" class="bg-indigo-600 h-full w-0 transition-all duration-300"></div>
+                </div>
+            </div>
+            <div class="flex justify-end gap-3 pt-2">
+                <button onclick="closeUploadModal()" class="px-4 py-2 rounded-lg text-sm bg-slate-800 text-slate-300 hover:bg-slate-700 font-medium transition">Cancel</button>
             </div>
         </div>
     </div>
 
-    <!-- APP DASHBOARD -->
-    <div class="app" id="appDashboard">
-        <aside class="sidebar">
-            <div class="sidebar__header"><div class="sidebar__logo">娜美</div></div>
-            <div class="sidebar__user">
-                <div class="sidebar__user-avatar" id="userAvatarIcon">U</div>
-                <div>
-                    <div id="userRoleDisplay" style="font-size: 11px; text-transform: uppercase;">USERNAME</div>
-                    <div id="userPermissionBadge" style="font-size: 9px; color: #8c93a6;">Role</div>
-                </div>
-            </div>
-            <nav class="sidebar__nav">
-                <ul class="sidebar__menu">
-                    <li><a class="sidebar__item" href="index.html"><span class="sidebar__icon">|</span> HOME DASHBOARD</a></li>
-                    <li><a class="sidebar__item sidebar__item--active" data-view="members"><span class="sidebar__icon">|</span> MEMBERS DIRECTORY</a></li>
-                    <li><a class="sidebar__item" href="blackgold.html"><span class="sidebar__icon">|</span> BLACK GOLD</a></li>
-                </ul>
-            </nav>
-            <div class="sidebar__footer">
-                <a class="sidebar__item sidebar__item--logout" id="sidebarLogoutBtn"><span class="sidebar__icon">|</span> LOG OUT</a>
-            </div>
-        </aside>
-
-        <main class="main">
-            <header class="header-card">
-                <div>
-                    <h1>Alliance Members Directory</h1>
-                    <p id="headerMemberTotal">0 MEMBERS TOTAL</p>
-                </div>
-            </header>
-
-            <!-- MANAGEMENT PANELS (Screenshot Upload & Manual Add) -->
-            <div class="admin-controls-grid" id="adminControlsGrid" style="display: none;">
-                <div class="admin-panel">
-                    <div class="admin-panel__title">Upload Screenshot (OCR Parsing)</div>
-                    <div class="admin-panel__form">
-                        <input type="file" id="screenshotInput" accept="image/*" class="admin-panel__input" style="flex-grow:1;">
-                        <button class="btn-admin" id="btnProcessOcr">Extract Data</button>
-                    </div>
-                </div>
-
-                <div class="admin-panel">
-                    <div class="admin-panel__title">Manual Member Registration</div>
-                    <div class="admin-panel__form">
-                        <input type="text" class="admin-panel__input" id="manualName" placeholder="In-Game Name" style="flex-grow:1;">
-                        <input type="text" class="admin-panel__input" id="manualCp" placeholder="CP (e.g. 5.84G)" style="width:110px;">
-                        <select class="admin-panel__input" id="manualTier" style="width:70px;">
-                            <option value="F">F</option>
-                            <option value="S">S</option>
-                            <option value="E">E</option>
-                        </select>
-                        <button class="btn-admin" id="btnAddManual">Add</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- CONTROLS & SEARCH BAR -->
-            <section class="controls-card">
-                <div class="btn-group">
-                    <button class="btn-toggle btn-toggle--active" id="btnTabAll">ALL MEMBERS</button>
-                    <button class="btn-toggle" id="btnTabRanking">RANKING VIEW</button>
-                </div>
-                <div class="search-box">
-                    <span class="search-box__icon">|</span>
-                    <input type="text" class="search-box__input" id="searchInput" placeholder="Search name, CP...">
-                </div>
-                <button class="btn-admin" id="btnToggleDiff" style="background:white; border:2px solid var(--color-primary); color:var(--color-primary);">± DIFF</button>
-            </section>
-
-            <!-- MEMBERS DATA TABLE -->
-            <div class="table-card">
-                <div class="table-wrapper">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th class="col-rank">#</th>
-                                <th class="col-status">Status</th>
-                                <th class="col-name">In-Game Name</th>
-                                <th class="col-role">Rank</th>
-                                <th class="col-cp">Combat Power (CP)</th>
-                                <th class="col-f1">F1 Power & Tier</th>
-                                <th class="col-note">Note (Admin Only)</th>
-                            </tr>
-                        </thead>
-                        <tbody id="membersTableBody">
-                            <tr><td colspan="7" style="text-align: center; color: #8c93a6;">Loading roster...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </main>
-    </div>
-
+    <!-- Script Application Logic -->
     <script>
-        const SUPABASE_URL = 'https://sqrrfslqwcgpsmzdovru.supabase.co';
-        const SUPABASE_ANON_KEY = 'sb_publishable_rb70-VY2GstWzdoXmoUkwg_Iw3EiqFO';
-        const { createClient } = supabase;
-        const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // Supabase Initialization Configuration (Replace with your actual keys if needed)
+        const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+        const SUPABASE_KEY = 'YOUR_SUPABASE_ANON_KEY';
+        let supabaseClient = null;
+        try {
+            if (SUPABASE_URL !== 'YOUR_SUPABASE_URL') {
+                supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+            }
+        } catch(e) { console.warn("Supabase init skipped/failed, running local state fallback."); }
 
-        let currentUser = {
-            username: localStorage.getItem('amt_username') || null,
-            role: localStorage.getItem('amt_userRole') || null
-        };
-
-        let members = [];
-        let showDiffMode = false;
-        let accounts = [
-            { username: 'loopy', pass: '2851849', role: 'admin' },
-            { username: 'manager1', pass: 'manager123', role: 'management' },
-            { username: 'member1', pass: 'member123', role: 'member' }
+        // Local Storage fallback & state
+        let membersData = JSON.parse(localStorage.getItem('roster_members_data')) || [
+            { id: 1, name: "ZGUNDAM", cp: "5.84G", rawCp: 5840000000, f1Cp: "5.50G", prevF1: "5.30G", tier: "E", rank: "R5", status: "active", note: "-" },
+            { id: 2, name: "Dong gu", cp: "5.59G", rawCp: 5590000000, f1Cp: "5.20G", prevF1: "5.00G", tier: "S", rank: "R4", status: "active", note: "-" },
+            { id: 3, name: "RRAVII", cp: "5.39G", rawCp: 5390000000, f1Cp: "4.90G", prevF1: "4.80G", tier: "F", rank: "R5", status: "active", note: "R5" },
+            { id: 4, name: "temple82_템플", cp: "5.33G", rawCp: 5330000000, f1Cp: "4.85G", prevF1: "4.70G", tier: "E", rank: "R3", status: "active", note: "-" },
+            { id: 5, name: "Thò Bày Màu", cp: "4.68G", rawCp: 4680000000, f1Cp: "4.20G", prevF1: "4.10G", tier: "S", rank: "R2", status: "active", note: "mama" }
         ];
 
-        async function loadData() {
-            try {
-                const { data, error } = await db.from('app_data').select('*');
-                if (error) throw error;
-                if (data && data.length > 0) {
-                    data.forEach(row => {
-                        if (row.key === 'members') members = row.value || [];
-                        if (row.key === 'accounts') accounts = row.value || accounts;
-                    });
+        let currentUserRole = localStorage.getItem('roster_user_role') || 'admin'; // 'admin', 'management', or 'member'
+        let currentStatusFilter = 'all';
+
+        function initApp() {
+            updateRoleDisplay();
+            renderTable();
+        }
+
+        function updateRoleDisplay() {
+            const roleEl = document.getElementById('user-role-display');
+            roleEl.innerText = `Role: ${currentUserRole}`;
+        }
+
+        function setStatusFilter(status) {
+            currentStatusFilter = status;
+            ['all', 'active', 'inactive', 'removed'].forEach(s => {
+                const btn = document.getElementById(`filter-tab-${s}`);
+                if (s === status) {
+                    btn.className = "px-4 py-1.5 rounded-md text-xs font-semibold transition bg-indigo-600 text-white";
+                } else {
+                    btn.className = "px-4 py-1.5 rounded-md text-xs font-semibold transition text-slate-400 hover:text-white";
                 }
-            } catch (err) {
-                console.error('Cloud load error:', err);
-            }
+            });
+            renderTable();
+        }
 
-            if (members.length === 0) {
-                members = [
-                    { id: 1, name: 'ZGUNDAM', cp: '5.84G', prevCp: '5.70G', f1Val: '110', f1Tier: 'F', status: 'active', role: 'R5', note: '-' },
-                    { id: 2, name: 'Dong gu', cp: '5.59G', prevCp: '5.60G', f1Val: '110', f1Tier: 'S', status: 'active', role: 'R4', note: '-' },
-                    { id: 3, name: 'RRAVII', cp: '5.39G', prevCp: '5.30G', f1Val: '110', f1Tier: 'E', status: 'active', role: 'R5', note: 'R5' },
-                    { id: 4, name: 'Yuna', cp: '4.01G', prevCp: '3.90G', f1Val: '110', f1Tier: 'F', status: 'active', role: 'R3', note: 'Lily 유L' }
-                ];
-            }
-
-            if (currentUser.role && currentUser.username) {
-                enterDashboard();
-            } else {
-                showLoginScreen();
+        function cycleRank(id) {
+            const ranks = ["R1", "R2", "R3", "R4", "R5"];
+            const member = membersData.find(m => m.id === id);
+            if (member) {
+                let currentIdx = ranks.indexOf(member.rank);
+                member.rank = ranks[(currentIdx + 1) % ranks.length];
+                saveAndRefresh();
             }
         }
 
-        async function saveData() {
-            try {
-                await db.from('app_data').upsert({ id: 2, key: 'members', value: members }, { onConflict: 'id' });
-                await db.from('app_data').upsert({ id: 4, key: 'accounts', value: accounts }, { onConflict: 'id' });
-            } catch (err) {
-                console.error('Save error:', err);
+        function cycleTier(id) {
+            const tiers = ["F", "S", "E"];
+            const member = membersData.find(m => m.id === id);
+            if (member) {
+                let currentIdx = tiers.indexOf(member.tier);
+                member.tier = tiers[(currentIdx + 1) % tiers.length];
+                saveAndRefresh();
             }
         }
 
-        function showLoginScreen() {
-            document.getElementById('loginScreen').style.display = 'flex';
-            document.getElementById('appDashboard').style.display = 'none';
-        }
-
-        function enterDashboard() {
-            document.getElementById('loginScreen').style.display = 'none';
-            document.getElementById('appDashboard').style.display = 'flex';
-            render();
-        }
-
-        document.getElementById('btnOpenLoginModal').addEventListener('click', () => {
-            document.getElementById('loginModal').style.display = 'flex';
-        });
-
-        document.getElementById('btnCancelModal').addEventListener('click', () => {
-            document.getElementById('loginModal').style.display = 'none';
-        });
-
-        document.getElementById('btnGuestAccess').addEventListener('click', () => {
-            currentUser.username = 'Guest User';
-            currentUser.role = 'guest';
-            enterDashboard();
-        });
-
-        document.getElementById('btnSubmitLogin').addEventListener('click', () => {
-            const u = document.getElementById('loginUsername').value.trim();
-            const p = document.getElementById('loginPassword').value;
-            const found = accounts.find(a => a.username.toLowerCase() === u.toLowerCase() && a.pass === p);
-            if (found) {
-                currentUser.username = found.username;
-                currentUser.role = found.role;
-                localStorage.setItem('amt_username', found.username);
-                localStorage.setItem('amt_userRole', found.role);
-                document.getElementById('loginModal').style.display = 'none';
-                enterDashboard();
-            } else {
-                const err = document.getElementById('loginErrorMsg');
-                err.innerText = 'Invalid login credentials.';
-                err.style.display = 'block';
+        function updateMemberField(id, field, value) {
+            const member = membersData.find(m => m.id === id);
+            if (member) {
+                if (field === 'f1Cp') {
+                    member.prevF1 = member.f1Cp || '0G';
+                    member.f1Cp = value;
+                } else {
+                    member[field] = value;
+                }
+                saveAndRefresh();
             }
-        });
-
-        function handleLogout() {
-            currentUser.role = null;
-            currentUser.username = null;
-            localStorage.clear();
-            showLoginScreen();
         }
 
-        document.getElementById('sidebarLogoutBtn').addEventListener('click', handleLogout);
-
-        function parseCpValue(str) {
-            if (!str) return 0;
-            const clean = str.toUpperCase().trim();
-            let multiplier = 1;
-            if (clean.includes('G')) multiplier = 1000000000;
-            else if (clean.includes('M')) multiplier = 1000000;
-            else if (clean.includes('K')) multiplier = 1000;
-            const num = parseFloat(clean.replace(/[^0-9.]/g, '')) || 0;
-            return num * multiplier;
+        function setPlayerStatus(id, status) {
+            const member = membersData.find(m => m.id === id);
+            if(member) {
+                member.status = status;
+                saveAndRefresh();
+            }
         }
 
-        function render() {
-            const searchVal = document.getElementById('searchInput').value.toLowerCase();
-            const isAdminOrMgmt = currentUser.role === 'admin' || currentUser.role === 'management';
+        function saveAndRefresh() {
+            localStorage.setItem('roster_members_data', JSON.stringify(membersData));
+            renderTable();
+        }
 
-            document.getElementById('adminControlsGrid').style.display = isAdminOrMgmt ? 'grid' : 'none';
-            document.getElementById('userRoleDisplay').innerText = (currentUser.username || 'Guest').toUpperCase();
-            document.getElementById('userPermissionBadge').innerText = `Role: ${(currentUser.role || 'guest').toUpperCase()}`;
-            document.getElementById('userAvatarIcon').innerText = (currentUser.username || 'G').charAt(0).toUpperCase();
+        function renderTable() {
+            const tbody = document.getElementById('members-table-body');
+            const searchVal = document.getElementById('member-search').value.toLowerCase();
+            
+            // Filter data
+            let filtered = membersData.filter(m => {
+                const matchesStatus = currentStatusFilter === 'all' || m.status === currentStatusFilter;
+                const matchesSearch = m.name.toLowerCase().includes(searchVal) || m.cp.toLowerCase().includes(searchVal);
+                return matchesStatus && matchesSearch;
+            });
 
-            // Sort members by Combat Power descending
-            members.sort((a, b) => parseCpValue(b.cp) - parseCpValue(a.cp));
+            // Sort by raw CP descending for ranking
+            filtered.sort((a, b) => b.rawCp - a.rawCp);
 
-            const filtered = members.filter(m => m.name.toLowerCase().includes(searchVal) || m.cp.toLowerCase().includes(searchVal));
-            document.getElementById('headerMemberTotal').innerText = `${members.length} MEMBERS TOTAL`;
+            document.getElementById('member-count-badge').innerText = `${membersData.length} members total`;
+            document.getElementById('table-row-count').innerText = `${filtered.length} / ${membersData.length} shown`;
 
-            const tbody = document.getElementById('membersTableBody');
             if (filtered.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #8c93a6;">No members found.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="8" class="text-center py-8 text-slate-500">No members found.</td></tr>`;
+                document.getElementById('table-avg-cp').innerText = `avg CP: 0`;
                 return;
             }
 
-            tbody.innerHTML = filtered.map((m, idx) => {
-                const rank = idx + 1;
-                const statusClass = m.status === 'active' ? 'status-active' : (m.status === 'inactive' ? 'status-inactive' : 'status-removed');
-                const roleClass = `role-${m.role.toLowerCase()}`;
-                
-                let tierClass = 'house-blue';
-                if (m.f1Tier === 'S') tierClass = 'house-purple';
-                if (m.f1Tier === 'E') tierClass = 'house-orange';
+            let html = '';
+            filtered.forEach((m, index) => {
+                // Determine rank styling
+                let rankClass = "bg-slate-800 text-slate-300 hover:bg-slate-700";
+                if (m.rank === 'R4') rankClass = "bg-red-600 text-white shadow-md shadow-red-600/30";
+                if (m.rank === 'R5') rankClass = "bg-blue-600 text-white shadow-md shadow-blue-600/30";
 
-                let diffHtml = '';
-                if (showDiffMode) {
-                    const currentNum = parseCpValue(m.cp);
-                    const prevNum = parseCpValue(m.prevCp || m.cp);
-                    if (currentNum > prevNum) diffHtml = `<div style="font-size:10px;"><span class="diff-green">▲ Up</span></div>`;
-                    else if (currentNum < prevNum) diffHtml = `<div style="font-size:10px;"><span class="diff-red">▼ Down</span></div>`;
-                    else diffHtml = `<div style="font-size:10px;"><span class="diff-yellow">▬ Same</span></div>`;
-                }
+                // Tier circle bar color styling (F = Blue, S = Purple, E = Orange)
+                let tierBg = "bg-blue-600 text-white";
+                if (m.tier === 'S') tierBg = "bg-purple-600 text-white";
+                if (m.tier === 'E') tierBg = "bg-orange-600 text-white";
 
-                return `
-                    <tr>
-                        <td class="col-rank">${rank}</td>
-                        <td class="col-status">
-                            <button class="status-dot ${statusClass}" onclick="cycleStatus(${m.id})">${m.status}</button>
-                        </td>
-                        <td class="col-name">
-                            <span>${m.name}</span>
-                        </td>
-                        <td class="col-role">
-                            <div class="role-badge ${roleClass}" onclick="cycleRole(${m.id})">${m.role}</div>
-                        </td>
-                        <td class="col-cp">
-                            <span class="cp-badge">${m.cp}</span>
-                            ${diffHtml}
-                        </td>
-                        <td class="col-f1">
-                            <div style="display: flex; align-items: center; gap: 10px;">
-                                <div class="house-circle ${tierClass}" onclick="${isAdminOrMgmt ? `cycleTier(${m.id})` : ''}" title="Click to change Tier">${m.f1Tier}</div>
-                                <div>
-                                    <div class="${isAdminOrMgmt ? 'editable-cell' : ''}" onclick="${isAdminOrMgmt ? `editF1Val(${m.id})` : ''}" style="font-weight:800; font-size:13px;">${m.f1Val}</div>
-                                    <div style="font-size: 10px; color: #8c93a6; font-weight:600;">Last CP: ${m.prevCp || m.cp}</div>
+                // Status tab button highlights before name
+                const isAct = m.status === 'active';
+                const isInact = m.status === 'inactive';
+                const isRem = m.status === 'removed';
+
+                html += `
+                    <tr class="hover:bg-slate-800/40 transition">
+                        <td class="py-3 px-4 text-center font-mono text-slate-500">${index + 1}</td>
+                        <td class="py-3 px-4">
+                            <div class="flex items-center gap-3">
+                                <!-- Status Clickable Tabs before name -->
+                                <div class="flex items-center bg-slate-950 p-0.5 rounded border border-slate-800 text-[10px]">
+                                    <button onclick="setPlayerStatus(${m.id}, 'active')" class="px-1.5 py-0.5 rounded ${isAct ? 'bg-emerald-600 text-white font-bold' : 'text-slate-500 hover:text-slate-300'}" title="Active">A</button>
+                                    <button onclick="setPlayerStatus(${m.id}, 'inactive')" class="px-1.5 py-0.5 rounded ${isInact ? 'bg-amber-600 text-white font-bold' : 'text-slate-500 hover:text-slate-300'}" title="Inactive">I</button>
+                                    <button onclick="setPlayerStatus(${m.id}, 'removed')" class="px-1.5 py-0.5 rounded ${isRem ? 'bg-rose-600 text-white font-bold' : 'text-slate-500 hover:text-slate-300'}" title="Removed">R</button>
                                 </div>
+                                <span class="font-semibold text-white">${m.name}</span>
+                                <!-- Round dot after name to cycle R1-R5 -->
+                                <button onclick="cycleRank(${m.id})" class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition ${rankClass}" title="Click to change rank">
+                                    ${m.rank}
+                                </button>
                             </div>
                         </td>
-                        <td class="col-note">
-                            <span class="${isAdminOrMgmt ? 'editable-cell' : ''}" onclick="${isAdminOrMgmt ? `editNote(${m.id})` : ''}">${m.note || '-'}</span>
+                        <td class="py-3 px-4 font-mono font-medium text-emerald-400">
+                            <span class="bg-emerald-950/80 border border-emerald-800/60 px-2.5 py-1 rounded text-xs">${m.cp}</span>
+                        </td>
+                        <td class="py-3 px-4">
+                            <div class="flex flex-col">
+                                <input type="text" value="${m.f1Cp || '0G'}" onchange="updateMemberField(${m.id}, 'f1Cp', this.value)" class="bg-slate-950 border border-slate-800 rounded px-2 py-1 text-xs font-mono text-slate-200 focus:outline-none focus:border-indigo-500 w-28" placeholder="0.00G">
+                                <span class="text-[10px] text-slate-500 mt-0.5">Last F1: ${m.prevF1 || 'None'}</span>
+                            </div>
+                        </td>
+                        <td class="py-3 px-4 text-center">
+                            <button onclick="cycleTier(${m.id})" class="w-8 h-8 rounded-full inline-flex items-center justify-center text-xs font-bold shadow transition ${tierBg}" title="Click to cycle tier (F, S, E)">
+                                ${m.tier}
+                            </button>
+                        </td>
+                        <td class="py-3 px-4 text-center font-bold text-slate-300">
+                            #${index + 1}
+                        </td>
+                        <td class="py-3 px-4 text-center">
+                            <span class="text-emerald-400 text-xs font-semibold flex items-center justify-center gap-1">
+                                <i class="fa-solid fa-arrow-trend-up"></i> +0.05G
+                            </span>
+                        </td>
+                        <td class="py-3 px-4">
+                            <input type="text" value="${m.note || ''}" onchange="updateMemberField(${m.id}, 'note', this.value)" class="bg-slate-950/50 border border-slate-800/80 rounded px-2 py-1 text-xs text-slate-300 focus:outline-none focus:border-indigo-500 w-full" placeholder="Add note...">
                         </td>
                     </tr>
                 `;
-            }).join('');
+            });
+            tbody.innerHTML = html;
         }
 
-        window.cycleStatus = function(id) {
-            const m = members.find(x => x.id === id);
-            if (!m) return;
-            if (m.status === 'active') m.status = 'inactive';
-            else if (m.status === 'inactive') m.status = 'removed';
-            else m.status = 'active';
-            saveData(); render();
-        };
+        // Modal controls
+        function openUploadModal() { document.getElementById('upload-modal').classList.remove('hidden'); }
+        function closeUploadModal() { 
+            document.getElementById('upload-modal').classList.add('hidden'); 
+            document.getElementById('ocr-status-box').classList.add('hidden');
+        }
 
-        window.cycleRole = function(id) {
-            const m = members.find(x => x.id === id);
-            if (!m) return;
-            const roles = ['R1', 'R2', 'R3', 'R4', 'R5'];
-            const nextIdx = (roles.indexOf(m.role) + 1) % roles.length;
-            m.role = roles[nextIdx];
-            saveData(); render();
-        };
+        // OCR Handler via Tesseract.js
+        async function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
 
-        window.cycleTier = function(id) {
-            const m = members.find(x => x.id === id);
-            if (!m) return;
-            const tiers = ['F', 'S', 'E'];
-            const nextIdx = (tiers.indexOf(m.f1Tier) + 1) % tiers.length;
-            m.f1Tier = tiers[nextIdx];
-            saveData(); render();
-        };
+            const statusBox = document.getElementById('ocr-status-box');
+            const statusText = document.getElementById('ocr-status-text');
+            const progressBar = document.getElementById('ocr-progress-bar');
+            const progressPct = document.getElementById('ocr-progress-pct');
 
-        window.editF1Val = function(id) {
-            const m = members.find(x => x.id === id);
-            const val = prompt('Edit F1 Power (e.g. 110):', m.f1Val);
-            if (val !== null) {
-                m.f1Val = val.trim();
-                saveData(); render();
-            }
-        };
-
-        window.editNote = function(id) {
-            const m = members.find(x => x.id === id);
-            const val = prompt('Edit Member Note:', m.note === '-' ? '' : m.note);
-            if (val !== null) {
-                m.note = val.trim() || '-';
-                saveData(); render();
-            }
-        };
-
-        document.getElementById('btnAddManual').addEventListener('click', () => {
-            const name = document.getElementById('manualName').value.trim();
-            const cp = document.getElementById('manualCp').value.trim();
-            const tier = document.getElementById('manualTier').value;
-
-            if (!name || !cp) {
-                alert('Please fill out both name and combat power.');
-                return;
-            }
-
-            members.push({
-                id: Date.now(),
-                name,
-                cp,
-                prevCp: cp,
-                f1Val: '110',
-                f1Tier: tier,
-                status: 'active',
-                role: 'R1',
-                note: '-'
-            });
-
-            document.getElementById('manualName').value = '';
-            document.getElementById('manualCp').value = '';
-            saveData(); render();
-            alert('Member added successfully!');
-        });
-
-        document.getElementById('btnProcessOcr').addEventListener('click', async () => {
-            const fileInput = document.getElementById('screenshotInput');
-            if (!fileInput.files[0]) {
-                alert('Please select an image file first.');
-                return;
-            }
-            const btn = document.getElementById('btnProcessOcr');
-            btn.innerText = 'EXTRACTING...';
-            btn.disabled = true;
+            statusBox.classList.remove('hidden');
+            statusText.innerText = "Initializing OCR Engine...";
 
             try {
-                const { data: { text } } = await Tesseract.recognize(fileInput.files[0], 'eng');
-                let count = 0;
-                text.split('\n').forEach(line => {
-                    const match = line.match(/([a-zA-Z0-9\s_\u4e00-\u9fa5]+)\s+(\d+\.?\d*[GMK])/i);
-                    if (match && match[1].trim().length > 1) {
-                        const name = match[1].trim();
-                        const cp = match[2].trim().toUpperCase();
-                        const existing = members.find(m => m.name.toLowerCase() === name.toLowerCase());
-                        if (existing) {
-                            existing.prevCp = existing.cp;
-                            existing.cp = cp;
-                        } else {
-                            members.push({
-                                id: Date.now() + Math.random(),
-                                name,
-                                cp,
-                                prevCp: cp,
-                                f1Val: '110',
-                                f1Tier: 'F',
-                                status: 'active',
-                                role: 'R1',
-                                note: '-'
-                            });
-                        }
-                        count++;
-                    }
-                });
-                saveData(); render();
-                alert(`OCR Scan complete! Parsed/Updated ${count} records.`);
+                const worker = await Tesseract.createWorker('eng');
+                statusText.innerText = "Scanning image text...";
+                
+                const ret = await worker.recognize(file);
+                await worker.terminate();
+
+                statusText.innerText = "Parsing extracted roster lines...";
+                parseOcrText(ret.data.text);
+
+                progressPct.innerText = "100%";
+                progressBar.style.width = "100%";
+
+                setTimeout(() => {
+                    closeUploadModal();
+                    renderTable();
+                    alert("Screenshot processed and members updated successfully!");
+                }, 800);
+
             } catch (err) {
-                alert('Error extracting text via OCR.');
-            } finally {
-                btn.innerText = 'Extract Data';
-                btn.disabled = false;
-                fileInput.value = '';
+                console.error(err);
+                statusText.innerText = "OCR Parsing failed. Try a clearer screenshot.";
             }
-        });
+        }
 
-        document.getElementById('btnToggleDiff').addEventListener('click', () => {
-            showDiffMode = !showDiffMode;
-            document.getElementById('btnToggleDiff').style.background = showDiffMode ? 'var(--color-primary)' : 'white';
-            document.getElementById('btnToggleDiff').style.color = showDiffMode ? 'white' : 'var(--color-primary)';
-            render();
-        });
+        // Simple line parser for extracted names and combat power values
+        function parseOcrText(text) {
+            const lines = text.split('\n');
+            lines.forEach(line => {
+                line = line.trim();
+                if (line.length < 3) return;
+                // Simple pattern match for CP numbers containing G or M (e.g., 5.84G)
+                const cpMatch = line.match(/(\d+\.\d+[GM])/i);
+                if (cpMatch) {
+                    let cpStr = cpMatch[1].toUpperCase();
+                    let nameStr = line.replace(cpMatch[0], '').trim().replace(/^[#\d\.\-\s]+/, '');
+                    if (nameStr.length < 2) nameStr = "Player " + (membersData.length + 1);
 
-        document.getElementById('searchInput').addEventListener('input', render);
-        window.addEventListener('DOMContentLoaded', loadData);
+                    let rawVal = parseFloat(cpStr) * (cpStr.includes('G') ? 1000000000 : 1000000);
+
+                    // Add new parsed member if not duplicate name
+                    if (!membersData.some(m => m.name.toLowerCase() === nameStr.toLowerCase())) {
+                        membersData.push({
+                            id: membersData.length + 1,
+                            name: nameStr,
+                            cp: cpStr,
+                            rawCp: rawVal,
+                            f1Cp: "0.00G",
+                            prevF1: "None",
+                            tier: "F",
+                            rank: "R1",
+                            status: "active",
+                            note: ""
+                        });
+                    }
+                }
+            });
+        }
+
+        window.onload = initApp;
     </script>
 </body>
 </html>
