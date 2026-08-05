@@ -159,7 +159,7 @@
 
         <div class="manual-box">
             <i class="fa-solid fa-circle-info"></i>
-            <div><strong>CP & F1 Power Manual:</strong> Calculates power for 100M and above using commas instead of decimals (e.g., 5,390,000,000 or formatted). Values from 0 to 999 without explicit suffix are treated as Millions (<strong>M</strong>). Numbers with multi-digit integer formats are treated as Billions (<strong>G</strong>). **G** is higher than **M** and auto-sorts accordingly. Press <kbd>Enter</kbd> to save changes instantly.</div>
+            <div><strong>CP & F1 Power Manual:</strong> Calculates power for 100M and above. Values from 0 to 999.999 without explicit suffix are treated as Millions (<strong>M</strong>). Decimal numbers with 2-digit integer format (e.g. 00.00 or 5.84) are treated as Billions (<strong>G</strong>). **G** is higher than **M** and auto-sorts accordingly. Press <kbd>Enter</kbd> to save changes instantly.</div>
         </div>
 
         <div class="table-card">
@@ -194,7 +194,7 @@
             <label>In-Game Name</label>
             <input type="text" id="newMemberName" placeholder="Enter fighter name...">
             <label>Combat Power (CP)</label>
-            <input type="text" id="newMemberCp" placeholder="e.g. 5,390,000,000 or 5,39G">
+            <input type="text" id="newMemberCp" placeholder="e.g. 5.84 or 550.5M">
             <label>Initial Faction</label>
             <select id="newMemberFaction">
                 <option value="F">F (Blue)</option>
@@ -230,41 +230,28 @@
         let showDiffMode = false;
         let currentStatusFilter = 'all';
 
-        // Parsing rule using commas instead of decimals for display (0-999 -> M, larger/formats -> G)
+        // Robust parsing rule for CP & F1 Power (0-999.999 -> M, 00.00 decimal format -> G, explicit G/M support)
         function parseCpToRaw(cpStr) {
-            if (!cpStr) return { formatted: '0M', raw: 0 };
+            if (!cpStr) return { formatted: '0.00M', raw: 0 };
             let cleanStr = cpStr.toString().trim().toUpperCase();
-            
-            // Extract numeric value safely ignoring characters except digits
             let numVal = parseFloat(cleanStr.replace(/[^0-9.]/g, '')) || 0;
 
             let isExplicitG = cleanStr.includes('G');
             let isExplicitM = cleanStr.includes('M');
 
-            let raw = 0;
             if (isExplicitG) {
-                raw = numVal * 1000000000;
+                return { formatted: numVal.toFixed(2) + 'G', raw: numVal * 1000000000 };
             } else if (isExplicitM) {
-                raw = numVal * 1000000;
+                return { formatted: numVal.toFixed(2) + 'M', raw: numVal * 1000000 };
             } else {
-                if (numVal >= 0 && numVal <= 999 && !cleanStr.includes('.')) {
-                    raw = numVal * 1000000;
+                // If value is between 0 and 999.999 and written without billion formatting indicators
+                if (numVal >= 0 && numVal <= 999.999 && !cleanStr.includes('.')) {
+                    return { formatted: numVal.toFixed(2) + 'M', raw: numVal * 1000000 };
                 } else {
-                    raw = numVal * 1000000000;
+                    // Decimal numbers like 00.00 or numbers >= 1000 default to Billions (G)
+                    return { formatted: numVal.toFixed(2) + 'G', raw: numVal * 1000000000 };
                 }
             }
-
-            // Format using commas with NO decimals
-            let formatted = '';
-            if (raw >= 1000000000) {
-                let gVal = raw / 1000000000;
-                formatted = gVal % 1 === 0 ? gVal.toLocaleString() + 'G' : gVal.toFixed(1).replace(/\.0$/, '') + 'G';
-            } else {
-                let mVal = raw / 1000000;
-                formatted = mVal % 1 === 0 ? mVal.toLocaleString() + 'M' : mVal.toFixed(1).replace(/\.0$/, '') + 'M';
-            }
-
-            return { formatted, raw };
         }
 
         async function loadDataFromCloud() {
@@ -282,9 +269,9 @@
 
             if (members.length === 0) {
                 members = [
-                    { id: 1, name: "ZGUNDAM", cp: "5G", rawCp: 5840000000, f1Cp: "5G", prevF1: "5G", faction: "R", level: "10", rank: "R5", status: "active", note: "-" },
-                    { id: 2, name: "Dong gu", cp: "5G", rawCp: 5590000000, f1Cp: "5G", prevF1: "5G", faction: "S", level: "i2", rank: "R4", status: "active", note: "-" },
-                    { id: 3, name: "RRAVII", cp: "5G", rawCp: 5390000000, f1Cp: "4G", prevF1: "4G", faction: "F", level: "15", rank: "R5", status: "active", note: "R5" }
+                    { id: 1, name: "ZGUNDAM", cp: "5.84G", rawCp: 5840000000, f1Cp: "5.50G", prevF1: "5.30G", faction: "R", level: "10", rank: "R5", status: "active", note: "-" },
+                    { id: 2, name: "Dong gu", cp: "5.59G", rawCp: 5590000000, f1Cp: "5.20G", prevF1: "5.00G", faction: "S", level: "i2", rank: "R4", status: "active", note: "-" },
+                    { id: 3, name: "RRAVII", cp: "5.39G", rawCp: 5390000000, f1Cp: "4.90G", prevF1: "4.80G", faction: "F", level: "15", rank: "R5", status: "active", note: "R5" }
                 ];
             } else {
                 members.forEach(m => {
@@ -350,7 +337,7 @@
                 if (member.faction === 'S') factionClass = 'faction-s';
                 if (member.faction === 'R') factionClass = 'faction-r';
 
-                let diffHtml = showDiffMode ? `<span class="diff-green"><i class="fa-solid fa-arrow-trend-up"></i> +1G</span>` : `<span style="color: #a0a6b5;">-</span>`;
+                let diffHtml = showDiffMode ? `<span class="diff-green"><i class="fa-solid fa-arrow-trend-up"></i> +0.05G</span>` : `<span style="color: #a0a6b5;">-</span>`;
 
                 let actionCell = isManagementOrAdmin ? `
                     <td style="text-align: center;">
@@ -375,11 +362,11 @@
                             </div>
                         </td>
                         <td>
-                            <input type="text" value="${member.cp || '0M'}" ${isManagementOrAdmin ? `onchange="updateCombatPower(${member.id}, this.value)" onkeydown="if(event.key==='Enter') { this.blur(); }"` : 'readonly'} class="editable-input" style="font-family: monospace; font-weight: 800; color: #16a34a;" placeholder="e.g. 5,390,000,000">
+                            <input type="text" value="${member.cp || '0.00M'}" ${isManagementOrAdmin ? `onchange="updateCombatPower(${member.id}, this.value)" onkeydown="if(event.key==='Enter') this.blur()"` : 'readonly'} class="editable-input" style="font-family: monospace; font-weight: 800; color: #16a34a;" placeholder="e.g. 5.84 or 550M">
                         </td>
                         <td>
                             <div style="display: flex; flex-direction: column;">
-                                <input type="text" value="${member.f1Cp || '0G'}" ${isManagementOrAdmin ? `onchange="updateF1Power(${member.id}, this.value)" onkeydown="if(event.key==='Enter') { this.blur(); }"` : 'readonly'} class="editable-input" placeholder="0G">
+                                <input type="text" value="${member.f1Cp || '0.00G'}" ${isManagementOrAdmin ? `onchange="updateF1Power(${member.id}, this.value)" onkeydown="if(event.key==='Enter') this.blur()"` : 'readonly'} class="editable-input" placeholder="0.00G">
                                 <span style="font-size: 10px; color: #8c93a6; font-weight: 600; margin-top: 2px;">Last F1: ${member.prevF1 || 'None'}</span>
                             </div>
                         </td>
@@ -394,7 +381,7 @@
                         <td style="text-align: center; font-weight: 800; color: var(--color-primary);">#${rank}</td>
                         <td style="text-align: center;">${diffHtml}</td>
                         <td class="col-note-cell">
-                            <input type="text" value="${member.note || ''}" ${isManagementOrAdmin ? `onchange="updateMemberMeta(${member.id}, 'note', this.value)" onkeydown="if(event.key==='Enter') { this.blur(); }"` : 'readonly'} class="editable-input" placeholder="Add note...">
+                            <input type="text" value="${member.note || ''}" ${isManagementOrAdmin ? `onchange="updateMemberMeta(${member.id}, 'note', this.value)" onkeydown="if(event.key==='Enter') this.blur()"` : 'readonly'} class="editable-input" placeholder="Add note...">
                         </td>
                         ${actionCell}
                     </tr>
@@ -457,7 +444,7 @@
         window.updateF1Power = function(id, val) {
             const m = members.find(x => x.id === id);
             if(m) {
-                m.prevF1 = m.f1Cp || '0G';
+                m.prevF1 = m.f1Cp || '0.00G';
                 const parsed = parseCpToRaw(val);
                 m.f1Cp = parsed.formatted;
                 saveData(); render();
@@ -503,7 +490,7 @@
 
         document.getElementById('btnSubmitAddMember').addEventListener('click', () => {
             const name = document.getElementById('newMemberName').value.trim();
-            const cpInput = document.getElementById('newMemberCp').value.trim() || '0M';
+            const cpInput = document.getElementById('newMemberCp').value.trim() || '0.00M';
             const faction = document.getElementById('newMemberFaction').value;
             const level = document.getElementById('newMemberLevel').value;
 
@@ -516,4 +503,67 @@
                 name,
                 cp: parsedCp.formatted,
                 rawCp: parsedCp.raw,
-                f1Cp: '0G',
+                f1Cp: '0.00G',
+                prevF1: 'None',
+                faction,
+                level,
+                rank: 'R1',
+                status: 'active',
+                note: ''
+            });
+
+            saveData();
+            document.getElementById('addMemberModal').style.display = 'none';
+            document.getElementById('newMemberName').value = '';
+            document.getElementById('newMemberCp').value = '';
+            render();
+        });
+
+        const importBtn = document.getElementById('importBtn');
+        const screenshotInput = document.getElementById('screenshotInput');
+        importBtn.addEventListener('click', () => screenshotInput.click());
+        screenshotInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            importBtn.innerText = 'PROCESSING...'; importBtn.disabled = true;
+            try {
+                const { data: { text } } = await Tesseract.recognize(file, 'eng');
+                let addedCount = 0;
+                text.split('\n').forEach(line => {
+                    const match = line.match(/([a-zA-Z0-9•\s]+)\s+(\d{1,2}\.\d+[GM]?)/i);
+                    if (match && match[1].trim().length > 2) {
+                        const name = match[1].trim(); 
+                        const cpStr = match[2].toUpperCase();
+                        const parsedCp = parseCpToRaw(cpStr);
+                        
+                        const existing = members.find(m => m.name.toLowerCase() === name.toLowerCase());
+                        if (existing) {
+                            existing.cp = parsedCp.formatted;
+                            existing.rawCp = parsedCp.raw;
+                        } else {
+                            members.push({ 
+                                id: Date.now() + Math.random(), 
+                                name, 
+                                cp: parsedCp.formatted, 
+                                rawCp: parsedCp.raw, 
+                                f1Cp: '0.00G', 
+                                prevF1: 'None', 
+                                faction: 'F', 
+                                level: '1', 
+                                rank: 'R1', 
+                                status: 'active', 
+                                note: '' 
+                            });
+                        }
+                        addedCount++;
+                    }
+                });
+                saveData(); render(); alert(`OCR import completed! Successfully parsed ${addedCount} entries.`);
+            } catch (err) { alert('OCR Error during processing'); }
+            finally { importBtn.innerText = 'UPLOAD SCREENSHOT'; importBtn.disabled = false; screenshotInput.value = ''; }
+        });
+
+        window.addEventListener('DOMContentLoaded', loadDataFromCloud);
+    </script>
+</body>
+</html>
