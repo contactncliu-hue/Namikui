@@ -547,10 +547,10 @@
             }
 
             try {
-                await db.from('app_data').upsert({ id: 1, key: 'eventDates', value: eventDates }, { onConflict: 'id' });
-                await db.from('app_data').upsert({ id: 2, key: 'members', value: members }, { onConflict: 'id' });
-                await db.from('app_data').upsert({ id: 3, key: 'auditLogs', value: auditLogs }, { onConflict: 'id' });
-                await db.from('app_data').upsert({ id: 4, key: 'accounts', value: accounts }, { onConflict: 'id' });
+                await db.from('app_data').upsert({ key: 'eventDates', value: eventDates }, { onConflict: 'key' });
+                await db.from('app_data').upsert({ key: 'members', value: members }, { onConflict: 'key' });
+                await db.from('app_data').upsert({ key: 'auditLogs', value: auditLogs }, { onConflict: 'key' });
+                await db.from('app_data').upsert({ key: 'accounts', value: accounts }, { onConflict: 'key' });
             } catch (err) {
                 console.error('Save error:', err);
             }
