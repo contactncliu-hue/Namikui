@@ -156,11 +156,6 @@
         .vs-avg-pos { color: #2563eb; font-weight: 800; }
         .vs-avg-neg { color: #dc2626; font-weight: 800; }
 
-        /* Event-by-event Diff Colors & Badges */
-        .diff-green { color: #16a34a; font-weight: 850; font-size: 12px; display: inline-flex; align-items: center; gap: 2px; }
-        .diff-red { color: #dc2626; font-weight: 850; font-size: 12px; display: inline-flex; align-items: center; gap: 2px; }
-        .diff-yellow { color: #ca8a04; font-weight: 850; font-size: 12px; display: inline-flex; align-items: center; gap: 2px; }
-
         .check-toggle { cursor: pointer; padding: 4px 8px; border-radius: 4px; user-select: none; }
         .check-icon { color: var(--color-primary); font-weight: 800; font-size: 14px; }
         .cross-icon { color: #ccc; font-weight: bold; }
@@ -185,8 +180,8 @@
         .ranking-card--rank-3 .ranking-card__badge { background: #c28859; color: white; }
         .ranking-card__name { font-weight: 800; font-size: var(--font-md); color: #2b3044; }
         .ranking-card__subtext { font-size: var(--font-xs); color: #8c93a6; font-weight: 600; }
-        .ranking-card__right { display: flex; align-items: center; gap: 20px; flex-grow: 1; justify-content: flex-end; max-width: 580px; }
-        .ranking-card__bar-wrapper { flex-grow: 1; max-width: 160px; }
+        .ranking-card__right { display: flex; align-items: center; gap: 20px; flex-grow: 1; justify-content: flex-end; max-width: 480px; }
+        .ranking-card__bar-wrapper { flex-grow: 1; max-width: 200px; }
 
         .btn-icon-action { background: none; border: none; cursor: pointer; padding: 2px 4px; font-size: 13px; font-weight: 800; color: #dc2626; }
         .btn-icon-action:hover { opacity: 0.8; }
@@ -283,7 +278,7 @@
                     <li><a class="sidebar__item" data-view="notice"><span class="sidebar__icon">|</span> NOTICE</a></li>
                     <li><a class="sidebar__item" data-view="board"><span class="sidebar__icon">|</span> BOARD</a></li>
                     <li><a class="sidebar__item" data-view="members"><span class="sidebar__icon">|</span> MEMBERS</a></li>
-                    <li><a class="sidebar__item" data-view="blackgold"><span class="sidebar__icon">|</span> BLACK GOLD</a></li>
+                    <li><a class="sidebar__item" href="blackgold.html"><span class="sidebar__icon">|</span> BLACK GOLD</a></li>
                     <li><a class="sidebar__item" data-view="attendance"><span class="sidebar__icon">|</span> EVENT ATTENDANCE</a></li>
                     <li><a class="sidebar__item" data-view="vspoints"><span class="sidebar__icon">|</span> VS POINTS</a></li>
                 </ul>
@@ -328,50 +323,9 @@
             </section>
 
             <section id="viewMembers" class="app-view" style="display: none;">
-                <div class="generic-view-card" style="margin-bottom: 16px;">
+                <div class="generic-view-card">
                     <h2>Members Management Directory</h2>
-                    <p style="font-size: var(--font-sm); color: #62697b; margin-top: 4px;">Comprehensive register of active alliance fighters and player specifications.</p>
-                </div>
-                <div class="table-card">
-                    <div class="table-wrapper">
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th class="col-rank">#</th>
-                                    <th>FIGHTER NAME</th>
-                                    <th style="text-align: center;">ATTENDED COUNT</th>
-                                    <th>OVERALL RATE</th>
-                                </tr>
-                            </thead>
-                            <tbody id="membersDirectoryBody">
-                                <tr><td colspan="4" style="text-align: center; color: #8c93a6; padding: 24px;">No members registered yet.</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </section>
-
-            <section id="viewBlackgold" class="app-view" style="display: none;">
-                <div class="generic-view-card" style="margin-bottom: 16px;">
-                    <h2>Black Gold Tracker</h2>
-                    <p style="font-size: var(--font-sm); color: #62697b; margin-top: 4px;">Integrated Black Gold resource management interface and logs.</p>
-                </div>
-                <div class="table-card">
-                    <div class="table-wrapper">
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th class="col-rank">#</th>
-                                    <th>FIGHTER NAME</th>
-                                    <th style="text-align: center;">TOTAL ATTENDED</th>
-                                    <th>STATUS / RESOURCE</th>
-                                </tr>
-                            </thead>
-                            <tbody id="blackGoldTableBody">
-                                <tr><td colspan="4" style="text-align: center; color: #8c93a6; padding: 24px;">No data recorded yet.</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
+                    <p>Comprehensive register of active alliance fighters and active player specs.</p>
                 </div>
             </section>
 
@@ -397,6 +351,9 @@
                         <input type="date" class="admin-panel__input" id="newDateInput">
                         <input type="text" class="admin-panel__input" id="newSubtextInput" placeholder="Level/Title (e.g. LV4)">
                         <button class="btn-admin" id="btnAddEvent">Add Event Column</button>
+                    </div>
+                    <div class="admin-panel__form" style="margin-left: auto;">
+                        <button class="btn-action btn-action--danger" id="btnClearDataBtn" style="padding: 6px 10px; font-size: 11px;">Clear All Data</button>
                     </div>
                 </section>
 
@@ -600,7 +557,6 @@
                     'notice': 'viewNotice',
                     'board': 'viewBoard',
                     'members': 'viewMembers',
-                    'blackgold': 'viewBlackgold',
                     'attendance': 'viewAttendance',
                     'vspoints': 'viewVsPoints',
                     'discussion': 'viewDiscussion',
@@ -619,7 +575,6 @@
                 }
 
                 document.getElementById('sidebar').classList.remove('sidebar--open');
-                render();
             });
         });
 
@@ -786,8 +741,6 @@
                 renderRankingCards(filteredMembers, avgRate, isManagementOrAdmin, totalEvents);
             }
 
-            renderMembersDirectory(filteredMembers, totalEvents);
-            renderBlackGoldTracker(filteredMembers, totalEvents);
             renderAuditTable();
         }
 
@@ -801,56 +754,6 @@
             if (rateNum >= 75) return 'attended-high';
             if (rateNum >= 50) return 'attended-mid';
             return 'attended-low';
-        }
-
-        function renderMembersDirectory(filteredMembers, totalEvents) {
-            const body = document.getElementById('membersDirectoryBody');
-            if (!body) return;
-            if (filteredMembers.length === 0) {
-                body.innerHTML = `<tr><td colspan="4" style="text-align: center; color: #8c93a6; padding: 24px;">No members registered yet.</td></tr>`;
-                return;
-            }
-            body.innerHTML = filteredMembers.map((m, idx) => {
-                const rank = idx + 1;
-                const rateNum = totalEvents > 0 ? parseFloat(((m.attended / totalEvents) * 100).toFixed(1)) : 0;
-                const colorClass = getProgressBarColorClass(rateNum);
-                const attendedColorClass = getAttendedColorClass(rateNum);
-                const rankClass = rank === 1 ? 'rank-1' : (rank === 2 ? 'rank-2' : (rank === 3 ? 'rank-3' : ''));
-                return `
-                    <tr class="${rankClass}">
-                        <td class="col-rank">${rank}</td>
-                        <td class="col-name">${m.name}</td>
-                        <td class="col-attended"><span class="${attendedColorClass}">${m.attended}</span></td>
-                        <td>
-                            <div style="display: flex; align-items: center; gap: 12px;">
-                                <div class="progress-bar"><div class="progress-bar__fill ${colorClass}" style="width: ${rateNum}%;"></div></div>
-                                <span style="font-weight: 800;">${rateNum}%</span>
-                            </div>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
-        }
-
-        function renderBlackGoldTracker(filteredMembers, totalEvents) {
-            const body = document.getElementById('blackGoldTableBody');
-            if (!body) return;
-            if (filteredMembers.length === 0) {
-                body.innerHTML = `<tr><td colspan="4" style="text-align: center; color: #8c93a6; padding: 24px;">No data recorded yet.</td></tr>`;
-                return;
-            }
-            body.innerHTML = filteredMembers.map((m, idx) => {
-                const rank = idx + 1;
-                const rankClass = rank === 1 ? 'rank-1' : (rank === 2 ? 'rank-2' : (rank === 3 ? 'rank-3' : ''));
-                return `
-                    <tr class="${rankClass}">
-                        <td class="col-rank">${rank}</td>
-                        <td class="col-name">${m.name}</td>
-                        <td class="col-attended"><span style="color: var(--color-primary); font-weight: 800;">${m.attended}</span></td>
-                        <td><span style="color: var(--color-yellow-text); font-weight: 800;">Active Resource Log</span></td>
-                    </tr>
-                `;
-            }).join('');
         }
 
         function renderAttendanceTable(filteredMembers, avgRate, isManagementOrAdmin, totalEvents, totalAttendedCount) {
@@ -906,34 +809,7 @@
 
                 eventDates.forEach((ev, evIdx) => {
                     const isChecked = member.events && member.events[evIdx];
-                    
-                    let changeBadgeHTML = '';
-                    if (showDiffMode) {
-                        if (evIdx > 0) {
-                            const prevChecked = member.events && member.events[evIdx - 1];
-                            if (!prevChecked && isChecked) {
-                                changeBadgeHTML = `<div style="font-size: 10px; margin-top: 2px;"><span class="diff-green">▲ Up</span></div>`;
-                            } else if (prevChecked && !isChecked) {
-                                changeBadgeHTML = `<div style="font-size: 10px; margin-top: 2px;"><span class="diff-red">▼ Down</span></div>`;
-                            } else {
-                                changeBadgeHTML = `<div style="font-size: 10px; margin-top: 2px;"><span class="diff-yellow">▬ Same</span></div>`;
-                            }
-                        } else {
-                            if (isChecked) {
-                                changeBadgeHTML = `<div style="font-size: 10px; margin-top: 2px;"><span class="diff-green">▲ Up</span></div>`;
-                            } else {
-                                changeBadgeHTML = `<div style="font-size: 10px; margin-top: 2px;"><span class="diff-yellow">▬ Same</span></div>`;
-                            }
-                        }
-                    }
-
-                    rowHTML += `
-                        <td class="col-event">
-                            <div style="display: flex; flex-direction: column; align-items: center;">
-                                <span class="check-toggle" onclick="${isManagementOrAdmin ? `toggleAttendance(${member.id}, ${evIdx})` : ''}">${isChecked ? '<span class="check-icon">✓</span>' : '<span class="cross-icon">—</span>'}</span>
-                                ${changeBadgeHTML}
-                            </div>
-                        </td>`;
+                    rowHTML += `<td class="col-event"><span class="check-toggle" onclick="${isManagementOrAdmin ? `toggleAttendance(${member.id}, ${evIdx})` : ''}">${isChecked ? '<span class="check-icon">✓</span>' : '<span class="cross-icon">—</span>'}</span></td>`;
                 });
 
                 if (isManagementOrAdmin) rowHTML += `<td class="col-actions"><button class="btn-icon-action" onclick="deleteMember(${member.id})">Delete</button></td>`;
@@ -955,7 +831,6 @@
         function renderRankingCards(filteredMembers, avgRate, isManagementOrAdmin, totalEvents) {
             const rankingView = document.getElementById('subViewRanking');
             rankingView.innerHTML = '';
-            
             filteredMembers.forEach((member, index) => {
                 const rank = index + 1;
                 const rateNum = totalEvents > 0 ? parseFloat(((member.attended / totalEvents) * 100).toFixed(1)) : 0;
@@ -966,26 +841,6 @@
                 const vsAvgClass = vsAvgDiff >= 0 ? 'vs-avg-pos' : 'vs-avg-neg';
                 let cardClass = rank === 1 ? 'ranking-card--rank-1' : (rank === 2 ? 'ranking-card--rank-2' : (rank === 3 ? 'ranking-card--rank-3' : ''));
                 let badgeText = `${rank}`;
-
-                let diffVal = 0;
-                if (member.events && member.events.length >= 2) {
-                    const lastVal = member.events[member.events.length - 1] ? 1 : 0;
-                    const prevVal = member.events[member.events.length - 2] ? 1 : 0;
-                    diffVal = lastVal - prevVal;
-                } else if (member.events && member.events.length === 1) {
-                    diffVal = member.events[0] ? 1 : 0;
-                }
-
-                let diffHtml = '';
-                if (showDiffMode) {
-                    if (diffVal > 0) {
-                        diffHtml = `<span class="diff-green">▲ Up</span>`;
-                    } else if (diffVal < 0) {
-                        diffHtml = `<span class="diff-red">▼ Down</span>`;
-                    } else {
-                        diffHtml = `<span class="diff-yellow">▬ Same</span>`;
-                    }
-                }
 
                 rankingView.insertAdjacentHTML('beforeend', `
                     <div class="ranking-card ${cardClass}">
@@ -1003,7 +858,6 @@
                                 </div>
                             </div>
                             <div style="font-weight: 800; width: 55px; text-align: right;">${rateNum}%</div>
-                            <div style="width: 70px; text-align: center;">${diffHtml}</div>
                             ${showDiffMode ? `<div style="width: 65px; text-align: right;"><span class="${vsAvgClass}">${vsAvgString}</span></div>` : ''}
                             ${isManagementOrAdmin ? `<button class="btn-icon-action" onclick="deleteMember(${member.id})">Delete</button>` : ''}
                         </div>
@@ -1096,6 +950,13 @@
             }
         };
 
+        document.getElementById('btnClearDataBtn').addEventListener('click', () => {
+            if (confirm('Clear all data?')) {
+                logAction('CLEAR_DATA', 'Cleared all application event dates and member registers.');
+                members = []; eventDates = []; saveData(); render();
+            }
+        });
+
         document.getElementById('btnToggleDiff').addEventListener('click', () => {
             showDiffMode = !showDiffMode;
             document.getElementById('btnToggleDiff').classList.toggle('active', showDiffMode);
@@ -1112,7 +973,7 @@
         });
 
         document.getElementById('btnTabRanking').addEventListener('click', () => {
-            currentSubTab = 'ranking';
+            currentSubTab = 'ranking',
             document.getElementById('btnTabRanking').classList.add('btn-toggle--active');
             document.getElementById('btnTabAttendance').classList.remove('btn-toggle--active');
             document.getElementById('subViewAttendance').style.display = 'none';
