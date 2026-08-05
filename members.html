@@ -9,20 +9,14 @@
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <style>
         :root {
-            --login-bg: #ffffff;
-            --login-primary-blue: #324796;
-            --login-light-blue: #c3d2f8;
-            --login-text-title: #2d4187;
-            --login-text-guest: #4f63a8;
-            --login-btn-bg: #f3a808;
-            --login-star: #f3a808;
-
             --color-bg-main: #f5f4ef;
             --color-bg-card: #ffffff;
             --color-bg-sidebar: #ffffff;
             --color-primary: #3b52a4;
+            --color-primary-light: #eceff8;
             --color-text-dark: #2b3044;
             --color-text-muted: #8c93a6;
+            --color-text-light: #a0a6b5;
             --color-border: #3b52a4;
             --color-border-light: #e2e5ed;
             --color-yellow-bg: #fffdf0;
@@ -37,6 +31,7 @@
             --font-xs: 11px;
             --font-sm: 13px;
             --font-md: 15px;
+            --font-lg: 18px;
             --font-xl: 22px;
             --font-xxl: 28px;
         }
@@ -44,28 +39,28 @@
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Open Sans', sans-serif; background-color: var(--color-bg-main); color: var(--color-text-dark); min-height: 100vh; }
 
-        /* LOGIN & MODALS */
-        .login-page { display: flex; flex-direction: column; min-height: 100vh; background-color: var(--login-bg); font-family: var(--font-family-base); }
-        .login-header { width: 100%; padding: 16px 24px; display: flex; justify-content: flex-end; align-items: center; }
+        /* LOGIN & MODAL SCREENS */
+        .login-page { display: flex; flex-direction: column; min-height: 100vh; background-color: #ffffff; font-family: var(--font-family-base); }
         .login-main { flex: 1; display: flex; align-items: center; justify-content: center; padding: 24px; }
         .login-card { display: flex; flex-direction: column; align-items: center; text-align: center; max-width: 480px; width: 100%; }
         .login-card__logo-wrapper { position: relative; width: 180px; height: 180px; margin-bottom: 32px; display: flex; justify-content: center; align-items: center; }
-        .login-card__logo-circle { width: 100%; height: 100%; border-radius: 50%; background-color: var(--login-light-blue); display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
-        .login-card__logo-text { font-family: var(--font-family-logo); font-size: 80px; font-weight: 900; color: var(--login-primary-blue); line-height: 1; letter-spacing: -4px; user-select: none; }
-        .login-card__logo-star { position: absolute; bottom: -6px; left: 50%; transform: translateX(-50%); color: var(--login-star); font-size: 38px; line-height: 1; z-index: 2; }
-        .login-card__title { font-family: var(--font-family-title); font-size: 22px; font-weight: 700; color: var(--login-text-title); letter-spacing: 1.5px; margin-bottom: 32px; text-transform: uppercase; }
-        .login-card__button { background-color: var(--login-btn-bg); color: #ffffff; border: none; border-radius: 10px; padding: 14px 0; width: 180px; font-family: var(--font-family-base); font-size: 16px; font-weight: 800; cursor: pointer; margin-bottom: 16px; }
-        .login-card__guest-link { background: none; border: none; color: var(--login-text-guest); font-family: var(--font-family-base); font-size: 14px; font-weight: 700; cursor: pointer; text-transform: uppercase; margin-bottom: 12px; }
+        .login-card__logo-circle { width: 100%; height: 100%; border-radius: 50%; background-color: #c3d2f8; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
+        .login-card__logo-text { font-family: var(--font-family-logo); font-size: 80px; font-weight: 900; color: #324796; line-height: 1; }
+        .login-card__logo-star { position: absolute; bottom: -6px; left: 50%; transform: translateX(-50%); color: #f3a808; font-size: 38px; line-height: 1; z-index: 2; }
+        .login-card__title { font-family: var(--font-family-title); font-size: 22px; font-weight: 700; color: #2d4187; letter-spacing: 1.5px; margin-bottom: 32px; text-transform: uppercase; }
+        .login-card__button { background-color: #f3a808; color: #ffffff; border: none; border-radius: 10px; padding: 14px 0; width: 180px; font-family: var(--font-family-base); font-size: 16px; font-weight: 800; cursor: pointer; margin-bottom: 16px; }
+        .login-card__guest-link { background: none; border: none; color: #4f63a8; font-family: var(--font-family-base); font-size: 14px; font-weight: 700; cursor: pointer; text-transform: uppercase; margin-bottom: 12px; }
 
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.4); display: none; align-items: center; justify-content: center; z-index: 1000; }
         .modal-card { background: white; padding: 24px; border-radius: 8px; width: 100%; max-width: 360px; border: 2px solid var(--color-primary); }
         .modal-card h3 { margin-bottom: 12px; color: var(--color-primary); font-size: 16px; }
         .modal-card input, .modal-card select { width: 100%; padding: 10px; margin-bottom: 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
         .modal-card-btns { display: flex; justify-content: flex-end; gap: 8px; }
+        .login-error-msg { color: #dc2626; font-size: 12px; font-weight: 700; margin-bottom: 10px; display: none; }
 
-        /* DASHBOARD LAYOUT */
+        /* APP LAYOUT */
         .app { display: none; width: 100%; min-height: 100vh; }
-        .sidebar { width: 260px; background-color: var(--color-bg-sidebar); border-right: 2px solid var(--color-border); display: flex; flex-direction: column; flex-shrink: 0; transition: transform 0.3s ease; z-index: 100; }
+        .sidebar { width: 260px; background-color: var(--color-bg-sidebar); border-right: 2px solid var(--color-border); display: flex; flex-direction: column; flex-shrink: 0; }
         .sidebar__header { padding: 20px; display: flex; justify-content: center; align-items: center; border-bottom: 2px solid var(--color-border); }
         .sidebar__logo { width: 70px; height: 70px; border-radius: 50%; background: linear-gradient(135deg, #a5c7f9, #2d55b8); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 24px; }
         .sidebar__user { padding: 16px 20px; display: flex; align-items: center; gap: 12px; font-weight: 700; font-size: var(--font-sm); color: #62697b; border-bottom: 1px solid var(--color-border-light); }
@@ -73,109 +68,82 @@
         .sidebar__nav { display: flex; flex-direction: column; gap: 4px; overflow-y: auto; padding-bottom: 20px; flex-grow: 1; }
         .sidebar__footer { padding: 12px 20px; border-top: 1px solid var(--color-border-light); margin-top: auto; }
         .sidebar__menu { list-style: none; }
-        .sidebar__item { display: flex; align-items: center; padding: 10px 20px; color: #555b6e; font-weight: 700; font-size: var(--font-xs); text-decoration: none; gap: 12px; cursor: pointer; transition: background 0.2s; }
+        .sidebar__item { display: flex; align-items: center; padding: 10px 20px; color: #555b6e; font-weight: 700; font-size: var(--font-xs); text-decoration: none; gap: 12px; cursor: pointer; }
         .sidebar__item:hover { background-color: #f0f2f8; }
         .sidebar__item--active { background-color: var(--color-primary); color: white; }
         .sidebar__item--logout { color: #d9381e; }
-        .sidebar__item--logout:hover { background-color: #fce8e6; }
         .sidebar__icon { width: 16px; text-align: center; }
 
-        .main { flex-grow: 1; padding: 20px; display: flex; flex-direction: column; gap: 16px; max-width: 1200px; }
-        .mobile-header { display: none; justify-content: space-between; align-items: center; padding: 12px 16px; background: white; border: 2px solid var(--color-border); border-radius: 8px; margin-bottom: 12px; }
-        .hamburger { background: none; border: none; cursor: pointer; display: flex; flex-direction: column; gap: 4px; padding: 4px; }
-        .hamburger__line { width: 24px; height: 3px; background-color: var(--color-primary); border-radius: 2px; }
+        .main { flex-grow: 1; padding: 20px; display: flex; flex-direction: column; gap: 16px; max-width: 1300px; }
+        .header-card { background: white; border: 2px solid var(--color-border); border-radius: 4px; padding: 20px; display: flex; justify-content: space-between; align-items: center; }
+        .header-card h1 { font-family: 'Fredoka One', cursive, sans-serif; font-size: var(--font-xxl); color: var(--color-primary); text-transform: uppercase; }
+        .header-card p { font-size: var(--font-xs); font-weight: 800; color: var(--color-text-muted); text-transform: uppercase; margin-top: 4px; }
 
-        /* VIEW HEADER & CONTROLS */
-        .header-bar { background-color: white; border: 2px solid var(--color-border); border-radius: 4px; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; position: relative; }
-        .header-bar::before { content: ''; position: absolute; left: 12px; top: 12px; bottom: 12px; width: 4px; background-color: #e2cb6b; border-radius: 2px; }
-        .header-bar__title-group { padding-left: 12px; }
-        .header-bar__title { font-family: 'Fredoka One', cursive, sans-serif; font-size: var(--font-xxl); color: var(--color-primary); line-height: 1; text-transform: uppercase; }
-        .header-bar__subtitle { font-size: var(--font-xs); font-weight: 800; color: var(--color-primary); margin-top: 4px; }
-        .header-bar__actions { display: flex; gap: 10px; align-items: center; }
+        /* MANAGEMENT PANELS */
+        .admin-controls-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .admin-panel { background: #fffdf0; border: 2px dashed #d99f26; border-radius: 4px; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+        .admin-panel__title { font-weight: 800; font-size: var(--font-xs); color: #b89117; text-transform: uppercase; }
+        .admin-panel__form { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        .admin-panel__input { padding: 7px 10px; border: 1px solid #d1d5db; border-radius: 4px; font-size: var(--font-xs); outline: none; background: white; }
+        .btn-admin { background: #3b52a4; color: white; border: none; font-weight: 800; font-size: var(--font-xs); padding: 8px 14px; border-radius: 4px; cursor: pointer; }
 
-        .btn-action { background: white; border: 2px solid var(--color-primary); color: var(--color-primary); font-weight: 800; font-size: var(--font-xs); padding: 8px 16px; border-radius: 4px; cursor: pointer; }
-        .btn-action--logout { background-color: #fce8e6; border-color: #d9381e; color: #d9381e; }
-        .btn-diff { background: white; border: 2px solid var(--color-primary); color: var(--color-primary); font-weight: 800; font-size: var(--font-xs); padding: 8px 16px; border-radius: 4px; cursor: pointer; }
-        .btn-diff.active { background-color: var(--color-primary); color: white; }
-
-        .upload-banner { background: var(--color-yellow-bg); border: 2px dashed var(--color-yellow-border); border-radius: 4px; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
-        .upload-banner__text { font-size: var(--font-xs); font-weight: 800; color: var(--color-yellow-text); text-transform: uppercase; }
-
+        /* CONTROLS & SEARCH */
         .controls-card { background: white; border: 2px solid var(--color-border); border-radius: 4px; padding: 12px; display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
-        .search-box { flex-grow: 1; max-width: 320px; position: relative; }
+        .btn-group { display: flex; border: 2px solid var(--color-primary); border-radius: 4px; overflow: hidden; }
+        .btn-toggle { padding: 8px 16px; font-weight: 800; font-size: var(--font-xs); border: none; background: white; color: var(--color-primary); cursor: pointer; }
+        .btn-toggle--active { background-color: var(--color-primary); color: white; }
+        .search-box { flex-grow: 1; max-width: 350px; position: relative; }
         .search-box__input { width: 100%; padding: 8px 12px 8px 32px; border: 1px solid #d1d5db; background-color: #f7f6f0; border-radius: 4px; font-size: var(--font-sm); outline: none; }
         .search-box__icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #9ca3af; }
 
-        .count-badge { margin-left: auto; background-color: var(--color-yellow-bg); border: 1px solid var(--color-yellow-border); padding: 6px 12px; border-radius: 4px; display: flex; align-items: center; gap: 8px; font-size: var(--font-xs); font-weight: 800; color: var(--color-yellow-text); }
-        .count-badge__num { color: #d9381e; font-size: var(--font-md); font-weight: 800; }
-
-        /* TABLE DESIGN */
+        /* DATA TABLE */
         .table-card { background: white; border: 2px solid var(--color-border); border-radius: 4px; overflow: hidden; display: flex; flex-direction: column; }
         .table-wrapper { overflow-x: auto; }
         .data-table { width: 100%; border-collapse: collapse; text-align: left; font-size: var(--font-sm); }
-        .data-table th { background-color: #eef2f9; padding: 12px 16px; font-size: 11px; font-weight: 800; color: #71788e; text-transform: uppercase; border-bottom: 1px solid var(--color-border-light); white-space: nowrap; }
-        .data-table td { padding: 10px 16px; border-bottom: 1px solid #f0f2f5; vertical-align: middle; font-weight: 700; color: #4a5060; }
-        .data-table tfoot td { background-color: #f8f9fa; border-top: 2px solid var(--color-border-light); padding: 12px 16px; font-size: var(--font-xs); font-weight: 800; color: #8c93a6; }
-
-        /* RANK ROW HIGHLIGHTS */
-        .data-table tr.rank-1 { background-color: #fffdf5; }
-        .data-table tr.rank-2 { background-color: #faf9f5; }
-        .data-table tr.rank-3 { background-color: #fcfbf7; }
-
+        .data-table th { background-color: #eef2f9; padding: 12px 14px; font-size: 11px; font-weight: 800; color: #71788e; text-transform: uppercase; border-bottom: 1px solid var(--color-border-light); white-space: nowrap; }
+        .data-table td { padding: 10px 14px; border-bottom: 1px solid #f0f2f5; vertical-align: middle; font-weight: 700; color: #4a5060; }
+        
         .col-rank { width: 50px; text-align: center; color: #a0a6b5; }
         .col-name { font-weight: 800; color: #2b3044; display: flex; align-items: center; gap: 8px; }
-        .col-cp { width: 140px; }
-        .col-f1 { width: 120px; text-align: center; }
-        .col-note { width: 160px; }
-        .col-actions { width: 70px; text-align: center; }
+        .col-cp { width: 130px; font-weight: 800; }
+        .col-f1 { width: 150px; }
+        .col-status { width: 90px; text-align: center; }
+        .col-role { width: 60px; text-align: center; }
+        .col-note { min-width: 150px; }
 
-        /* CP BADGE STYLES (Matching Image Reference style) */
-        .cp-badge { background-color: #16a34a; color: white; padding: 4px 10px; border-radius: 4px; font-weight: 800; display: inline-block; font-size: 12px; }
+        /* BADGES & HOUSE CIRCLES */
+        .cp-badge { background-color: #16a34a; color: white; padding: 4px 10px; border-radius: 4px; font-weight: 800; font-size: 12px; display: inline-block; }
+        .house-circle { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 800; font-size: 11px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor: pointer; }
+        .house-blue { background-color: #2563eb; }
+        .house-purple { background-color: #9333ea; }
+        .house-orange { background-color: #ea580c; }
 
-        /* F1 POWER CIRCLE BAR STYLES */
-        .f1-pill { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 26px; border-radius: 14px; font-weight: 800; font-size: 11px; cursor: pointer; color: white; text-transform: uppercase; }
-        .f1-pill.tier-f { background-color: #2563eb; } /* Blue */
-        .f1-pill.tier-s { background-color: #9333ea; } /* Purple */
-        .f1-pill.tier-e { background-color: #ea580c; } /* Orange */
+        .status-dot { padding: 4px 8px; border-radius: 12px; font-size: 10px; font-weight: 800; cursor: pointer; border: none; text-transform: uppercase; }
+        .status-active { background-color: #dcfce7; color: #16a34a; }
+        .status-inactive { background-color: #fef9c3; color: #ca8a04; }
+        .status-removed { background-color: #fee2e2; color: #dc2626; }
 
-        /* MEMBER STATUS BADGE (Before Name) */
-        .status-badge { display: inline-flex; align-items: center; justify-content: center; width: 10px; height: 10px; border-radius: 50%; cursor: pointer; flex-shrink: 0; }
-        .status-active { background-color: #16a34a; }
-        .status-inactive { background-color: #ca8a04; }
-        .status-removed { background-color: #dc2626; opacity: 0.5; }
+        .role-badge { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; cursor: pointer; user-select: none; }
+        .role-r1, .role-r2, .role-r3 { background-color: #e5e7eb; color: #374151; }
+        .role-r4 { background-color: #dc2626; color: white; }
+        .role-r5 { background-color: #2563eb; color: white; }
 
-        /* RANK BADGE (R1 to R5 After Name) */
-        .rank-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; padding: 0 4px; border-radius: 50%; font-size: 10px; font-weight: 800; cursor: pointer; }
-        .rank-r1, .rank-r2, .rank-r3 { background-color: #eef2f9; color: var(--color-primary); }
-        .rank-r4 { background-color: #dc2626; color: white; }
-        .rank-r5 { background-color: #2563eb; color: white; }
-
-        /* DIFF BADGES */
-        .diff-green { color: #16a34a; font-weight: 850; font-size: 11px; display: inline-flex; align-items: center; gap: 2px; }
-        .diff-red { color: #dc2626; font-weight: 850; font-size: 11px; display: inline-flex; align-items: center; gap: 2px; }
-        .diff-yellow { color: #ca8a04; font-weight: 850; font-size: 11px; display: inline-flex; align-items: center; gap: 2px; }
-
+        .diff-green { color: #16a34a; font-weight: 800; font-size: 11px; display: inline-flex; align-items: center; gap: 2px; }
+        .diff-red { color: #dc2626; font-weight: 800; font-size: 11px; display: inline-flex; align-items: center; gap: 2px; }
+        .diff-yellow { color: #ca8a04; font-weight: 800; font-size: 11px; display: inline-flex; align-items: center; gap: 2px; }
         .editable-cell { cursor: pointer; border-bottom: 1px dashed var(--color-primary); }
-        .editable-note { cursor: pointer; min-height: 16px; display: inline-block; width: 100%; }
-
-        .btn-icon-action { background: none; border: none; cursor: pointer; padding: 2px 4px; font-size: 12px; font-weight: 800; color: #dc2626; }
-        .btn-icon-action:hover { opacity: 0.8; }
-
-        .generic-view-card { background: white; border: 2px solid var(--color-border); border-radius: 4px; padding: 30px; }
-        .generic-view-card h2 { color: var(--color-primary); font-family: 'Fredoka One', cursive, sans-serif; margin-bottom: 12px; }
 
         @media (max-width: 1024px) {
             .app { flex-direction: column; }
-            .mobile-header { display: flex; }
-            .sidebar { position: fixed; top: 0; left: 0; height: 100vh; transform: translateX(-100%); }
-            .sidebar--open { transform: translateX(0); }
+            .sidebar { width: 100%; height: auto; }
+            .admin-controls-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
 
+    <!-- LOGIN SCREEN -->
     <div class="login-page" id="loginScreen">
-        <header class="login-header"></header>
         <main class="login-main">
             <section class="login-card">
                 <div class="login-card__logo-wrapper">
@@ -184,45 +152,30 @@
                     </div>
                     <span class="login-card__logo-star">✦</span>
                 </div>
-                <h1 class="login-card__title">Alliance Management Tool</h1>
+                <h1 class="login-card__title">Members Management</h1>
                 <button type="button" class="login-card__button" id="btnOpenLoginModal">LOG IN</button>
-                <button type="button" class="login-card__guest-link" id="btnOpenCreateAccountModal">Create Account</button>
                 <button type="button" class="login-card__guest-link" id="btnGuestAccess">Proceed as Guest</button>
             </section>
         </main>
     </div>
 
-    <!-- Modals -->
+    <!-- LOGIN MODAL -->
     <div class="modal-overlay" id="loginModal">
         <div class="modal-card">
             <h3>System Login</h3>
+            <div id="loginErrorMsg" class="login-error-msg"></div>
             <input type="text" id="loginUsername" placeholder="Username (admin, manager, member...)">
             <input type="password" id="loginPassword" placeholder="Password">
             <div class="modal-card-btns">
-                <button class="btn-action" id="btnCancelModal">Cancel</button>
-                <button class="btn-action" style="background:var(--color-primary); color:white;" id="btnSubmitLogin">Login</button>
+                <button class="btn-admin" style="background:#62697b;" id="btnCancelModal">Cancel</button>
+                <button class="btn-admin" id="btnSubmitLogin">Login</button>
             </div>
         </div>
     </div>
 
-    <div class="modal-overlay" id="createAccountModal">
-        <div class="modal-card">
-            <h3>Create New Account</h3>
-            <input type="text" id="newAccUser" placeholder="Choose Username">
-            <input type="password" id="newAccPass" placeholder="Choose Password">
-            <div style="font-size: 12px; color: #62697b; margin-bottom: 12px; font-weight: 600;">
-                New accounts register as Members by default. Admins can adjust permissions later.
-            </div>
-            <div class="modal-card-btns">
-                <button class="btn-action" onclick="document.getElementById('createAccountModal').style.display='none'">Cancel</button>
-                <button class="btn-action" style="background:var(--color-primary); color:white;" id="btnSubmitCreateAccount">Register</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- App Dashboard Shell -->
+    <!-- APP DASHBOARD -->
     <div class="app" id="appDashboard">
-        <aside class="sidebar" id="sidebar">
+        <aside class="sidebar">
             <div class="sidebar__header"><div class="sidebar__logo">娜美</div></div>
             <div class="sidebar__user">
                 <div class="sidebar__user-avatar" id="userAvatarIcon">U</div>
@@ -233,13 +186,9 @@
             </div>
             <nav class="sidebar__nav">
                 <ul class="sidebar__menu">
-                    <li><a class="sidebar__item" data-view="home"><span class="sidebar__icon">|</span> HOME</a></li>
-                    <li><a class="sidebar__item" data-view="notice"><span class="sidebar__icon">|</span> NOTICE</a></li>
-                    <li><a class="sidebar__item" data-view="board"><span class="sidebar__icon">|</span> BOARD</a></li>
-                    <li><a class="sidebar__item sidebar__item--active" data-view="members"><span class="sidebar__icon">|</span> MEMBERS</a></li>
+                    <li><a class="sidebar__item" href="index.html"><span class="sidebar__icon">|</span> HOME DASHBOARD</a></li>
+                    <li><a class="sidebar__item sidebar__item--active" data-view="members"><span class="sidebar__icon">|</span> MEMBERS DIRECTORY</a></li>
                     <li><a class="sidebar__item" href="blackgold.html"><span class="sidebar__icon">|</span> BLACK GOLD</a></li>
-                    <li><a class="sidebar__item" data-view="attendance"><span class="sidebar__icon">|</span> EVENT ATTENDANCE</a></li>
-                    <li><a class="sidebar__item" data-view="vspoints"><span class="sidebar__icon">|</span> VS POINTS</a></li>
                 </ul>
             </nav>
             <div class="sidebar__footer">
@@ -248,84 +197,72 @@
         </aside>
 
         <main class="main">
-            <div class="mobile-header">
-                <div class="sidebar__logo" style="width: 40px; height: 40px; font-size: 14px;">娜美</div>
-                <button class="hamburger" id="hamburgerBtn"><span class="hamburger__line"></span><span class="hamburger__line"></span><span class="hamburger__line"></span></button>
-            </div>
+            <header class="header-card">
+                <div>
+                    <h1>Alliance Members Directory</h1>
+                    <p id="headerMemberTotal">0 MEMBERS TOTAL</p>
+                </div>
+            </header>
 
-            <!-- Other views placeholders -->
-            <section id="viewHome" class="app-view" style="display: none;">
-                <div class="generic-view-card"><h2>Home Dashboard</h2><p>Welcome back to Loopy's Playground management console.</p></div>
-            </section>
-            <section id="viewNotice" class="app-view" style="display: none;">
-                <div class="generic-view-card"><h2>Notice Board</h2><p>Clan updates and announcements.</p></div>
-            </section>
-            <section id="viewBoard" class="app-view" style="display: none;">
-                <div class="generic-view-card"><h2>Community Board</h2><p>Alliance chat & instructions.</p></div>
-            </section>
-            <section id="viewAttendance" class="app-view" style="display: none;">
-                <div class="generic-view-card"><h2>Event Attendance</h2><p>Attendance matrix tracker.</p></div>
-            </section>
-            <section id="viewVsPoints" class="app-view" style="display: none;">
-                <div class="generic-view-card"><h2>VS Points</h2><p>VS Point logs and rankings.</p></div>
-            </section>
-
-            <!-- MEMBERS TAB VIEW (SPA) -->
-            <section id="viewMembers" class="app-view" style="display: flex; flex-direction: column; gap: 16px;">
-                <header class="header-bar">
-                    <div class="header-bar__title-group">
-                        <h1 class="header-bar__title">Members</h1>
-                        <div class="header-bar__subtitle" id="headerMembersCount">102 members total</div>
-                    </div>
-                    <div class="header-bar__actions">
-                        <button class="btn-action btn-action--logout" id="btnLogout">LOG OUT</button>
-                    </div>
-                </header>
-
-                <!-- Screenshot Upload Tab to Extract CP -->
-                <section class="upload-banner" id="uploadBanner">
-                    <div class="upload-banner__text">Upload Member Screenshot to Auto-Extract Combat Power (CP)</div>
-                    <div>
-                        <input type="file" id="screenshotInput" accept="image/*" style="display: none;">
-                        <button class="btn-action" id="importBtn" style="background: var(--color-primary); color: white;">IMPORT SCREENSHOT</button>
-                    </div>
-                </section>
-
-                <section class="controls-card">
-                    <div class="search-box">
-                        <span class="search-box__icon">|</span>
-                        <input type="text" class="search-box__input" id="searchInput" placeholder="Search name, UID, CP...">
-                    </div>
-                    <button class="btn-diff" id="btnToggleDiff">± DIFF</button>
-                    <div class="count-badge">
-                        <span class="count-badge__num" id="badgeShownCount">19</span>
-                        <span>SHOWN</span>
-                    </div>
-                </section>
-
-                <div class="table-card">
-                    <div class="table-wrapper">
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th class="col-rank">#</th>
-                                    <th>IN-GAME NAME</th>
-                                    <th class="col-cp">COMBAT POWER (CP)</th>
-                                    <th class="col-f1">F1 POWER</th>
-                                    <th class="col-note">NOTE</th>
-                                    <th class="col-actions" id="thActionsHeader" style="display: none;">ACTIONS</th>
-                                </tr>
-                            </thead>
-                            <tbody id="memberTableBody"></tbody>
-                            <tfoot id="tableFooterRow">
-                                <tr>
-                                    <td colspan="6" id="footerSummaryText" style="text-align: center; color: #8c93a6;">19 / 19 SHOWN</td>
-                                </tr>
-                            </tfoot>
-                        </table>
+            <!-- MANAGEMENT PANELS (Screenshot Upload & Manual Add) -->
+            <div class="admin-controls-grid" id="adminControlsGrid" style="display: none;">
+                <div class="admin-panel">
+                    <div class="admin-panel__title">Upload Screenshot (OCR Parsing)</div>
+                    <div class="admin-panel__form">
+                        <input type="file" id="screenshotInput" accept="image/*" class="admin-panel__input" style="flex-grow:1;">
+                        <button class="btn-admin" id="btnProcessOcr">Extract Data</button>
                     </div>
                 </div>
+
+                <div class="admin-panel">
+                    <div class="admin-panel__title">Manual Member Registration</div>
+                    <div class="admin-panel__form">
+                        <input type="text" class="admin-panel__input" id="manualName" placeholder="In-Game Name" style="flex-grow:1;">
+                        <input type="text" class="admin-panel__input" id="manualCp" placeholder="CP (e.g. 5.84G)" style="width:110px;">
+                        <select class="admin-panel__input" id="manualTier" style="width:70px;">
+                            <option value="F">F</option>
+                            <option value="S">S</option>
+                            <option value="E">E</option>
+                        </select>
+                        <button class="btn-admin" id="btnAddManual">Add</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CONTROLS & SEARCH BAR -->
+            <section class="controls-card">
+                <div class="btn-group">
+                    <button class="btn-toggle btn-toggle--active" id="btnTabAll">ALL MEMBERS</button>
+                    <button class="btn-toggle" id="btnTabRanking">RANKING VIEW</button>
+                </div>
+                <div class="search-box">
+                    <span class="search-box__icon">|</span>
+                    <input type="text" class="search-box__input" id="searchInput" placeholder="Search name, CP...">
+                </div>
+                <button class="btn-admin" id="btnToggleDiff" style="background:white; border:2px solid var(--color-primary); color:var(--color-primary);">± DIFF</button>
             </section>
+
+            <!-- MEMBERS DATA TABLE -->
+            <div class="table-card">
+                <div class="table-wrapper">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th class="col-rank">#</th>
+                                <th class="col-status">Status</th>
+                                <th class="col-name">In-Game Name</th>
+                                <th class="col-role">Rank</th>
+                                <th class="col-cp">Combat Power (CP)</th>
+                                <th class="col-f1">F1 Power & Tier</th>
+                                <th class="col-note">Note (Admin Only)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="membersTableBody">
+                            <tr><td colspan="7" style="text-align: center; color: #8c93a6;">Loading roster...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </main>
     </div>
 
@@ -340,56 +277,38 @@
             role: localStorage.getItem('amt_userRole') || null
         };
 
+        let members = [];
         let showDiffMode = false;
-        let members = [
-            { id: 1, name: 'ZGUNDAM', cp: '5.84G', cpNum: 5.84, prevCpNum: 5.70, f1Tier: 'F', prevF1Tier: 'F', status: 'active', rankLevel: 'R3', note: '' },
-            { id: 2, name: 'Dong gu', cp: '5.59G', cpNum: 5.59, prevCpNum: 5.50, f1Tier: 'S', prevF1Tier: 'F', status: 'active', rankLevel: 'R3', note: '' },
-            { id: 3, name: 'RRAVII', cp: '5.39G', cpNum: 5.39, prevCpNum: 5.35, f1Tier: 'E', prevF1Tier: 'S', status: 'active', rankLevel: 'R5', note: 'R5' },
-            { id: 4, name: 'temple82_템플', cp: '5.33G', cpNum: 5.33, prevCpNum: 5.20, f1Tier: 'F', prevF1Tier: 'F', status: 'active', rankLevel: 'R3', note: '' },
-            { id: 5, name: '李 Alduin', cp: '4.8G', cpNum: 4.80, prevCpNum: 4.75, f1Tier: 'S', prevF1Tier: 'S', status: 'active', rankLevel: 'R3', note: '' },
-            { id: 6, name: 'Thò Bày Màu', cp: '4.68G', cpNum: 4.68, prevCpNum: 4.60, f1Tier: 'E', prevF1Tier: 'E', status: 'active', rankLevel: 'R3', note: 'mama' },
-            { id: 7, name: '뱀new', cp: '4.66G', cpNum: 4.66, prevCpNum: 4.50, f1Tier: 'F', prevF1Tier: 'F', status: 'active', rankLevel: 'R4', note: '' },
-            { id: 8, name: 'seed°', cp: '4.45G', cpNum: 4.45, prevCpNum: 4.40, f1Tier: 'S', prevF1Tier: 'F', status: 'active', rankLevel: 'R3', note: '' },
-            { id: 9, name: 'Yuna', cp: '4.01G', cpNum: 4.01, prevCpNum: 3.95, f1Tier: 'E', prevF1Tier: 'E', status: 'active', rankLevel: 'R3', note: 'Lily 유L' },
-            { id: 10, name: 'Lazy Farmer', cp: '3.85G', cpNum: 3.85, prevCpNum: 3.80, f1Tier: 'F', prevF1Tier: 'S', status: 'active', rankLevel: 'R3', note: '' },
-            { id: 11, name: 'Kubê', cp: '3.6G', cpNum: 3.60, prevCpNum: 3.55, f1Tier: 'S', prevF1Tier: 'S', status: 'active', rankLevel: 'R3', note: '' },
-            { id: 12, name: 'NúP', cp: '3.56G', cpNum: 3.56, prevCpNum: 3.50, f1Tier: 'E', prevF1Tier: 'F', status: 'active', rankLevel: 'R3', note: 'acc jun' },
-            { id: 13, name: 'Su Dong', cp: '3.39G', cpNum: 3.39, prevCpNum: 3.30, f1Tier: 'F', prevF1Tier: 'F', status: 'active', rankLevel: 'R3', note: '' },
-            { id: 14, name: 'Apple-mang0', cp: '3.22G', cpNum: 3.22, prevCpNum: 3.20, f1Tier: 'S', prevF1Tier: 'E', status: 'active', rankLevel: 'R3', note: '' },
-            { id: 15, name: 'Levi', cp: '3.2G', cpNum: 3.20, prevCpNum: 3.10, f1Tier: 'E', prevF1Tier: 'E', status: 'active', rankLevel: 'R3', note: 'Anh Hung' },
-            { id: 16, name: 'Thò Cùi Chò', cp: '2.86G', cpNum: 2.86, prevCpNum: 2.80, f1Tier: 'F', prevF1Tier: 'F', status: 'active', rankLevel: 'R3', note: '' },
-            { id: 17, name: 'Thò Bốn Màu', cp: '2.86G', cpNum: 2.86, prevCpNum: 2.85, f1Tier: 'S', prevF1Tier: 'S', status: 'active', rankLevel: 'R3', note: '' },
-            { id: 18, name: 'Đep', cp: '2.86G', cpNum: 2.86, prevCpNum: 2.70, f1Tier: 'E', prevF1Tier: 'F', status: 'active', rankLevel: 'R3', note: '' },
-            { id: 19, name: 'Sirotka', cp: '2.63G', cpNum: 2.63, prevCpNum: 2.60, f1Tier: 'F', prevF1Tier: 'F', status: 'active', rankLevel: 'R3', note: '' }
-        ];
-
         let accounts = [
             { username: 'loopy', pass: '2851849', role: 'admin' },
             { username: 'manager1', pass: 'manager123', role: 'management' },
             { username: 'member1', pass: 'member123', role: 'member' }
         ];
 
-        async function loadDataFromCloud() {
+        async function loadData() {
             try {
                 const { data, error } = await db.from('app_data').select('*');
                 if (error) throw error;
                 if (data && data.length > 0) {
                     data.forEach(row => {
-                        if (row.key === 'members_list') members = row.value || members;
+                        if (row.key === 'members') members = row.value || [];
                         if (row.key === 'accounts') accounts = row.value || accounts;
                     });
                 }
             } catch (err) {
-                console.error('Error loading from cloud:', err);
+                console.error('Cloud load error:', err);
             }
 
-            if (!accounts.some(a => a.username === 'loopy')) {
-                accounts.push({ username: 'loopy', pass: '2851849', role: 'admin' });
+            if (members.length === 0) {
+                members = [
+                    { id: 1, name: 'ZGUNDAM', cp: '5.84G', prevCp: '5.70G', f1Val: '110', f1Tier: 'F', status: 'active', role: 'R5', note: '-' },
+                    { id: 2, name: 'Dong gu', cp: '5.59G', prevCp: '5.60G', f1Val: '110', f1Tier: 'S', status: 'active', role: 'R4', note: '-' },
+                    { id: 3, name: 'RRAVII', cp: '5.39G', prevCp: '5.30G', f1Val: '110', f1Tier: 'E', status: 'active', role: 'R5', note: 'R5' },
+                    { id: 4, name: 'Yuna', cp: '4.01G', prevCp: '3.90G', f1Val: '110', f1Tier: 'F', status: 'active', role: 'R3', note: 'Lily 유L' }
+                ];
             }
 
-            if (currentUser.role && currentUser.role !== 'guest' && currentUser.username) {
-                enterDashboard();
-            } else if (currentUser.role === 'guest') {
+            if (currentUser.role && currentUser.username) {
                 enterDashboard();
             } else {
                 showLoginScreen();
@@ -397,308 +316,280 @@
         }
 
         async function saveData() {
-            if (currentUser.role) {
-                localStorage.setItem('amt_userRole', currentUser.role);
-                localStorage.setItem('amt_username', currentUser.username);
-            }
             try {
-                await db.from('app_data').upsert({ id: 10, key: 'members_list', value: members }, { onConflict: 'id' });
+                await db.from('app_data').upsert({ id: 2, key: 'members', value: members }, { onConflict: 'id' });
                 await db.from('app_data').upsert({ id: 4, key: 'accounts', value: accounts }, { onConflict: 'id' });
             } catch (err) {
                 console.error('Save error:', err);
             }
         }
 
-        // Auth & Modals
-        const loginScreen = document.getElementById('loginScreen');
-        const appDashboard = document.getElementById('appDashboard');
-        const loginModal = document.getElementById('loginModal');
-        const createAccountModal = document.getElementById('createAccountModal');
+        function showLoginScreen() {
+            document.getElementById('loginScreen').style.display = 'flex';
+            document.getElementById('appDashboard').style.display = 'none';
+        }
 
-        document.getElementById('btnOpenLoginModal').addEventListener('click', () => loginModal.style.display = 'flex');
-        document.getElementById('btnOpenCreateAccountModal').addEventListener('click', () => createAccountModal.style.display = 'flex');
-        document.getElementById('btnCancelModal').addEventListener('click', () => loginModal.style.display = 'none');
+        function enterDashboard() {
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('appDashboard').style.display = 'flex';
+            render();
+        }
 
-        document.getElementById('btnSubmitLogin').addEventListener('click', () => {
-            const uInput = document.getElementById('loginUsername').value.trim();
-            const pInput = document.getElementById('loginPassword').value;
-            const foundAcc = accounts.find(a => a.username === uInput && a.pass === pInput);
-            if (foundAcc) {
-                currentUser.username = foundAcc.username;
-                currentUser.role = foundAcc.role;
-                saveData();
-                loginModal.style.display = 'none';
-                enterDashboard();
-            } else {
-                alert('Invalid credentials!');
-            }
+        document.getElementById('btnOpenLoginModal').addEventListener('click', () => {
+            document.getElementById('loginModal').style.display = 'flex';
+        });
+
+        document.getElementById('btnCancelModal').addEventListener('click', () => {
+            document.getElementById('loginModal').style.display = 'none';
         });
 
         document.getElementById('btnGuestAccess').addEventListener('click', () => {
             currentUser.username = 'Guest User';
             currentUser.role = 'guest';
-            saveData();
             enterDashboard();
+        });
+
+        document.getElementById('btnSubmitLogin').addEventListener('click', () => {
+            const u = document.getElementById('loginUsername').value.trim();
+            const p = document.getElementById('loginPassword').value;
+            const found = accounts.find(a => a.username.toLowerCase() === u.toLowerCase() && a.pass === p);
+            if (found) {
+                currentUser.username = found.username;
+                currentUser.role = found.role;
+                localStorage.setItem('amt_username', found.username);
+                localStorage.setItem('amt_userRole', found.role);
+                document.getElementById('loginModal').style.display = 'none';
+                enterDashboard();
+            } else {
+                const err = document.getElementById('loginErrorMsg');
+                err.innerText = 'Invalid login credentials.';
+                err.style.display = 'block';
+            }
         });
 
         function handleLogout() {
             currentUser.role = null;
             currentUser.username = null;
-            localStorage.removeItem('amt_userRole');
-            localStorage.removeItem('amt_username');
+            localStorage.clear();
             showLoginScreen();
         }
 
-        document.getElementById('btnLogout').addEventListener('click', handleLogout);
         document.getElementById('sidebarLogoutBtn').addEventListener('click', handleLogout);
 
-        document.getElementById('btnSubmitCreateAccount').addEventListener('click', () => {
-            const newU = document.getElementById('newAccUser').value.trim();
-            const newP = document.getElementById('newAccPass').value;
-            if(!newU || !newP) { alert('Enter username and password.'); return; }
-            accounts.push({ username: newU, pass: newP, role: 'member' });
-            saveData();
-            createAccountModal.style.display = 'none';
-            alert('Account created successfully! You can now log in.');
-        });
-
-        function showLoginScreen() {
-            appDashboard.style.display = 'none';
-            loginScreen.style.display = 'flex';
+        function parseCpValue(str) {
+            if (!str) return 0;
+            const clean = str.toUpperCase().trim();
+            let multiplier = 1;
+            if (clean.includes('G')) multiplier = 1000000000;
+            else if (clean.includes('M')) multiplier = 1000000;
+            else if (clean.includes('K')) multiplier = 1000;
+            const num = parseFloat(clean.replace(/[^0-9.]/g, '')) || 0;
+            return num * multiplier;
         }
 
-        function enterDashboard() {
-            loginScreen.style.display = 'none';
-            appDashboard.style.display = 'flex';
-            renderMembers();
-        }
+        function render() {
+            const searchVal = document.getElementById('searchInput').value.toLowerCase();
+            const isAdminOrMgmt = currentUser.role === 'admin' || currentUser.role === 'management';
 
-        window.addEventListener('DOMContentLoaded', loadDataFromCloud);
-
-        // Sidebar Navigation links
-        document.querySelectorAll('.sidebar__item[data-view]').forEach(item => {
-            item.addEventListener('click', (e) => {
-                e.preventDefault();
-                const targetView = item.getAttribute('data-view');
-                document.querySelectorAll('.sidebar__item').forEach(el => el.classList.remove('sidebar__item--active'));
-                item.classList.add('sidebar__item--active');
-
-                const views = ['home', 'notice', 'board', 'members', 'attendance', 'vspoints'];
-                views.forEach(v => {
-                    const el = document.getElementById('view' + v.charAt(0).toUpperCase() + v.slice(1));
-                    if(el) el.style.display = (v === targetView) ? 'flex' : 'none';
-                });
-            });
-        });
-
-        // Members Render Logic
-        function renderMembers() {
-            const filterQuery = document.getElementById('searchInput').value.toLowerCase();
-            const isAdminOrManager = currentUser.role === 'admin' || currentUser.role === 'management';
-
-            document.getElementById('uploadBanner').style.display = isAdminOrManager ? 'flex' : 'none';
-            document.getElementById('thActionsHeader').style.display = isAdminOrManager ? 'table-cell' : 'none';
-
+            document.getElementById('adminControlsGrid').style.display = isAdminOrMgmt ? 'grid' : 'none';
             document.getElementById('userRoleDisplay').innerText = (currentUser.username || 'Guest').toUpperCase();
             document.getElementById('userPermissionBadge').innerText = `Role: ${(currentUser.role || 'guest').toUpperCase()}`;
             document.getElementById('userAvatarIcon').innerText = (currentUser.username || 'G').charAt(0).toUpperCase();
 
-            // Sort descending by Combat Power (cpNum)
-            members.sort((a, b) => b.cpNum - a.cpNum);
+            // Sort members by Combat Power descending
+            members.sort((a, b) => parseCpValue(b.cp) - parseCpValue(a.cp));
 
-            const filteredMembers = members.filter(m => m.name.toLowerCase().includes(filterQuery) || m.cp.toLowerCase().includes(filterQuery));
+            const filtered = members.filter(m => m.name.toLowerCase().includes(searchVal) || m.cp.toLowerCase().includes(searchVal));
+            document.getElementById('headerMemberTotal').innerText = `${members.length} MEMBERS TOTAL`;
 
-            const tableBody = document.getElementById('memberTableBody');
-            tableBody.innerHTML = '';
-
-            if (filteredMembers.length === 0) {
-                tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 24px; color: #8c93a6;">No members found.</td></tr>`;
-                document.getElementById('badgeShownCount').innerText = '0';
-                document.getElementById('footerSummaryText').innerText = `0 / ${members.length} SHOWN`;
-                document.getElementById('headerMembersCount').innerText = `${members.length} members total`;
+            const tbody = document.getElementById('membersTableBody');
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #8c93a6;">No members found.</td></tr>`;
                 return;
             }
 
-            filteredMembers.forEach((member, index) => {
-                const rank = index + 1;
-                const rankClass = rank === 1 ? 'rank-1' : (rank === 2 ? 'rank-2' : (rank === 3 ? 'rank-3' : ''));
+            tbody.innerHTML = filtered.map((m, idx) => {
+                const rank = idx + 1;
+                const statusClass = m.status === 'active' ? 'status-active' : (m.status === 'inactive' ? 'status-inactive' : 'status-removed');
+                const roleClass = `role-${m.role.toLowerCase()}`;
+                
+                let tierClass = 'house-blue';
+                if (m.f1Tier === 'S') tierClass = 'house-purple';
+                if (m.f1Tier === 'E') tierClass = 'house-orange';
 
-                // Status Badge CSS
-                let statusClass = 'status-active';
-                if (member.status === 'inactive') statusClass = 'status-inactive';
-                if (member.status === 'removed') statusClass = 'status-removed';
-
-                // Rank Badge CSS
-                let rankBadgeClass = 'rank-r1';
-                if (member.rankLevel === 'R4') rankBadgeClass = 'rank-r4';
-                if (member.rankLevel === 'R5') rankBadgeClass = 'rank-r5';
-                if (member.rankLevel === 'R2') rankBadgeClass = 'rank-r1';
-                if (member.rankLevel === 'R3') rankBadgeClass = 'rank-r1';
-
-                // F1 Pill Tier CSS
-                let f1TierClass = 'tier-f';
-                if (member.f1Tier === 'S') f1TierClass = 'tier-s';
-                if (member.f1Tier === 'E') f1TierClass = 'tier-e';
-
-                // Diff Calculation for CP
-                let cpDiffHtml = '';
+                let diffHtml = '';
                 if (showDiffMode) {
-                    const cpDiff = parseFloat((member.cpNum - (member.prevCpNum || member.cpNum)).toFixed(2));
-                    if (cpDiff > 0) cpDiffHtml = `<div style="font-size:10px;"><span class="diff-green">▲ +${cpDiff}G</span></div>`;
-                    else if (cpDiff < 0) cpDiffHtml = `<div style="font-size:10px;"><span class="diff-red">▼ ${cpDiff}G</span></div>`;
-                    else cpDiffHtml = `<div style="font-size:10px;"><span class="diff-yellow">▬ Same</span></div>`;
+                    const currentNum = parseCpValue(m.cp);
+                    const prevNum = parseCpValue(m.prevCp || m.cp);
+                    if (currentNum > prevNum) diffHtml = `<div style="font-size:10px;"><span class="diff-green">▲ Up</span></div>`;
+                    else if (currentNum < prevNum) diffHtml = `<div style="font-size:10px;"><span class="diff-red">▼ Down</span></div>`;
+                    else diffHtml = `<div style="font-size:10px;"><span class="diff-yellow">▬ Same</span></div>`;
                 }
 
-                let rowHTML = `
-                    <tr class="${rankClass}">
+                return `
+                    <tr>
                         <td class="col-rank">${rank}</td>
+                        <td class="col-status">
+                            <button class="status-dot ${statusClass}" onclick="cycleStatus(${m.id})">${m.status}</button>
+                        </td>
                         <td class="col-name">
-                            <span class="status-badge ${statusClass}" title="Status: ${member.status} (Click to toggle)" onclick="cycleMemberStatus(${member.id})"></span>
-                            <span class="${isAdminOrManager ? 'editable-cell' : ''}" onclick="${isAdminOrManager ? `editMemberName(${member.id})` : ''}">${member.name}</span>
-                            <span class="rank-badge ${rankBadgeClass}" title="Alliance Rank: ${member.rankLevel} (Click to change)" onclick="cycleMemberRank(${member.id})">${member.rankLevel}</span>
+                            <span>${m.name}</span>
+                        </td>
+                        <td class="col-role">
+                            <div class="role-badge ${roleClass}" onclick="cycleRole(${m.id})">${m.role}</div>
                         </td>
                         <td class="col-cp">
-                            <span class="cp-badge">${member.cp}</span>
-                            ${cpDiffHtml}
+                            <span class="cp-badge">${m.cp}</span>
+                            ${diffHtml}
                         </td>
                         <td class="col-f1">
-                            <div style="display:flex; flex-direction:column; align-items:center; gap:2px;">
-                                <div class="f1-pill ${f1TierClass}" title="Click to change F1 Tier (F/S/E)" onclick="${isAdminOrManager ? `cycleF1Tier(${member.id})` : ''}">${member.f1Tier}</div>
-                                <span style="font-size:10px; color:#8c93a6; font-weight:600;">Last F1: ${member.prevF1Tier || 'F'}</span>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <div class="house-circle ${tierClass}" onclick="${isAdminOrMgmt ? `cycleTier(${m.id})` : ''}" title="Click to change Tier">${m.f1Tier}</div>
+                                <div>
+                                    <div class="${isAdminOrMgmt ? 'editable-cell' : ''}" onclick="${isAdminOrMgmt ? `editF1Val(${m.id})` : ''}" style="font-weight:800; font-size:13px;">${m.f1Val}</div>
+                                    <div style="font-size: 10px; color: #8c93a6; font-weight:600;">Last CP: ${m.prevCp || m.cp}</div>
+                                </div>
                             </div>
                         </td>
                         <td class="col-note">
-                            <span class="${isAdminOrManager ? 'editable-note' : ''}" onclick="${isAdminOrManager ? `editMemberNote(${member.id})` : ''}">${member.note || '—'}</span>
-                        </td>`;
-                
-                if (isAdminOrManager) {
-                    rowHTML += `<td class="col-actions"><button class="btn-icon-action" onclick="deleteMember(${member.id})">Delete</button></td>`;
-                }
-                rowHTML += `</tr>`;
-                tableBody.insertAdjacentHTML('beforeend', rowHTML);
-            });
-
-            document.getElementById('badgeShownCount').innerText = filteredMembers.length;
-            document.getElementById('footerSummaryText').innerText = `${filteredMembers.length} / ${members.length} SHOWN`;
-            document.getElementById('headerMembersCount').innerText = `${members.length} members total`;
+                            <span class="${isAdminOrMgmt ? 'editable-cell' : ''}" onclick="${isAdminOrMgmt ? `editNote(${m.id})` : ''}">${m.note || '-'}</span>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
         }
 
-        // Interactive Admin Actions
-        window.cycleMemberStatus = function(id) {
+        window.cycleStatus = function(id) {
             const m = members.find(x => x.id === id);
             if (!m) return;
             if (m.status === 'active') m.status = 'inactive';
             else if (m.status === 'inactive') m.status = 'removed';
             else m.status = 'active';
-            saveData(); renderMembers();
+            saveData(); render();
         };
 
-        window.cycleMemberRank = function(id) {
+        window.cycleRole = function(id) {
             const m = members.find(x => x.id === id);
             if (!m) return;
-            const ranks = ['R1', 'R2', 'R3', 'R4', 'R5'];
-            let idx = ranks.indexOf(m.rankLevel);
-            m.rankLevel = ranks[(idx + 1) % ranks.length];
-            saveData(); renderMembers();
+            const roles = ['R1', 'R2', 'R3', 'R4', 'R5'];
+            const nextIdx = (roles.indexOf(m.role) + 1) % roles.length;
+            m.role = roles[nextIdx];
+            saveData(); render();
         };
 
-        window.cycleF1Tier = function(id) {
+        window.cycleTier = function(id) {
             const m = members.find(x => x.id === id);
             if (!m) return;
-            m.prevF1Tier = m.f1Tier;
             const tiers = ['F', 'S', 'E'];
-            let idx = tiers.indexOf(m.f1Tier);
-            m.f1Tier = tiers[(idx + 1) % tiers.length];
-            saveData(); renderMembers();
+            const nextIdx = (tiers.indexOf(m.f1Tier) + 1) % tiers.length;
+            m.f1Tier = tiers[nextIdx];
+            saveData(); render();
         };
 
-        window.editMemberName = function(id) {
+        window.editF1Val = function(id) {
             const m = members.find(x => x.id === id);
-            const val = prompt('Edit In-Game Name:', m.name);
-            if(val !== null && val.trim() !== '') {
-                m.name = val.trim();
-                saveData(); renderMembers();
+            const val = prompt('Edit F1 Power (e.g. 110):', m.f1Val);
+            if (val !== null) {
+                m.f1Val = val.trim();
+                saveData(); render();
             }
         };
 
-        window.editMemberNote = function(id) {
+        window.editNote = function(id) {
             const m = members.find(x => x.id === id);
-            const val = prompt('Edit Note (Admin/Management only):', m.note);
-            if(val !== null) {
-                m.note = val.trim();
-                saveData(); renderMembers();
+            const val = prompt('Edit Member Note:', m.note === '-' ? '' : m.note);
+            if (val !== null) {
+                m.note = val.trim() || '-';
+                saveData(); render();
             }
         };
 
-        window.deleteMember = function(id) {
-            const m = members.find(x => x.id === id);
-            if (confirm(`Remove member [${m ? m.name : id}] from the alliance list?`)) {
-                members = members.filter(x => x.id !== id);
-                saveData(); renderMembers();
-            }
-        };
+        document.getElementById('btnAddManual').addEventListener('click', () => {
+            const name = document.getElementById('manualName').value.trim();
+            const cp = document.getElementById('manualCp').value.trim();
+            const tier = document.getElementById('manualTier').value;
 
-        document.getElementById('btnToggleDiff').addEventListener('click', () => {
-            showDiffMode = !showDiffMode;
-            document.getElementById('btnToggleDiff').classList.toggle('active', showDiffMode);
-            renderMembers();
+            if (!name || !cp) {
+                alert('Please fill out both name and combat power.');
+                return;
+            }
+
+            members.push({
+                id: Date.now(),
+                name,
+                cp,
+                prevCp: cp,
+                f1Val: '110',
+                f1Tier: tier,
+                status: 'active',
+                role: 'R1',
+                note: '-'
+            });
+
+            document.getElementById('manualName').value = '';
+            document.getElementById('manualCp').value = '';
+            saveData(); render();
+            alert('Member added successfully!');
         });
 
-        document.getElementById('searchInput').addEventListener('input', renderMembers);
+        document.getElementById('btnProcessOcr').addEventListener('click', async () => {
+            const fileInput = document.getElementById('screenshotInput');
+            if (!fileInput.files[0]) {
+                alert('Please select an image file first.');
+                return;
+            }
+            const btn = document.getElementById('btnProcessOcr');
+            btn.innerText = 'EXTRACTING...';
+            btn.disabled = true;
 
-        // Screenshot OCR Import to Extract Combat Power (CP)
-        const importBtn = document.getElementById('importBtn');
-        const screenshotInput = document.getElementById('screenshotInput');
-        importBtn.addEventListener('click', () => screenshotInput.click());
-
-        screenshotInput.addEventListener('change', async (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            importBtn.innerText = 'EXTRACTING CP...'; importBtn.disabled = true;
             try {
-                const { data: { text } } = await Tesseract.recognize(file, 'eng');
-                let parsedCount = 0;
+                const { data: { text } } = await Tesseract.recognize(fileInput.files[0], 'eng');
+                let count = 0;
                 text.split('\n').forEach(line => {
-                    const match = line.match(/([a-zA-Z0-9•\s_\u4e00-\u9fa5]+)\s+(\d{1,2}\.\d{1,2}G|\d{1,2}G|\d{1,2}\.\d{1,2}M)/i);
+                    const match = line.match(/([a-zA-Z0-9\s_\u4e00-\u9fa5]+)\s+(\d+\.?\d*[GMK])/i);
                     if (match && match[1].trim().length > 1) {
                         const name = match[1].trim();
-                        const cpStr = match[2].trim();
-                        const cpNum = parseFloat(cpStr);
-
+                        const cp = match[2].trim().toUpperCase();
                         const existing = members.find(m => m.name.toLowerCase() === name.toLowerCase());
                         if (existing) {
-                            existing.prevCpNum = existing.cpNum;
-                            existing.cp = cpStr;
-                            existing.cpNum = cpNum;
+                            existing.prevCp = existing.cp;
+                            existing.cp = cp;
                         } else {
                             members.push({
                                 id: Date.now() + Math.random(),
-                                name: name,
-                                cp: cpStr,
-                                cpNum: cpNum,
-                                prevCpNum: cpNum,
+                                name,
+                                cp,
+                                prevCp: cp,
+                                f1Val: '110',
                                 f1Tier: 'F',
-                                prevF1Tier: 'F',
                                 status: 'active',
-                                rankLevel: 'R3',
-                                note: ''
+                                role: 'R1',
+                                note: '-'
                             });
                         }
-                        parsedCount++;
+                        count++;
                     }
                 });
-                saveData(); renderMembers();
-                alert(`Successfully extracted and updated CP data for ${parsedCount} members from screenshot!`);
+                saveData(); render();
+                alert(`OCR Scan complete! Parsed/Updated ${count} records.`);
             } catch (err) {
-                alert('OCR extraction failed. Please try a clearer screenshot image.');
+                alert('Error extracting text via OCR.');
             } finally {
-                importBtn.innerText = 'IMPORT SCREENSHOT'; importBtn.disabled = false; screenshotInput.value = '';
+                btn.innerText = 'Extract Data';
+                btn.disabled = false;
+                fileInput.value = '';
             }
         });
 
-        document.getElementById('hamburgerBtn').addEventListener('click', () => {
-            document.getElementById('sidebar').classList.toggle('sidebar--open');
+        document.getElementById('btnToggleDiff').addEventListener('click', () => {
+            showDiffMode = !showDiffMode;
+            document.getElementById('btnToggleDiff').style.background = showDiffMode ? 'var(--color-primary)' : 'white';
+            document.getElementById('btnToggleDiff').style.color = showDiffMode ? 'white' : 'var(--color-primary)';
+            render();
         });
+
+        document.getElementById('searchInput').addEventListener('input', render);
+        window.addEventListener('DOMContentLoaded', loadData);
     </script>
 </body>
 </html>
