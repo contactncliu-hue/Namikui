@@ -206,7 +206,32 @@
         text-align: center;
     }
     thead th.col-member { text-align: left; padding-left: 20px; }
-    thead th .sub-header-text { font-size: 9px; font-weight: 700; color: var(--color-text-muted); text-transform: none; margin-top: 2px; display: block; }
+    
+    /* Exact Black-Gold Table Header Date & Remove Icon Layout */
+    thead th .table-date-header {
+        font-family: var(--font-family-base);
+        font-weight: 800;
+        font-size: 12px;
+        color: var(--color-primary-dark);
+    }
+    thead th .table-week-label {
+        font-family: var(--font-family-base);
+        font-weight: 700;
+        font-size: 10px;
+        color: var(--color-text-muted);
+        text-transform: none;
+        margin-top: 2px;
+    }
+    thead th .delete-date-btn {
+        font-family: var(--font-family-base);
+        font-weight: 700;
+        font-size: 11px;
+        color: var(--color-not-attended);
+        cursor: pointer;
+        margin-top: 2px;
+        display: inline-block;
+    }
+    thead th .delete-date-btn:hover { text-decoration: underline; }
 
     tbody td {
         padding: 12px;
@@ -440,7 +465,7 @@
         const hintEl = document.getElementById('roleHint');
         if (hintEl) {
             hintEl.innerText = isManagementOrAdmin 
-                ? '· Admin/Mgmt: Click any table cell to edit points. Scores below 12M marked red.' 
+                ? '· Admin/Mgmt: Click any table cell to edit points. Use × under date columns to delete session.' 
                 : '· Viewing mode (Read-only)';
         }
 
@@ -464,17 +489,27 @@
         const footerTb = document.getElementById('vsTableFooter');
         if (!headersTr || !bodyTb || !footerTb) return;
         
-        let headerHTML = `<th class="col-rank">#</th><th class="col-member">Member</th>`;
+        let headerHTML = `<th class="col-rank">#</th><th class="col-member">MEMBER</th>`;
         vsData.weeks.forEach((wk, idx) => {
-            headerHTML += `<th>${wk}<span class="sub-header-text">Session ${idx + 1}</span></th>`;
+            let deleteActionHTML = '';
+            if (isManagementOrAdmin) {
+                deleteActionHTML = `<div class="delete-date-btn" onclick="deleteWeekColumn(${idx})" title="Delete this session column">×</div>`;
+            }
+            headerHTML += `
+                <th>
+                    <div class="table-date-header">${wk}</div>
+                    <div class="table-week-label">Week ${idx + 1}</div>
+                    ${deleteActionHTML}
+                </th>`;
         });
+        headerHTML += `<th style="text-align:center;">PENALTY</th>`;
         headersTr.innerHTML = headerHTML;
 
         const filtered = vsData.membersScores.filter(m => m.name.toLowerCase().includes(filter));
         document.getElementById('shownCount').innerText = `${filtered.length} members shown`;
         
         if (filtered.length === 0) {
-            bodyTb.innerHTML = `<tr><td colspan="${2 + vsData.weeks.length}" style="text-align:center; padding:40px; color:var(--color-text-muted); font-weight:700;">No members found.</td></tr>`;
+            bodyTb.innerHTML = `<tr><td colspan="${3 + vsData.weeks.length}" style="text-align:center; padding:40px; color:var(--color-text-muted); font-weight:700;">No members found.</td></tr>`;
             footerTb.innerHTML = '';
             return;
         }
@@ -498,15 +533,20 @@
                         ${formattedScore}
                     </td>`;
             });
+
+            // Penalty or status cell per member if applicable
+            const lowWeeksCount = m.scores.filter(s => s < 12000000).length;
+            bodyHTML += `<td style="font-weight:700; color:var(--color-text-muted);">0 weeks</td>`;
             bodyHTML += `</tr>`;
         });
         bodyTb.innerHTML = bodyHTML;
 
-        let footerHTML = `<tr><td class="col-rank"></td><td class="col-member">Total Points</td>`;
+        let footerHTML = `<tr><td class="col-rank"></td><td class="col-member">A/B COUNT</td>`;
         vsData.weeks.forEach((wk, wIdx) => {
             const colTotal = vsData.membersScores.reduce((sum, m) => sum + (m.scores[wIdx] || 0), 0);
             footerHTML += `<td>${colTotal.toLocaleString()}</td>`;
         });
+        footerHTML += `<td></td>`;
         footerHTML += `</tr>`;
         footerTb.innerHTML = footerHTML;
     }
@@ -515,7 +555,6 @@
         const container = document.getElementById('vsRankingCardsList');
         if (!container) return;
         
-        // Calculate total overall score and sort descending by overall total points
         const rankedList = [...vsData.membersScores].map(m => {
             const total = m.scores.reduce((a, b) => a + b, 0);
             return { ...m, total };
@@ -541,11 +580,9 @@
 
             const rankDisplay = idx < 5 ? `<span class="badge-rank ${rankBadgeClass}">${idx + 1}</span>` : `<span style="font-weight:800; color:var(--color-text-muted);">#${idx + 1}</span>`;
             
-            // Generate mini score breakdown pills per week
             let weeksBreakdownHTML = `<div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:4px; font-size:11px; color:var(--color-text-muted); font-weight:600;">`;
             vsData.weeks.forEach((wk, wIdx) => {
                 const sVal = m.scores[wIdx] || 0;
-                weeksBreakdownHTML => 0; // placeholder check
                 weeksBreakdownHTML += `<span>Wk ${wIdx + 1}: <strong style="color:var(--color-text-dark);">${sVal.toLocaleString()}</strong></span>`;
             });
             weeksBreakdownHTML += `</div>`;
@@ -591,6 +628,22 @@
         saveData();
         renderVsPoints();
         dateInput.value = '';
+    };
+
+    window.deleteWeekColumn = function(weekIdx) {
+        if (!isManagementOrAdmin) return;
+        const targetDate = vsData.weeks[weekIdx];
+        if (!confirm(`Are you sure you want to remove session date ${targetDate} (Week ${weekIdx + 1})?`)) return;
+
+        vsData.weeks.splice(weekIdx, 1);
+        vsData.membersScores.forEach(m => {
+            if (m.scores && Array.isArray(m.scores)) {
+                m.scores.splice(weekIdx, 1);
+            }
+        });
+
+        saveData();
+        renderVsPoints();
     };
 
     window.editVsScore = function(memberId, weekIdx) {
