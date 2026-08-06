@@ -68,7 +68,7 @@
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.4); display: none; align-items: center; justify-content: center; z-index: 1000; }
         .modal-card { background: white; padding: 24px; border-radius: 8px; width: 100%; max-width: 360px; border: 2px solid var(--color-primary); }
         .modal-card h3 { margin-bottom: 12px; color: var(--color-primary); font-size: 16px; }
-        .modal-card input, .modal-card select, .modal-card textarea { width: 100%; padding: 10px; margin-bottom: 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
+        .modal-card input, .modal-card select { width: 100%; padding: 10px; margin-bottom: 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
         .modal-card-btns { display: flex; justify-content: flex-end; gap: 8px; }
         .login-error-msg { color: #dc2626; font-size: 12px; font-weight: 700; margin-bottom: 10px; display: none; text-align: left; }
 
@@ -191,79 +191,6 @@
         .generic-view-card { background: white; border: 2px solid var(--color-border); border-radius: 4px; padding: 30px; }
         .generic-view-card h2 { color: var(--color-primary); font-family: 'Fredoka One', cursive, sans-serif; margin-bottom: 12px; }
 
-        /* HOME TAB STYLES MATCHING SCREENSHOT EXACTLY */
-        .home-container { display: flex; flex-direction: column; gap: 16px; }
-        .home-top-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-        @media (max-width: 768px) { .home-top-grid { grid-template-columns: 1fr; } }
-
-        .home-box { background: white; border: 2px solid var(--color-border); border-radius: 4px; padding: 16px; position: relative; overflow: hidden; }
-        .home-box::before { content: ''; position: absolute; top: 0; right: 0; width: 0; height: 0; border-style: solid; border-width: 0 24px 24px 0; border-color: transparent var(--color-primary) transparent transparent; }
-        .home-box--gold::before { border-color: transparent var(--color-gold) transparent transparent; }
-        .home-box--red::before { border-color: transparent #d9381e transparent transparent; }
-
-        .home-box__title { font-size: var(--font-md); font-weight: 800; color: var(--color-text-dark); margin-bottom: 12px; text-transform: uppercase; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-        .home-box__title-left { display: flex; align-items: center; gap: 8px; }
-        .home-box__title-actions { display: flex; align-items: center; gap: 8px; }
-        .home-box__content { font-size: var(--font-sm); color: #4a5060; }
-
-        .btn-view-all { background: none; border: none; color: var(--color-primary); font-weight: 800; font-size: 10px; cursor: pointer; text-transform: uppercase; padding: 4px 2px; white-space: nowrap; }
-        .btn-view-all:hover { text-decoration: underline; }
-        .btn-upload-gold { background: white; border: 2px solid var(--color-gold); color: var(--color-yellow-text); font-weight: 800; font-size: 10px; padding: 6px 10px; border-radius: 4px; cursor: pointer; white-space: nowrap; text-transform: uppercase; }
-        .btn-upload-gold:hover { background-color: var(--color-yellow-bg); }
-        .btn-post-outline { background: white; border: 2px solid var(--color-primary); color: var(--color-primary); font-weight: 800; font-size: 10px; padding: 6px 10px; border-radius: 4px; cursor: pointer; white-space: nowrap; text-transform: uppercase; }
-        .btn-post-outline:hover { background-color: var(--color-primary-light); }
-
-        .home-notices-list { display: flex; flex-direction: column; gap: 8px; max-height: 220px; overflow-y: auto; }
-        .home-notice-item { background: #f8f9fa; border-left: 4px solid var(--color-primary); padding: 8px 12px; border-radius: 2px; position: relative; }
-        .home-notice-item__title { font-weight: 800; font-size: var(--font-sm); color: var(--color-primary); }
-        .home-notice-item__text { font-size: var(--font-xs); color: #555b6e; margin-top: 2px; }
-        .home-notice-item__date { font-size: 10px; color: #8c93a6; margin-top: 4px; text-align: right; }
-
-        .home-contributors-list { display: flex; flex-direction: column; gap: 8px; }
-        .home-contrib-row { display: flex; justify-content: space-between; align-items: center; background: #f8f9fa; padding: 8px 12px; border-radius: 4px; font-weight: 700; font-size: var(--font-sm); }
-        .home-contrib-left { display: flex; align-items: center; gap: 10px; }
-        .home-contrib-medal { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; color: white; flex-shrink: 0; }
-        .home-contrib-medal--1 { background: #f3a808; }
-        .home-contrib-medal--2 { background: #a8a3c0; }
-        .home-contrib-medal--3 { background: #c28859; }
-        .home-contrib-medal--other { background: var(--color-primary); }
-        .home-contrib-score { font-weight: 800; }
-        .home-contrib-score--1 { color: var(--color-gold); }
-        .home-contrib-score--2 { color: #8c93a6; }
-        .home-contrib-score--3 { color: #c28859; }
-        .home-contrib-score--other { color: var(--color-primary); }
-        .home-contrib-pts { font-weight: 600; font-size: 10px; color: #8c93a6; margin-left: 2px; }
-
-        .home-events-list { display: flex; flex-direction: column; gap: 6px; }
-        .home-event-row { display: flex; justify-content: space-between; align-items: center; background: #f8f9fa; padding: 8px 12px; border-radius: 4px; border-bottom: 1px solid var(--color-border-light); }
-        .home-event-row__left { display: flex; flex-direction: column; }
-        .home-event-row__title { font-weight: 800; font-size: var(--font-sm); color: #2b3044; }
-        .home-event-row__date { font-size: 10px; color: #8c93a6; font-weight: 600; }
-        .home-event-row__pct { font-weight: 800; font-size: var(--font-sm); }
-        .home-event-row__pct.high { color: #2563eb; }
-        .home-event-row__pct.mid { color: #b89117; }
-        .home-event-row__pct.low { color: #dc2626; }
-
-        .home-events-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-        @media (max-width: 768px) { .home-events-grid { grid-template-columns: 1fr; } }
-        .home-event-card { background: #f8f9fa; border: 1px solid var(--color-border-light); border-radius: 4px; padding: 10px; text-align: center; }
-        .home-event-card__date { font-size: var(--font-xs); font-weight: 800; color: var(--color-primary); }
-        .home-event-card__title { font-size: var(--font-sm); font-weight: 700; color: #2b3044; margin-top: 2px; }
-
-        .home-media-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
-        @media (max-width: 768px) { .home-media-grid { grid-template-columns: repeat(2, 1fr); } }
-        .home-media-slot { background: #f8f9fa; border: 1px dashed var(--color-border-light); border-radius: 4px; padding: 20px; text-align: center; color: #8c93a6; font-size: var(--font-xs); font-weight: 700; }
-        .home-media-thumb { border-radius: 4px; overflow: hidden; text-align: center; background: var(--color-primary); color: white; font-weight: 800; font-size: var(--font-xs); min-height: 90px; display: flex; align-items: center; justify-content: center; padding: 8px; }
-
-        .home-stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-        @media (max-width: 768px) { .home-stats-grid { grid-template-columns: 1fr; } }
-        .home-stat-card { background: white; border: 2px solid var(--color-border); border-radius: 4px; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; }
-        .home-stat-card__label { font-size: 10px; font-weight: 800; color: #8c93a6; text-transform: uppercase; letter-spacing: 0.5px; }
-        .home-stat-card__value { font-size: 30px; font-weight: 800; color: var(--color-primary); margin-top: 4px; }
-        .home-stat-card__value--gold { color: var(--color-gold); }
-        .home-stat-card__sub { font-size: 11px; color: #a0a6b5; font-weight: 700; margin-top: 2px; }
-        .home-stat-card__icon { width: 46px; height: 46px; border-radius: 8px; background: var(--color-primary-light); display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
-
         @media (max-width: 1024px) {
             .app { flex-direction: column; }
             .mobile-header { display: flex; }
@@ -338,30 +265,6 @@
         </div>
     </div>
 
-    <div class="modal-overlay" id="noticeModal">
-        <div class="modal-card">
-            <h3>Post Alliance Notice</h3>
-            <input type="text" id="noticeTitleInput" placeholder="Notice Title">
-            <textarea id="noticeContentInput" placeholder="Write notice details here..." rows="4"></textarea>
-            <div class="modal-card-btns">
-                <button class="btn-action" onclick="document.getElementById('noticeModal').style.display='none'">Cancel</button>
-                <button class="btn-admin" id="btnSubmitNotice">Post Notice</button>
-            </div>
-        </div>
-    </div>
-
-    <div class="modal-overlay" id="mediaModal">
-        <div class="modal-card">
-            <h3>Upload Photo or Video Link</h3>
-            <input type="text" id="mediaTitleInput" placeholder="Title/Caption">
-            <input type="text" id="mediaUrlInput" placeholder="Image/Video URL or Link">
-            <div class="modal-card-btns">
-                <button class="btn-action" onclick="document.getElementById('mediaModal').style.display='none'">Cancel</button>
-                <button class="btn-admin" id="btnSubmitMedia">Upload Media</button>
-            </div>
-        </div>
-    </div>
-
     <div class="app" id="appDashboard">
         <aside class="sidebar" id="sidebar">
             <div class="sidebar__header"><div class="sidebar__logo">娜美</div></div>
@@ -381,6 +284,7 @@
                     <li><a class="sidebar__item" href="blackgold.html"><span class="sidebar__icon">|</span> BLACK GOLD</a></li>
                     <li><a class="sidebar__item" data-view="attendance"><span class="sidebar__icon">|</span> EVENT ATTENDANCE</a></li>
                     <li><a class="sidebar__item" href="vspoint.html"><span class="sidebar__icon">|</span> VS POINTS</a></li>
+
                 </ul>
                 <div class="sidebar__section-title" id="adminSectionHeader" style="display: none;">MANAGEMENT & ADMIN</div>
                 <ul class="sidebar__menu" id="adminMenuContainer">
@@ -401,88 +305,10 @@
                 <button class="hamburger" id="hamburgerBtn"><span class="hamburger__line"></span><span class="hamburger__line"></span><span class="hamburger__line"></span></button>
             </div>
 
-            <section id="viewHome" class="app-view" style="display: flex; flex-direction: column; gap: 16px;">
-                <div class="home-container">
-
-                    <div class="home-box" id="noticesBox">
-                        <div class="home-box__title">
-                            <span class="home-box__title-left">📣 Notices</span>
-                            <span class="home-box__title-actions">
-                                <button class="btn-post-outline" id="btnAddNoticeBtn" style="display: none;">+ Post</button>
-                                <button class="btn-view-all" data-goto="notice">View All ›</button>
-                            </span>
-                        </div>
-                        <div class="home-box__content">
-                            <div class="home-notices-list" id="homeNoticesList">
-                                <div style="text-align: center; color: #8c93a6; padding: 20px;">No notices yet.</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="home-stats-grid">
-                        <div class="home-stat-card">
-                            <div>
-                                <div class="home-stat-card__label">Total Members</div>
-                                <div class="home-stat-card__value" id="homeStatMembers">0/100</div>
-                                <div class="home-stat-card__sub" id="homeStatMembersSub">100 slots available</div>
-                            </div>
-                            <div class="home-stat-card__icon">👥</div>
-                        </div>
-                        <div class="home-stat-card">
-                            <div>
-                                <div class="home-stat-card__label">Event Attendance</div>
-                                <div class="home-stat-card__value home-stat-card__value--gold" id="homeStatAttendance">0%</div>
-                                <div class="home-stat-card__sub" id="homeStatAttendanceSub">0 recent events</div>
-                            </div>
-                            <div class="home-stat-card__icon">📅</div>
-                        </div>
-                    </div>
-
-                    <div class="home-top-grid">
-                        <div class="home-box">
-                            <div class="home-box__title">
-                                <span class="home-box__title-left">⚔️ Top 5 Contributors</span>
-                                <span class="home-box__title-actions">
-                                    <button class="btn-view-all" data-goto="vspoints">View All ›</button>
-                                </span>
-                            </div>
-                            <div class="home-box__content">
-                                <div class="home-contributors-list" id="homeContributorsList">
-                                    <div style="text-align: center; color: #8c93a6; padding: 20px;">No VS points data available.</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="home-box">
-                            <div class="home-box__title">
-                                <span class="home-box__title-left">📅 Recent Events</span>
-                                <span class="home-box__title-actions">
-                                    <button class="btn-view-all" data-goto="attendance">View All ›</button>
-                                </span>
-                            </div>
-                            <div class="home-box__content">
-                                <div class="home-events-list" id="homeEventsList">
-                                    <div style="text-align: center; color: #8c93a6; padding: 20px;">No events scheduled.</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="home-box home-box--gold">
-                        <div class="home-box__title">
-                            <span class="home-box__title-left">🖼️ Recent Photos &amp; Videos</span>
-                            <span class="home-box__title-actions">
-                                <button class="btn-upload-gold" id="btnAddMediaBtn" style="display: none;">+ Upload</button>
-                                <button class="btn-view-all" data-goto="board">View All ›</button>
-                            </span>
-                        </div>
-                        <div class="home-box__content">
-                            <div class="home-media-grid" id="homeMediaGrid">
-                                <div class="home-media-slot">No photos uploaded yet.</div>
-                                <div class="home-media-slot">No videos uploaded yet.</div>
-                            </div>
-                        </div>
-                    </div>
+            <section id="viewHome" class="app-view">
+                <div class="generic-view-card">
+                    <h2>Home Dashboard</h2>
+                    <p>Welcome to Loopy's Playground Alliance Management Dashboard. Use the sidebar to seamlessly access allowed panels, tracking sheets, and analytics dynamically.</p>
                 </div>
             </section>
 
@@ -500,6 +326,7 @@
                 </div>
             </section>
 
+            <!-- Fixed Members View Tab Integration -->
             <section id="viewMembers" class="app-view" style="display: none; flex-direction: column; gap: 16px;">
                 <div class="generic-view-card">
                     <h2>Members Management Directory</h2>
@@ -659,8 +486,6 @@
         const { createClient } = supabase;
         const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        const MAX_MEMBER_SLOTS = 100;
-
         let currentUser = {
             username: localStorage.getItem('amt_username') || null,
             role: localStorage.getItem('amt_userRole') || null
@@ -672,8 +497,6 @@
         let members = [];
         let auditLogs = [];
         let vsData = { weeks: [], membersScores: [] };
-        let allianceNotices = [];
-        let allianceMedia = [];
         let accounts = [
             { username: 'loopy', pass: '2851849', role: 'admin' },
             { username: 'manager1', pass: 'manager123', role: 'management' },
@@ -691,8 +514,6 @@
                         if (row.key === 'auditLogs') auditLogs = row.value || [];
                         if (row.key === 'accounts') accounts = row.value || accounts;
                         if (row.key === 'vsData') vsData = row.value || { weeks: [], membersScores: [] };
-                        if (row.key === 'allianceNotices') allianceNotices = row.value || [];
-                        if (row.key === 'allianceMedia') allianceMedia = row.value || [];
                     });
                 }
             } catch (err) {
@@ -725,8 +546,6 @@
                 await db.from('app_data').upsert({ id: 3, key: 'auditLogs', value: auditLogs }, { onConflict: 'id' });
                 await db.from('app_data').upsert({ id: 4, key: 'accounts', value: accounts }, { onConflict: 'id' });
                 await db.from('app_data').upsert({ id: 7, key: 'vsData', value: vsData }, { onConflict: 'id' });
-                await db.from('app_data').upsert({ id: 8, key: 'allianceNotices', value: allianceNotices }, { onConflict: 'id' });
-                await db.from('app_data').upsert({ id: 9, key: 'allianceMedia', value: allianceMedia }, { onConflict: 'id' });
             } catch (err) {
                 console.error('Save error:', err);
             }
@@ -744,33 +563,6 @@
             if (auditLogs.length > 50) auditLogs.pop();
             saveData();
         }
-
-        function navigateToView(targetView) {
-            const navItem = document.querySelector(`.sidebar__item[data-view="${targetView}"]`);
-            if (navItem) {
-                navItem.click();
-                return;
-            }
-            // fallback for views without a direct sidebar data-view mapping (e.g. vspoints uses href in this build)
-            const views = {
-                'home': 'viewHome', 'notice': 'viewNotice', 'board': 'viewBoard',
-                'members': 'viewMembers', 'attendance': 'viewAttendance', 'vspoints': 'viewVsPoints',
-                'discussion': 'viewDiscussion', 'questions': 'viewQuestions', 'history': 'viewHistory'
-            };
-            const activeSectionId = views[targetView];
-            if (!activeSectionId) return;
-            Object.values(views).forEach(vId => {
-                const el = document.getElementById(vId);
-                if (el) el.style.display = 'none';
-            });
-            document.getElementById(activeSectionId).style.display = 'flex';
-            document.querySelectorAll('.sidebar__item').forEach(el => el.classList.remove('sidebar__item--active'));
-            render();
-        }
-
-        document.querySelectorAll('.btn-view-all[data-goto]').forEach(btn => {
-            btn.addEventListener('click', () => navigateToView(btn.getAttribute('data-goto')));
-        });
 
         document.querySelectorAll('.sidebar__item[data-view]').forEach(item => {
             item.addEventListener('click', (e) => {
@@ -822,7 +614,6 @@
                 }
 
                 document.getElementById('sidebar').classList.remove('sidebar--open');
-                render();
             });
         });
 
@@ -830,8 +621,6 @@
         const appDashboard = document.getElementById('appDashboard');
         const loginModal = document.getElementById('loginModal');
         const createAccountModal = document.getElementById('createAccountModal');
-        const noticeModal = document.getElementById('noticeModal');
-        const mediaModal = document.getElementById('mediaModal');
         const loginErrorMsg = document.getElementById('loginErrorMsg');
 
         document.getElementById('btnOpenLoginModal').addEventListener('click', () => {
@@ -917,68 +706,6 @@
             alert(`Account ${newU} successfully created! You can now log in using these details.`);
         });
 
-        // Notice Posting Handler
-        document.getElementById('btnAddNoticeBtn').addEventListener('click', () => {
-            if (currentUser.role !== 'admin' && currentUser.role !== 'management') {
-                alert('Access Denied: Notices can only be written by admin and management roles.');
-                return;
-            }
-            document.getElementById('noticeTitleInput').value = '';
-            document.getElementById('noticeContentInput').value = '';
-            noticeModal.style.display = 'flex';
-        });
-
-        document.getElementById('btnSubmitNotice').addEventListener('click', () => {
-            const title = document.getElementById('noticeTitleInput').value.trim();
-            const content = document.getElementById('noticeContentInput').value.trim();
-            if (!title || !content) {
-                alert('Please fill out both title and content.');
-                return;
-            }
-            allianceNotices.unshift({
-                id: Date.now(),
-                title,
-                content,
-                author: currentUser.username,
-                date: new Date().toLocaleDateString()
-            });
-            logAction('POST_NOTICE', `Posted notice: ${title}`);
-            saveData();
-            noticeModal.style.display = 'none';
-            renderHomeTab();
-        });
-
-        // Media Upload Handler
-        document.getElementById('btnAddMediaBtn').addEventListener('click', () => {
-            if (currentUser.role !== 'admin' && currentUser.role !== 'management') {
-                alert('Access Denied: Recent photos and videos can only be uploaded by admin and management roles.');
-                return;
-            }
-            document.getElementById('mediaTitleInput').value = '';
-            document.getElementById('mediaUrlInput').value = '';
-            mediaModal.style.display = 'flex';
-        });
-
-        document.getElementById('btnSubmitMedia').addEventListener('click', () => {
-            const title = document.getElementById('mediaTitleInput').value.trim();
-            const url = document.getElementById('mediaUrlInput').value.trim();
-            if (!title || !url) {
-                alert('Please fill out title and media link/URL.');
-                return;
-            }
-            allianceMedia.unshift({
-                id: Date.now(),
-                title,
-                url,
-                uploader: currentUser.username,
-                date: new Date().toLocaleDateString()
-            });
-            logAction('UPLOAD_MEDIA', `Uploaded media: ${title}`);
-            saveData();
-            mediaModal.style.display = 'none';
-            renderHomeTab();
-        });
-
         window.openRoleAssignModal = function() {
             const selectEl = document.getElementById('targetAccountSelect');
             selectEl.innerHTML = '';
@@ -1033,8 +760,6 @@
             document.getElementById('adminPanel').style.display = isManagementOrAdmin ? 'flex' : 'none';
             document.getElementById('vsAdminPanel').style.display = isManagementOrAdmin ? 'flex' : 'none';
             document.getElementById('importBtn').style.display = isManagementOrAdmin ? 'block' : 'none';
-            document.getElementById('btnAddNoticeBtn').style.display = isManagementOrAdmin ? 'block' : 'none';
-            document.getElementById('btnAddMediaBtn').style.display = isManagementOrAdmin ? 'block' : 'none';
 
             const showManagementArea = isManagementOrAdmin;
             document.getElementById('adminSectionHeader').style.display = showManagementArea ? 'block' : 'none';
@@ -1068,124 +793,9 @@
                 renderRankingCards(filteredMembers, avgRate, isManagementOrAdmin, totalEvents);
             }
 
-            renderHomeTab();
             renderMembersDirectory();
             renderVsPointsTable(isManagementOrAdmin);
             renderAuditTable();
-        }
-
-        function getEventRateColorClass(rateNum) {
-            if (rateNum >= 75) return 'high';
-            if (rateNum >= 50) return 'mid';
-            return 'low';
-        }
-
-        function renderHomeTab() {
-            const totalEvents = eventDates.length;
-            const totalAttendedCount = members.reduce((sum, m) => sum + m.attended, 0);
-            const avgAttendance = members.length ? (totalAttendedCount / members.length) : 0;
-            const overallRate = totalEvents > 0 ? (avgAttendance / totalEvents) * 100 : 0;
-
-            // Stat cards
-            const memberCountEl = document.getElementById('homeStatMembers');
-            const memberSubEl = document.getElementById('homeStatMembersSub');
-            if (memberCountEl && memberSubEl) {
-                memberCountEl.innerText = `${members.length}/${MAX_MEMBER_SLOTS}`;
-                const slotsLeft = Math.max(MAX_MEMBER_SLOTS - members.length, 0);
-                memberSubEl.innerText = `${slotsLeft} slots available`;
-            }
-
-            const attendanceStatEl = document.getElementById('homeStatAttendance');
-            const attendanceSubEl = document.getElementById('homeStatAttendanceSub');
-            if (attendanceStatEl && attendanceSubEl) {
-                attendanceStatEl.innerText = `${overallRate.toFixed(0)}%`;
-                attendanceSubEl.innerText = `${totalEvents} recent event${totalEvents === 1 ? '' : 's'}`;
-            }
-
-            // 1. Render Notices (kept at top of home page)
-            const noticesListEl = document.getElementById('homeNoticesList');
-            if (noticesListEl) {
-                if (!allianceNotices || allianceNotices.length === 0) {
-                    noticesListEl.innerHTML = `<div style="text-align: center; color: #8c93a6; padding: 20px;">No notices yet.</div>`;
-                } else {
-                    noticesListEl.innerHTML = allianceNotices.map(n => `
-                        <div class="home-notice-item">
-                            <div class="home-notice-item__title">${n.title}</div>
-                            <div class="home-notice-item__text">${n.content}</div>
-                            <div class="home-notice-item__date">By ${n.author} • ${n.date}</div>
-                        </div>
-                    `).join('');
-                }
-            }
-
-            // 2. Render Top 5 Contributors based on VS points weekly tab, with medal rankings matching VS Points tab
-            const contribListEl = document.getElementById('homeContributorsList');
-            if (contribListEl) {
-                if (!vsData || !vsData.membersScores || vsData.membersScores.length === 0) {
-                    contribListEl.innerHTML = `<div style="text-align: center; color: #8c93a6; padding: 20px;">No weekly VS points data available.</div>`;
-                } else {
-                    const scored = vsData.membersScores.map(ms => {
-                        const total = (ms.scores || []).reduce((a, b) => a + (b || 0), 0);
-                        return { name: ms.name, total };
-                    }).sort((a, b) => b.total - a.total).slice(0, 5);
-
-                    contribListEl.innerHTML = scored.map((c, idx) => {
-                        const rank = idx + 1;
-                        const medalClass = rank <= 3 ? `home-contrib-medal--${rank}` : 'home-contrib-medal--other';
-                        const scoreClass = rank <= 3 ? `home-contrib-score--${rank}` : 'home-contrib-score--other';
-                        const medalIcon = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : rank;
-                        return `
-                        <div class="home-contrib-row">
-                            <div class="home-contrib-left">
-                                <span class="home-contrib-medal ${medalClass}">${medalIcon}</span>
-                                <span>${c.name}</span>
-                            </div>
-                            <span class="home-contrib-score ${scoreClass}">${c.total.toLocaleString()}<span class="home-contrib-pts">pts</span></span>
-                        </div>`;
-                    }).join('');
-                }
-            }
-
-            // 3. Render Recent Events with attendance percentage, color-coded to match attendance tab
-            const eventsListEl = document.getElementById('homeEventsList');
-            if (eventsListEl) {
-                if (!eventDates || eventDates.length === 0) {
-                    eventsListEl.innerHTML = `<div style="text-align: center; color: #8c93a6; padding: 20px;">No events scheduled.</div>`;
-                } else {
-                    const recentEvents = eventDates.slice(-5).reverse();
-                    eventsListEl.innerHTML = recentEvents.map(ev => {
-                        const evIdx = eventDates.indexOf(ev);
-                        const attendedCount = members.reduce((sum, m) => sum + ((m.events && m.events[evIdx]) ? 1 : 0), 0);
-                        const pct = members.length > 0 ? (attendedCount / members.length) * 100 : 0;
-                        const colorClass = getEventRateColorClass(pct);
-                        return `
-                        <div class="home-event-row">
-                            <div class="home-event-row__left">
-                                <span class="home-event-row__title">${ev.subtext}</span>
-                                <span class="home-event-row__date">${ev.date}</span>
-                            </div>
-                            <span class="home-event-row__pct ${colorClass}">${pct.toFixed(0)}% attended</span>
-                        </div>`;
-                    }).join('');
-                }
-            }
-
-            // 4. Render Recent Photos & Videos (kept at bottom of home page)
-            const mediaGridEl = document.getElementById('homeMediaGrid');
-            if (mediaGridEl) {
-                if (!allianceMedia || allianceMedia.length === 0) {
-                    mediaGridEl.innerHTML = `
-                        <div class="home-media-slot">No photos uploaded yet.</div>
-                        <div class="home-media-slot">No videos uploaded yet.</div>
-                    `;
-                } else {
-                    mediaGridEl.innerHTML = allianceMedia.slice(0, 4).map(m => `
-                        <div class="home-media-thumb" title="${m.title}">
-                            <a href="${m.url}" target="_blank" style="color: white; text-decoration: none;">${m.title}</a>
-                        </div>
-                    `).join('');
-                }
-            }
         }
 
         function getProgressBarColorClass(rateNum) {
@@ -1240,6 +850,7 @@
                 return;
             }
 
+            // Sort members scores descending by total score
             const scoredList = vsData.membersScores.map(ms => {
                 const total = (ms.scores || []).reduce((a, b) => a + (b || 0), 0);
                 return { ...ms, totalScore: total };
