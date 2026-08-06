@@ -445,7 +445,13 @@
                 data.forEach(row => {
                     if (row.key === 'members') members = row.value || [];
                     if (row.key === 'blackGoldDates') bgDates = row.value || [];
-                    if (row.key === 'blackGoldAssignments') assignments = row.value || {};
+                    if (row.key === 'blackGoldAssignments') {
+                        // Guard: if this was ever accidentally saved as an array
+                        // (e.g. from early testing), treat it as corrupted and
+                        // reset to a clean object rather than loading a value
+                        // that could silently blow up on the next save.
+                        assignments = (row.value && !Array.isArray(row.value)) ? row.value : {};
+                    }
                 });
             }
             // Ensure dates are sorted chronologically
