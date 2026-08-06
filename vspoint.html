@@ -445,6 +445,10 @@
                     existing.name = m.name;
                 }
             });
+
+            // Automatically remove any members from VS points who have been deleted from the members tab
+            const activeMemberIds = new Set(members.map(m => String(m.id)));
+            vsData.membersScores = vsData.membersScores.filter(s => activeMemberIds.has(String(s.id)));
             
             sortWeeksAndScores();
         } catch (err) {
