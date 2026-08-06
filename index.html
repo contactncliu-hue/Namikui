@@ -34,18 +34,16 @@
             --color-yellow-text: #b89117;
             --color-gold: #f3a808;
 
-            /* Updated Font Families */
             --font-family-base: 'Open Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             --font-family-title: 'Cinzel', serif;
             --font-family-logo: 'Noto Sans SC', sans-serif;
 
-            /* Adjusted Font Sizes (Scaled up for enhanced visual hierarchy) */
-            --font-xs: 13px;
-            --font-sm: 15px;
-            --font-md: 17px;
-            --font-lg: 20px;
-            --font-xl: 24px;
-            --font-xxl: 32px;
+            --font-xs: 12px;
+            --font-sm: 14px;
+            --font-md: 16px;
+            --font-lg: 18px;
+            --font-xl: 22px;
+            --font-xxl: 28px;
         }
 
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -92,63 +90,71 @@
         .sidebar__item--logout:hover { background-color: #fce8e6; }
         .sidebar__icon { width: 16px; text-align: center; }
 
-        .main { flex-grow: 1; padding: 24px; display: flex; flex-direction: column; gap: 20px; max-width: 1240px; }
+        .main { flex-grow: 1; padding: 24px; display: flex; flex-direction: column; gap: 16px; max-width: 1240px; }
         .mobile-header { display: none; justify-content: space-between; align-items: center; padding: 12px 16px; background: white; border: 2px solid var(--color-border); border-radius: 8px; margin-bottom: 12px; }
         .hamburger { background: none; border: none; cursor: pointer; display: flex; flex-direction: column; gap: 4px; padding: 4px; }
         .hamburger__line { width: 24px; height: 3px; background-color: var(--color-primary); border-radius: 2px; }
 
-        .header-bar { background-color: white; border: 2px solid var(--color-border); border-radius: 6px; padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; position: relative; }
-        .header-bar::before { content: ''; position: absolute; left: 12px; top: 12px; bottom: 12px; width: 4px; background-color: #e2cb6b; border-radius: 2px; }
-        .header-bar__title-group { padding-left: 12px; }
-        .header-bar__title { font-family: 'Fredoka One', cursive, sans-serif; font-size: var(--font-xxl); color: var(--color-primary); line-height: 1.1; text-transform: uppercase; }
-        .header-bar__subtitle { font-size: var(--font-xs); font-weight: 800; color: var(--color-primary); margin-top: 6px; display: flex; gap: 20px; letter-spacing: 0.5px; }
-        .header-bar__actions { display: flex; gap: 12px; align-items: center; }
+        /* Top Heading Matching VS Points / Reference Image 2 Style Exactly */
+        .page-header-top { display: flex; flex-direction: column; gap: 4px; margin-bottom: 2px; }
+        .page-header-top__back { font-size: 13px; font-weight: 700; color: var(--color-primary); text-decoration: none; margin-bottom: 2px; display: inline-block; font-family: var(--font-family-base); }
+        .page-header-top__back:hover { text-decoration: underline; }
+        .page-header-top__title { font-family: 'Fredoka One', cursive, sans-serif; font-size: 28px; color: #2d4187; letter-spacing: 0.5px; text-transform: uppercase; line-height: 1.1; }
+        .page-header-top__subtext { font-size: 13px; font-weight: 600; color: #8c93a6; }
 
-        .btn-action { background: white; border: 2px solid var(--color-primary); color: var(--color-primary); font-weight: 800; font-size: var(--font-xs); padding: 10px 18px; border-radius: 4px; cursor: pointer; font-family: var(--font-family-base); }
-        .btn-action--logout { background-color: #fce8e6; border-color: #d9381e; color: #d9381e; }
-        .btn-diff { background: white; border: 2px solid var(--color-primary); color: var(--color-primary); font-weight: 800; font-size: var(--font-xs); padding: 10px 18px; border-radius: 4px; cursor: pointer; font-family: var(--font-family-base); }
-        .btn-diff.active { background-color: var(--color-primary); color: white; }
-
-        .admin-panel { background: #fffdf0; border: 2px dashed #d99f26; border-radius: 6px; padding: 16px 20px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
-        .admin-panel__title { font-weight: 800; font-size: var(--font-xs); color: #b89117; text-transform: uppercase; width: 100%; margin-bottom: 6px; letter-spacing: 0.5px; }
-        .admin-panel__form { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-        .admin-panel__input { padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 4px; font-size: var(--font-xs); outline: none; font-family: var(--font-family-base); }
-        .btn-admin { background: #3b52a4; color: white; border: none; font-weight: 800; font-size: var(--font-xs); padding: 9px 16px; border-radius: 4px; cursor: pointer; font-family: var(--font-family-base); }
-
-        .controls-card { background: white; border: 2px solid var(--color-border); border-radius: 6px; padding: 16px; display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
-        .btn-group { display: flex; border: 2px solid var(--color-primary); border-radius: 4px; overflow: hidden; }
-        .btn-toggle { padding: 10px 18px; font-weight: 800; font-size: var(--font-xs); border: none; background: white; color: var(--color-primary); cursor: pointer; display: flex; align-items: center; gap: 6px; font-family: var(--font-family-base); }
+        /* Controls Card matching reference layout image 2 precisely */
+        .controls-card { background: white; border: 2px solid var(--color-border); border-radius: 8px; padding: 14px 18px; display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+        
+        /* Updated pill buttons layout matching image 2 */
+        .btn-group { display: flex; border: 2px solid var(--color-primary); border-radius: 6px; overflow: hidden; background: #f0f4f9; }
+        .btn-toggle { padding: 9px 18px; font-weight: 800; font-size: var(--font-xs); border: none; background: #eceff8; color: #71788e; cursor: pointer; display: flex; align-items: center; gap: 6px; font-family: var(--font-family-base); text-transform: uppercase; letter-spacing: 0.5px; }
         .btn-toggle--active { background-color: var(--color-primary); color: white; }
 
         .search-box { flex-grow: 1; max-width: 320px; position: relative; }
-        .search-box__input { width: 100%; padding: 10px 12px 10px 36px; border: 1px solid #d1d5db; background-color: #f7f6f0; border-radius: 4px; font-size: var(--font-sm); outline: none; font-family: var(--font-family-base); }
-        .search-box__icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #9ca3af; }
+        .search-box__input { width: 100%; padding: 9px 12px 9px 36px; border: 1px solid #d1d5db; background-color: #fafaf7; border-radius: 6px; font-size: var(--font-xs); outline: none; font-family: var(--font-family-base); color: #4a5060; font-weight: 600; }
+        .search-box__input::placeholder { color: #9ca3af; font-weight: 600; }
+        .search-box__icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #9ca3af; font-size: 13px; }
 
-        .event-badge { margin-left: auto; background-color: var(--color-yellow-bg); border: 1px solid var(--color-yellow-border); padding: 8px 14px; border-radius: 4px; display: none; align-items: center; gap: 8px; font-size: var(--font-xs); font-weight: 800; color: var(--color-yellow-text); }
-        .event-badge__count { color: #d9381e; font-size: var(--font-lg); font-weight: 800; }
+        .controls-right-group { display: flex; gap: 10px; align-items: center; margin-left: auto; }
+        
+        /* Date input wrapper styled exactly like the yellow-bordered box in reference image 2 */
+        .date-input-wrapper { display: flex; align-items: center; }
+        .admin-panel__input-date { padding: 8px 12px; border: 2px solid #e2cb6b; background-color: #fffdf0; border-radius: 6px; font-size: var(--font-xs); outline: none; font-family: var(--font-family-base); font-weight: 700; color: #b89117; width: 135px; cursor: pointer; }
+        
+        .btn-action-custom { background: white; border: 2px solid var(--color-primary); color: var(--color-primary); font-weight: 800; font-size: var(--font-xs); padding: 9px 16px; border-radius: 6px; cursor: pointer; font-family: var(--font-family-base); display: inline-flex; align-items: center; gap: 6px; }
+        .btn-action-custom--add { border-color: #e2cb6b; color: #b89117; background: #fffdf0; letter-spacing: 0.5px; }
+        .btn-action-custom--import { border-color: #e2cb6b; color: #b89117; background: #fffdf0; letter-spacing: 0.5px; }
+        .btn-diff { background: white; border: 2px solid var(--color-primary); color: var(--color-primary); font-weight: 800; font-size: var(--font-xs); padding: 8px 14px; border-radius: 6px; cursor: pointer; font-family: var(--font-family-base); }
+        .btn-diff.active { background-color: var(--color-primary); color: white; }
 
-        .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); border: 2px solid var(--color-border); border-radius: 6px; background: white; overflow: hidden; }
-        .kpi-card { padding: 16px 20px; border-right: 1px solid var(--color-border-light); background-color: #f4f6fb; }
-        .kpi-card:last-child { border-right: none; background-color: var(--color-yellow-bg); }
-        .kpi-card__label { font-size: var(--font-xs); font-weight: 800; color: #8c93a6; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px; }
-        .kpi-card__value { font-size: var(--font-xxl); font-weight: 800; color: var(--color-primary); }
+        /* Top 5 Legend & Info Bar */
+        .top-legend-bar { display: flex; align-items: center; gap: 10px; font-size: 12px; font-weight: 600; color: #62697b; flex-wrap: wrap; margin-top: 2px; }
+        .top-legend-bar__title { font-weight: 800; color: #2b3044; text-transform: uppercase; }
+        .top-pill { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 12px; font-weight: 800; font-size: 11px; color: white; }
+        .top-pill--1 { background-color: #f3a808; }
+        .top-pill--2 { background-color: #a0aec0; }
+        .top-pill--3 { background-color: #b7791f; }
+        .top-pill--4 { background-color: #3182ce; }
+        .top-pill--5 { background-color: #e53e3e; }
 
-        .table-card { background: white; border: 2px solid var(--color-border); border-radius: 6px; overflow: hidden; display: flex; flex-direction: column; }
+        .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); border: 2px solid var(--color-border); border-radius: 6px; background: white; overflow: hidden; display: none; }
+
+        .table-card { background: white; border: 2px solid var(--color-border); border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; }
         .table-wrapper { overflow-x: auto; }
         .data-table { width: 100%; border-collapse: collapse; text-align: left; font-size: var(--font-sm); }
-        .data-table th { background-color: #eef2f9; padding: 14px 18px; font-size: var(--font-xs); font-weight: 800; color: #71788e; text-transform: uppercase; border-bottom: 1px solid var(--color-border-light); white-space: nowrap; letter-spacing: 0.5px; }
-        .data-table td { padding: 12px 18px; border-bottom: 1px solid #f0f2f5; vertical-align: middle; font-weight: 700; color: #4a5060; }
-        .data-table tfoot td { background-color: #f8f9fa; border-top: 2px solid var(--color-border-light); padding: 14px 18px; font-size: var(--font-xs); font-weight: 800; color: #8c93a6; }
+        .data-table th { background-color: #eef2f9; padding: 12px 16px; font-size: var(--font-xs); font-weight: 800; color: #71788e; text-transform: uppercase; border-bottom: 1px solid var(--color-border-light); white-space: nowrap; letter-spacing: 0.5px; }
+        .data-table td { padding: 12px 16px; border-bottom: 1px solid #f0f2f5; vertical-align: middle; font-weight: 700; color: #4a5060; }
+        .data-table tfoot td { background-color: #f8f9fa; border-top: 2px solid var(--color-border-light); padding: 12px 16px; font-size: var(--font-xs); font-weight: 800; color: #8c93a6; }
 
         .data-table tr.rank-1 { background-color: #fffdf5; }
         .data-table tr.rank-2 { background-color: #faf9f5; }
         .data-table tr.rank-3 { background-color: #fcfbf7; }
 
-        .col-rank { width: 60px; text-align: center; color: #a0a6b5; }
+        .col-rank { width: 50px; text-align: center; color: #a0a6b5; }
         .col-name { font-weight: 800; color: #2b3044; }
-        .col-attended { width: 100px; text-align: center; font-size: var(--font-md); font-weight: 800; }
+        .col-attended { width: 90px; text-align: center; font-size: var(--font-md); font-weight: 800; }
         .col-event { width: 95px; text-align: center; }
-        .col-actions { width: 80px; text-align: center; }
+        .col-actions { width: 70px; text-align: center; }
 
         .attended-high { color: #2563eb; }
         .attended-mid { color: #b89117; }
@@ -166,46 +172,47 @@
         .cross-icon { color: #ccc; font-weight: bold; }
         .editable-num { cursor: pointer; border-bottom: 1px dashed var(--color-primary); }
 
-        .progress-bar { height: 10px; width: 100%; background-color: #eef0f5; border-radius: 5px; overflow: hidden; }
-        .progress-bar__fill { height: 100%; border-radius: 5px; }
+        .progress-bar { height: 8px; width: 100%; background-color: #eef0f5; border-radius: 4px; overflow: hidden; }
+        .progress-bar__fill { height: 100%; border-radius: 4px; }
         .progress-bar__fill.high { background-color: #2563eb; } 
         .progress-bar__fill.mid { background-color: #eab308; }  
         .progress-bar__fill.low { background-color: #dc2626; }  
 
-        .ranking-cards-list { display: flex; flex-direction: column; gap: 12px; }
-        .ranking-card { background-color: #fdfcf7; border: 2px solid #d5cbac; border-radius: 6px; padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; }
+        .ranking-cards-list { display: flex; flex-direction: column; gap: 10px; }
+        .ranking-card { background-color: #fdfcf7; border: 2px solid #d5cbac; border-radius: 6px; padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; }
         .ranking-card--rank-1 { border-color: #f3a808; background-color: #fffdf5; }
         .ranking-card--rank-2 { border-color: #a0aec0; background-color: #ffffff; }
         .ranking-card--rank-3 { border-color: #b7791f; background-color: #fffaf5; }
         .ranking-card--rank-4 { border-color: #3182ce; background-color: #f7fafc; }
         .ranking-card--rank-5 { border-color: #e53e3e; background-color: #fff5f5; }
         
-        .ranking-card__left { display: flex; align-items: center; gap: 18px; min-width: 240px; }
-        .ranking-card__badge { font-size: var(--font-sm); font-family: var(--font-family-base); width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; font-weight: 800; border-radius: 50%; background: #eef2f9; color: #ffffff; }
-        .ranking-card--rank-1 .ranking-card__badge { background: #f3a808; color: white; }
-        .ranking-card--rank-2 .ranking-card__badge { background: #a0aec0; color: white; }
-        .ranking-card--rank-3 .ranking-card__badge { background: #b7791f; color: white; }
-        .ranking-card--rank-4 .ranking-card__badge { background: #3182ce; color: white; }
-        .ranking-card--rank-5 .ranking-card__badge { background: #e53e3e; color: white; }
+        .ranking-card__left { display: flex; align-items: center; gap: 16px; min-width: 220px; }
+        .ranking-card__badge { font-size: var(--font-sm); font-family: var(--font-family-base); width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-weight: 800; border-radius: 50%; color: #ffffff; }
+        .ranking-card--rank-1 .ranking-card__badge { background: #f3a808; }
+        .ranking-card--rank-2 .ranking-card__badge { background: #a0aec0; }
+        .ranking-card--rank-3 .ranking-card__badge { background: #b7791f; }
+        .ranking-card--rank-4 .ranking-card__badge { background: #3182ce; }
+        .ranking-card--rank-5 .ranking-card__badge { background: #e53e3e; }
         
-        .ranking-card__name { font-weight: 800; font-size: var(--font-md); color: #2b3044; }
-        .ranking-card__subtext { font-size: var(--font-xs); color: #8c93a6; font-weight: 600; }
-        .ranking-card__right { display: flex; align-items: center; gap: 24px; flex-grow: 1; justify-content: flex-end; max-width: 620px; }
-        .ranking-card__bar-wrapper { flex-grow: 1; max-width: 180px; }
+        .ranking-card__name { font-weight: 800; font-size: var(--font-sm); color: #2b3044; }
+        .ranking-card__subtext { font-size: 11px; color: #8c93a6; font-weight: 600; }
+        .ranking-card__right { display: flex; align-items: center; gap: 20px; flex-grow: 1; justify-content: flex-end; max-width: 580px; }
+        .ranking-card__bar-wrapper { flex-grow: 1; max-width: 160px; }
 
-        .btn-icon-action { background: none; border: none; cursor: pointer; padding: 4px 8px; font-size: var(--font-xs); font-weight: 800; color: #dc2626; font-family: var(--font-family-base); }
+        .btn-icon-action { background: none; border: none; cursor: pointer; padding: 4px 6px; font-size: var(--font-xs); font-weight: 800; color: #dc2626; font-family: var(--font-family-base); }
         .btn-icon-action:hover { opacity: 0.8; }
 
-        .generic-view-card { background: white; border: 2px solid var(--color-border); border-radius: 6px; padding: 36px; }
-        .generic-view-card h2 { color: var(--color-primary); font-family: 'Fredoka One', cursive, sans-serif; font-size: var(--font-xl); margin-bottom: 14px; }
-        .generic-view-card p { font-size: var(--font-sm); line-height: 1.6; }
+        .generic-view-card { background: white; border: 2px solid var(--color-border); border-radius: 6px; padding: 28px; }
+        .generic-view-card h2 { color: var(--color-primary); font-family: 'Fredoka One', cursive, sans-serif; font-size: var(--font-xl); margin-bottom: 10px; }
+        .generic-view-card p { font-size: var(--font-sm); line-height: 1.5; }
+
+        .footer-info-bar { display: flex; justify-content: space-between; align-items: center; font-size: 11px; font-weight: 700; color: #8c93a6; padding: 4px 2px; text-transform: uppercase; letter-spacing: 0.5px; }
 
         @media (max-width: 1024px) {
             .app { flex-direction: column; }
             .mobile-header { display: flex; }
             .sidebar { position: fixed; top: 0; left: 0; height: 100vh; transform: translateX(-100%); }
             .sidebar--open { transform: translateX(0); }
-            .kpi-grid { grid-template-columns: repeat(2, 1fr); }
         }
     </style>
 </head>
@@ -236,8 +243,8 @@
             <input type="text" id="loginUsername" placeholder="Username (admin, manager, member...)">
             <input type="password" id="loginPassword" placeholder="Password">
             <div class="modal-card-btns">
-                <button class="btn-action" id="btnCancelModal">Cancel</button>
-                <button class="btn-admin" id="btnSubmitLogin">Login</button>
+                <button class="btn-action-custom" id="btnCancelModal">Cancel</button>
+                <button class="btn-action-custom" id="btnSubmitLogin" style="background:#3b52a4; color:white;">Login</button>
             </div>
         </div>
     </div>
@@ -251,8 +258,8 @@
                 New accounts are registered as Members by default. Only you as Admin can assign roles after logging in.
             </div>
             <div class="modal-card-btns">
-                <button class="btn-action" onclick="document.getElementById('createAccountModal').style.display='none'">Cancel</button>
-                <button class="btn-admin" id="btnSubmitCreateAccount">Register</button>
+                <button class="btn-action-custom" onclick="document.getElementById('createAccountModal').style.display='none'">Cancel</button>
+                <button class="btn-action-custom" id="btnSubmitCreateAccount" style="background:#3b52a4; color:white;">Register</button>
             </div>
         </div>
     </div>
@@ -268,8 +275,8 @@
                 <option value="admin">Admin</option>
             </select>
             <div class="modal-card-btns">
-                <button class="btn-action" onclick="document.getElementById('roleAssignModal').style.display='none'">Cancel</button>
-                <button class="btn-admin" id="btnSubmitRoleAssign">Save Changes</button>
+                <button class="btn-action-custom" onclick="document.getElementById('roleAssignModal').style.display='none'">Cancel</button>
+                <button class="btn-action-custom" id="btnSubmitRoleAssign" style="background:#3b52a4; color:white;">Save Changes</button>
             </div>
         </div>
     </div>
@@ -356,48 +363,47 @@
                 </div>
             </section>
 
-            <section id="viewAttendance" class="app-view" style="display: none; flex-direction: column; gap: 20px;">
-                <header class="header-bar" style="display: none;">
-                    <div class="header-bar__title-group">
-                        <h1 class="header-bar__title">Loopy's Playground</h1>
-                        <div class="header-bar__subtitle">
-                            <span>ALLIANCE MANAGEMENT TOOL</span>
-                            <span class="header-bar__stats" id="headerEventsCount">0 EVENTS - 0 MEMBERS</span>
-                        </div>
-                    </div>
-                    <div class="header-bar__actions">
-                        <input type="file" id="screenshotInput" accept="image/*" style="display: none;">
-                        <button class="btn-action btn-action--logout" id="btnLogout">LOG OUT</button>
-                    </div>
-                </header>
+            <section id="viewAttendance" class="app-view" style="display: none; flex-direction: column; gap: 12px;">
+                <!-- Matching Reference Image 2 Top Heading Style Exactly -->
+                <div class="page-header-top">
+                    <a href="#" class="page-header-top__back" onclick="document.querySelector('.sidebar__item[data-view=\'home\']').click(); return false;">← Back to Dashboard</a>
+                    <h1 class="page-header-top__title">Event Attendance</h1>
+                    <div class="page-header-top__subtext" id="headerEventsCount">0 members · 0 sessions</div>
+                </div>
 
-                <section class="admin-panel" id="adminPanel" style="display: none;">
-                    <div class="admin-panel__title">Event Tools (Management/Admin Auth Required)</div>
-                    <div class="admin-panel__form">
-                        <input type="date" class="admin-panel__input" id="newDateInput">
-                        <input type="text" class="admin-panel__input" id="newSubtextInput" placeholder="Level/Title (e.g. LV4)">
-                        <button class="btn-admin" id="btnAddEvent">Add Event Column</button>
-                    </div>
-                </section>
-
+                <!-- Controls Card matching reference image 2 layout precisely -->
                 <section class="controls-card">
                     <div class="btn-group">
                         <button class="btn-toggle btn-toggle--active" id="btnTabAttendance">ATTENDANCE</button>
                         <button class="btn-toggle" id="btnTabRanking">RANKING</button>
                     </div>
                     <div class="search-box">
-                        <span class="search-box__icon">|</span>
+                        <span class="search-box__icon">🔍</span>
                         <input type="text" class="search-box__input" id="searchInput" placeholder="Search member...">
                     </div>
-                    <button class="btn-diff" id="btnToggleDiff">± DIFF</button>
-                    <input type="file" id="screenshotInput" accept="image/*" style="display: none;">
-                    <button class="btn-action" id="importBtn" style="display: none;">IMPORT SCREENSHOT</button>
-                    <div class="event-badge">
-                        <span>% OF</span>
-                        <span class="event-badge__count" id="badgeEventsCount">0</span>
-                        <span>EVENTS</span>
+
+                    <div class="controls-right-group">
+                        <button class="btn-diff" id="btnToggleDiff">± DIFF</button>
+                        <div class="date-input-wrapper" id="adminPanel" style="display: none;">
+                            <input type="date" class="admin-panel__input-date" id="newDateInput" title="Event Date">
+                        </div>
+                        <input type="text" id="newSubtextInput" style="display: none;">
+                        <button class="btn-action-custom btn-action-custom--add" id="btnAddEvent" style="display: none;">+ ADD DATE</button>
+                        <input type="file" id="screenshotInput" accept="image/*" style="display: none;">
+                        <button class="btn-action-custom btn-action-custom--import" id="importBtn" style="display: none;">📁 IMPORT</button>
                     </div>
                 </section>
+
+                <!-- Top 5 Legend / Help text bar matching reference layout -->
+                <div class="top-legend-bar" id="topLegendBar">
+                    <span class="top-legend-bar__title">TOP 5:</span>
+                    <span class="top-pill top-pill--1">1st</span>
+                    <span class="top-pill top-pill--2">2nd</span>
+                    <span class="top-pill top-pill--3">3rd</span>
+                    <span class="top-pill top-pill--4">4th</span>
+                    <span class="top-pill top-pill--5">5th</span>
+                    <span style="color: #8c93a6; margin-left: 6px;" id="adminHelpText">· Admin/Mgmt: Click any table cell or date subtext to edit. Use X under date columns to delete session.</span>
+                </div>
 
                 <section class="kpi-grid">
                     <div class="kpi-card"><div class="kpi-card__label">Members</div><div class="kpi-card__value" id="kpiMembers">0</div></div>
@@ -416,6 +422,11 @@
                     </div>
                 </div>
                 <section class="ranking-cards-list" id="subViewRanking" style="display: none;"></section>
+
+                <div class="footer-info-bar">
+                    <span>◆ LOOPY'S PLAYGROUND · ALLIANCE MANAGEMENT TOOL</span>
+                    <span id="footerMembersShown">0/0 members shown</span>
+                </div>
             </section>
 
             <section id="viewVsPoints" class="app-view" style="display: none; flex-direction: column; gap: 20px;">
@@ -428,7 +439,7 @@
                     <div class="admin-panel__title">VS Points Management Tools</div>
                     <div class="admin-panel__form">
                         <input type="text" class="admin-panel__input" id="newVsWeekInput" placeholder="Week Label (e.g. Sun 07-06)">
-                        <button class="btn-admin" id="btnAddVsWeek">Add Week Column</button>
+                        <button class="btn-action-custom" id="btnAddVsWeek" style="background:#3b52a4; color:white;">Add Week Column</button>
                     </div>
                 </div>
 
@@ -764,9 +775,11 @@
             const isManagementOrAdmin = currentUser.role === 'admin' || currentUser.role === 'management';
             const totalEvents = eventDates.length;
 
-            document.getElementById('adminPanel').style.display = isManagementOrAdmin ? 'flex' : 'none';
+            document.getElementById('adminPanel').style.display = isManagementOrAdmin ? 'block' : 'none';
+            document.getElementById('btnAddEvent').style.display = isManagementOrAdmin ? 'inline-flex' : 'none';
             document.getElementById('vsAdminPanel').style.display = isManagementOrAdmin ? 'flex' : 'none';
-            document.getElementById('importBtn').style.display = isManagementOrAdmin ? 'block' : 'none';
+            document.getElementById('importBtn').style.display = isManagementOrAdmin ? 'inline-flex' : 'none';
+            document.getElementById('adminHelpText').style.display = isManagementOrAdmin ? 'inline' : 'none';
 
             const showManagementArea = isManagementOrAdmin;
             document.getElementById('adminSectionHeader').style.display = showManagementArea ? 'block' : 'none';
@@ -790,9 +803,9 @@
             document.getElementById('kpiMembers').innerText = members.length;
             document.getElementById('kpiAvgAttendance').innerText = avgAttendance.toFixed(1);
             document.getElementById('kpiAvgRate').innerText = `${avgRate.toFixed(1)}%`;
-            document.getElementById('badgeEventsCount').innerText = totalEvents;
             document.getElementById('kpiPctBase').innerText = `${totalEvents} events`;
-            document.getElementById('headerEventsCount').innerText = `${totalEvents} EVENTS - ${members.length} MEMBERS`;
+            document.getElementById('headerEventsCount').innerText = `${members.length} members · ${totalEvents} sessions`;
+            document.getElementById('footerMembersShown').innerText = `${filteredMembers.length}/${members.length} members shown`;
 
             if (currentSubTab === 'attendance') {
                 renderAttendanceTable(filteredMembers, avgRate, isManagementOrAdmin, totalEvents, totalAttendedCount);
@@ -954,8 +967,7 @@
             const tableBody = document.getElementById('memberTableBody');
             const tableFooterRow = document.getElementById('tableFooterRow');
 
-            let headerHTML = `<th class="col-rank">#</th><th>IN-GAME NAME</th><th style="text-align: center;">ATTENDED</th>`;
-            headerHTML += `<th>ATTENDANCE %</th>`;
+            let headerHTML = `<th class="col-rank">#</th><th>MEMBER</th>`;
             if (showDiffMode) headerHTML += `<th>VS AVG</th>`;
 
             eventDates.forEach((ev, evIdx) => {
@@ -982,8 +994,6 @@
             filteredMembers.forEach((member, index) => {
                 const rank = index + 1;
                 const rateNum = totalEvents > 0 ? parseFloat(((member.attended / totalEvents) * 100).toFixed(1)) : 0;
-                const colorClass = getProgressBarColorClass(rateNum);
-                const attendedColorClass = getAttendedColorClass(rateNum);
                 const vsAvgDiff = parseFloat((rateNum - avgRate).toFixed(1));
                 const vsAvgString = (vsAvgDiff >= 0 ? `+` : ``) + vsAvgDiff.toFixed(1) + `%`;
                 const vsAvgClass = vsAvgDiff >= 0 ? 'vs-avg-pos' : 'vs-avg-neg';
@@ -992,9 +1002,7 @@
                 let rowHTML = `
                     <tr class="${rankClass}">
                         <td class="col-rank">${rank}</td>
-                        <td class="col-name">${member.name}</td>
-                        <td class="col-attended"><span class="${attendedColorClass} ${isManagementOrAdmin ? 'editable-num' : ''}" onclick="${isManagementOrAdmin ? `editAttendedCount(${member.id})` : ''}">${member.attended}</span></td>
-                        <td><div style="display: flex; align-items: center; gap: 12px;"><div class="progress-bar"><div class="progress-bar__fill ${colorClass}" style="width: ${rateNum}%;"></div></div><span style="font-weight: 800;">${rateNum}%</span></div></td>`;
+                        <td class="col-name">${member.name}</td>`;
                 
                 if (showDiffMode) {
                     rowHTML += `<td><span class="${vsAvgClass}">${vsAvgString}</span></td>`;
@@ -1037,7 +1045,7 @@
                 tableBody.insertAdjacentHTML('beforeend', rowHTML);
             });
 
-            let footerHTML = `<tr><td colspan="2" style="font-weight: 800;">TOTAL ATTENDANCE</td><td style="text-align: center; font-weight: 800; color: var(--color-primary);">${totalAttendedCount}</td><td></td>`;
+            let footerHTML = `<tr><td colspan="2" style="font-weight: 800;">TOTAL ATTENDANCE</td>`;
             if (showDiffMode) footerHTML += `<td></td>`;
             eventDates.forEach((ev, evIdx) => {
                 const eventTotal = members.reduce((sum, m) => sum + ((m.events && m.events[evIdx]) ? 1 : 0), 0);
@@ -1240,7 +1248,7 @@
                 logAction('OCR_IMPORT', `Imported / parsed ${addedCount} entries via Tesseract OCR screenshot scan.`);
                 saveData(); render(); alert('OCR import completed successfully!');
             } catch (err) { alert('OCR Error during processing'); }
-            finally { importBtn.innerText = 'IMPORT SCREENSHOT'; importBtn.disabled = false; screenshotInput.value = ''; }
+            finally { importBtn.innerText = '📁 IMPORT'; importBtn.disabled = false; screenshotInput.value = ''; }
         });
 
         document.getElementById('hamburgerBtn').addEventListener('click', () => {
