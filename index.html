@@ -174,14 +174,20 @@
 
         .ranking-cards-list { display: flex; flex-direction: column; gap: 12px; }
         .ranking-card { background-color: #fdfcf7; border: 2px solid #d5cbac; border-radius: 6px; padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; }
-        .ranking-card--rank-1 { border-color: #d99f26; background-color: #fffdf5; }
-        .ranking-card--rank-2 { border-color: #a8a3c0; background-color: #ffffff; }
-        .ranking-card--rank-3 { border-color: #c28859; background-color: #fffaf5; }
+        .ranking-card--rank-1 { border-color: #f3a808; background-color: #fffdf5; }
+        .ranking-card--rank-2 { border-color: #a0aec0; background-color: #ffffff; }
+        .ranking-card--rank-3 { border-color: #b7791f; background-color: #fffaf5; }
+        .ranking-card--rank-4 { border-color: #3182ce; background-color: #f7fafc; }
+        .ranking-card--rank-5 { border-color: #e53e3e; background-color: #fff5f5; }
+        
         .ranking-card__left { display: flex; align-items: center; gap: 18px; min-width: 240px; }
-        .ranking-card__badge { font-size: var(--font-sm); font-family: var(--font-family-base); width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-weight: 800; border-radius: 4px; background: #eef2f9; color: var(--color-primary); }
+        .ranking-card__badge { font-size: var(--font-sm); font-family: var(--font-family-base); width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; font-weight: 800; border-radius: 50%; background: #eef2f9; color: #ffffff; }
         .ranking-card--rank-1 .ranking-card__badge { background: #f3a808; color: white; }
-        .ranking-card--rank-2 .ranking-card__badge { background: #a8a3c0; color: white; }
-        .ranking-card--rank-3 .ranking-card__badge { background: #c28859; color: white; }
+        .ranking-card--rank-2 .ranking-card__badge { background: #a0aec0; color: white; }
+        .ranking-card--rank-3 .ranking-card__badge { background: #b7791f; color: white; }
+        .ranking-card--rank-4 .ranking-card__badge { background: #3182ce; color: white; }
+        .ranking-card--rank-5 .ranking-card__badge { background: #e53e3e; color: white; }
+        
         .ranking-card__name { font-weight: 800; font-size: var(--font-md); color: #2b3044; }
         .ranking-card__subtext { font-size: var(--font-xs); color: #8c93a6; font-weight: 600; }
         .ranking-card__right { display: flex; align-items: center; gap: 24px; flex-grow: 1; justify-content: flex-end; max-width: 620px; }
@@ -1054,7 +1060,7 @@
                 const vsAvgDiff = parseFloat((rateNum - avgRate).toFixed(1));
                 const vsAvgString = (vsAvgDiff >= 0 ? `+` : ``) + vsAvgDiff.toFixed(1) + `%`;
                 const vsAvgClass = vsAvgDiff >= 0 ? 'vs-avg-pos' : 'vs-avg-neg';
-                let cardClass = rank === 1 ? 'ranking-card--rank-1' : (rank === 2 ? 'ranking-card--rank-2' : (rank === 3 ? 'ranking-card--rank-3' : ''));
+                let cardClass = rank === 1 ? 'ranking-card--rank-1' : (rank === 2 ? 'ranking-card--rank-2' : (rank === 3 ? 'ranking-card--rank-3' : (rank === 4 ? 'ranking-card--rank-4' : (rank === 5 ? 'ranking-card--rank-5' : ''))));
                 let badgeText = `${rank}`;
 
                 let diffVal = 0;
