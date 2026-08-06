@@ -95,17 +95,16 @@
         .hamburger { background: none; border: none; cursor: pointer; display: flex; flex-direction: column; gap: 4px; padding: 4px; }
         .hamburger__line { width: 24px; height: 3px; background-color: var(--color-primary); border-radius: 2px; }
 
-        /* Top Heading Matching VS Points / Reference Image 2 Style Exactly */
+        /* Unified Match with VS Tab Controls Style */
         .page-header-top { display: flex; flex-direction: column; gap: 4px; margin-bottom: 2px; }
         .page-header-top__back { font-size: 13px; font-weight: 700; color: var(--color-primary); text-decoration: none; margin-bottom: 2px; display: inline-block; font-family: var(--font-family-base); }
         .page-header-top__back:hover { text-decoration: underline; }
         .page-header-top__title { font-family: 'Fredoka One', cursive, sans-serif; font-size: 28px; color: #2d4187; letter-spacing: 0.5px; text-transform: uppercase; line-height: 1.1; }
         .page-header-top__subtext { font-size: 13px; font-weight: 600; color: #8c93a6; }
 
-        /* Controls Card matching reference layout image 2 precisely */
+        /* Controls Card matching VS tab reference styling */
         .controls-card { background: white; border: 2px solid var(--color-border); border-radius: 8px; padding: 14px 18px; display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
         
-        /* Updated pill buttons layout matching image 2 */
         .btn-group { display: flex; border: 2px solid var(--color-primary); border-radius: 6px; overflow: hidden; background: #f0f4f9; }
         .btn-toggle { padding: 9px 18px; font-weight: 800; font-size: var(--font-xs); border: none; background: #eceff8; color: #71788e; cursor: pointer; display: flex; align-items: center; gap: 6px; font-family: var(--font-family-base); text-transform: uppercase; letter-spacing: 0.5px; }
         .btn-toggle--active { background-color: var(--color-primary); color: white; }
@@ -117,7 +116,6 @@
 
         .controls-right-group { display: flex; gap: 10px; align-items: center; margin-left: auto; }
         
-        /* Date input wrapper styled exactly like the yellow-bordered box in reference image 2 */
         .date-input-wrapper { display: flex; align-items: center; }
         .admin-panel__input-date { padding: 8px 12px; border: 2px solid #e2cb6b; background-color: #fffdf0; border-radius: 6px; font-size: var(--font-xs); outline: none; font-family: var(--font-family-base); font-weight: 700; color: #b89117; width: 135px; cursor: pointer; }
         
@@ -364,14 +362,12 @@
             </section>
 
             <section id="viewAttendance" class="app-view" style="display: none; flex-direction: column; gap: 12px;">
-                <!-- Matching Reference Image 2 Top Heading Style Exactly -->
                 <div class="page-header-top">
                     <a href="#" class="page-header-top__back" onclick="document.querySelector('.sidebar__item[data-view=\'home\']').click(); return false;">← Back to Dashboard</a>
                     <h1 class="page-header-top__title">Event Attendance</h1>
                     <div class="page-header-top__subtext" id="headerEventsCount">0 members · 0 sessions</div>
                 </div>
 
-                <!-- Controls Card matching reference image 2 layout precisely -->
                 <section class="controls-card">
                     <div class="btn-group">
                         <button class="btn-toggle btn-toggle--active" id="btnTabAttendance">ATTENDANCE</button>
@@ -394,7 +390,6 @@
                     </div>
                 </section>
 
-                <!-- Top 5 Legend / Help text bar matching reference layout -->
                 <div class="top-legend-bar" id="topLegendBar">
                     <span class="top-legend-bar__title">TOP 5:</span>
                     <span class="top-pill top-pill--1">1st</span>
