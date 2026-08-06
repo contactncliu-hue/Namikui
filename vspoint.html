@@ -340,16 +340,24 @@
 
     async function loadData() {
         try {
-            // Load master members list and VS points data simultaneously
             const { data, error } = await db.from('app_data').select('*');
             if (error) throw error;
             
             if (data) {
                 data.forEach(row => {
                     if (row.key === 'members') members = row.value || [];
-                    if (row.key === 'vsData' && row.value) vsData = row.value;
+                    if (row.key === 'vsData') {
+                        // Ensure vsData is correctly structured even if row 7 value is an empty array []
+                        if (row.value && !Array.isArray(row.value) && row.value.weeks) {
+                            vsData = row.value;
+                        }
+                    }
                 });
             }
+
+            // If vsData is missing proper structure, initialize fields
+            if (!vsData.weeks || !Array.isArray(vsData.weeks)) vsData.weeks = [];
+            if (!vsData.membersScores || !Array.isArray(vsData.membersScores)) vsData.membersScores = [];
 
             // Sync members list with vsData to ensure all current roster members appear in VS tracking
             if (members.length > 0 && vsData.membersScores.length === 0) {
@@ -359,7 +367,6 @@
                     scores: vsData.weeks.map(() => 0)
                 }));
             } else {
-                // Ensure new roster members are added automatically
                 members.forEach(m => {
                     let existing = vsData.membersScores.find(s => String(s.id) === String(m.id));
                     if (!existing) {
@@ -369,20 +376,18 @@
                             scores: vsData.weeks.map(() => 0)
                         });
                     } else {
-                        existing.name = m.name; // Keep name updated
+                        existing.name = m.name;
                     }
                 });
             }
         } catch (err) {
             console.error('Error loading VS points data:', err.message || err);
-            alert('Could not load data from the cloud.');
         }
         renderVsPoints();
     }
 
     async function saveData() {
         try {
-            // FIXED: Added id: 7 so Supabase matches your table row configuration correctly
             await db.from('app_data').upsert({ id: 7, key: 'vsData', value: vsData }, { onConflict: 'id' });
         } catch (err) {
             console.error('CRITICAL ERROR saving VS data:', err.message || err);
@@ -402,7 +407,6 @@
     }
 
     function renderVsPoints() {
-        // Toggle admin action buttons visibility
         document.querySelectorAll('.admin-only').forEach(el => {
             el.style.display = isManagementOrAdmin ? 'inline-block' : 'none';
         });
