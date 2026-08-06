@@ -14,7 +14,7 @@
         --color-text-dark: #2b3044;
         --color-text-muted: #8c93a6;
         --color-border-light: #e2e5ed;
-        --color-gold: #f3a808;
+        --color-gold: #d69e2e;
         --color-gold-bg: #fffdf0;
         --color-not-attended: #d9381e;
         --font-family-base: 'Montserrat', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -74,7 +74,7 @@
         margin-top: 4px;
     }
 
-    /* Toolbar Card */
+    /* Toolbar Card matching Black Gold style */
     .toolbar-card {
         background: white;
         border: 2px solid var(--color-primary);
@@ -86,15 +86,28 @@
         flex-wrap: wrap;
         margin-bottom: 16px;
     }
-    .toolbar-card__label {
+
+    .vs-tab-toggles {
+        display: flex;
+        background: #edf2f7;
+        padding: 3px;
+        border-radius: 4px;
+    }
+    .vs-sub-tab {
+        border: none;
+        padding: 8px 16px;
         font-family: var(--font-family-base);
         font-weight: 800;
-        font-size: 12px;
+        font-size: 11px;
+        cursor: pointer;
+        border-radius: 3px;
+        background: transparent;
+        color: var(--color-text-muted);
+        transition: all 0.15s;
+    }
+    .vs-sub-tab.active {
+        background: var(--color-primary-dark);
         color: white;
-        background: var(--color-primary);
-        padding: 8px 16px;
-        border-radius: 4px;
-        letter-spacing: 0.5px;
     }
 
     .search-box { flex-grow: 1; max-width: 280px; position: relative; }
@@ -113,35 +126,32 @@
         color: #9ca3af; font-size: 13px;
     }
 
-    .toolbar-actions {
-        display: flex;
-        gap: 8px;
-        margin-left: auto;
-        align-items: center;
-    }
     .date-picker-input {
-        padding: 7px 10px;
-        border: 1px solid #cbd5e0;
+        padding: 8px 12px;
+        border: 2px solid var(--color-gold);
         border-radius: 4px;
         font-family: var(--font-family-base);
-        font-size: 11px;
+        font-size: 12px;
         font-weight: 700;
-        background: #f7fafc;
+        background: var(--color-gold-bg);
+        color: var(--color-text-dark);
+        outline: none;
         cursor: pointer;
     }
-    .btn-toolbar {
+
+    .btn-add-date {
         background-color: white;
-        border: 1px solid #cbd5e0;
+        border: 2px solid var(--color-primary);
         font-family: var(--font-family-base);
         font-weight: 800;
-        font-size: 11px;
-        padding: 9px 14px;
+        font-size: 12px;
+        padding: 9px 18px;
         border-radius: 4px;
         cursor: pointer;
-        color: var(--color-text-dark);
+        color: var(--color-primary);
         transition: all 0.15s;
     }
-    .btn-toolbar:hover { background-color: #f7fafc; border-color: var(--color-primary); }
+    .btn-add-date:hover { background-color: var(--color-primary); color: white; }
 
     /* Legend Row */
     .legend-row {
@@ -208,6 +218,39 @@
     tbody td.col-rank { color: var(--color-text-muted); font-weight: 700; width: 40px; }
     tbody td.col-member { text-align: left; padding-left: 20px; font-weight: 800; color: var(--color-text-dark); }
 
+    /* Footer Row inside Table */
+    tfoot td {
+        background-color: #f7f9fc;
+        padding: 12px;
+        font-weight: 800;
+        font-size: 11px;
+        color: var(--color-primary-dark);
+        border-top: 2px solid var(--color-primary);
+        text-align: center;
+        text-transform: uppercase;
+    }
+    tfoot td.col-member { text-align: left; padding-left: 20px; }
+
+    /* Ranking Cards List Layout */
+    .ranking-cards-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+    .ranking-card {
+        background: white;
+        border: 1px solid var(--color-border-light);
+        border-radius: 6px;
+        padding: 16px 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-family: var(--font-family-base);
+    }
+    .ranking-card.top-1, .ranking-card.top-3 { border: 2px solid var(--color-gold); background-color: var(--color-gold-bg); }
+    .ranking-card.top-4 { border: 2px solid #3182ce; }
+    .ranking-card.top-5 { border: 2px solid var(--color-not-attended); }
+
     .page-footer {
         display: flex;
         justify-content: space-between;
@@ -231,21 +274,25 @@
 
     <div class="page-header">
         <div class="page-header__title">VS Points</div>
-        <div class="page-header__subtitle" id="vsSubtitleInfo">Weekly Sunday Tally & Overall Rankings</div>
+        <div class="page-header__subtitle" id="vsSubtitleInfo">0 members · 0 sessions</div>
     </div>
 
+    <!-- Toolbar with Tabs & Calendar -->
     <div class="toolbar-card">
-        <span class="toolbar-card__label">WEEKLY TABLE</span>
+        <div class="vs-tab-toggles">
+            <button class="vs-sub-tab active" id="btnWeeklyTable" onclick="switchVsSubTab('weekly')">WEEKLY TABLE</button>
+            <button class="vs-sub-tab" id="btnRanking" onclick="switchVsSubTab('ranking')">🏆 RANKING</button>
+        </div>
         
         <div class="search-box">
             <span class="search-box__icon">🔍</span>
             <input type="text" id="vsSearchInput" placeholder="Search member..." oninput="renderVsPoints()">
         </div>
 
-        <div class="toolbar-actions">
+        <div style="display: flex; align-items: center; gap: 8px; margin-left: auto;">
             <input type="date" id="newWeekDateInput" class="date-picker-input admin-only" style="display:none;">
-            <button class="btn-toolbar admin-only" id="btnAddWeek" onclick="addNewWeekByDate()" style="display:none;">+ ADD DATE COLUMN</button>
-            <button class="btn-toolbar admin-only" id="btnImportVs" onclick="document.getElementById('vsScreenshotInput').click()" style="display:none;">📥 IMPORT SCREENSHOT</button>
+            <button class="btn-add-date admin-only" id="btnAddWeek" onclick="addNewWeekByDate()" style="display:none;">+ ADD DATE</button>
+            <button class="btn-add-date admin-only" id="btnImportVs" onclick="document.getElementById('vsScreenshotInput').click()" style="display:none;">📥 IMPORT</button>
             <input type="file" id="vsScreenshotInput" accept="image/*" style="display: none;" onchange="handleVsScreenshotImport(event)">
         </div>
     </div>
@@ -257,7 +304,7 @@
         <div style="display: flex; align-items: center; gap: 4px;"><span class="badge-rank r3">3</span> 3rd</div>
         <div style="display: flex; align-items: center; gap: 4px;"><span class="badge-rank r4">4</span> 4th</div>
         <div style="display: flex; align-items: center; gap: 4px;"><span class="badge-rank r5">5</span> 5th</div>
-        <span class="vs-hint" id="roleHint">· Viewing Mode</span>
+        <span class="vs-hint" id="roleHint">· Viewing mode</span>
     </div>
 
     <!-- Weekly Table View -->
@@ -266,8 +313,14 @@
             <table>
                 <thead><tr id="vsTableHeaders"></tr></thead>
                 <tbody id="vsTableBody"></tbody>
+                <tfoot id="vsTableFooter"></tfoot>
             </table>
         </div>
+    </div>
+
+    <!-- Ranking View -->
+    <div id="vsRankingContainer" style="display: none;">
+        <div class="ranking-cards-list" id="vsRankingCardsList"></div>
     </div>
 
     <div class="page-footer">
@@ -297,9 +350,10 @@
     // --- STATE ---
     let members = [];
     let vsData = {
-        weeks: [], // stores strings representing dates 'YYYY-MM-DD'
+        weeks: [], // YYYY-MM-DD
         membersScores: []
     };
+    let currentVsSubTab = 'weekly';
 
     async function loadData() {
         try {
@@ -320,7 +374,6 @@
             if (!vsData.weeks || !Array.isArray(vsData.weeks)) vsData.weeks = [];
             if (!vsData.membersScores || !Array.isArray(vsData.membersScores)) vsData.membersScores = [];
 
-            // Sync members
             members.forEach(m => {
                 let existing = vsData.membersScores.find(s => String(s.id) === String(m.id));
                 if (!existing) {
@@ -334,7 +387,6 @@
                 }
             });
             
-            // Ensure sorting is correct upon load
             sortWeeksAndScores();
         } catch (err) {
             console.error('Error loading VS points data:', err.message || err);
@@ -353,7 +405,6 @@
     function sortWeeksAndScores() {
         if (vsData.weeks.length <= 1) return;
 
-        // Combine weeks and transpose member scores accordingly
         let combined = vsData.weeks.map((wk, idx) => {
             return {
                 week: wk,
@@ -361,13 +412,24 @@
             };
         });
 
-        // Sort chronologically by date string (YYYY-MM-DD)
         combined.sort((a, b) => new Date(a.week) - new Date(b.week));
 
         vsData.weeks = combined.map(c => c.week);
         vsData.membersScores.forEach((m, mIdx) => {
             m.scores = combined.map(c => c.scoresArr[mIdx]);
         });
+    }
+
+    function switchVsSubTab(tab) {
+        currentVsSubTab = tab;
+        const isWeekly = tab === 'weekly';
+        
+        document.getElementById('btnWeeklyTable').classList.toggle('active', isWeekly);
+        document.getElementById('btnRanking').classList.toggle('active', !isWeekly);
+        
+        document.getElementById('vsWeeklyTableContainer').style.display = isWeekly ? 'block' : 'none';
+        document.getElementById('vsRankingContainer').style.display = !isWeekly ? 'block' : 'none';
+        renderVsPoints();
     }
 
     function renderVsPoints() {
@@ -378,22 +440,33 @@
         const hintEl = document.getElementById('roleHint');
         if (hintEl) {
             hintEl.innerText = isManagementOrAdmin 
-                ? '· Admin/Mgmt: Click any cell to edit points. Scores below 12M marked red.' 
+                ? '· Admin/Mgmt: Click any table cell to edit points. Scores below 12M marked red.' 
                 : '· Viewing mode (Read-only)';
         }
 
+        const subtitleEl = document.getElementById('vsSubtitleInfo');
+        if (subtitleEl) {
+            subtitleEl.innerText = `${members.length} members · ${vsData.weeks.length} sessions`;
+        }
+
         const searchVal = document.getElementById('vsSearchInput')?.value.toLowerCase() || '';
-        renderVsWeeklyTable(searchVal);
+
+        if (currentVsSubTab === 'weekly') {
+            renderVsWeeklyTable(searchVal);
+        } else {
+            renderVsRanking(searchVal);
+        }
     }
 
     function renderVsWeeklyTable(filter) {
         const headersTr = document.getElementById('vsTableHeaders');
         const bodyTb = document.getElementById('vsTableBody');
-        if (!headersTr || !bodyTb) return;
+        const footerTb = document.getElementById('vsTableFooter');
+        if (!headersTr || !bodyTb || !footerTb) return;
         
         let headerHTML = `<th class="col-rank">#</th><th class="col-member">Member</th>`;
-        vsData.weeks.forEach(wk => {
-            headerHTML += `<th>${wk}<span class="sub-header-text">Sunday Tally</span></th>`;
+        vsData.weeks.forEach((wk, idx) => {
+            headerHTML += `<th>${wk}<span class="sub-header-text">Session ${idx + 1}</span></th>`;
         });
         headersTr.innerHTML = headerHTML;
 
@@ -402,6 +475,7 @@
         
         if (filtered.length === 0) {
             bodyTb.innerHTML = `<tr><td colspan="${2 + vsData.weeks.length}" style="text-align:center; padding:40px; color:var(--color-text-muted); font-weight:700;">No members found.</td></tr>`;
+            footerTb.innerHTML = '';
             return;
         }
 
@@ -427,6 +501,72 @@
             bodyHTML += `</tr>`;
         });
         bodyTb.innerHTML = bodyHTML;
+
+        let footerHTML = `<tr><td class="col-rank"></td><td class="col-member">Total Points</td>`;
+        vsData.weeks.forEach((wk, wIdx) => {
+            const colTotal = vsData.membersScores.reduce((sum, m) => sum + (m.scores[wIdx] || 0), 0);
+            footerHTML += `<td>${colTotal.toLocaleString()}</td>`;
+        });
+        footerHTML += `</tr>`;
+        footerTb.innerHTML = footerHTML;
+    }
+
+    function renderVsRanking(filter) {
+        const container = document.getElementById('vsRankingCardsList');
+        if (!container) return;
+        
+        // Calculate total overall score and sort descending by overall total points
+        const rankedList = [...vsData.membersScores].map(m => {
+            const total = m.scores.reduce((a, b) => a + b, 0);
+            return { ...m, total };
+        }).sort((a, b) => b.total - a.total);
+
+        const filtered = rankedList.filter(m => m.name.toLowerCase().includes(filter));
+        document.getElementById('shownCount').innerText = `${filtered.length} members shown`;
+
+        if (filtered.length === 0) {
+            container.innerHTML = `<div style="text-align:center; padding:40px; color:var(--color-text-muted); font-weight:700; background:white; border-radius:6px; border:1px solid var(--color-border-light);">No rankings available.</div>`;
+            return;
+        }
+
+        let html = '';
+        filtered.forEach((m, idx) => {
+            let rankBadgeClass = 'r5';
+            let cardClass = '';
+            if (idx === 0) { rankBadgeClass = 'r1'; cardClass = 'top-1'; }
+            else if (idx === 1) { rankBadgeClass = 'r2'; cardClass = 'top-3'; }
+            else if (idx === 2) { rankBadgeClass = 'r3'; cardClass = 'top-3'; }
+            else if (idx === 3) { rankBadgeClass = 'r4'; cardClass = 'top-4'; }
+            else if (idx === 4) { rankBadgeClass = 'r5'; cardClass = 'top-5'; }
+
+            const rankDisplay = idx < 5 ? `<span class="badge-rank ${rankBadgeClass}">${idx + 1}</span>` : `<span style="font-weight:800; color:var(--color-text-muted);">#${idx + 1}</span>`;
+            
+            // Generate mini score breakdown pills per week
+            let weeksBreakdownHTML = `<div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:4px; font-size:11px; color:var(--color-text-muted); font-weight:600;">`;
+            vsData.weeks.forEach((wk, wIdx) => {
+                const sVal = m.scores[wIdx] || 0;
+                weeksBreakdownHTML => 0; // placeholder check
+                weeksBreakdownHTML += `<span>Wk ${wIdx + 1}: <strong style="color:var(--color-text-dark);">${sVal.toLocaleString()}</strong></span>`;
+            });
+            weeksBreakdownHTML += `</div>`;
+
+            html += `
+                <div class="ranking-card ${cardClass}">
+                    <div style="display: flex; align-items: center; gap: 16px;">
+                        <div style="width: 32px; text-align: center;">${rankDisplay}</div>
+                        <div>
+                            <div style="font-weight: 800; font-size: 15px; color: var(--color-text-dark);">+ ${m.name}</div>
+                            ${weeksBreakdownHTML}
+                        </div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-size: 18px; font-weight: 800; color: var(--color-primary-dark);">${m.total.toLocaleString()}</div>
+                        <div style="font-size: 10px; font-weight: 700; color: var(--color-text-muted); text-transform: uppercase;">total pts</div>
+                    </div>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
     }
 
     window.addNewWeekByDate = function() {
