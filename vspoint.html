@@ -243,19 +243,6 @@
     tbody td.col-rank { color: var(--color-text-muted); font-weight: 700; width: 40px; }
     tbody td.col-member { text-align: left; padding-left: 20px; font-weight: 800; color: var(--color-text-dark); }
 
-    /* Footer Row inside Table */
-    tfoot td {
-        background-color: #f7f9fc;
-        padding: 12px;
-        font-weight: 800;
-        font-size: 11px;
-        color: var(--color-primary-dark);
-        border-top: 2px solid var(--color-primary);
-        text-align: center;
-        text-transform: uppercase;
-    }
-    tfoot td.col-member { text-align: left; padding-left: 20px; }
-
     /* Ranking Cards List Layout */
     .ranking-cards-list {
         display: flex;
@@ -275,6 +262,25 @@
     .ranking-card.top-1, .ranking-card.top-3 { border: 2px solid var(--color-gold); background-color: var(--color-gold-bg); }
     .ranking-card.top-4 { border: 2px solid #3182ce; }
     .ranking-card.top-5 { border: 2px solid var(--color-not-attended); }
+
+    /* Color-coded Weekly Bar Blocks for Overall Ranking Tab */
+    .ranking-bars-container {
+        display: flex;
+        gap: 6px;
+        align-items: flex-end;
+        height: 36px;
+    }
+    .ranking-bar-block {
+        width: 24px;
+        border-radius: 3px;
+        min-height: 8px;
+    }
+    .bar-r1 { background-color: #d69e2e; }
+    .bar-r2 { background-color: #a0aec0; }
+    .bar-r3 { background-color: #b7791f; }
+    .bar-r4 { background-color: #3182ce; }
+    .bar-r5 { background-color: #e53e3e; }
+    .bar-default { background-color: #4a5568; }
 
     .page-footer {
         display: flex;
@@ -305,7 +311,7 @@
     <!-- Toolbar with Tabs & Calendar -->
     <div class="toolbar-card">
         <div class="vs-tab-toggles">
-            <button class="vs-sub-tab active" id="btnWeeklyTable" onclick="switchVsSubTab('weekly')">VS POINTS</button>
+            <button class="vs-sub-tab active" id="btnWeeklyTable" onclick="switchVsSubTab('weekly')">WEEKLY TABLE</button>
             <button class="vs-sub-tab" id="btnRanking" onclick="switchVsSubTab('ranking')">🏆 RANKING</button>
         </div>
         
@@ -338,7 +344,6 @@
             <table>
                 <thead><tr id="vsTableHeaders"></tr></thead>
                 <tbody id="vsTableBody"></tbody>
-                <tfoot id="vsTableFooter"></tfoot>
             </table>
         </div>
     </div>
@@ -486,8 +491,7 @@
     function renderVsWeeklyTable(filter) {
         const headersTr = document.getElementById('vsTableHeaders');
         const bodyTb = document.getElementById('vsTableBody');
-        const footerTb = document.getElementById('vsTableFooter');
-        if (!headersTr || !bodyTb || !footerTb) return;
+        if (!headersTr || !bodyTb) return;
         
         let headerHTML = `<th class="col-rank">#</th><th class="col-member">MEMBER</th>`;
         vsData.weeks.forEach((wk, idx) => {
@@ -502,15 +506,27 @@
                     ${deleteActionHTML}
                 </th>`;
         });
-        headerHTML += `<th style="text-align:center;">PENALTY</th>`;
         headersTr.innerHTML = headerHTML;
+
+        // Compute rankings per week so we can show ranking badges/medals inside the weekly table cells
+        const weeklyRanksMap = {}; // weekIdx -> map of memberId -> rank (1-based)
+        vsData.weeks.forEach((wk, wIdx) => {
+            const sortedByWeek = [...vsData.membersScores].map(m => ({
+                id: m.id,
+                score: m.scores[wIdx] || 0
+            })).sort((a, b) => b.score - a.score);
+
+            weeklyRanksMap[wIdx] = {};
+            sortedByWeek.forEach((item, rIdx) => {
+                weeklyRanksMap[wIdx][item.id] = rIdx + 1;
+            });
+        });
 
         const filtered = vsData.membersScores.filter(m => m.name.toLowerCase().includes(filter));
         document.getElementById('shownCount').innerText = `${filtered.length} members shown`;
         
         if (filtered.length === 0) {
-            bodyTb.innerHTML = `<tr><td colspan="${3 + vsData.weeks.length}" style="text-align:center; padding:40px; color:var(--color-text-muted); font-weight:700;">No members found.</td></tr>`;
-            footerTb.innerHTML = '';
+            bodyTb.innerHTML = `<tr><td colspan="${2 + vsData.weeks.length}" style="text-align:center; padding:40px; color:var(--color-text-muted); font-weight:700;">No members found.</td></tr>`;
             return;
         }
 
@@ -523,6 +539,17 @@
                 const isBelowThreshold = score < 12000000;
                 const formattedScore = score.toLocaleString();
                 
+                const rankNum = weeklyRanksMap[wIdx][m.id];
+                let rankBadgeHTML = '';
+                if (rankNum <= 5) {
+                    let badgeClass = 'r5';
+                    if (rankNum === 1) badgeClass = 'r1';
+                    else if (rankNum === 2) badgeClass = 'r2';
+                    else if (rankNum === 3) badgeClass = 'r3';
+                    else if (rankNum === 4) badgeClass = 'r4';
+                    rankBadgeHTML = `<span class="badge-rank ${badgeClass}" style="width:18px; height:18px; font-size:9px; margin-right:4px; display:inline-flex;">${rankNum}</span>`;
+                }
+
                 const cellStyle = isBelowThreshold 
                     ? 'background: #fce8e6; color: var(--color-not-attended); font-weight: 800;' 
                     : 'background: #ffffff;';
@@ -530,25 +557,15 @@
                 bodyHTML += `
                     <td style="${cellStyle} ${isManagementOrAdmin ? 'cursor: pointer;' : ''}" 
                         ${isManagementOrAdmin ? `onclick="editVsScore('${m.id}', ${wIdx})"` : ''}>
-                        ${formattedScore}
+                        <div style="display:flex; align-items:center; justify-content:center;">
+                            ${rankBadgeHTML}
+                            <span>${formattedScore}</span>
+                        </div>
                     </td>`;
             });
-
-            // Penalty or status cell per member if applicable
-            const lowWeeksCount = m.scores.filter(s => s < 12000000).length;
-            bodyHTML += `<td style="font-weight:700; color:var(--color-text-muted);">0 weeks</td>`;
             bodyHTML += `</tr>`;
         });
         bodyTb.innerHTML = bodyHTML;
-
-        let footerHTML = `<tr><td class="col-rank"></td><td class="col-member">A/B COUNT</td>`;
-        vsData.weeks.forEach((wk, wIdx) => {
-            const colTotal = vsData.membersScores.reduce((sum, m) => sum + (m.scores[wIdx] || 0), 0);
-            footerHTML += `<td>${colTotal.toLocaleString()}</td>`;
-        });
-        footerHTML += `<td></td>`;
-        footerHTML += `</tr>`;
-        footerTb.innerHTML = footerHTML;
     }
 
     function renderVsRanking(filter) {
@@ -559,6 +576,9 @@
             const total = m.scores.reduce((a, b) => a + b, 0);
             return { ...m, total };
         }).sort((a, b) => b.total - a.total);
+
+        // Calculate max total score across all members for proportional bar heights
+        const maxTotal = Math.max(...rankedList.map(m => m.total), 1);
 
         const filtered = rankedList.filter(m => m.name.toLowerCase().includes(filter));
         document.getElementById('shownCount').innerText = `${filtered.length} members shown`;
@@ -580,6 +600,28 @@
 
             const rankDisplay = idx < 5 ? `<span class="badge-rank ${rankBadgeClass}">${idx + 1}</span>` : `<span style="font-weight:800; color:var(--color-text-muted);">#${idx + 1}</span>`;
             
+            // Build weekly color-coded bar graphs
+            let barsHTML = `<div class="ranking-bars-container">`;
+            vsData.weeks.forEach((wk, wIdx) => {
+                const sVal = m.scores[wIdx] || 0;
+                // Calculate height proportionally up to 32px max
+                const barHeight = Math.max(Math.round((sVal / maxTotal) * 32), 6);
+                
+                // Color code individual bar based on rank for that specific week
+                const weeklyScoresList = [...vsData.membersScores].map(mem => mem.scores[wIdx] || 0).sort((a, b) => b - a);
+                const scoreRank = weeklyScoresList.indexOf(sVal) + 1;
+                
+                let barColorClass = 'bar-default';
+                if (scoreRank === 1) barColorClass = 'bar-r1';
+                else if (scoreRank === 2) barColorClass = 'bar-r2';
+                else if (scoreRank === 3) barColorClass = 'bar-r3';
+                else if (scoreRank === 4) barColorClass = 'bar-r4';
+                else if (scoreRank === 5) barColorClass = 'bar-r5';
+
+                barsHTML += `<div class="ranking-bar-block ${barColorClass}" style="height: ${barHeight}px;" title="Wk ${wIdx + 1}: ${sVal.toLocaleString()}"></div>`;
+            });
+            barsHTML += `</div>`;
+
             let weeksBreakdownHTML = `<div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:4px; font-size:11px; color:var(--color-text-muted); font-weight:600;">`;
             vsData.weeks.forEach((wk, wIdx) => {
                 const sVal = m.scores[wIdx] || 0;
@@ -596,9 +638,12 @@
                             ${weeksBreakdownHTML}
                         </div>
                     </div>
-                    <div style="text-align: right;">
-                        <div style="font-size: 18px; font-weight: 800; color: var(--color-primary-dark);">${m.total.toLocaleString()}</div>
-                        <div style="font-size: 10px; font-weight: 700; color: var(--color-text-muted); text-transform: uppercase;">total pts</div>
+                    <div style="display: flex; align-items: center; gap: 20px;">
+                        ${barsHTML}
+                        <div style="text-align: right; min-width: 90px;">
+                            <div style="font-size: 18px; font-weight: 800; color: var(--color-primary-dark);">${m.total.toLocaleString()}</div>
+                            <div style="font-size: 10px; font-weight: 700; color: var(--color-text-muted); text-transform: uppercase;">total pts</div>
+                        </div>
                     </div>
                 </div>
             `;
