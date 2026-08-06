@@ -245,7 +245,7 @@
 
         <div class="manual-box">
             <i class="fa-solid fa-circle-info"></i>
-            <div><strong>Combat Power & F1 Power Manual:</strong> Combat Power uses standard comma formatting (0-00,000,000,000). F1 Power automatically handles G/M parsing and sorting (0-999.999 assumes Millions / M; decimal numbers like 00.00 assume Billions / G; G is higher than M). Note: This calculates power 100M and above. Press <kbd>Enter</kbd> to save changes instantly.</div>
+            <div><strong>Combat Power & F1 Power Manual:</strong> Combat Power uses standard comma formatting (0-00,000,000,000). F1 Power automatically handles G/M parsing and sorting (0-999.999 assumes Millions / M; decimal numbers like 00.00 assume Billions / G; G is higher than M). Note: This calculates power 100M and above. Press <kbd>Enter</kbd> to save changes instantly. Every time you input a new value, a new history record is appended so changes are properly tracked for the ± DIFF calculation.</div>
         </div>
 
         <div class="table-card">
@@ -413,7 +413,7 @@
                     m.f1Cp = parsedF1.formatted;
                     m.f1Raw = parsedF1.raw;
 
-                    if (!m.f1History || !Array.isArray(m.f1History)) {
+                    if (!m.f1History || !Array.isArray(m.f1History) || m.f1History.length === 0) {
                         m.f1History = [{ date: new Date().toISOString().split('T')[0], val: m.f1Cp }];
                     }
                 });
@@ -613,20 +613,17 @@
             const m = members.find(x => x.id === id);
             if(m) {
                 const parsed = parseCpToRaw(val);
-                m.f1Cp = parsed.formatted;
-                m.f1Raw = parsed.raw;
                 
                 if (!m.f1History || !Array.isArray(m.f1History)) {
                     m.f1History = [];
                 }
 
-                const todayStr = new Date().toISOString().split('T')[0];
-                
-                if (m.f1History.length > 0 && m.f1History[m.f1History.length - 1].date === todayStr) {
-                    m.f1History[m.f1History.length - 1].val = parsed.formatted;
-                } else {
-                    m.f1History.push({ date: todayStr, val: parsed.formatted });
-                }
+                // Append a new history entry every time the input changes so diff calculates accurately
+                const nowStr = new Date().toISOString().replace('T', ' ').substring(0, 16);
+                m.f1History.push({ date: nowStr, val: parsed.formatted });
+
+                m.f1Cp = parsed.formatted;
+                m.f1Raw = parsed.raw;
 
                 saveData().then(() => render());
             }
@@ -725,7 +722,7 @@
 
             const parsedCp = parseCpWithCommas(cpInput);
             const initialF1 = parseCpToRaw('0G');
-            const todayStr = new Date().toISOString().split('T')[0];
+            const nowStr = new Date().toISOString().replace('T', ' ').substring(0, 16);
 
             members.push({
                 id: Date.now(),
@@ -734,7 +731,7 @@
                 rawCp: parsedCp.raw,
                 f1Cp: initialF1.formatted,
                 f1Raw: initialF1.raw,
-                f1History: [{ date: todayStr, val: initialF1.formatted }],
+                f1History: [{ date: nowStr, val: initialF1.formatted }],
                 faction,
                 level,
                 rank: 'R1',
@@ -760,6 +757,7 @@
             try {
                 const { data: { text } } = await Tesseract.recognize(file, 'eng');
                 let addedCount = 0;
+                const nowStr = new Date().toISOString().replace('T', ' ').substring(0, 16);
                 
                 text.split('\n').forEach(line => {
                     let cleanLine = line.trim();
@@ -784,7 +782,7 @@
                                 rawCp: parsedCp.raw, 
                                 f1Cp: defaultF1.formatted, 
                                 f1Raw: defaultF1.raw, 
-                                f1History: [{ date: new Date().toISOString().split('T')[0], val: defaultF1.formatted }],
+                                f1History: [{ date: nowStr, val: defaultF1.formatted }],
                                 faction: 'F', 
                                 level: '1', 
                                 rank: 'R1', 
