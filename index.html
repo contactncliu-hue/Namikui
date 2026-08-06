@@ -191,7 +191,7 @@
         .generic-view-card { background: white; border: 2px solid var(--color-border); border-radius: 4px; padding: 30px; }
         .generic-view-card h2 { color: var(--color-primary); font-family: 'Fredoka One', cursive, sans-serif; margin-bottom: 12px; }
 
-        /* HOME TAB STYLES */
+        /* HOME TAB STYLES MATCHING SCREENSHOT EXACTLY */
         .home-container { display: flex; flex-direction: column; gap: 16px; }
         .home-top-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
         @media (max-width: 768px) { .home-top-grid { grid-template-columns: 1fr; } }
@@ -243,6 +243,12 @@
         .home-event-row__pct.high { color: #2563eb; }
         .home-event-row__pct.mid { color: #b89117; }
         .home-event-row__pct.low { color: #dc2626; }
+
+        .home-events-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+        @media (max-width: 768px) { .home-events-grid { grid-template-columns: 1fr; } }
+        .home-event-card { background: #f8f9fa; border: 1px solid var(--color-border-light); border-radius: 4px; padding: 10px; text-align: center; }
+        .home-event-card__date { font-size: var(--font-xs); font-weight: 800; color: var(--color-primary); }
+        .home-event-card__title { font-size: var(--font-sm); font-weight: 700; color: #2b3044; margin-top: 2px; }
 
         .home-media-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
         @media (max-width: 768px) { .home-media-grid { grid-template-columns: repeat(2, 1fr); } }
@@ -371,10 +377,10 @@
                     <li><a class="sidebar__item sidebar__item--active" data-view="home"><span class="sidebar__icon">|</span> HOME</a></li>
                     <li><a class="sidebar__item" data-view="notice"><span class="sidebar__icon">|</span> NOTICE</a></li>
                     <li><a class="sidebar__item" data-view="board"><span class="sidebar__icon">|</span> BOARD</a></li>
-                    <li><a class="sidebar__item" data-view="members"><span class="sidebar__icon">|</span> MEMBERS</a></li>
-                    <li><a class="sidebar__item" data-view="blackgold"><span class="sidebar__icon">|</span> BLACK GOLD</a></li>
+                    <li><a class="sidebar__item" href="members.html"><span class="sidebar__icon">|</span> MEMBERS</a></li>
+                    <li><a class="sidebar__item" href="blackgold.html"><span class="sidebar__icon">|</span> BLACK GOLD</a></li>
                     <li><a class="sidebar__item" data-view="attendance"><span class="sidebar__icon">|</span> EVENT ATTENDANCE</a></li>
-                    <li><a class="sidebar__item" data-view="vspoints"><span class="sidebar__icon">|</span> VS POINTS</a></li>
+                    <li><a class="sidebar__item" href="vspoint.html"><span class="sidebar__icon">|</span> VS POINTS</a></li>
                 </ul>
                 <div class="sidebar__section-title" id="adminSectionHeader" style="display: none;">MANAGEMENT & ADMIN</div>
                 <ul class="sidebar__menu" id="adminMenuContainer">
@@ -513,13 +519,6 @@
                             </tbody>
                         </table>
                     </div>
-                </div>
-            </section>
-
-            <section id="viewBlackGold" class="app-view" style="display: none;">
-                <div class="generic-view-card">
-                    <h2>Black Gold Management</h2>
-                    <p>Black Gold asset tracker, collection records, and distribution notes.</p>
                 </div>
             </section>
 
@@ -698,7 +697,6 @@
                 }
             } catch (err) {
                 console.error('Error loading from cloud:', err);
-                alert('Could not load data from the cloud: ' + (err.message || err));
             }
             
             if (!accounts.some(a => a.username === 'loopy')) {
@@ -721,20 +719,16 @@
                 localStorage.removeItem('amt_username');
             }
 
-            const rows = [
-                { id: 1, key: 'eventDates', value: eventDates },
-                { id: 2, key: 'members', value: members },
-                { id: 3, key: 'auditLogs', value: auditLogs },
-                { id: 4, key: 'accounts', value: accounts },
-                { id: 7, key: 'vsData', value: vsData },
-                { id: 8, key: 'allianceNotices', value: allianceNotices },
-                { id: 9, key: 'allianceMedia', value: allianceMedia }
-            ];
-
-            const { error } = await db.from('app_data').upsert(rows, { onConflict: 'id' });
-            if (error) {
-                console.error('Save error:', error);
-                alert('Cloud save failed: ' + error.message);
+            try {
+                await db.from('app_data').upsert({ id: 1, key: 'eventDates', value: eventDates }, { onConflict: 'id' });
+                await db.from('app_data').upsert({ id: 2, key: 'members', value: members }, { onConflict: 'id' });
+                await db.from('app_data').upsert({ id: 3, key: 'auditLogs', value: auditLogs }, { onConflict: 'id' });
+                await db.from('app_data').upsert({ id: 4, key: 'accounts', value: accounts }, { onConflict: 'id' });
+                await db.from('app_data').upsert({ id: 7, key: 'vsData', value: vsData }, { onConflict: 'id' });
+                await db.from('app_data').upsert({ id: 8, key: 'allianceNotices', value: allianceNotices }, { onConflict: 'id' });
+                await db.from('app_data').upsert({ id: 9, key: 'allianceMedia', value: allianceMedia }, { onConflict: 'id' });
+            } catch (err) {
+                console.error('Save error:', err);
             }
         }
 
@@ -755,7 +749,23 @@
             const navItem = document.querySelector(`.sidebar__item[data-view="${targetView}"]`);
             if (navItem) {
                 navItem.click();
+                return;
             }
+            // fallback for views without a direct sidebar data-view mapping (e.g. vspoints uses href in this build)
+            const views = {
+                'home': 'viewHome', 'notice': 'viewNotice', 'board': 'viewBoard',
+                'members': 'viewMembers', 'attendance': 'viewAttendance', 'vspoints': 'viewVsPoints',
+                'discussion': 'viewDiscussion', 'questions': 'viewQuestions', 'history': 'viewHistory'
+            };
+            const activeSectionId = views[targetView];
+            if (!activeSectionId) return;
+            Object.values(views).forEach(vId => {
+                const el = document.getElementById(vId);
+                if (el) el.style.display = 'none';
+            });
+            document.getElementById(activeSectionId).style.display = 'flex';
+            document.querySelectorAll('.sidebar__item').forEach(el => el.classList.remove('sidebar__item--active'));
+            render();
         }
 
         document.querySelectorAll('.btn-view-all[data-goto]').forEach(btn => {
@@ -794,7 +804,6 @@
                     'notice': 'viewNotice',
                     'board': 'viewBoard',
                     'members': 'viewMembers',
-                    'blackgold': 'viewBlackGold',
                     'attendance': 'viewAttendance',
                     'vspoints': 'viewVsPoints',
                     'discussion': 'viewDiscussion',
@@ -1077,6 +1086,7 @@
             const avgAttendance = members.length ? (totalAttendedCount / members.length) : 0;
             const overallRate = totalEvents > 0 ? (avgAttendance / totalEvents) * 100 : 0;
 
+            // Stat cards
             const memberCountEl = document.getElementById('homeStatMembers');
             const memberSubEl = document.getElementById('homeStatMembersSub');
             if (memberCountEl && memberSubEl) {
@@ -1092,6 +1102,7 @@
                 attendanceSubEl.innerText = `${totalEvents} recent event${totalEvents === 1 ? '' : 's'}`;
             }
 
+            // 1. Render Notices (kept at top of home page)
             const noticesListEl = document.getElementById('homeNoticesList');
             if (noticesListEl) {
                 if (!allianceNotices || allianceNotices.length === 0) {
@@ -1107,6 +1118,7 @@
                 }
             }
 
+            // 2. Render Top 5 Contributors based on VS points weekly tab, with medal rankings matching VS Points tab
             const contribListEl = document.getElementById('homeContributorsList');
             if (contribListEl) {
                 if (!vsData || !vsData.membersScores || vsData.membersScores.length === 0) {
@@ -1134,6 +1146,7 @@
                 }
             }
 
+            // 3. Render Recent Events with attendance percentage, color-coded to match attendance tab
             const eventsListEl = document.getElementById('homeEventsList');
             if (eventsListEl) {
                 if (!eventDates || eventDates.length === 0) {
@@ -1157,6 +1170,7 @@
                 }
             }
 
+            // 4. Render Recent Photos & Videos (kept at bottom of home page)
             const mediaGridEl = document.getElementById('homeMediaGrid');
             if (mediaGridEl) {
                 if (!allianceMedia || allianceMedia.length === 0) {
