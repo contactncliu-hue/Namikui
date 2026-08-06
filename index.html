@@ -1213,9 +1213,19 @@
             if (confirm('Remove event column?')) {
                 const ev = eventDates[i];
                 logAction('DELETE_EVENT', `Removed event column: ${ev ? ev.name : i}`);
+                
+                members.forEach(m => {
+                    if (m.events && m.events[i]) {
+                        if (m.attended > 0) m.attended -= 1;
+                    }
+                    if (m.events) {
+                        m.events.splice(i, 1);
+                    }
+                });
+
                 eventDates.splice(i, 1);
-                members.forEach(m => { if (m.events) m.events.splice(i, 1); });
-                saveData(); render();
+                saveData(); 
+                render();
             }
         };
 
