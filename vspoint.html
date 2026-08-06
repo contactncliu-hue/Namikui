@@ -162,6 +162,15 @@
                     data.forEach(row => {
                         if (row.key === 'vsData') vsData = row.value || { weeks: [], membersScores: [] };
                         if (row.key === 'auditLogs') auditLogs = row.value || [];
+                        if (row.key === 'members') {
+                            // Automatically sync member names into VS membersScores list if not present
+                            const members = row.value || [];
+                            members.forEach(m => {
+                                if (!vsData.membersScores.some(s => s.id === m.id || s.name === m.name)) {
+                                    vsData.membersScores.push({ id: m.id, name: m.name, scores: new Array(vsData.weeks.length).fill(0) });
+                                }
+                            });
+                        }
                     });
                 }
             } catch (err) {
@@ -172,9 +181,9 @@
 
         async function saveData() {
             try {
-                // Using id: 7 matching the global cloud synchronization schema
-                await db.from('app_data').upsert({ id: 7, key: 'vsData', value: vsData }, { onConflict: 'id' });
-                await db.from('app_data').upsert({ id: 3, key: 'auditLogs', value: auditLogs }, { onConflict: 'id' });
+                // Fixed to use key: 'vsData' with onConflict: 'key' to match your main database structure
+                await db.from('app_data').upsert({ key: 'vsData', value: vsData }, { onConflict: 'key' });
+                await db.from('app_data').upsert({ key: 'auditLogs', value: auditLogs }, { onConflict: 'key' });
             } catch (err) {
                 console.error('Save error:', err);
             }
