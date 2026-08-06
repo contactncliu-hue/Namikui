@@ -409,10 +409,35 @@
                 <section class="ranking-cards-list" id="subViewRanking" style="display: none;"></section>
             </section>
 
-            <section id="viewVsPoints" class="app-view" style="display: none;">
-                <div class="generic-view-card">
+            <section id="viewVsPoints" class="app-view" style="display: none; flex-direction: column; gap: 16px;">
+                <div class="generic-view-card" style="margin-bottom: 0;">
                     <h2>VS Points Breakdown</h2>
-                    <p>VS Point tracker interface logs and high-score rankings.</p>
+                    <p style="margin-bottom: 16px;">VS Point tracker interface logs and high-score rankings.</p>
+                </div>
+
+                <div id="vsAdminPanel" class="admin-panel" style="display: none;">
+                    <div class="admin-panel__title">VS Points Management Tools</div>
+                    <div class="admin-panel__form">
+                        <input type="text" class="admin-panel__input" id="newVsWeekInput" placeholder="Week Label (e.g. Sun 07-06)">
+                        <button class="btn-admin" id="btnAddVsWeek">Add Week Column</button>
+                    </div>
+                </div>
+
+                <div class="table-card">
+                    <div class="table-wrapper">
+                        <table class="data-table">
+                            <thead>
+                                <tr id="vsTableHeaderRow">
+                                    <th>#</th>
+                                    <th>Fighter Name</th>
+                                    <th>Total Score</th>
+                                </tr>
+                            </thead>
+                            <tbody id="vsTableBody">
+                                <tr><td colspan="3" style="text-align: center; color: #8c93a6;">Loading VS points...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </section>
 
@@ -470,6 +495,7 @@
         let eventDates = [];
         let members = [];
         let auditLogs = [];
+        let vsData = { weeks: [], membersScores: [] };
         let accounts = [
             { username: 'loopy', pass: '2851849', role: 'admin' },
             { username: 'manager1', pass: 'manager123', role: 'management' },
@@ -486,6 +512,7 @@
                         if (row.key === 'members') members = row.value || [];
                         if (row.key === 'auditLogs') auditLogs = row.value || [];
                         if (row.key === 'accounts') accounts = row.value || accounts;
+                        if (row.key === 'vsData') vsData = row.value || { weeks: [], membersScores: [] };
                     });
                 }
             } catch (err) {
@@ -504,7 +531,7 @@
         }
 
         async function saveData() {
-            if (currentUser.role) {
+            if (currentUser.role && currentUser.username) {
                 localStorage.setItem('amt_userRole', currentUser.role);
                 localStorage.setItem('amt_username', currentUser.username);
             } else {
@@ -517,6 +544,7 @@
                 await db.from('app_data').upsert({ id: 2, key: 'members', value: members }, { onConflict: 'id' });
                 await db.from('app_data').upsert({ id: 3, key: 'auditLogs', value: auditLogs }, { onConflict: 'id' });
                 await db.from('app_data').upsert({ id: 4, key: 'accounts', value: accounts }, { onConflict: 'id' });
+                await db.from('app_data').upsert({ id: 7, key: 'vsData', value: vsData }, { onConflict: 'id' });
             } catch (err) {
                 console.error('Save error:', err);
             }
@@ -729,6 +757,7 @@
             const totalEvents = eventDates.length;
 
             document.getElementById('adminPanel').style.display = isManagementOrAdmin ? 'flex' : 'none';
+            document.getElementById('vsAdminPanel').style.display = isManagementOrAdmin ? 'flex' : 'none';
             document.getElementById('importBtn').style.display = isManagementOrAdmin ? 'block' : 'none';
 
             const showManagementArea = isManagementOrAdmin;
@@ -764,6 +793,7 @@
             }
 
             renderMembersDirectory();
+            renderVsPointsTable(isManagementOrAdmin);
             renderAuditTable();
         }
 
@@ -798,6 +828,118 @@
                     </tr>
                 `;
             }).join('');
+        }
+
+        function renderVsPointsTable(isManagementOrAdmin) {
+            const headerRow = document.getElementById('vsTableHeaderRow');
+            const body = document.getElementById('vsTableBody');
+            if (!headerRow || !body) return;
+
+            let hHTML = `<th class="col-rank">#</th><th>Fighter Name</th><th style="text-align: right;">Total Score</th>`;
+            if (vsData && vsData.weeks) {
+                vsData.weeks.forEach((wk, wIdx) => {
+                    hHTML += `<th style="text-align: right;">${wk} ${isManagementOrAdmin ? `<span style="color:#d9381e; cursor:pointer;" onclick="removeVsWeek(${wIdx})">x</span>` : ''}</th>`;
+                });
+            }
+            if (isManagementOrAdmin) hHTML += `<th class="col-actions">Actions</th>`;
+            headerRow.innerHTML = hHTML;
+
+            if (!vsData || !vsData.membersScores || vsData.membersScores.length === 0) {
+                body.innerHTML = `<tr><td colspan="10" style="text-align: center; color: #8c93a6;">No VS points data recorded yet.</td></tr>`;
+                return;
+            }
+
+            // Sort members scores descending by total score
+            const scoredList = vsData.membersScores.map(ms => {
+                const total = (ms.scores || []).reduce((a, b) => a + (b || 0), 0);
+                return { ...ms, totalScore: total };
+            });
+            scoredList.sort((a, b) => b.totalScore - a.totalScore);
+
+            body.innerHTML = scoredList.map((ms, idx) => {
+                const rank = idx + 1;
+                let rHTML = `
+                    <tr class="${rank === 1 ? 'rank-1' : (rank === 2 ? 'rank-2' : (rank === 3 ? 'rank-3' : ''))}">
+                        <td class="col-rank">${rank}</td>
+                        <td class="col-name">${ms.name}</td>
+                        <td style="text-align: right; font-weight: 800; color: var(--color-primary);">${ms.totalScore.toLocaleString()}</td>
+                `;
+
+                vsData.weeks.forEach((wk, wIdx) => {
+                    const scoreVal = (ms.scores && ms.scores[wIdx] !== undefined) ? ms.scores[wIdx] : 0;
+                    rHTML += `
+                        <td style="text-align: right;">
+                            <span class="${isManagementOrAdmin ? 'editable-num' : ''}" onclick="${isManagementOrAdmin ? `editVsScore(${ms.id}, ${wIdx})` : ''}">${scoreVal.toLocaleString()}</span>
+                        </td>
+                    `;
+                });
+
+                if (isManagementOrAdmin) {
+                    rHTML += `<td class="col-actions"><button class="btn-icon-action" onclick="deleteVsMember(${ms.id})">Delete</button></td>`;
+                }
+                rHTML += `</tr>`;
+                return rHTML;
+            }).join('');
+        }
+
+        window.editVsScore = function(memberId, weekIndex) {
+            const ms = vsData.membersScores.find(m => m.id === memberId);
+            if (!ms) return;
+            const currentVal = ms.scores[weekIndex] || 0;
+            const val = prompt(`Update VS score for ${ms.name} on ${vsData.weeks[weekIndex]}:`, currentVal);
+            if (val !== null && !isNaN(val)) {
+                ms.scores[weekIndex] = parseInt(val, 10);
+                logAction('EDIT_VS_SCORE', `Updated VS score for [${ms.name}] on week ${vsData.weeks[weekIndex]} to ${ms.scores[weekIndex]}`);
+                saveData();
+                render();
+            }
+        };
+
+        window.deleteVsMember = function(memberId) {
+            const ms = vsData.membersScores.find(m => m.id === memberId);
+            if (confirm(`Remove ${ms ? ms.name : ''} from VS Points tracker?`)) {
+                logAction('DELETE_VS_MEMBER', `Removed VS record for: ${ms ? ms.name : memberId}`);
+                vsData.membersScores = vsData.membersScores.filter(m => m.id !== memberId);
+                saveData();
+                render();
+            }
+        };
+
+        window.removeVsWeek = function(weekIndex) {
+            if (confirm(`Remove week column ${vsData.weeks[weekIndex]}?`)) {
+                logAction('DELETE_VS_WEEK', `Removed VS week column: ${vsData.weeks[weekIndex]}`);
+                vsData.weeks.splice(weekIndex, 1);
+                vsData.membersScores.forEach(ms => {
+                    if (ms.scores) ms.scores.splice(weekIndex, 1);
+                });
+                saveData();
+                render();
+            }
+        };
+
+        const btnAddVsWeek = document.getElementById('btnAddVsWeek');
+        if (btnAddVsWeek) {
+            btnAddVsWeek.addEventListener('click', () => {
+                const input = document.getElementById('newVsWeekInput');
+                const weekLabel = input.value.trim();
+                if (!weekLabel) return;
+                
+                if (!vsData.weeks) vsData.weeks = [];
+                vsData.weeks.push(weekLabel);
+                
+                if (!vsData.membersScores) vsData.membersScores = [];
+                vsData.membersScores.forEach(ms => {
+                    if (!ms.scores) ms.scores = [];
+                    while (ms.scores.length < vsData.weeks.length) {
+                        ms.scores.push(0);
+                    }
+                });
+
+                logAction('ADD_VS_WEEK', `Added VS week column: ${weekLabel}`);
+                input.value = '';
+                saveData();
+                render();
+            });
         }
 
         function renderAttendanceTable(filteredMembers, avgRate, isManagementOrAdmin, totalEvents, totalAttendedCount) {
