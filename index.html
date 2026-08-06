@@ -396,7 +396,6 @@
                             <input type="text" class="admin-panel__input-text" id="newEventNameInput" placeholder="Event Name">
                             <input type="date" class="admin-panel__input-date" id="newDateInput" title="Event Date">
                         </div>
-                        <input type="text" id="newSubtextInput" style="display: none;">
                         <button class="btn-action-custom btn-action-custom--add" id="btnAddEvent" style="display: none;">+ ADD EVENT</button>
                         <input type="file" id="screenshotInput" accept="image/*" style="display: none;">
                         <button class="btn-action-custom btn-action-custom--import" id="importBtn" style="display: none;">📥 IMPORT</button>
@@ -410,7 +409,7 @@
                     <span class="legend-pill-item"><span class="badge-rank r3">3</span> 3rd</span>
                     <span class="legend-pill-item"><span class="badge-rank r4">4</span> 4th</span>
                     <span class="legend-pill-item"><span class="badge-rank r5">5</span> 5th</span>
-                    <span class="vs-hint" id="adminHelpText">· Admin/Mgmt: Click any table cell or date subtext to edit. Use ✕ under date columns to delete session.</span>
+                    <span class="vs-hint" id="adminHelpText">· Admin/Mgmt: Click event names on table headers to edit. Use ✕ under date columns to delete session.</span>
                 </div>
 
                 <section class="kpi-grid">
@@ -982,10 +981,9 @@
                 headerHTML += `
                     <th class="col-event">
                         <div style="display: flex; flex-direction: column; align-items: center;">
-                            <span style="font-weight: 800; color: var(--color-primary);">${ev.name || 'Event'}</span>
+                            <span class="${isManagementOrAdmin ? 'editable-num' : ''}" style="font-weight: 800; color: var(--color-primary);" onclick="${isManagementOrAdmin ? `editEventName(${evIdx})` : ''}" title="Click to edit event name">${ev.name || 'Event'}</span>
                             <span>${ev.date}</span>
-                            <span class="${isManagementOrAdmin ? 'editable-num' : ''}" style="font-size: var(--font-xs); color: #a0a6b5;" onclick="${isManagementOrAdmin ? `editEventSubtext(${evIdx})` : ''}">${ev.subtext}</span>
-                            ${isManagementOrAdmin ? `<span style="color:#d9381e; cursor:pointer; font-size:var(--font-xs);" onclick="removeEvent(${evIdx})">x</span>` : ''}
+                            ${isManagementOrAdmin ? `<span style="color:#d9381e; cursor:pointer; font-size:var(--font-xs); margin-top:2px;" onclick="removeEvent(${evIdx})">✕ Delete</span>` : ''}
                         </div>
                     </th>`;
             });
@@ -1163,19 +1161,21 @@
             saveData(); render();
         };
 
-        window.editEventSubtext = function(i) {
-            const s = prompt('Edit title:', eventDates[i].subtext);
-            if (s) {
-                eventDates[i].subtext = s.trim();
-                logAction('EDIT_EVENT', `Updated event subtext index ${i} to ${s.trim()}`);
-                saveData(); render();
+        window.editEventName = function(i) {
+            const newName = prompt('Edit Event Name:', eventDates[i].name);
+            if (newName !== null && newName.trim() !== '') {
+                const trimmed = newName.trim();
+                const oldName = eventDates[i].name;
+                eventDates[i].name = trimmed;
+                logAction('EDIT_EVENT', `Updated event name index ${i} from "${oldName}" to "${trimmed}"`);
+                saveData(); 
+                render();
             }
         };
 
         document.getElementById('btnAddEvent').addEventListener('click', () => {
             const eventNameInput = document.getElementById('newEventNameInput');
             const dateInput = document.getElementById('newDateInput');
-            const subtextInput = document.getElementById('newSubtextInput');
             
             const eventName = eventNameInput.value.trim();
             if (!eventName) {
@@ -1195,8 +1195,7 @@
             eventDates.push({ 
                 id: Date.now(), 
                 name: eventName, 
-                date: formattedDate, 
-                subtext: subtextInput.value.trim() || 'EVENT' 
+                date: formattedDate
             });
 
             members.forEach(m => { if (!m.events) m.events = new Array(eventDates.length).fill(false); });
@@ -1204,7 +1203,6 @@
             
             eventNameInput.value = '';
             dateInput.value = '';
-            subtextInput.value = '';
             saveData(); 
             render();
         });
