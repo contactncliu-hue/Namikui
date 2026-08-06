@@ -305,7 +305,21 @@
                 <button class="hamburger" id="hamburgerBtn"><span class="hamburger__line"></span><span class="hamburger__line"></span><span class="hamburger__line"></span></button>
             </div>
 
-            <section id="viewHome" class="app-view">
+            <!-- Home View Tab Integration -->
+            <section id="viewHome" class="app-view" style="display: flex; flex-direction: column; gap: 16px;">
+                <header class="header-bar">
+                    <div class="header-bar__title-group">
+                        <h1 class="header-bar__title">Loopy's Playground</h1>
+                        <div class="header-bar__subtitle">
+                            <span>ALLIANCE MANAGEMENT TOOL</span>
+                            <span>HOME DASHBOARD</span>
+                        </div>
+                    </div>
+                    <div class="header-bar__actions">
+                        <button class="btn-action btn-action--logout" id="btnLogoutHome">LOG OUT</button>
+                    </div>
+                </header>
+
                 <div class="generic-view-card">
                     <h2>Home Dashboard</h2>
                     <p>Welcome to Loopy's Playground Alliance Management Dashboard. Use the sidebar to seamlessly access allowed panels, tracking sheets, and analytics dynamically.</p>
@@ -680,6 +694,7 @@
         }
 
         document.getElementById('btnLogout').addEventListener('click', handleLogout);
+        document.getElementById('btnLogoutHome').addEventListener('click', handleLogout);
         document.getElementById('sidebarLogoutBtn').addEventListener('click', handleLogout);
 
         document.getElementById('btnSubmitCreateAccount').addEventListener('click', () => {
