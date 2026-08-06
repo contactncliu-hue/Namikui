@@ -315,7 +315,9 @@
                     m.f1Cp = parsedF1.formatted;
                     m.f1Raw = parsedF1.raw;
 
-                    if (!m.f1History) m.f1History = [];
+                    if (!m.f1History || !Array.isArray(m.f1History)) {
+                        m.f1History = [{ date: new Date().toISOString().split('T')[0], val: m.f1Cp }];
+                    }
                 });
             }
             render();
@@ -503,9 +505,13 @@
                 m.f1Cp = parsed.formatted;
                 m.f1Raw = parsed.raw;
                 
-                if (!m.f1History) m.f1History = [];
+                if (!m.f1History || !Array.isArray(m.f1History)) {
+                    m.f1History = [];
+                }
+
                 const todayStr = new Date().toISOString().split('T')[0];
                 
+                // If an entry for today already exists, update it. Otherwise, push a new historical snapshot entry!
                 if (m.f1History.length > 0 && m.f1History[m.f1History.length - 1].date === todayStr) {
                     m.f1History[m.f1History.length - 1].val = parsed.formatted;
                 } else {
@@ -589,7 +595,7 @@
 
         document.getElementById('btnToggleDiff').addEventListener('click', () => {
             showDiffMode = !showDiffMode;
-            document.getElementById('btnToggleDiff').classList.toggle('active', showDiffMode);
+            document.getElementById('btnToggleDiff').classList.toggle('btn-toggle--active', showDiffMode);
             render();
         });
 
@@ -648,7 +654,6 @@
                     let cleanLine = line.trim();
                     if (!cleanLine) return;
                     
-                    // Enhanced OCR regex to robustly capture Name and standard/shortened CP formats (supporting G, M, commas, or decimals)
                     const match = cleanLine.match(/^([a-zA-Z0-9•\s\-]+?)\s+([\d,]+(?:\.\d+)?[GGMm]?)/i);
                     if (match && match[1].trim().length > 1) {
                         const name = match[1].trim(); 
