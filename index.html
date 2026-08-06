@@ -859,11 +859,11 @@
                         if (evIdx > 0) {
                             const prevChecked = member.events && member.events[evIdx - 1];
                             if (!prevChecked && isChecked) {
-                                changeBadgeHTML = `<div style="font-size: 10px; margin-top: 2px;"><span class="diff-green">▲ Up</span></div>`;
+                                changeBadgeHTML = `<div style="font-size: 10px; margin-top: 2px;"><span class="diff-green">▲</span></div>`;
                             } else if (prevChecked && !isChecked) {
-                                changeBadgeHTML = `<div style="font-size: 10px; margin-top: 2px;"><span class="diff-red">▼ Down</span></div>`;
+                                changeBadgeHTML = `<div style="font-size: 10px; margin-top: 2px;"><span class="diff-red">▼</span></div>`;
                             } else {
-                                changeBadgeHTML = `<div style="font-size: 10px; margin-top: 2px;"><span class="diff-yellow">▬ Same</span></div>`;
+                                changeBadgeHTML = `<div style="font-size: 10px; margin-top: 2px;"><span class="diff-yellow">▬</span></div>`;
                             }
                         } else {
                             if (isChecked) {
