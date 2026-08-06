@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Alliance Management Tool</title>
+    <title>Loopy's Playground - Alliance Management</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Fredoka+One&family=Montserrat:wght@600;700;800&family=Noto+Sans+SC:wght@900&family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
@@ -154,7 +154,6 @@
 
         .vs-avg-pos { color: #2563eb; font-weight: 800; }
         .vs-avg-neg { color: #dc2626; font-weight: 800; }
-        .score-red { color: #dc2626 !important; font-weight: 850; }
 
         .diff-green { color: #16a34a; font-weight: 850; font-size: 12px; display: inline-flex; align-items: center; gap: 2px; }
         .diff-red { color: #dc2626; font-weight: 850; font-size: 12px; display: inline-flex; align-items: center; gap: 2px; }
@@ -240,7 +239,7 @@
             <input type="text" id="newAccUser" placeholder="Choose Username">
             <input type="password" id="newAccPass" placeholder="Choose Password">
             <div id="newAccRoleInfo" style="font-size: 12px; color: #62697b; margin-bottom: 12px; font-weight: 600;">
-                New accounts are registered as Members by default. Only Admin can assign roles after logging in.
+                New accounts are registered as Members by default. Only you as Admin can assign roles after logging in.
             </div>
             <div class="modal-card-btns">
                 <button class="btn-action" onclick="document.getElementById('createAccountModal').style.display='none'">Cancel</button>
@@ -281,10 +280,11 @@
                     <li><a class="sidebar__item sidebar__item--active" data-view="home"><span class="sidebar__icon">|</span> HOME</a></li>
                     <li><a class="sidebar__item" data-view="notice"><span class="sidebar__icon">|</span> NOTICE</a></li>
                     <li><a class="sidebar__item" data-view="board"><span class="sidebar__icon">|</span> BOARD</a></li>
-                    <li><a class="sidebar__item" data-view="members"><span class="sidebar__icon">|</span> MEMBERS</a></li>
-                    <li><a class="sidebar__item" data-view="blackgold"><span class="sidebar__icon">|</span> BLACK GOLD</a></li>
+                    <li><a class="sidebar__item" href="members.html"><span class="sidebar__icon">|</span> MEMBERS</a></li>
+                    <li><a class="sidebar__item" href="blackgold.html"><span class="sidebar__icon">|</span> BLACK GOLD</a></li>
                     <li><a class="sidebar__item" data-view="attendance"><span class="sidebar__icon">|</span> EVENT ATTENDANCE</a></li>
-                    <li><a class="sidebar__item" data-view="vspoints"><span class="sidebar__icon">|</span> VS POINTS</a></li>
+                    <li><a class="sidebar__item" href="vspoint.html"><span class="sidebar__icon">|</span> VS POINTS</a></li>
+
                 </ul>
                 <div class="sidebar__section-title" id="adminSectionHeader" style="display: none;">MANAGEMENT & ADMIN</div>
                 <ul class="sidebar__menu" id="adminMenuContainer">
@@ -305,22 +305,10 @@
                 <button class="hamburger" id="hamburgerBtn"><span class="hamburger__line"></span><span class="hamburger__line"></span><span class="hamburger__line"></span></button>
             </div>
 
-            <section id="viewHome" class="app-view" style="display: flex; flex-direction: column; gap: 16px;">
-                <header class="header-bar">
-                    <div class="header-bar__title-group">
-                        <h1 class="header-bar__title">Alliance Management</h1>
-                        <div class="header-bar__subtitle">
-                            <span>ALLIANCE MANAGEMENT TOOL</span>
-                            <span>HOME DASHBOARD</span>
-                        </div>
-                    </div>
-                    <div class="header-bar__actions">
-                        <button class="btn-action btn-action--logout" id="btnLogoutHome">LOG OUT</button>
-                    </div>
-                </header>
+            <section id="viewHome" class="app-view">
                 <div class="generic-view-card">
                     <h2>Home Dashboard</h2>
-                    <p>Welcome to your Alliance Management Dashboard. Use the sidebar to seamlessly access allowed panels, tracking sheets, and analytics.</p>
+                    <p>Welcome to Loopy's Playground Alliance Management Dashboard. Use the sidebar to seamlessly access allowed panels, tracking sheets, and analytics dynamically.</p>
                 </div>
             </section>
 
@@ -338,6 +326,7 @@
                 </div>
             </section>
 
+            <!-- Fixed Members View Tab Integration -->
             <section id="viewMembers" class="app-view" style="display: none; flex-direction: column; gap: 16px;">
                 <div class="generic-view-card">
                     <h2>Members Management Directory</h2>
@@ -360,17 +349,10 @@
                 </div>
             </section>
 
-            <section id="viewBlackGold" class="app-view" style="display: none;">
-                <div class="generic-view-card">
-                    <h2>Black Gold Module</h2>
-                    <p>Dedicated Black Gold management interface unified with the system color scheme and fonts.</p>
-                </div>
-            </section>
-
             <section id="viewAttendance" class="app-view" style="display: none; flex-direction: column; gap: 16px;">
                 <header class="header-bar">
                     <div class="header-bar__title-group">
-                        <h1 class="header-bar__title">Alliance Management</h1>
+                        <h1 class="header-bar__title">Loopy's Playground</h1>
                         <div class="header-bar__subtitle">
                             <span>ALLIANCE MANAGEMENT TOOL</span>
                             <span class="header-bar__stats" id="headerEventsCount">0 EVENTS - 0 MEMBERS</span>
@@ -429,38 +411,16 @@
             </section>
 
             <section id="viewVsPoints" class="app-view" style="display: none; flex-direction: column; gap: 16px;">
-                <header class="header-bar">
-                    <div class="header-bar__title-group">
-                        <h1 class="header-bar__title">VS Points</h1>
-                        <div class="header-bar__subtitle">
-                            <span>ALLIANCE MANAGEMENT TOOL</span>
-                            <span>WEEKLY RANKINGS & SCORES</span>
-                        </div>
-                    </div>
-                    <div class="header-bar__actions">
-                        <input type="file" id="vsScreenshotInput" accept="image/*" style="display: none;">
-                        <button class="btn-action" id="vsImportBtn" style="display: none;">IMPORT SCREENSHOT</button>
-                    </div>
-                </header>
+                <div class="generic-view-card" style="margin-bottom: 0;">
+                    <h2>VS Points Breakdown</h2>
+                    <p style="margin-bottom: 16px;">VS Point tracker interface logs and high-score rankings.</p>
+                </div>
 
                 <div id="vsAdminPanel" class="admin-panel" style="display: none;">
-                    <div class="admin-panel__title">VS Points Management Tools (Admin / Management Only)</div>
+                    <div class="admin-panel__title">VS Points Management Tools</div>
                     <div class="admin-panel__form">
                         <input type="text" class="admin-panel__input" id="newVsWeekInput" placeholder="Week Label (e.g. Sun 07-06)">
                         <button class="btn-admin" id="btnAddVsWeek">Add Week Column</button>
-                    </div>
-                </div>
-
-                <div class="controls-card">
-                    <div class="btn-group">
-                        <button class="btn-toggle btn-toggle--active" id="btnVsTabOverall">OVERALL RANKINGS</button>
-                    </div>
-                    <div class="search-box">
-                        <span class="search-box__icon">|</span>
-                        <input type="text" class="search-box__input" id="vsSearchInput" placeholder="Search VS fighter...">
-                    </div>
-                    <div class="event-badge">
-                        <span>RULE: <span style="color:#dc2626;">&lt; 12M = RED</span></span>
                     </div>
                 </div>
 
@@ -471,7 +431,7 @@
                                 <tr id="vsTableHeaderRow">
                                     <th>#</th>
                                     <th>Fighter Name</th>
-                                    <th style="text-align: right;">Total Score</th>
+                                    <th>Total Score</th>
                                 </tr>
                             </thead>
                             <tbody id="vsTableBody">
@@ -496,7 +456,7 @@
                 </div>
             </section>
 
-            <section id="viewHistory" class="app-view" style="display: none; flex-direction: column; gap: 16px;">
+            <section id="viewHistory" class="app-view" style="display: none;">
                 <div class="generic-view-card">
                     <h2>Audit Logs & Edit History</h2>
                     <p style="margin-bottom: 16px; font-size: 13px; color: #62697b;">Detailed accountability log showing who added data, modified records, or deleted parameters across the workspace.</p>
@@ -538,7 +498,7 @@
         let auditLogs = [];
         let vsData = { weeks: [], membersScores: [] };
         let accounts = [
-            { username: 'admin', pass: 'admin123', role: 'admin' },
+            { username: 'loopy', pass: '2851849', role: 'admin' },
             { username: 'manager1', pass: 'manager123', role: 'management' },
             { username: 'member1', pass: 'member123', role: 'member' }
         ];
@@ -560,8 +520,8 @@
                 console.error('Error loading from cloud:', err);
             }
             
-            if (!accounts.some(a => a.username === 'admin')) {
-                accounts.push({ username: 'admin', pass: 'admin123', role: 'admin' });
+            if (!accounts.some(a => a.username === 'loopy')) {
+                accounts.push({ username: 'loopy', pass: '2851849', role: 'admin' });
             }
 
             if (currentUser.role && currentUser.username) {
@@ -636,7 +596,6 @@
                     'notice': 'viewNotice',
                     'board': 'viewBoard',
                     'members': 'viewMembers',
-                    'blackgold': 'viewBlackGold',
                     'attendance': 'viewAttendance',
                     'vspoints': 'viewVsPoints',
                     'discussion': 'viewDiscussion',
@@ -685,8 +644,8 @@
                 return;
             }
 
-            if (!accounts.some(a => a.username === 'admin')) {
-                accounts.push({ username: 'admin', pass: 'admin123', role: 'admin' });
+            if (!accounts.some(a => a.username === 'loopy')) {
+                accounts.push({ username: 'loopy', pass: '2851849', role: 'admin' });
             }
 
             const foundAcc = accounts.find(a => a.username.toLowerCase() === uInput.toLowerCase() && a.pass === pInput);
@@ -721,7 +680,6 @@
         }
 
         document.getElementById('btnLogout').addEventListener('click', handleLogout);
-        document.getElementById('btnLogoutHome').addEventListener('click', handleLogout);
         document.getElementById('sidebarLogoutBtn').addEventListener('click', handleLogout);
 
         document.getElementById('btnSubmitCreateAccount').addEventListener('click', () => {
@@ -802,7 +760,6 @@
             document.getElementById('adminPanel').style.display = isManagementOrAdmin ? 'flex' : 'none';
             document.getElementById('vsAdminPanel').style.display = isManagementOrAdmin ? 'flex' : 'none';
             document.getElementById('importBtn').style.display = isManagementOrAdmin ? 'block' : 'none';
-            document.getElementById('vsImportBtn').style.display = isManagementOrAdmin ? 'block' : 'none';
 
             const showManagementArea = isManagementOrAdmin;
             document.getElementById('adminSectionHeader').style.display = showManagementArea ? 'block' : 'none';
@@ -877,7 +834,6 @@
         function renderVsPointsTable(isManagementOrAdmin) {
             const headerRow = document.getElementById('vsTableHeaderRow');
             const body = document.getElementById('vsTableBody');
-            const searchVal = (document.getElementById('vsSearchInput')?.value || '').toLowerCase();
             if (!headerRow || !body) return;
 
             let hHTML = `<th class="col-rank">#</th><th>Fighter Name</th><th style="text-align: right;">Total Score</th>`;
@@ -894,21 +850,14 @@
                 return;
             }
 
-            // Rankings based on most recent week or total score
+            // Sort members scores descending by total score
             const scoredList = vsData.membersScores.map(ms => {
                 const total = (ms.scores || []).reduce((a, b) => a + (b || 0), 0);
                 return { ...ms, totalScore: total };
             });
             scoredList.sort((a, b) => b.totalScore - a.totalScore);
 
-            const filteredVs = scoredList.filter(ms => ms.name.toLowerCase().includes(searchVal));
-
-            if (filteredVs.length === 0) {
-                body.innerHTML = `<tr><td colspan="10" style="text-align: center; color: #8c93a6;">No matching VS fighters found.</td></tr>`;
-                return;
-            }
-
-            body.innerHTML = filteredVs.map((ms, idx) => {
+            body.innerHTML = scoredList.map((ms, idx) => {
                 const rank = idx + 1;
                 let rHTML = `
                     <tr class="${rank === 1 ? 'rank-1' : (rank === 2 ? 'rank-2' : (rank === 3 ? 'rank-3' : ''))}">
@@ -919,10 +868,9 @@
 
                 vsData.weeks.forEach((wk, wIdx) => {
                     const scoreVal = (ms.scores && ms.scores[wIdx] !== undefined) ? ms.scores[wIdx] : 0;
-                    const isRed = scoreVal < 12000000;
                     rHTML += `
                         <td style="text-align: right;">
-                            <span class="${isRed ? 'score-red' : ''} ${isManagementOrAdmin ? 'editable-num' : ''}" onclick="${isManagementOrAdmin ? `editVsScore(${ms.id}, ${wIdx})` : ''}">${scoreVal.toLocaleString()}</span>
+                            <span class="${isManagementOrAdmin ? 'editable-num' : ''}" onclick="${isManagementOrAdmin ? `editVsScore(${ms.id}, ${wIdx})` : ''}">${scoreVal.toLocaleString()}</span>
                         </td>
                     `;
                 });
@@ -935,13 +883,7 @@
             }).join('');
         }
 
-        document.getElementById('vsSearchInput')?.addEventListener('input', () => renderVsPointsTable(currentUser.role === 'admin' || currentUser.role === 'management'));
-
         window.editVsScore = function(memberId, weekIndex) {
-            if (currentUser.role !== 'admin' && currentUser.role !== 'management') {
-                alert('Only admin and management can manually add or edit scores.');
-                return;
-            }
             const ms = vsData.membersScores.find(m => m.id === memberId);
             if (!ms) return;
             const currentVal = ms.scores[weekIndex] || 0;
@@ -955,7 +897,6 @@
         };
 
         window.deleteVsMember = function(memberId) {
-            if (currentUser.role !== 'admin' && currentUser.role !== 'management') return;
             const ms = vsData.membersScores.find(m => m.id === memberId);
             if (confirm(`Remove ${ms ? ms.name : ''} from VS Points tracker?`)) {
                 logAction('DELETE_VS_MEMBER', `Removed VS record for: ${ms ? ms.name : memberId}`);
@@ -966,7 +907,6 @@
         };
 
         window.removeVsWeek = function(weekIndex) {
-            if (currentUser.role !== 'admin' && currentUser.role !== 'management') return;
             if (confirm(`Remove week column ${vsData.weeks[weekIndex]}?`)) {
                 logAction('DELETE_VS_WEEK', `Removed VS week column: ${vsData.weeks[weekIndex]}`);
                 vsData.weeks.splice(weekIndex, 1);
@@ -981,10 +921,6 @@
         const btnAddVsWeek = document.getElementById('btnAddVsWeek');
         if (btnAddVsWeek) {
             btnAddVsWeek.addEventListener('click', () => {
-                if (currentUser.role !== 'admin' && currentUser.role !== 'management') {
-                    alert('Only admin and management can manually add scores.');
-                    return;
-                }
                 const input = document.getElementById('newVsWeekInput');
                 const weekLabel = input.value.trim();
                 if (!weekLabel) return;
@@ -1004,48 +940,6 @@
                 input.value = '';
                 saveData();
                 render();
-            });
-        }
-
-        const vsImportBtn = document.getElementById('vsImportBtn');
-        const vsScreenshotInput = document.getElementById('vsScreenshotInput');
-        if (vsImportBtn && vsScreenshotInput) {
-            vsImportBtn.addEventListener('click', () => vsScreenshotInput.click());
-            vsScreenshotInput.addEventListener('change', async (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
-                vsImportBtn.innerText = 'PROCESSING...'; vsImportBtn.disabled = true;
-                try {
-                    const { data: { text } } = await Tesseract.recognize(file, 'eng');
-                    let addedCount = 0;
-                    if (!vsData.weeks || vsData.weeks.length === 0) {
-                        vsData.weeks = ['Latest Week'];
-                    }
-                    const currentWeekIdx = vsData.weeks.length - 1;
-
-                    text.split('\n').forEach(line => {
-                        const match = line.match(/([a-zA-Z0-9•\s]+)\s+([\d,\.]{4,})/);
-                        if (match && match[1].trim().length > 2) {
-                            const name = match[1].trim();
-                            const scoreNum = parseInt(match[2].replace(/,/g, ''), 10) || 0;
-                            
-                            let existing = vsData.membersScores.find(m => m.name.toLowerCase() === name.toLowerCase());
-                            if (existing) {
-                                if (!existing.scores) existing.scores = new Array(vsData.weeks.length).fill(0);
-                                existing.scores[currentWeekIdx] = scoreNum;
-                            } else {
-                                const newScores = new Array(vsData.weeks.length).fill(0);
-                                newScores[currentWeekIdx] = scoreNum;
-                                vsData.membersScores.push({ id: Date.now() + Math.random(), name, scores: newScores });
-                            }
-                            addedCount++;
-                        }
-                    });
-
-                    logAction('VS_OCR_IMPORT', `Imported / parsed ${addedCount} VS point entries via OCR screenshot.`);
-                    saveData(); render(); alert('VS Screenshot imported successfully!');
-                } catch (err) { alert('OCR Error during processing'); }
-                finally { vsImportBtn.innerText = 'IMPORT SCREENSHOT'; vsImportBtn.disabled = false; vsScreenshotInput.value = ''; }
             });
         }
 
