@@ -352,7 +352,7 @@
         }
 
         function parseCpToRaw(cpStr) {
-            if (!cpStr) return { formatted: '0M', raw: 0 };
+            if (!cpStr) return { formatted: '0G', raw: 0 };
             let cleanStr = cpStr.toString().trim().toUpperCase();
             let numVal = parseFloat(cleanStr.replace(/[^0-9.]/g, '')) || 0;
 
@@ -573,7 +573,10 @@
 
         window.setPlayerStatus = function(id, status) {
             const m = members.find(x => x.id === id);
-            if(m) { m.status = status; saveData(); render(); }
+            if(m) { 
+                m.status = status; 
+                saveData().then(() => render()); 
+            }
         };
 
         window.cycleRank = function(id) {
@@ -582,7 +585,7 @@
             if(m) {
                 let idx = ranks.indexOf(m.rank);
                 m.rank = ranks[(idx + 1) % ranks.length];
-                saveData(); render();
+                saveData().then(() => render());
             }
         };
 
@@ -592,7 +595,7 @@
             if(m) {
                 let idx = factions.indexOf(m.faction || "F");
                 m.faction = factions[(idx + 1) % factions.length];
-                saveData(); render();
+                saveData().then(() => render());
             }
         };
 
@@ -602,7 +605,7 @@
                 const parsed = parseCpWithCommas(val);
                 m.cp = parsed.formatted;
                 m.rawCp = parsed.raw;
-                saveData(); render();
+                saveData().then(() => render());
             }
         };
 
@@ -625,7 +628,7 @@
                     m.f1History.push({ date: todayStr, val: parsed.formatted });
                 }
 
-                saveData(); render();
+                saveData().then(() => render());
             }
         };
 
@@ -633,7 +636,7 @@
             const m = members.find(x => x.id === id);
             if(m) {
                 m[field] = val;
-                saveData(); render();
+                saveData().then(() => render());
             }
         };
 
@@ -641,8 +644,7 @@
             const m = members.find(x => x.id === id);
             if(m && confirm(`Are you sure you want to permanently remove ${m.name} from the roster?`)) {
                 members = members.filter(x => x.id !== id);
-                saveData();
-                render();
+                saveData().then(() => render());
             }
         };
 
@@ -650,7 +652,7 @@
             const m = members.find(x => x.id === id);
             if (!m) return;
 
-            document.getElementById('f1HistoryTitle').innerText = `${m.name} - F1 History`;
+            document.getElementById('f1HistoryTitle').innerHTML = `${m.name} - F1 History <i class="fa-solid fa-xmark" style="cursor:pointer;" onclick="document.getElementById('f1HistoryModal').style.display='none'"></i>`;
             const listEl = document.getElementById('f1HistoryList');
 
             if (!m.f1History || m.f1History.length === 0) {
@@ -686,9 +688,10 @@
             const m = members.find(x => x.id === memberId);
             if (m && m.f1History) {
                 m.f1History.splice(historyIndex, 1);
-                saveData();
-                openF1History(memberId);
-                render();
+                saveData().then(() => {
+                    openF1History(memberId);
+                    render();
+                });
             }
         };
 
@@ -739,11 +742,12 @@
                 note: ''
             });
 
-            saveData();
-            document.getElementById('addMemberModal').style.display = 'none';
-            document.getElementById('newMemberName').value = '';
-            document.getElementById('newMemberCp').value = '';
-            render();
+            saveData().then(() => {
+                document.getElementById('addMemberModal').style.display = 'none';
+                document.getElementById('newMemberName').value = '';
+                document.getElementById('newMemberCp').value = '';
+                render();
+            });
         });
 
         const importBtn = document.getElementById('importBtn');
@@ -791,7 +795,9 @@
                         addedCount++;
                     }
                 });
-                saveData(); render(); alert(`OCR import completed! Successfully parsed ${addedCount} entries.`);
+                await saveData(); 
+                render(); 
+                alert(`OCR import completed! Successfully parsed ${addedCount} entries.`);
             } catch (err) { alert('OCR Error during processing'); }
             finally { importBtn.innerText = 'UPLOAD SCREENSHOT'; importBtn.disabled = false; screenshotInput.value = ''; }
         });
