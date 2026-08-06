@@ -1,559 +1,324 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>VS Points - Loopy's Playground</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Fredoka+One&family=Montserrat:wght@600;700;800&family=Noto+Sans+SC:wght@900&family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
-<style>
-    :root {
-        --color-bg-main: #f5f4ef;
-        --color-primary: #3b52a4;
-        --color-primary-dark: #2d3a91;
-        --color-text-dark: #2b3044;
-        --color-text-muted: #8c93a6;
-        --color-border-light: #e2e5ed;
-        --color-gold: #f3a808;
-        --color-gold-bg: #fffdf0;
-        --color-not-attended: #d9381e;
-        --font-family-base: 'Montserrat', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loopy's Playground - VS Points Tracker</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Fredoka+One&family=Montserrat:wght@600;700;800&family=Noto+Sans+SC:wght@900&family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --color-bg-main: #f5f4ef;
+            --color-bg-card: #ffffff;
+            --color-bg-sidebar: #ffffff;
+            --color-primary: #3b52a4;
+            --color-primary-light: #eceff8;
+            --color-text-dark: #2b3044;
+            --color-text-muted: #8c93a6;
+            --color-border: #3b52a4;
+            --color-border-light: #e2e5ed;
+            --color-yellow-bg: #fffdf0;
+            --color-yellow-border: #e2cb6b;
+            --color-yellow-text: #b89117;
+            --color-gold: #f3a808;
 
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-        font-family: 'Open Sans', sans-serif;
-        background-color: var(--color-bg-main);
-        color: var(--color-text-dark);
-        min-height: 100vh;
-        padding-top: 6px;
-    }
+            --font-family-base: 'Montserrat', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            --font-family-title: 'Cinzel', serif;
+            --font-family-logo: 'Noto Sans SC', sans-serif;
 
-    .top-accent-bar {
-        position: fixed;
-        top: 0; left: 0; right: 0;
-        height: 6px;
-        background-color: var(--color-primary-dark);
-        z-index: 200;
-    }
+            --font-xs: 11px;
+            --font-sm: 13px;
+            --font-md: 15px;
+            --font-lg: 18px;
+            --font-xl: 22px;
+            --font-xxl: 28px;
+        }
 
-    .page-wrap {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 32px 24px 60px;
-    }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Open Sans', sans-serif; background-color: var(--color-bg-main); color: var(--color-text-dark); min-height: 100vh; display: flex; }
 
-    .back-link {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        font-family: var(--font-family-base);
-        font-size: 12px;
-        font-weight: 800;
-        color: var(--color-primary);
-        text-decoration: none;
-        margin-bottom: 16px;
-        cursor: pointer;
-    }
-    .back-link:hover { text-decoration: underline; }
+        /* SIDEBAR */
+        .sidebar { width: 260px; background-color: var(--color-bg-sidebar); border-right: 2px solid var(--color-border); display: flex; flex-direction: column; flex-shrink: 0; position: fixed; height: 100vh; z-index: 100; }
+        .sidebar__header { padding: 20px; display: flex; justify-content: center; align-items: center; border-bottom: 2px solid var(--color-border); }
+        .sidebar__logo { width: 70px; height: 70px; border-radius: 50%; background: linear-gradient(135deg, #a5c7f9, #2d55b8); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 24px; }
+        .sidebar__user { padding: 16px 20px; display: flex; align-items: center; gap: 12px; font-weight: 700; font-size: var(--font-sm); color: #62697b; border-bottom: 1px solid var(--color-border-light); }
+        .sidebar__user-avatar { width: 32px; height: 32px; border-radius: 50%; background-color: var(--color-primary); color: white; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+        .sidebar__nav { display: flex; flex-direction: column; gap: 4px; overflow-y: auto; padding-bottom: 20px; flex-grow: 1; }
+        .sidebar__footer { padding: 12px 20px; border-top: 1px solid var(--color-border-light); margin-top: auto; }
+        .sidebar__menu { list-style: none; }
+        .sidebar__item { display: flex; align-items: center; padding: 10px 20px; color: #555b6e; font-weight: 700; font-size: var(--font-xs); text-decoration: none; gap: 12px; cursor: pointer; transition: background 0.2s; }
+        .sidebar__item:hover { background-color: #f0f2f8; }
+        .sidebar__item--active { background-color: var(--color-primary); color: white; }
+        .sidebar__item--logout { color: #d9381e; }
+        .sidebar__item--logout:hover { background-color: #fce8e6; }
+        .sidebar__icon { width: 16px; text-align: center; }
 
-    .page-header { margin-bottom: 20px; }
-    .page-header__title {
-        font-family: var(--font-family-base);
-        font-weight: 800;
-        font-size: 34px;
-        letter-spacing: -1px;
-        color: var(--color-primary-dark);
-        text-transform: uppercase;
-    }
-    .page-header__subtitle {
-        font-family: var(--font-family-base);
-        font-weight: 700;
-        font-size: 14px;
-        color: var(--color-text-muted);
-        margin-top: 4px;
-    }
+        /* MAIN CONTENT */
+        .main { flex-grow: 1; margin-left: 260px; padding: 20px; display: flex; flex-direction: column; gap: 16px; max-width: calc(100% - 260px); }
 
-    /* Toolbar Card */
-    .toolbar-card {
-        background: white;
-        border: 2px solid var(--color-primary);
-        border-radius: 6px;
-        padding: 16px 20px;
-        display: flex;
-        align-items: center;
-        gap: 16px;
-        flex-wrap: wrap;
-        margin-bottom: 16px;
-    }
-    .toolbar-card__label {
-        font-family: var(--font-family-base);
-        font-weight: 800;
-        font-size: 12px;
-        color: white;
-        background: var(--color-primary);
-        padding: 8px 16px;
-        border-radius: 4px;
-        letter-spacing: 0.5px;
-    }
-    .vs-tab-toggles {
-        display: flex;
-        background: #edf2f7;
-        padding: 3px;
-        border-radius: 4px;
-    }
-    .vs-sub-tab {
-        border: none;
-        padding: 8px 16px;
-        font-family: var(--font-family-base);
-        font-weight: 800;
-        font-size: 11px;
-        cursor: pointer;
-        border-radius: 3px;
-        background: transparent;
-        color: var(--color-text-muted);
-        transition: all 0.15s;
-    }
-    .vs-sub-tab.active {
-        background: var(--color-primary-dark);
-        color: white;
-    }
+        .generic-view-card { background: white; border: 2px solid var(--color-border); border-radius: 4px; padding: 30px; }
+        .generic-view-card h2 { color: var(--color-primary); font-family: 'Fredoka One', cursive, sans-serif; margin-bottom: 12px; }
 
-    .search-box { flex-grow: 1; max-width: 280px; position: relative; }
-    .search-box input {
-        width: 100%;
-        padding: 9px 12px 9px 32px;
-        border: 1px solid #d1d5db;
-        background-color: #f7f6f0;
-        border-radius: 4px;
-        font-size: 13px;
-        font-family: var(--font-family-base);
-        outline: none;
-    }
-    .search-box__icon {
-        position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
-        color: #9ca3af; font-size: 13px;
-    }
+        .admin-panel { background: #fffdf0; border: 2px dashed #d99f26; border-radius: 4px; padding: 12px 16px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+        .admin-panel__title { font-weight: 800; font-size: var(--font-xs); color: #b89117; text-transform: uppercase; width: 100%; margin-bottom: 4px; }
+        .admin-panel__form { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        .admin-panel__input { padding: 6px 10px; border: 1px solid #d1d5db; border-radius: 4px; font-size: var(--font-xs); outline: none; }
+        .btn-admin { background: #3b52a4; color: white; border: none; font-weight: 800; font-size: var(--font-xs); padding: 7px 12px; border-radius: 4px; cursor: pointer; }
 
-    .toolbar-actions {
-        display: flex;
-        gap: 8px;
-        margin-left: auto;
-    }
-    .btn-toolbar {
-        background-color: white;
-        border: 1px solid #cbd5e0;
-        font-family: var(--font-family-base);
-        font-weight: 800;
-        font-size: 11px;
-        padding: 9px 14px;
-        border-radius: 4px;
-        cursor: pointer;
-        color: var(--color-text-dark);
-        transition: all 0.15s;
-    }
-    .btn-toolbar:hover { background-color: #f7fafc; border-color: var(--color-primary); }
+        .table-card { background: white; border: 2px solid var(--color-border); border-radius: 4px; overflow: hidden; display: flex; flex-direction: column; }
+        .table-wrapper { overflow-x: auto; }
+        .data-table { width: 100%; border-collapse: collapse; text-align: left; font-size: var(--font-sm); }
+        .data-table th { background-color: #eef2f9; padding: 12px 16px; font-size: 11px; font-weight: 800; color: #71788e; text-transform: uppercase; border-bottom: 1px solid var(--color-border-light); white-space: nowrap; }
+        .data-table td { padding: 10px 16px; border-bottom: 1px solid #f0f2f5; vertical-align: middle; font-weight: 700; color: #4a5060; }
+        
+        .data-table tr.rank-1 { background-color: #fffdf5; }
+        .data-table tr.rank-2 { background-color: #faf9f5; }
+        .data-table tr.rank-3 { background-color: #fcfbf7; }
 
-    /* Legend Row */
-    .legend-row {
-        display: flex;
-        align-items: center;
-        gap: 16px;
-        flex-wrap: wrap;
-        font-family: var(--font-family-base);
-        font-weight: 700;
-        font-size: 12px;
-        color: var(--color-text-dark);
-        margin-bottom: 16px;
-        padding: 0 4px;
-    }
-    .badge-rank {
-        width: 22px; height: 22px;
-        display: inline-flex; align-items: center; justify-content: center;
-        border-radius: 50%;
-        font-size: 10px;
-        font-weight: 800;
-        color: white;
-    }
-    .r1 { background: #d69e2e; }
-    .r2 { background: #a0aec0; }
-    .r3 { background: #b7791f; }
-    .r4 { background: #3182ce; }
-    .r5 { background: #e53e3e; }
-    .vs-hint { color: var(--color-text-muted); font-weight: 600; font-size: 11px; font-style: italic; }
+        .col-rank { width: 50px; text-align: center; color: #a0a6b5; }
+        .col-name { font-weight: 800; color: #2b3044; }
+        .col-actions { width: 70px; text-align: center; }
 
-    /* Table Container */
-    .table-card {
-        background: white;
-        border: 2px solid var(--color-primary);
-        border-radius: 6px;
-        overflow: hidden;
-    }
-    .table-wrapper { overflow-x: auto; }
-    table {
-        width: 100%;
-        border-collapse: collapse;
-        font-family: var(--font-family-base);
-    }
-    thead th {
-        background-color: #e9ecf7;
-        padding: 14px 12px;
-        font-size: 11px;
-        font-weight: 800;
-        color: var(--color-primary-dark);
-        text-transform: uppercase;
-        border-bottom: 2px solid var(--color-primary);
-        white-space: nowrap;
-        text-align: center;
-    }
-    thead th.col-member { text-align: left; padding-left: 20px; }
-    thead th .sub-header-text { font-size: 9px; font-weight: 700; color: var(--color-text-muted); text-transform: none; margin-top: 2px; display: block; }
-
-    tbody td {
-        padding: 12px;
-        border-bottom: 1px solid var(--color-border-light);
-        text-align: center;
-        vertical-align: middle;
-        font-size: 13px;
-    }
-    tbody td.col-rank { color: var(--color-text-muted); font-weight: 700; width: 40px; }
-    tbody td.col-member { text-align: left; padding-left: 20px; font-weight: 800; color: var(--color-text-dark); }
-
-    /* Ranking Cards */
-    .ranking-cards-list {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-    }
-    .ranking-card {
-        background: white;
-        border: 1px solid var(--color-border-light);
-        border-radius: 6px;
-        padding: 14px 20px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        font-family: var(--font-family-base);
-    }
-
-    .page-footer {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-top: 16px;
-        font-family: var(--font-family-base);
-        font-size: 10px;
-        font-weight: 700;
-        color: var(--color-text-muted);
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        padding: 0 4px;
-    }
-</style>
+        .editable-num { cursor: pointer; border-bottom: 1px dashed var(--color-primary); }
+        .btn-icon-action { background: none; border: none; cursor: pointer; padding: 2px 4px; font-size: 13px; font-weight: 800; color: #dc2626; }
+        .btn-icon-action:hover { opacity: 0.8; }
+    </style>
 </head>
 <body>
-<div class="top-accent-bar"></div>
 
-<div class="page-wrap">
-    <a class="back-link" href="index.html">← Back to Dashboard</a>
-
-    <div class="page-header">
-        <div class="page-header__title">VS Points</div>
-        <div class="page-header__subtitle" id="vsSubtitleInfo">Weekly Sunday Tally & Overall Rankings</div>
-    </div>
-
-    <div class="toolbar-card">
-        <span class="toolbar-card__label">VIEWS</span>
-        <div class="vs-tab-toggles">
-            <button class="vs-sub-tab active" id="btnWeeklyTable" onclick="switchVsSubTab('weekly')">WEEKLY TABLE</button>
-            <button class="vs-sub-tab" id="btnRanking" onclick="switchVsSubTab('ranking')">RANKING</button>
+    <aside class="sidebar">
+        <div class="sidebar__header"><div class="sidebar__logo">娜美</div></div>
+        <div class="sidebar__user">
+            <div class="sidebar__user-avatar" id="userAvatarIcon">U</div>
+            <div>
+                <div id="userRoleDisplay" style="font-size: 11px; text-transform: uppercase;">USERNAME</div>
+                <div id="userPermissionBadge" style="font-size: 9px; color: #8c93a6;">Role</div>
+            </div>
         </div>
-        
-        <div class="search-box">
-            <span class="search-box__icon">🔍</span>
-            <input type="text" id="vsSearchInput" placeholder="Search member..." oninput="renderVsPoints()">
+        <nav class="sidebar__nav">
+            <ul class="sidebar__menu">
+                <li><a class="sidebar__item" href="index.html"><span class="sidebar__icon">|</span> HOME</a></li>
+                <li><a class="sidebar__item" href="members.html"><span class="sidebar__icon">|</span> MEMBERS</a></li>
+                <li><a class="sidebar__item" href="blackgold.html"><span class="sidebar__icon">|</span> BLACK GOLD</a></li>
+                <li><a class="sidebar__item sidebar__item--active" href="vspoint.html"><span class="sidebar__icon">|</span> VS POINTS</a></li>
+            </ul>
+        </nav>
+        <div class="sidebar__footer">
+            <a class="sidebar__item sidebar__item--logout" id="sidebarLogoutBtn"><span class="sidebar__icon">|</span> LOG OUT</a>
+        </div>
+    </aside>
+
+    <main class="main">
+        <div class="generic-view-card" style="margin-bottom: 0;">
+            <h2>VS Points Breakdown</h2>
+            <p style="margin-bottom: 16px;">VS Point tracker interface logs and high-score rankings synchronized via Supabase.</p>
         </div>
 
-        <div class="toolbar-actions">
-            <button class="btn-toolbar admin-only" id="btnAddWeek" onclick="promptAddVsWeek()" style="display:none;">+ ADD WEEK</button>
-            <button class="btn-toolbar admin-only" id="btnImportVs" onclick="document.getElementById('vsScreenshotInput').click()" style="display:none;">📥 IMPORT SCREENSHOT</button>
-            <input type="file" id="vsScreenshotInput" accept="image/*" style="display: none;" onchange="handleVsScreenshotImport(event)">
+        <div id="vsAdminPanel" class="admin-panel" style="display: none;">
+            <div class="admin-panel__title">VS Points Management Tools</div>
+            <div class="admin-panel__form">
+                <input type="text" class="admin-panel__input" id="newVsWeekInput" placeholder="Week Label (e.g. Sun 07-06)">
+                <button class="btn-admin" id="btnAddVsWeek">Add Week Column</button>
+            </div>
         </div>
-    </div>
 
-    <div class="legend-row">
-        <div style="display: flex; align-items: center; gap: 6px;">TOP 5:</div>
-        <div style="display: flex; align-items: center; gap: 4px;"><span class="badge-rank r1">1</span> 1st</div>
-        <div style="display: flex; align-items: center; gap: 4px;"><span class="badge-rank r2">2</span> 2nd</div>
-        <div style="display: flex; align-items: center; gap: 4px;"><span class="badge-rank r3">3</span> 3rd</div>
-        <div style="display: flex; align-items: center; gap: 4px;"><span class="badge-rank r4">4</span> 4th</div>
-        <div style="display: flex; align-items: center; gap: 4px;"><span class="badge-rank r5">5</span> 5th</div>
-        <span class="vs-hint">· Admin/Mgmt: Click any cell to edit points. Weekly scores below 12M marked red.</span>
-    </div>
-
-    <!-- Weekly Table View -->
-    <div id="vsWeeklyTableContainer" class="table-card">
-        <div class="table-wrapper">
-            <table>
-                <thead><tr id="vsTableHeaders"></tr></thead>
-                <tbody id="vsTableBody"></tbody>
-            </table>
+        <div class="table-card">
+            <div class="table-wrapper">
+                <table class="data-table">
+                    <thead>
+                        <tr id="vsTableHeaderRow">
+                            <th class="col-rank">#</th>
+                            <th>Fighter Name</th>
+                            <th style="text-align: right;">Total Score</th>
+                        </tr>
+                    </thead>
+                    <tbody id="vsTableBody">
+                        <tr><td colspan="3" style="text-align: center; color: #8c93a6;">Loading VS points...</td></tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
-    </div>
+    </main>
 
-    <!-- Ranking View -->
-    <div id="vsRankingContainer" class="vs-sub-view" style="display: none;">
-        <div class="ranking-cards-list" id="vsRankingCardsList"></div>
-    </div>
+    <script>
+        const SUPABASE_URL = 'https://sqrrfslqwcgpsmzdovru.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_rb70-VY2GstWzdoXmoUkwg_Iw3EiqFO';
+        const { createClient } = supabase;
+        const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    <div class="page-footer">
-        <span>♦ Loopy's Playground · Alliance Management Tool</span>
-        <span id="shownCount">0 members shown</span>
-    </div>
-</div>
+        let currentUser = {
+            username: localStorage.getItem('amt_username') || 'Guest User',
+            role: localStorage.getItem('amt_userRole') || 'guest'
+        };
 
-<script>
-    // --- SUPABASE CONFIGURATION ---
-    const SUPABASE_URL = 'https://sqrrfslqwcgpsmzdovru.supabase.co';
-    const SUPABASE_ANON_KEY = 'sb_publishable_rb70-VY2GstWzdoXmoUkwg_Iw3EiqFO';
-    const { createClient } = supabase;
-    const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        let vsData = { weeks: [], membersScores: [] };
+        let auditLogs = [];
 
-    const currentUser = {
-        username: localStorage.getItem('amt_username') || null,
-        role: localStorage.getItem('amt_userRole') || null
-    };
+        async function loadDataFromCloud() {
+            try {
+                const { data, error } = await db.from('app_data').select('*');
+                if (error) throw error;
+                if (data && data.length > 0) {
+                    data.forEach(row => {
+                        if (row.key === 'vsData') vsData = row.value || { weeks: [], membersScores: [] };
+                        if (row.key === 'auditLogs') auditLogs = row.value || [];
+                    });
+                }
+            } catch (err) {
+                console.error('Error loading from cloud:', err);
+            }
+            render();
+        }
 
-    if (!currentUser.role) {
-        window.location.href = 'index.html';
-    }
+        async function saveData() {
+            try {
+                // Using id: 7 matching the global cloud synchronization schema
+                await db.from('app_data').upsert({ id: 7, key: 'vsData', value: vsData }, { onConflict: 'id' });
+                await db.from('app_data').upsert({ id: 3, key: 'auditLogs', value: auditLogs }, { onConflict: 'id' });
+            } catch (err) {
+                console.error('Save error:', err);
+            }
+        }
 
-    const isManagementOrAdmin = currentUser.role === 'admin' || currentUser.role === 'management';
+        function logAction(actionType, description) {
+            const entry = {
+                timestamp: new Date().toLocaleString(),
+                user: currentUser.username || 'System',
+                role: currentUser.role || 'guest',
+                type: actionType,
+                details: description
+            };
+            auditLogs.unshift(entry);
+            if (auditLogs.length > 50) auditLogs.pop();
+            saveData();
+        }
 
-    // --- STATE ---
-    let members = [];
-    let vsData = {
-        weeks: [],
-        membersScores: []
-    };
-    let currentVsSubTab = 'weekly';
+        function render() {
+            const isManagementOrAdmin = currentUser.role === 'admin' || currentUser.role === 'management';
+            document.getElementById('vsAdminPanel').style.display = isManagementOrAdmin ? 'flex' : 'none';
 
-    async function loadData() {
-        try {
-            // Load master members list and VS points data simultaneously
-            const { data, error } = await db.from('app_data').select('*');
-            if (error) throw error;
-            
-            if (data) {
-                data.forEach(row => {
-                    if (row.key === 'members') members = row.value || [];
-                    if (row.key === 'vsData' && row.value) vsData = row.value;
+            document.getElementById('userRoleDisplay').innerText = currentUser.username.toUpperCase();
+            document.getElementById('userPermissionBadge').innerText = `Role: ${currentUser.role.toUpperCase()}`;
+            document.getElementById('userAvatarIcon').innerText = currentUser.username.charAt(0).toUpperCase();
+
+            renderVsPointsTable(isManagementOrAdmin);
+        }
+
+        function renderVsPointsTable(isManagementOrAdmin) {
+            const headerRow = document.getElementById('vsTableHeaderRow');
+            const body = document.getElementById('vsTableBody');
+            if (!headerRow || !body) return;
+
+            let hHTML = `<th class="col-rank">#</th><th>Fighter Name</th><th style="text-align: right;">Total Score</th>`;
+            if (vsData && vsData.weeks) {
+                vsData.weeks.forEach((wk, wIdx) => {
+                    hHTML += `<th style="text-align: right;">${wk} ${isManagementOrAdmin ? `<span style="color:#d9381e; cursor:pointer;" onclick="removeVsWeek(${wIdx})">x</span>` : ''}</th>`;
                 });
             }
+            if (isManagementOrAdmin) hHTML += `<th class="col-actions">Actions</th>`;
+            headerRow.innerHTML = hHTML;
 
-            // Sync members list with vsData to ensure all current roster members appear in VS tracking
-            if (members.length > 0 && vsData.membersScores.length === 0) {
-                vsData.membersScores = members.map(m => ({
-                    id: m.id,
-                    name: m.name,
-                    scores: vsData.weeks.map(() => 0)
-                }));
-            } else {
-                // Ensure new roster members are added automatically
-                members.forEach(m => {
-                    let existing = vsData.membersScores.find(s => s.id === m.id);
-                    if (!existing) {
-                        vsData.membersScores.push({
-                            id: m.id,
-                            name: m.name,
-                            scores: vsData.weeks.map(() => 0)
-                        });
-                    } else {
-                        existing.name = m.name; // Keep name updated
-                    }
-                });
+            if (!vsData || !vsData.membersScores || vsData.membersScores.length === 0) {
+                body.innerHTML = `<tr><td colspan="10" style="text-align: center; color: #8c93a6;">No VS points data recorded yet.</td></tr>`;
+                return;
             }
-        } catch (err) {
-            console.error('Error loading VS points data:', err.message || err);
-            alert('Could not load data from the cloud.');
-        }
-        renderVsPoints();
-    }
 
-    async function saveData() {
-        try {
-            await db.from('app_data').upsert({ key: 'vsData', value: vsData }, { onConflict: 'key' });
-        } catch (err) {
-            console.error('CRITICAL ERROR saving VS data:', err.message || err);
-        }
-    }
-
-    function switchVsSubTab(tab) {
-        currentVsSubTab = tab;
-        const isWeekly = tab === 'weekly';
-        
-        document.getElementById('btnWeeklyTable').classList.toggle('active', isWeekly);
-        document.getElementById('btnRanking').classList.toggle('active', !isWeekly);
-        
-        document.getElementById('vsWeeklyTableContainer').style.display = isWeekly ? 'block' : 'none';
-        document.getElementById('vsRankingContainer').style.display = !isWeekly ? 'block' : 'none';
-        renderVsPoints();
-    }
-
-    function renderVsPoints() {
-        // Toggle admin action buttons visibility
-        document.querySelectorAll('.admin-only').forEach(el => {
-            el.style.display = isManagementOrAdmin ? 'inline-block' : 'none';
-        });
-
-        const searchVal = document.getElementById('vsSearchInput')?.value.toLowerCase() || '';
-
-        if (currentVsSubTab === 'weekly') {
-            renderVsWeeklyTable(searchVal);
-        } else {
-            renderVsRanking(searchVal);
-        }
-    }
-
-    function renderVsWeeklyTable(filter) {
-        const headersTr = document.getElementById('vsTableHeaders');
-        const bodyTb = document.getElementById('vsTableBody');
-        if (!headersTr || !bodyTb) return;
-        
-        let headerHTML = `<th class="col-rank">#</th><th class="col-member">Member</th>`;
-        vsData.weeks.forEach(wk => {
-            headerHTML += `<th>${wk}<span class="sub-header-text">Sunday Tally</span></th>`;
-        });
-        headersTr.innerHTML = headerHTML;
-
-        const filtered = vsData.membersScores.filter(m => m.name.toLowerCase().includes(filter));
-        document.getElementById('shownCount').innerText = `${filtered.length} members shown`;
-        
-        if (filtered.length === 0) {
-            bodyTb.innerHTML = `<tr><td colspan="${2 + vsData.weeks.length}" style="text-align:center; padding:40px; color:var(--color-text-muted); font-weight:700;">No members found.</td></tr>`;
-            return;
-        }
-
-        let bodyHTML = '';
-        filtered.forEach((m, index) => {
-            bodyHTML += `<tr><td class="col-rank">${index + 1}</td><td class="col-member">${m.name}</td>`;
-            
-            vsData.weeks.forEach((wk, wIdx) => {
-                const score = m.scores[wIdx] || 0;
-                const isBelowThreshold = score < 12000000;
-                const formattedScore = score.toLocaleString();
-                
-                const cellStyle = isBelowThreshold 
-                    ? 'background: #fce8e6; color: var(--color-not-attended); font-weight: 800;' 
-                    : 'background: #ffffff;';
-                    
-                bodyHTML += `
-                    <td style="${cellStyle} ${isManagementOrAdmin ? 'cursor: pointer;' : ''}" 
-                        ${isManagementOrAdmin ? `onclick="editVsScore('${m.id}', ${wIdx})"` : ''}>
-                        ${formattedScore}
-                    </td>`;
+            const scoredList = vsData.membersScores.map(ms => {
+                const total = (ms.scores || []).reduce((a, b) => a + (b || 0), 0);
+                return { ...ms, totalScore: total };
             });
-            bodyHTML += `</tr>`;
-        });
-        bodyTb.innerHTML = bodyHTML;
-    }
+            scoredList.sort((a, b) => b.totalScore - a.totalScore);
 
-    function renderVsRanking(filter) {
-        const container = document.getElementById('vsRankingCardsList');
-        if (!container) return;
-        
-        const rankedList = [...vsData.membersScores].map(m => {
-            const total = m.scores.reduce((a, b) => a + b, 0);
-            const mostRecent = m.scores.length > 0 ? (m.scores[m.scores.length - 1] || 0) : 0;
-            return { ...m, total, mostRecent };
-        }).sort((a, b) => b.mostRecent - a.mostRecent || b.total - a.total);
+            body.innerHTML = scoredList.map((ms, idx) => {
+                const rank = idx + 1;
+                let rHTML = `
+                    <tr class="${rank === 1 ? 'rank-1' : (rank === 2 ? 'rank-2' : (rank === 3 ? 'rank-3' : ''))}">
+                        <td class="col-rank">${rank}</td>
+                        <td class="col-name">${ms.name}</td>
+                        <td style="text-align: right; font-weight: 800; color: var(--color-primary);">${ms.totalScore.toLocaleString()}</td>
+                `;
 
-        const filtered = rankedList.filter(m => m.name.toLowerCase().includes(filter));
-        document.getElementById('shownCount').innerText = `${filtered.length} members shown`;
+                vsData.weeks.forEach((wk, wIdx) => {
+                    const scoreVal = (ms.scores && ms.scores[wIdx] !== undefined) ? ms.scores[wIdx] : 0;
+                    rHTML += `
+                        <td style="text-align: right;">
+                            <span class="${isManagementOrAdmin ? 'editable-num' : ''}" onclick="${isManagementOrAdmin ? `editVsScore(${ms.id}, ${wIdx})` : ''}">${scoreVal.toLocaleString()}</span>
+                        </td>
+                    `;
+                });
 
-        if (filtered.length === 0) {
-            container.innerHTML = `<div style="text-align:center; padding:40px; color:var(--color-text-muted); font-weight:700; background:white; border-radius:6px; border:1px solid var(--color-border-light);">No rankings available.</div>`;
-            return;
+                if (isManagementOrAdmin) {
+                    rHTML += `<td class="col-actions"><button class="btn-icon-action" onclick="deleteVsMember(${ms.id})">Delete</button></td>`;
+                }
+                rHTML += `</tr>`;
+                return rHTML;
+            }).join('');
         }
 
-        let html = '';
-        filtered.forEach((m, idx) => {
-            let rankBadgeClass = 'r5';
-            if (idx === 0) rankBadgeClass = 'r1';
-            else if (idx === 1) rankBadgeClass = 'r2';
-            else if (idx === 2) rankBadgeClass = 'r3';
-            else if (idx === 3) rankBadgeClass = 'r4';
+        window.editVsScore = function(memberId, weekIndex) {
+            const ms = vsData.membersScores.find(m => m.id === memberId);
+            if (!ms) return;
+            const currentVal = ms.scores[weekIndex] || 0;
+            const val = prompt(`Update VS score for ${ms.name} on ${vsData.weeks[weekIndex]}:`, currentVal);
+            if (val !== null && !isNaN(val)) {
+                ms.scores[weekIndex] = parseInt(val, 10);
+                logAction('EDIT_VS_SCORE', `Updated VS score for [${ms.name}] on week ${vsData.weeks[weekIndex]} to ${ms.scores[weekIndex]}`);
+                saveData();
+                render();
+            }
+        };
 
-            const rankDisplay = idx < 5 ? `<span class="badge-rank ${rankBadgeClass}">${idx + 1}</span>` : `<span style="font-weight:800; color:var(--color-text-muted);">#${idx + 1}</span>`;
+        window.deleteVsMember = function(memberId) {
+            const ms = vsData.membersScores.find(m => m.id === memberId);
+            if (confirm(`Remove ${ms ? ms.name : ''} from VS Points tracker?`)) {
+                logAction('DELETE_VS_MEMBER', `Removed VS record for: ${ms ? ms.name : memberId}`);
+                vsData.membersScores = vsData.membersScores.filter(m => m.id !== memberId);
+                saveData();
+                render();
+            }
+        };
+
+        window.removeVsWeek = function(weekIndex) {
+            if (confirm(`Remove week column ${vsData.weeks[weekIndex]}?`)) {
+                logAction('DELETE_VS_WEEK', `Removed VS week column: ${vsData.weeks[weekIndex]}`);
+                vsData.weeks.splice(weekIndex, 1);
+                vsData.membersScores.forEach(ms => {
+                    if (ms.scores) ms.scores.splice(weekIndex, 1);
+                });
+                saveData();
+                render();
+            }
+        };
+
+        document.getElementById('btnAddVsWeek').addEventListener('click', () => {
+            const input = document.getElementById('newVsWeekInput');
+            const weekLabel = input.value.trim();
+            if (!weekLabel) return;
             
-            html += `
-                <div class="ranking-card">
-                    <div style="display: flex; align-items: center; gap: 16px;">
-                        <div style="width: 32px; text-align: center;">${rankDisplay}</div>
-                        <div>
-                            <div style="font-weight: 800; font-size: 14px; color: var(--color-text-dark);">${m.name}</div>
-                            <div style="font-size: 11px; color: var(--color-text-muted); font-weight: 600; margin-top: 2px;">
-                                Latest Sunday Tally: ${m.mostRecent.toLocaleString()} pts (Overall: ${m.total.toLocaleString()})
-                            </div>
-                        </div>
-                    </div>
-                    <div style="text-align: right; font-size: 16px; font-weight: 800; color: var(--color-primary-dark);">
-                        ${m.mostRecent.toLocaleString()} pts
-                    </div>
-                </div>
-            `;
-        });
-        container.innerHTML = html;
-    }
-
-    window.promptAddVsWeek = function() {
-        if (!isManagementOrAdmin) return;
-        const weekName = prompt('Enter new Sunday weekly tally label (e.g., Sun 07-06):');
-        if (weekName) {
-            vsData.weeks.push(weekName);
-            vsData.membersScores.forEach(m => m.scores.push(0));
-            saveData();
-            renderVsPoints();
-        }
-    };
-
-    window.editVsScore = function(memberId, weekIdx) {
-        if (!isManagementOrAdmin) return;
-        const member = vsData.membersScores.find(m => m.id === memberId);
-        if (!member) return;
-        
-        const newVal = prompt(`Manually edit score for ${member.name} (${vsData.weeks[weekIdx]}):`, member.scores[weekIdx]);
-        if (newVal !== null) {
-            member.scores[weekIdx] = parseFloat(newVal) || 0;
-            saveData();
-            renderVsPoints();
-        }
-    };
-
-    window.handleVsScreenshotImport = function(event) {
-        if (!isManagementOrAdmin) return;
-        const file = event.target.files[0];
-        if (!file) return;
-
-        alert('Reading screenshot data and extracting weekly VS points...');
-        setTimeout(() => {
-            vsData.membersScores.forEach(m => {
-                const randomExtra = Math.floor(Math.random() * 3000000) + 10500000;
-                if (m.scores.length > 0) {
-                    m.scores[m.scores.length - 1] = randomExtra;
-                } else {
-                    m.scores.push(randomExtra);
+            if (!vsData.weeks) vsData.weeks = [];
+            vsData.weeks.push(weekLabel);
+            
+            if (!vsData.membersScores) vsData.membersScores = [];
+            vsData.membersScores.forEach(ms => {
+                if (!ms.scores) ms.scores = [];
+                while (ms.scores.length < vsData.weeks.length) {
+                    ms.scores.push(0);
                 }
             });
-            saveData();
-            renderVsPoints();
-            alert('Screenshot successfully parsed and synced to the latest Sunday ranking tally!');
-        }, 800);
-    };
 
-    document.addEventListener('DOMContentLoaded', () => {
-        loadData();
-    });
-</script>
+            logAction('ADD_VS_WEEK', `Added VS week column: ${weekLabel}`);
+            input.value = '';
+            saveData();
+            render();
+        });
+
+        document.getElementById('sidebarLogoutBtn').addEventListener('click', () => {
+            localStorage.removeItem('amt_userRole');
+            localStorage.removeItem('amt_username');
+            window.location.href = 'index.html';
+        });
+
+        window.addEventListener('DOMContentLoaded', loadDataFromCloud);
+    </script>
 </body>
 </html>
