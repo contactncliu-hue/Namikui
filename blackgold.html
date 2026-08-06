@@ -44,6 +44,21 @@
         z-index: 200;
     }
 
+    .save-status {
+        position: fixed;
+        top: 14px; right: 14px;
+        z-index: 300;
+        font-family: var(--font-family-base);
+        font-weight: 800;
+        font-size: 11px;
+        padding: 6px 12px;
+        border-radius: 4px;
+        display: none;
+    }
+    .save-status--saving { display: block; background: #eef2f9; color: var(--color-primary); border: 1px solid var(--color-primary); }
+    .save-status--error { display: block; background: #fce8e6; color: #d9381e; border: 1px solid #d9381e; }
+    .save-status--ok { display: block; background: #e6f4ea; color: #1f9d55; border: 1px solid #1f9d55; }
+
     .page-wrap {
         max-width: 1200px;
         margin: 0 auto;
@@ -312,6 +327,7 @@
 </head>
 <body>
 <div class="top-accent-bar"></div>
+<div class="save-status" id="saveStatus"></div>
 
 <div class="page-wrap">
     <a class="back-link" href="index.html">← Back to Dashboard</a>
@@ -376,6 +392,20 @@
 
     const isManagementOrAdmin = currentUser.role === 'admin' || currentUser.role === 'management';
 
+    // --- SAVE STATUS INDICATOR ---
+    // Shows a small badge top-right so save failures are visible immediately,
+    // instead of only discovering them after a refresh wipes the change.
+    const saveStatusEl = document.getElementById('saveStatus');
+    let saveStatusTimer = null;
+    function showSaveStatus(kind, text) {
+        clearTimeout(saveStatusTimer);
+        saveStatusEl.className = 'save-status save-status--' + kind;
+        saveStatusEl.innerText = text;
+        if (kind !== 'error') {
+            saveStatusTimer = setTimeout(() => { saveStatusEl.className = 'save-status'; }, 1500);
+        }
+    }
+
     // --- STATE ---
     let members = [];       
     let bgDates = [];        
@@ -422,24 +452,50 @@
             bgDates.sort((a, b) => parseDateString(a.date) - parseDateString(b.date));
         } catch (err) {
             console.error('Error loading Black Gold data:', err.message || err);
-            alert('Could not load data from the cloud. Check the console for details.');
+            alert('Could not load data from the cloud: ' + (err.message || err));
         }
         render();
     }
 
+    // Both save functions now explicitly check the {error} Supabase returns
+    // (it does NOT throw on failure by default) and surface it via the
+    // on-screen badge, an alert, and the console -- so a failed save is
+    // never silent again.
     async function saveDates() {
+        showSaveStatus('saving', 'Saving…');
         try {
-            await db.from('app_data').upsert({ id: 5, key: 'blackGoldDates', value: bgDates }, { onConflict: 'id' });
+            const { error } = await db.from('app_data')
+                .upsert({ id: 5, key: 'blackGoldDates', value: bgDates }, { onConflict: 'id' });
+            if (error) {
+                console.error('Save Error (Black Gold Dates):', error.message, error);
+                showSaveStatus('error', 'Save failed: ' + error.message);
+                alert('Could not save the date to the cloud:\n' + error.message);
+                return;
+            }
+            showSaveStatus('ok', 'Saved');
         } catch (err) {
             console.error('CRITICAL ERROR saving Black Gold dates:', err.message || err);
+            showSaveStatus('error', 'Save failed');
+            alert('Could not save the date to the cloud:\n' + (err.message || err));
         }
     }
 
     async function saveAssignments() {
+        showSaveStatus('saving', 'Saving…');
         try {
-            await db.from('app_data').upsert({ id: 6, key: 'blackGoldAssignments', value: assignments }, { onConflict: 'id' });
+            const { error } = await db.from('app_data')
+                .upsert({ id: 6, key: 'blackGoldAssignments', value: assignments }, { onConflict: 'id' });
+            if (error) {
+                console.error('Save Error (Black Gold Assignments):', error.message, error);
+                showSaveStatus('error', 'Save failed: ' + error.message);
+                alert('Could not save to the cloud:\n' + error.message);
+                return;
+            }
+            showSaveStatus('ok', 'Saved');
         } catch (err) {
             console.error('CRITICAL ERROR saving Black Gold assignments:', err.message || err);
+            showSaveStatus('error', 'Save failed');
+            alert('Could not save to the cloud:\n' + (err.message || err));
         }
     }
 
