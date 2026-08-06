@@ -124,7 +124,7 @@
         .search-box__input { width: 100%; padding: 10px 12px 10px 36px; border: 1px solid #d1d5db; background-color: #f7f6f0; border-radius: 4px; font-size: var(--font-sm); outline: none; font-family: var(--font-family-base); }
         .search-box__icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #9ca3af; }
 
-        .event-badge { margin-left: auto; background-color: var(--color-yellow-bg); border: 1px solid var(--color-yellow-border); padding: 8px 14px; border-radius: 4px; display: flex; align-items: center; gap: 8px; font-size: var(--font-xs); font-weight: 800; color: var(--color-yellow-text); }
+        .event-badge { margin-left: auto; background-color: var(--color-yellow-bg); border: 1px solid var(--color-yellow-border); padding: 8px 14px; border-radius: 4px; display: none; align-items: center; gap: 8px; font-size: var(--font-xs); font-weight: 800; color: var(--color-yellow-text); }
         .event-badge__count { color: #d9381e; font-size: var(--font-lg); font-weight: 800; }
 
         .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); border: 2px solid var(--color-border); border-radius: 6px; background: white; overflow: hidden; }
@@ -296,7 +296,7 @@
                     <li id="assignRolesNavLi" style="display: none;"><a class="sidebar__item" onclick="openRoleAssignModal()"><span class="sidebar__icon">|</span> ASSIGN USER ROLES</a></li>
                 </ul>
             </nav>
-            <div class="sidebar__footer">
+            <div class="sidebar__footer" style="margin-top: auto;">
                 <a class="sidebar__item sidebar__item--logout" id="sidebarLogoutBtn"><span class="sidebar__icon">|</span> LOG OUT</a>
             </div>
         </aside>
@@ -351,7 +351,7 @@
             </section>
 
             <section id="viewAttendance" class="app-view" style="display: none; flex-direction: column; gap: 20px;">
-                <header class="header-bar">
+                <header class="header-bar" style="display: none;">
                     <div class="header-bar__title-group">
                         <h1 class="header-bar__title">Loopy's Playground</h1>
                         <div class="header-bar__subtitle">
@@ -361,7 +361,6 @@
                     </div>
                     <div class="header-bar__actions">
                         <input type="file" id="screenshotInput" accept="image/*" style="display: none;">
-                        <button class="btn-action" id="importBtn" style="display: none;">IMPORT SCREENSHOT</button>
                         <button class="btn-action btn-action--logout" id="btnLogout">LOG OUT</button>
                     </div>
                 </header>
@@ -385,6 +384,8 @@
                         <input type="text" class="search-box__input" id="searchInput" placeholder="Search member...">
                     </div>
                     <button class="btn-diff" id="btnToggleDiff">± DIFF</button>
+                    <input type="file" id="screenshotInput" accept="image/*" style="display: none;">
+                    <button class="btn-action" id="importBtn" style="display: none;">IMPORT SCREENSHOT</button>
                     <div class="event-badge">
                         <span>% OF</span>
                         <span class="event-badge__count" id="badgeEventsCount">0</span>
@@ -680,7 +681,6 @@
             showLoginScreen();
         }
 
-        document.getElementById('btnLogout').addEventListener('click', handleLogout);
         document.getElementById('sidebarLogoutBtn').addEventListener('click', handleLogout);
 
         document.getElementById('btnSubmitCreateAccount').addEventListener('click', () => {
