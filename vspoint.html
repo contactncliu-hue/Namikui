@@ -393,7 +393,7 @@
     // --- STATE ---
     let members = [];
     let vsData = {
-        weeks: [], // YYYY-MM-DD or formatted strings
+        weeks: [], 
         membersScores: []
     };
     let currentVsSubTab = 'weekly';
@@ -682,7 +682,7 @@
     window.addNewWeekByDate = async function() {
         if (!isManagementOrAdmin) return;
         const dateInput = document.getElementById('newWeekDateInput');
-        const selectedDate = dateInput?.value; // YYYY-MM-DD
+        const selectedDate = dateInput?.value;
         
         if (!selectedDate) {
             alert('Please select a date from the calendar picker first.');
