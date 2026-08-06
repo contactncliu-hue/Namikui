@@ -14,7 +14,7 @@
         --color-text-dark: #2b3044;
         --color-text-muted: #8c93a6;
         --color-border-light: #e2e5ed;
-        --color-gold: #d69e2e;
+        --color-gold: #f3a808;
         --color-gold-bg: #fffdf0;
         --color-not-attended: #d9381e;
         --font-family-base: 'Montserrat', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -36,6 +36,21 @@
         background-color: var(--color-primary-dark);
         z-index: 200;
     }
+
+    .save-status {
+        position: fixed;
+        top: 14px; right: 14px;
+        z-index: 300;
+        font-family: var(--font-family-base);
+        font-weight: 800;
+        font-size: 11px;
+        padding: 6px 12px;
+        border-radius: 4px;
+        display: none;
+    }
+    .save-status--saving { display: block; background: #eef2f9; color: var(--color-primary); border: 1px solid var(--color-primary); }
+    .save-status--error { display: block; background: #fce8e6; color: #d9381e; border: 1px solid #d9381e; }
+    .save-status--ok { display: block; background: #e6f4ea; color: #1f9d55; border: 1px solid #1f9d55; }
 
     .page-wrap {
         max-width: 1200px;
@@ -74,7 +89,7 @@
         margin-top: 4px;
     }
 
-    /* Toolbar Card matching Black Gold style */
+    /* Toolbar matching Black Gold style */
     .toolbar-card {
         background: white;
         border: 2px solid var(--color-primary);
@@ -132,26 +147,27 @@
         border-radius: 4px;
         font-family: var(--font-family-base);
         font-size: 12px;
-        font-weight: 700;
+        font-weight: 800;
         background: var(--color-gold-bg);
         color: var(--color-text-dark);
         outline: none;
         cursor: pointer;
     }
 
-    .btn-add-date {
-        background-color: white;
-        border: 2px solid var(--color-primary);
+    .btn-gold {
+        background-color: var(--color-gold-bg);
+        border: 2px solid var(--color-gold);
+        color: var(--color-gold);
         font-family: var(--font-family-base);
         font-weight: 800;
         font-size: 12px;
-        padding: 9px 18px;
+        letter-spacing: 0.5px;
+        padding: 10px 18px;
         border-radius: 4px;
         cursor: pointer;
-        color: var(--color-primary);
         transition: all 0.15s;
     }
-    .btn-add-date:hover { background-color: var(--color-primary); color: white; }
+    .btn-gold:hover { background-color: var(--color-gold); color: white; }
 
     /* Legend Row */
     .legend-row {
@@ -174,7 +190,7 @@
         font-weight: 800;
         color: white;
     }
-    .r1 { background: #d69e2e; }
+    .r1 { background: #f3a808; }
     .r2 { background: #a0aec0; }
     .r3 { background: #b7791f; }
     .r4 { background: #3182ce; }
@@ -207,30 +223,17 @@
     }
     thead th.col-member { text-align: left; padding-left: 20px; }
     
-    thead th .table-date-header {
-        font-family: var(--font-family-base);
-        font-weight: 800;
-        font-size: 12px;
-        color: var(--color-primary-dark);
-    }
-    thead th .table-week-label {
-        font-family: var(--font-family-base);
-        font-weight: 700;
-        font-size: 10px;
-        color: var(--color-text-muted);
-        text-transform: none;
-        margin-top: 2px;
-    }
-    thead th .delete-date-btn {
-        font-family: var(--font-family-base);
-        font-weight: 700;
-        font-size: 11px;
-        color: var(--color-not-attended);
-        cursor: pointer;
-        margin-top: 2px;
+    thead th .date-label { font-size: 13px; font-weight: 800; color: var(--color-text-dark); }
+    thead th .week-label { font-size: 9px; font-weight: 700; color: var(--color-text-muted); text-transform: none; margin-top: 2px; }
+    thead th .remove-date-btn {
         display: inline-block;
+        margin-top: 4px;
+        color: #d9381e;
+        cursor: pointer;
+        font-size: 10px;
+        font-weight: 800;
     }
-    thead th .delete-date-btn:hover { text-decoration: underline; }
+    thead th .remove-date-btn:hover { text-decoration: underline; }
 
     tbody td {
         padding: 12px;
@@ -273,7 +276,7 @@
         border-radius: 3px;
         min-height: 8px;
     }
-    .bar-r1 { background-color: #d69e2e; }
+    .bar-r1 { background-color: #f3a808; }
     .bar-r2 { background-color: #a0aec0; }
     .bar-r3 { background-color: #b7791f; }
     .bar-r4 { background-color: #3182ce; }
@@ -297,6 +300,7 @@
 </head>
 <body>
 <div class="top-accent-bar"></div>
+<div class="save-status" id="saveStatus"></div>
 
 <div class="page-wrap">
     <a class="back-link" href="index.html">← Back to Dashboard</a>
@@ -315,13 +319,13 @@
         
         <div class="search-box">
             <span class="search-box__icon">🔍</span>
-            <input type="text" id="vsSearchInput" placeholder="Search member..." oninput="renderVsPoints()">
+            <input type="text" id="vsSearchInput" placeholder="Search member...">
         </div>
 
         <div style="display: flex; align-items: center; gap: 8px; margin-left: auto;">
             <input type="date" id="newWeekDateInput" class="date-picker-input admin-only" style="display:none;">
-            <button class="btn-add-date admin-only" id="btnAddWeek" onclick="addNewWeekByDate()" style="display:none;">+ ADD DATE</button>
-            <button class="btn-add-date admin-only" id="btnImportVs" onclick="document.getElementById('vsScreenshotInput').click()" style="display:none;">📥 IMPORT</button>
+            <button class="btn-gold admin-only" id="btnAddWeek" onclick="addNewWeekByDate()" style="display:none;">+ ADD DATE</button>
+            <button class="btn-gold admin-only" id="btnImportVs" onclick="document.getElementById('vsScreenshotInput').click()" style="display:none;">📥 IMPORT</button>
             <input type="file" id="vsScreenshotInput" accept="image/*" style="display: none;" onchange="handleVsScreenshotImport(event)">
         </div>
     </div>
@@ -375,13 +379,40 @@
 
     const isManagementOrAdmin = currentUser.role === 'admin' || currentUser.role === 'management';
 
+    const saveStatusEl = document.getElementById('saveStatus');
+    let saveStatusTimer = null;
+    function showSaveStatus(kind, text) {
+        clearTimeout(saveStatusTimer);
+        saveStatusEl.className = 'save-status save-status--' + kind;
+        saveStatusEl.innerText = text;
+        if (kind !== 'error') {
+            saveStatusTimer = setTimeout(() => { saveStatusEl.className = 'save-status'; }, 1500);
+        }
+    }
+
     // --- STATE ---
     let members = [];
     let vsData = {
-        weeks: [], // YYYY-MM-DD
+        weeks: [], // YYYY-MM-DD or formatted strings
         membersScores: []
     };
     let currentVsSubTab = 'weekly';
+
+    function parseDateString(dateStr) {
+        if (!dateStr) return new Date(0);
+        let parts = dateStr.split('-');
+        if (parts.length === 3) {
+            if (parts[0].length === 4) {
+                return new Date(dateStr);
+            } else {
+                return new Date(`${parts[2]}-${parts[0]}-${parts[1]}`);
+            }
+        } else if (parts.length === 2) {
+            const currentYear = new Date().getFullYear();
+            return new Date(`${currentYear}-${parts[0]}-${parts[1]}`);
+        }
+        return new Date(dateStr);
+    }
 
     async function loadData() {
         try {
@@ -423,10 +454,18 @@
     }
 
     async function saveData() {
+        showSaveStatus('saving', 'Saving…');
         try {
-            await db.from('app_data').upsert({ id: 7, key: 'vsData', value: vsData }, { onConflict: 'id' });
+            const { error } = await db.from('app_data').upsert({ id: 7, key: 'vsData', value: vsData }, { onConflict: 'id' });
+            if (error) {
+                console.error('Save Error (VS Data):', error.message, error);
+                showSaveStatus('error', 'Save failed: ' + error.message);
+                return;
+            }
+            showSaveStatus('ok', 'Saved');
         } catch (err) {
             console.error('CRITICAL ERROR saving VS data:', err.message || err);
+            showSaveStatus('error', 'Save failed');
         }
     }
 
@@ -440,7 +479,7 @@
             };
         });
 
-        combined.sort((a, b) => new Date(a.week) - new Date(b.week));
+        combined.sort((a, b) => parseDateString(a.week) - parseDateString(b.week));
 
         vsData.weeks = combined.map(c => c.week);
         vsData.membersScores.forEach((m, mIdx) => {
@@ -468,7 +507,7 @@
         const hintEl = document.getElementById('roleHint');
         if (hintEl) {
             hintEl.innerText = isManagementOrAdmin 
-                ? '· Admin/Mgmt: Click any table cell to edit points. Use × under date columns to delete session.' 
+                ? '· Admin/Mgmt: Click any table cell to edit points. Use ✕ under date columns to delete session.' 
                 : '· Viewing mode (Read-only)';
         }
 
@@ -491,25 +530,23 @@
         const bodyTb = document.getElementById('vsTableBody');
         if (!headersTr || !bodyTb) return;
         
-        let headerHTML = `<th class="col-rank">#</th><th class="col-member">MEMBER</th>`;
+        let headerHTML = `<th class="col-rank">#</th><th class="col-member">Member</th>`;
         vsData.weeks.forEach((wk, idx) => {
             let deleteActionHTML = '';
             if (isManagementOrAdmin) {
-                deleteActionHTML = `<div class="delete-date-btn" onclick="deleteWeekColumn(${idx})" title="Delete this session column">×</div>`;
+                deleteActionHTML = `<span class="remove-date-btn" onclick="deleteWeekColumn(${idx})">✕</span>`;
             }
             headerHTML += `
                 <th>
-                    <div class="table-date-header">${wk}</div>
-                    <div class="table-week-label">Week ${idx + 1}</div>
+                    <div class="date-label">${wk}</div>
+                    <div class="week-label">Week ${idx + 1}</div>
                     ${deleteActionHTML}
                 </th>`;
         });
         headersTr.innerHTML = headerHTML;
 
-        // Determine most recent week index
         const latestWeekIdx = vsData.weeks.length > 0 ? vsData.weeks.length - 1 : 0;
 
-        // Sort members based on the most recent week's points descending
         const sortedMembers = [...vsData.membersScores].sort((a, b) => {
             const scoreA = vsData.weeks.length > 0 ? (a.scores[latestWeekIdx] || 0) : 0;
             const scoreB = vsData.weeks.length > 0 ? (b.scores[latestWeekIdx] || 0) : 0;
@@ -517,7 +554,7 @@
         });
 
         const filtered = sortedMembers.filter(m => m.name.toLowerCase().includes(filter));
-        document.getElementById('shownCount').innerText = `${filtered.length} members shown`;
+        document.getElementById('shownCount').innerText = `${filtered.length}/${members.length} members shown`;
         
         if (filtered.length === 0) {
             bodyTb.innerHTML = `<tr><td colspan="${2 + vsData.weeks.length}" style="text-align:center; padding:40px; color:var(--color-text-muted); font-weight:700;">No members found.</td></tr>`;
@@ -575,7 +612,7 @@
         const maxTotal = Math.max(...rankedList.map(m => m.total), 1);
 
         const filtered = rankedList.filter(m => m.name.toLowerCase().includes(filter));
-        document.getElementById('shownCount').innerText = `${filtered.length} members shown`;
+        document.getElementById('shownCount').innerText = `${filtered.length}/${members.length} members shown`;
 
         if (filtered.length === 0) {
             container.innerHTML = `<div style="text-align:center; padding:40px; color:var(--color-text-muted); font-weight:700; background:white; border-radius:6px; border:1px solid var(--color-border-light);">No rankings available.</div>`;
@@ -625,7 +662,7 @@
                     <div style="display: flex; align-items: center; gap: 16px;">
                         <div style="width: 32px; text-align: center;">${rankDisplay}</div>
                         <div>
-                            <div style="font-weight: 800; font-size: 15px; color: var(--color-text-dark);">+ ${m.name}</div>
+                            <div style="font-weight: 800; font-size: 15px; color: var(--color-text-dark);">${m.name}</div>
                             ${weeksBreakdownHTML}
                         </div>
                     </div>
@@ -642,31 +679,34 @@
         container.innerHTML = html;
     }
 
-    window.addNewWeekByDate = function() {
+    window.addNewWeekByDate = async function() {
         if (!isManagementOrAdmin) return;
         const dateInput = document.getElementById('newWeekDateInput');
-        const selectedDate = dateInput?.value;
+        const selectedDate = dateInput?.value; // YYYY-MM-DD
         
         if (!selectedDate) {
             alert('Please select a date from the calendar picker first.');
             return;
         }
 
-        if (vsData.weeks.includes(selectedDate)) {
+        const parts = selectedDate.split('-');
+        const formattedDate = `${parts[1]}-${parts[2]}-${parts[0]}`;
+
+        if (vsData.weeks.includes(formattedDate)) {
             alert('A column for this date already exists.');
             return;
         }
 
-        vsData.weeks.push(selectedDate);
+        vsData.weeks.push(formattedDate);
         vsData.membersScores.forEach(m => m.scores.push(0));
 
         sortWeeksAndScores();
-        saveData();
+        await saveData();
         renderVsPoints();
         dateInput.value = '';
     };
 
-    window.deleteWeekColumn = function(weekIdx) {
+    window.deleteWeekColumn = async function(weekIdx) {
         if (!isManagementOrAdmin) return;
         const targetDate = vsData.weeks[weekIdx];
         if (!confirm(`Are you sure you want to remove session date ${targetDate} (Week ${weekIdx + 1})?`)) return;
@@ -678,11 +718,11 @@
             }
         });
 
-        saveData();
+        await saveData();
         renderVsPoints();
     };
 
-    window.editVsScore = function(memberId, weekIdx) {
+    window.editVsScore = async function(memberId, weekIdx) {
         if (!isManagementOrAdmin) return;
         const member = vsData.membersScores.find(m => String(m.id) === String(memberId));
         if (!member) return;
@@ -690,18 +730,18 @@
         const newVal = prompt(`Manually edit score for ${member.name} (${vsData.weeks[weekIdx]}):`, member.scores[weekIdx]);
         if (newVal !== null) {
             member.scores[weekIdx] = parseFloat(newVal) || 0;
-            saveData();
+            await saveData();
             renderVsPoints();
         }
     };
 
-    window.handleVsScreenshotImport = function(event) {
+    window.handleVsScreenshotImport = async function(event) {
         if (!isManagementOrAdmin) return;
         const file = event.target.files[0];
         if (!file) return;
 
         alert('Reading screenshot data and extracting weekly VS points...');
-        setTimeout(() => {
+        setTimeout(async () => {
             vsData.membersScores.forEach(m => {
                 const randomExtra = Math.floor(Math.random() * 3000000) + 10500000;
                 if (m.scores.length > 0) {
@@ -710,11 +750,13 @@
                     m.scores.push(randomExtra);
                 }
             });
-            saveData();
+            await saveData();
             renderVsPoints();
             alert('Screenshot successfully parsed and synced to the latest date column tally!');
         }, 800);
     };
+
+    document.getElementById('vsSearchInput').addEventListener('input', renderVsPoints);
 
     document.addEventListener('DOMContentLoaded', () => {
         loadData();
