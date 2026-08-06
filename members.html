@@ -243,7 +243,7 @@
 
         <div class="manual-box">
             <i class="fa-solid fa-circle-info"></i>
-            <div><strong>Combat Power & F1 Power Manual:</strong> Combat Power uses standard comma formatting (0-00,000,000,000). F1 Power automatically handles G/M parsing and sorting (0-999.999 assumes Millions / M; decimal numbers like 00.00 assume Billions / G; G is higher than M). Note: This calculates power 100M and above. Press <kbd>Enter</kbd> to save changes instantly.</div>
+            <div><strong>Combat Power & F1 Power Manual:</strong> Combat Power uses standard comma formatting (0-00,000,000,000). F1 Power automatically handles G/M parsing and sorting (0-999.999 assumes Millions / M; decimal numbers like 00.00 assume Billions / G; G is higher than M). Note: This calculates power 100M and above. Press <kbd>Enter</kbd> to save changes instantly. In-game names are directly editable for authorized admin/management users.</div>
         </div>
 
         <div class="table-card">
@@ -516,7 +516,7 @@
                                     <button onclick="setPlayerStatus(${member.id}, 'inactive')" class="status-tab ${isInact ? 'active-inactive' : ''}" title="Inactive">I</button>
                                     <button onclick="setPlayerStatus(${member.id}, 'removed')" class="status-tab ${isRem ? 'active-removed' : ''}" title="Removed">R</button>
                                 </div>
-                                <span>${member.name}</span>
+                                <input type="text" value="${member.name || ''}" ${isManagementOrAdmin ? `onchange="updateMemberName(${member.id}, this.value)" onkeydown="if(event.key==='Enter') { this.blur(); }"` : 'readonly'} class="editable-input" style="font-weight: 800;" placeholder="In-game name">
                                 <div class="rank-dot ${rankDotClass}" onclick="cycleRank(${member.id})" title="Click to cycle rank">${member.rank}</div>
                             </div>
                         </td>
@@ -587,6 +587,14 @@
                 let idx = factions.indexOf(m.faction || "F");
                 m.faction = factions[(idx + 1) % factions.length];
                 saveData(); render();
+            }
+        };
+
+        window.updateMemberName = function(id, val) {
+            const m = members.find(x => x.id === id);
+            if(m) {
+                m.name = val.trim();
+                saveData();
             }
         };
 
