@@ -196,11 +196,22 @@
         .home-top-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
         @media (max-width: 768px) { .home-top-grid { grid-template-columns: 1fr; } }
 
-        .home-box { background: white; border: 2px solid var(--color-border); border-radius: 4px; padding: 16px; position: relative; }
+        .home-box { background: white; border: 2px solid var(--color-border); border-radius: 4px; padding: 16px; position: relative; overflow: hidden; }
         .home-box::before { content: ''; position: absolute; top: 0; right: 0; width: 0; height: 0; border-style: solid; border-width: 0 24px 24px 0; border-color: transparent var(--color-primary) transparent transparent; }
-        
-        .home-box__title { font-size: var(--font-md); font-weight: 800; color: var(--color-primary); margin-bottom: 12px; text-transform: uppercase; display: flex; justify-content: space-between; align-items: center; }
+        .home-box--gold::before { border-color: transparent var(--color-gold) transparent transparent; }
+        .home-box--red::before { border-color: transparent #d9381e transparent transparent; }
+
+        .home-box__title { font-size: var(--font-md); font-weight: 800; color: var(--color-text-dark); margin-bottom: 12px; text-transform: uppercase; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+        .home-box__title-left { display: flex; align-items: center; gap: 8px; }
+        .home-box__title-actions { display: flex; align-items: center; gap: 8px; }
         .home-box__content { font-size: var(--font-sm); color: #4a5060; }
+
+        .btn-view-all { background: none; border: none; color: var(--color-primary); font-weight: 800; font-size: 10px; cursor: pointer; text-transform: uppercase; padding: 4px 2px; white-space: nowrap; }
+        .btn-view-all:hover { text-decoration: underline; }
+        .btn-upload-gold { background: white; border: 2px solid var(--color-gold); color: var(--color-yellow-text); font-weight: 800; font-size: 10px; padding: 6px 10px; border-radius: 4px; cursor: pointer; white-space: nowrap; text-transform: uppercase; }
+        .btn-upload-gold:hover { background-color: var(--color-yellow-bg); }
+        .btn-post-outline { background: white; border: 2px solid var(--color-primary); color: var(--color-primary); font-weight: 800; font-size: 10px; padding: 6px 10px; border-radius: 4px; cursor: pointer; white-space: nowrap; text-transform: uppercase; }
+        .btn-post-outline:hover { background-color: var(--color-primary-light); }
 
         .home-notices-list { display: flex; flex-direction: column; gap: 8px; max-height: 220px; overflow-y: auto; }
         .home-notice-item { background: #f8f9fa; border-left: 4px solid var(--color-primary); padding: 8px 12px; border-radius: 2px; position: relative; }
@@ -208,17 +219,50 @@
         .home-notice-item__text { font-size: var(--font-xs); color: #555b6e; margin-top: 2px; }
         .home-notice-item__date { font-size: 10px; color: #8c93a6; margin-top: 4px; text-align: right; }
 
-        .home-contributors-list { display: flex; flex-direction: column; gap: 6px; }
-        .home-contrib-row { display: flex; justify-content: space-between; align-items: center; background: #f8f9fa; padding: 6px 12px; border-radius: 4px; font-weight: 700; font-size: var(--font-sm); }
-        
+        .home-contributors-list { display: flex; flex-direction: column; gap: 8px; }
+        .home-contrib-row { display: flex; justify-content: space-between; align-items: center; background: #f8f9fa; padding: 8px 12px; border-radius: 4px; font-weight: 700; font-size: var(--font-sm); }
+        .home-contrib-left { display: flex; align-items: center; gap: 10px; }
+        .home-contrib-medal { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; color: white; flex-shrink: 0; }
+        .home-contrib-medal--1 { background: #f3a808; }
+        .home-contrib-medal--2 { background: #a8a3c0; }
+        .home-contrib-medal--3 { background: #c28859; }
+        .home-contrib-medal--other { background: var(--color-primary); }
+        .home-contrib-score { font-weight: 800; }
+        .home-contrib-score--1 { color: var(--color-gold); }
+        .home-contrib-score--2 { color: #8c93a6; }
+        .home-contrib-score--3 { color: #c28859; }
+        .home-contrib-score--other { color: var(--color-primary); }
+        .home-contrib-pts { font-weight: 600; font-size: 10px; color: #8c93a6; margin-left: 2px; }
+
+        .home-events-list { display: flex; flex-direction: column; gap: 6px; }
+        .home-event-row { display: flex; justify-content: space-between; align-items: center; background: #f8f9fa; padding: 8px 12px; border-radius: 4px; border-bottom: 1px solid var(--color-border-light); }
+        .home-event-row__left { display: flex; flex-direction: column; }
+        .home-event-row__title { font-weight: 800; font-size: var(--font-sm); color: #2b3044; }
+        .home-event-row__date { font-size: 10px; color: #8c93a6; font-weight: 600; }
+        .home-event-row__pct { font-weight: 800; font-size: var(--font-sm); }
+        .home-event-row__pct.high { color: #2563eb; }
+        .home-event-row__pct.mid { color: #b89117; }
+        .home-event-row__pct.low { color: #dc2626; }
+
         .home-events-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
         @media (max-width: 768px) { .home-events-grid { grid-template-columns: 1fr; } }
         .home-event-card { background: #f8f9fa; border: 1px solid var(--color-border-light); border-radius: 4px; padding: 10px; text-align: center; }
         .home-event-card__date { font-size: var(--font-xs); font-weight: 800; color: var(--color-primary); }
         .home-event-card__title { font-size: var(--font-sm); font-weight: 700; color: #2b3044; margin-top: 2px; }
 
-        .home-media-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .home-media-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+        @media (max-width: 768px) { .home-media-grid { grid-template-columns: repeat(2, 1fr); } }
         .home-media-slot { background: #f8f9fa; border: 1px dashed var(--color-border-light); border-radius: 4px; padding: 20px; text-align: center; color: #8c93a6; font-size: var(--font-xs); font-weight: 700; }
+        .home-media-thumb { border-radius: 4px; overflow: hidden; text-align: center; background: var(--color-primary); color: white; font-weight: 800; font-size: var(--font-xs); min-height: 90px; display: flex; align-items: center; justify-content: center; padding: 8px; }
+
+        .home-stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        @media (max-width: 768px) { .home-stats-grid { grid-template-columns: 1fr; } }
+        .home-stat-card { background: white; border: 2px solid var(--color-border); border-radius: 4px; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; }
+        .home-stat-card__label { font-size: 10px; font-weight: 800; color: #8c93a6; text-transform: uppercase; letter-spacing: 0.5px; }
+        .home-stat-card__value { font-size: 30px; font-weight: 800; color: var(--color-primary); margin-top: 4px; }
+        .home-stat-card__value--gold { color: var(--color-gold); }
+        .home-stat-card__sub { font-size: 11px; color: #a0a6b5; font-weight: 700; margin-top: 2px; }
+        .home-stat-card__icon { width: 46px; height: 46px; border-radius: 8px; background: var(--color-primary-light); display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
 
         @media (max-width: 1024px) {
             .app { flex-direction: column; }
@@ -359,22 +403,48 @@
 
             <section id="viewHome" class="app-view" style="display: flex; flex-direction: column; gap: 16px;">
                 <div class="home-container">
+
+                    <div class="home-box" id="noticesBox">
+                        <div class="home-box__title">
+                            <span class="home-box__title-left">📣 Notices</span>
+                            <span class="home-box__title-actions">
+                                <button class="btn-post-outline" id="btnAddNoticeBtn" style="display: none;">+ Post</button>
+                                <button class="btn-view-all" data-goto="notice">View All ›</button>
+                            </span>
+                        </div>
+                        <div class="home-box__content">
+                            <div class="home-notices-list" id="homeNoticesList">
+                                <div style="text-align: center; color: #8c93a6; padding: 20px;">No notices yet.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="home-stats-grid">
+                        <div class="home-stat-card">
+                            <div>
+                                <div class="home-stat-card__label">Total Members</div>
+                                <div class="home-stat-card__value" id="homeStatMembers">0/100</div>
+                                <div class="home-stat-card__sub" id="homeStatMembersSub">100 slots available</div>
+                            </div>
+                            <div class="home-stat-card__icon">👥</div>
+                        </div>
+                        <div class="home-stat-card">
+                            <div>
+                                <div class="home-stat-card__label">Event Attendance</div>
+                                <div class="home-stat-card__value home-stat-card__value--gold" id="homeStatAttendance">0%</div>
+                                <div class="home-stat-card__sub" id="homeStatAttendanceSub">0 recent events</div>
+                            </div>
+                            <div class="home-stat-card__icon">📅</div>
+                        </div>
+                    </div>
+
                     <div class="home-top-grid">
                         <div class="home-box">
                             <div class="home-box__title">
-                                <span>Alliance Notices</span>
-                                <button class="btn-admin" id="btnAddNoticeBtn" style="display: none; padding: 4px 8px; font-size: 10px;">+ Post Notice</button>
-                            </div>
-                            <div class="home-box__content">
-                                <div class="home-notices-list" id="homeNoticesList">
-                                    <div style="text-align: center; color: #8c93a6; padding: 20px;">No notices posted yet.</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="home-box">
-                            <div class="home-box__title">
-                                <span>Top 5 VS Contributors (Weekly)</span>
+                                <span class="home-box__title-left">⚔️ Top 5 Contributors</span>
+                                <span class="home-box__title-actions">
+                                    <button class="btn-view-all" data-goto="vspoints">View All ›</button>
+                                </span>
                             </div>
                             <div class="home-box__content">
                                 <div class="home-contributors-list" id="homeContributorsList">
@@ -382,23 +452,29 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div class="home-box">
-                        <div class="home-box__title">
-                            <span>Upcoming Events Schedule</span>
-                        </div>
-                        <div class="home-box__content">
-                            <div class="home-events-grid" id="homeEventsGrid">
-                                <div style="text-align: center; color: #8c93a6; grid-column: span 3; padding: 20px;">No events scheduled.</div>
+                        <div class="home-box">
+                            <div class="home-box__title">
+                                <span class="home-box__title-left">📅 Recent Events</span>
+                                <span class="home-box__title-actions">
+                                    <button class="btn-view-all" data-goto="attendance">View All ›</button>
+                                </span>
+                            </div>
+                            <div class="home-box__content">
+                                <div class="home-events-list" id="homeEventsList">
+                                    <div style="text-align: center; color: #8c93a6; padding: 20px;">No events scheduled.</div>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="home-box">
+                    <div class="home-box home-box--gold">
                         <div class="home-box__title">
-                            <span>Recent Photos & Videos</span>
-                            <button class="btn-admin" id="btnAddMediaBtn" style="display: none; padding: 4px 8px; font-size: 10px;">+ Upload Media</button>
+                            <span class="home-box__title-left">🖼️ Recent Photos &amp; Videos</span>
+                            <span class="home-box__title-actions">
+                                <button class="btn-upload-gold" id="btnAddMediaBtn" style="display: none;">+ Upload</button>
+                                <button class="btn-view-all" data-goto="board">View All ›</button>
+                            </span>
                         </div>
                         <div class="home-box__content">
                             <div class="home-media-grid" id="homeMediaGrid">
@@ -583,6 +659,8 @@
         const { createClient } = supabase;
         const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+        const MAX_MEMBER_SLOTS = 100;
+
         let currentUser = {
             username: localStorage.getItem('amt_username') || null,
             role: localStorage.getItem('amt_userRole') || null
@@ -667,6 +745,33 @@
             saveData();
         }
 
+        function navigateToView(targetView) {
+            const navItem = document.querySelector(`.sidebar__item[data-view="${targetView}"]`);
+            if (navItem) {
+                navItem.click();
+                return;
+            }
+            // fallback for views without a direct sidebar data-view mapping (e.g. vspoints uses href in this build)
+            const views = {
+                'home': 'viewHome', 'notice': 'viewNotice', 'board': 'viewBoard',
+                'members': 'viewMembers', 'attendance': 'viewAttendance', 'vspoints': 'viewVsPoints',
+                'discussion': 'viewDiscussion', 'questions': 'viewQuestions', 'history': 'viewHistory'
+            };
+            const activeSectionId = views[targetView];
+            if (!activeSectionId) return;
+            Object.values(views).forEach(vId => {
+                const el = document.getElementById(vId);
+                if (el) el.style.display = 'none';
+            });
+            document.getElementById(activeSectionId).style.display = 'flex';
+            document.querySelectorAll('.sidebar__item').forEach(el => el.classList.remove('sidebar__item--active'));
+            render();
+        }
+
+        document.querySelectorAll('.btn-view-all[data-goto]').forEach(btn => {
+            btn.addEventListener('click', () => navigateToView(btn.getAttribute('data-goto')));
+        });
+
         document.querySelectorAll('.sidebar__item[data-view]').forEach(item => {
             item.addEventListener('click', (e) => {
                 e.preventDefault();
@@ -717,6 +822,7 @@
                 }
 
                 document.getElementById('sidebar').classList.remove('sidebar--open');
+                render();
             });
         });
 
@@ -968,12 +1074,39 @@
             renderAuditTable();
         }
 
+        function getEventRateColorClass(rateNum) {
+            if (rateNum >= 75) return 'high';
+            if (rateNum >= 50) return 'mid';
+            return 'low';
+        }
+
         function renderHomeTab() {
-            // 1. Render Notices
+            const totalEvents = eventDates.length;
+            const totalAttendedCount = members.reduce((sum, m) => sum + m.attended, 0);
+            const avgAttendance = members.length ? (totalAttendedCount / members.length) : 0;
+            const overallRate = totalEvents > 0 ? (avgAttendance / totalEvents) * 100 : 0;
+
+            // Stat cards
+            const memberCountEl = document.getElementById('homeStatMembers');
+            const memberSubEl = document.getElementById('homeStatMembersSub');
+            if (memberCountEl && memberSubEl) {
+                memberCountEl.innerText = `${members.length}/${MAX_MEMBER_SLOTS}`;
+                const slotsLeft = Math.max(MAX_MEMBER_SLOTS - members.length, 0);
+                memberSubEl.innerText = `${slotsLeft} slots available`;
+            }
+
+            const attendanceStatEl = document.getElementById('homeStatAttendance');
+            const attendanceSubEl = document.getElementById('homeStatAttendanceSub');
+            if (attendanceStatEl && attendanceSubEl) {
+                attendanceStatEl.innerText = `${overallRate.toFixed(0)}%`;
+                attendanceSubEl.innerText = `${totalEvents} recent event${totalEvents === 1 ? '' : 's'}`;
+            }
+
+            // 1. Render Notices (kept at top of home page)
             const noticesListEl = document.getElementById('homeNoticesList');
             if (noticesListEl) {
                 if (!allianceNotices || allianceNotices.length === 0) {
-                    noticesListEl.innerHTML = `<div style="text-align: center; color: #8c93a6; padding: 20px;">No notices posted yet.</div>`;
+                    noticesListEl.innerHTML = `<div style="text-align: center; color: #8c93a6; padding: 20px;">No notices yet.</div>`;
                 } else {
                     noticesListEl.innerHTML = allianceNotices.map(n => `
                         <div class="home-notice-item">
@@ -985,44 +1118,59 @@
                 }
             }
 
-            // 2. Render Top 5 Contributors based on VS points weekly tab
+            // 2. Render Top 5 Contributors based on VS points weekly tab, with medal rankings matching VS Points tab
             const contribListEl = document.getElementById('homeContributorsList');
             if (contribListEl) {
                 if (!vsData || !vsData.membersScores || vsData.membersScores.length === 0) {
                     contribListEl.innerHTML = `<div style="text-align: center; color: #8c93a6; padding: 20px;">No weekly VS points data available.</div>`;
                 } else {
-                    // Calculate totals from latest week or total score
                     const scored = vsData.membersScores.map(ms => {
                         const total = (ms.scores || []).reduce((a, b) => a + (b || 0), 0);
                         return { name: ms.name, total };
                     }).sort((a, b) => b.total - a.total).slice(0, 5);
 
-                    contribListEl.innerHTML = scored.map((c, idx) => `
+                    contribListEl.innerHTML = scored.map((c, idx) => {
+                        const rank = idx + 1;
+                        const medalClass = rank <= 3 ? `home-contrib-medal--${rank}` : 'home-contrib-medal--other';
+                        const scoreClass = rank <= 3 ? `home-contrib-score--${rank}` : 'home-contrib-score--other';
+                        const medalIcon = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : rank;
+                        return `
                         <div class="home-contrib-row">
-                            <span>${idx + 1}. ${c.name}</span>
-                            <span style="color: var(--color-primary);">${c.total.toLocaleString()} pts</span>
-                        </div>
-                    `).join('');
+                            <div class="home-contrib-left">
+                                <span class="home-contrib-medal ${medalClass}">${medalIcon}</span>
+                                <span>${c.name}</span>
+                            </div>
+                            <span class="home-contrib-score ${scoreClass}">${c.total.toLocaleString()}<span class="home-contrib-pts">pts</span></span>
+                        </div>`;
+                    }).join('');
                 }
             }
 
-            // 3. Render Events based on events tabs
-            const eventsGridEl = document.getElementById('homeEventsGrid');
-            if (eventsGridEl) {
+            // 3. Render Recent Events with attendance percentage, color-coded to match attendance tab
+            const eventsListEl = document.getElementById('homeEventsList');
+            if (eventsListEl) {
                 if (!eventDates || eventDates.length === 0) {
-                    eventsGridEl.innerHTML = `<div style="text-align: center; color: #8c93a6; grid-column: span 3; padding: 20px;">No events scheduled.</div>`;
+                    eventsListEl.innerHTML = `<div style="text-align: center; color: #8c93a6; padding: 20px;">No events scheduled.</div>`;
                 } else {
-                    const upcomingEvents = eventDates.slice(0, 3);
-                    eventsGridEl.innerHTML = upcomingEvents.map(ev => `
-                        <div class="home-event-card">
-                            <div class="home-event-card__date">${ev.date}</div>
-                            <div class="home-event-card__title">${ev.subtext}</div>
-                        </div>
-                    `).join('');
+                    const recentEvents = eventDates.slice(-5).reverse();
+                    eventsListEl.innerHTML = recentEvents.map(ev => {
+                        const evIdx = eventDates.indexOf(ev);
+                        const attendedCount = members.reduce((sum, m) => sum + ((m.events && m.events[evIdx]) ? 1 : 0), 0);
+                        const pct = members.length > 0 ? (attendedCount / members.length) * 100 : 0;
+                        const colorClass = getEventRateColorClass(pct);
+                        return `
+                        <div class="home-event-row">
+                            <div class="home-event-row__left">
+                                <span class="home-event-row__title">${ev.subtext}</span>
+                                <span class="home-event-row__date">${ev.date}</span>
+                            </div>
+                            <span class="home-event-row__pct ${colorClass}">${pct.toFixed(0)}% attended</span>
+                        </div>`;
+                    }).join('');
                 }
             }
 
-            // 4. Render Recent Photos & Videos
+            // 4. Render Recent Photos & Videos (kept at bottom of home page)
             const mediaGridEl = document.getElementById('homeMediaGrid');
             if (mediaGridEl) {
                 if (!allianceMedia || allianceMedia.length === 0) {
@@ -1031,10 +1179,9 @@
                         <div class="home-media-slot">No videos uploaded yet.</div>
                     `;
                 } else {
-                    mediaGridEl.innerHTML = allianceMedia.slice(0, 2).map(m => `
-                        <div style="background: #f8f9fa; border: 1px solid var(--color-border-light); border-radius: 4px; padding: 10px; text-align: center;">
-                            <div style="font-weight: 800; font-size: var(--font-xs); color: var(--color-primary); margin-bottom: 4px;">${m.title}</div>
-                            <a href="${m.url}" target="_blank" style="font-size: 11px; color: #2563eb; word-break: break-all;">${m.url}</a>
+                    mediaGridEl.innerHTML = allianceMedia.slice(0, 4).map(m => `
+                        <div class="home-media-thumb" title="${m.title}">
+                            <a href="${m.url}" target="_blank" style="color: white; text-decoration: none;">${m.title}</a>
                         </div>
                     `).join('');
                 }
