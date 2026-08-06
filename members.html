@@ -418,6 +418,10 @@
                     }
                 });
             }
+
+            // --- FILTER OUT MEMBERS MARKED AS 'removed' ('R') FROM GENERAL/OTHER APP VIEWS ---
+            members = members.filter(m => m.status !== 'removed');
+
             render();
         }
 
@@ -575,7 +579,13 @@
             const m = members.find(x => x.id === id);
             if(m) { 
                 m.status = status; 
-                saveData().then(() => render()); 
+                saveData().then(() => {
+                    // If marked as removed, instantly filter them out from active lists everywhere
+                    if (status === 'removed') {
+                        members = members.filter(x => x.id !== id);
+                    }
+                    render(); 
+                }); 
             }
         };
 
@@ -618,7 +628,6 @@
                     m.f1History = [];
                 }
 
-                // Append a new history entry every time the input changes so diff calculates accurately
                 const nowStr = new Date().toISOString().replace('T', ' ').substring(0, 16);
                 m.f1History.push({ date: nowStr, val: parsed.formatted });
 
