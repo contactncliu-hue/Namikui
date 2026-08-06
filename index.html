@@ -99,14 +99,12 @@
         .hamburger { background: none; border: none; cursor: pointer; display: flex; flex-direction: column; gap: 5px; padding: 5px; }
         .hamburger__line { width: 26px; height: 3px; background-color: var(--color-primary); border-radius: 2px; }
 
-        /* Unified Match with VS Tab Controls Style */
         .page-header-top { display: flex; flex-direction: column; gap: 4px; margin-bottom: 2px; }
         .page-header-top__back { font-family: var(--font-family-ui); font-size: 12px; font-weight: 800; color: var(--color-primary); text-decoration: none; margin-bottom: 2px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
         .page-header-top__back:hover { text-decoration: underline; }
         .page-header-top__title { font-family: var(--font-family-ui); font-weight: 800; font-size: 34px; letter-spacing: -1px; color: var(--color-primary-dark); text-transform: uppercase; line-height: 1.1; }
         .page-header-top__subtext { font-family: var(--font-family-ui); font-size: 14px; font-weight: 700; color: var(--color-text-muted); margin-top: 4px; }
 
-        /* Controls Card matching VS tab reference styling */
         .controls-card { background: white; border: 2px solid var(--color-border); border-radius: 6px; padding: 16px 20px; display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
 
         .btn-group { display: flex; background: #edf2f7; padding: 3px; border-radius: 4px; }
@@ -132,16 +130,15 @@
         .btn-diff:hover { background-color: var(--color-gold); color: white; }
         .btn-diff.active { background-color: var(--color-primary-dark); border-color: var(--color-primary-dark); color: white; }
 
-        /* Top 5 Legend & Info Bar */
         .top-legend-bar { display: flex; align-items: center; gap: 16px; font-family: var(--font-family-ui); font-size: 12px; font-weight: 700; color: var(--color-text-dark); flex-wrap: wrap; margin-top: 4px; padding: 0 4px; }
         .top-legend-bar__title { font-weight: 800; color: var(--color-text-dark); text-transform: uppercase; }
         .legend-pill-item { display: flex; align-items: center; gap: 4px; }
         .badge-rank { width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 10px; font-weight: 800; color: white; }
-        .badge-rank.r1, .top-pill--1 { background-color: #f3a808; }
-        .badge-rank.r2, .top-pill--2 { background-color: #a0aec0; }
-        .badge-rank.r3, .top-pill--3 { background-color: #b7791f; }
-        .badge-rank.r4, .top-pill--4 { background-color: #3182ce; }
-        .badge-rank.r5, .top-pill--5 { background-color: #e53e3e; }
+        .badge-rank.r1 { background-color: #f3a808; }
+        .badge-rank.r2 { background-color: #a0aec0; }
+        .badge-rank.r3 { background-color: #b7791f; }
+        .badge-rank.r4 { background-color: #3182ce; }
+        .badge-rank.r5 { background-color: #e53e3e; }
         .vs-hint { color: var(--color-text-muted); font-weight: 600; font-size: 11px; font-style: italic; }
 
         .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); border: 2px solid var(--color-border); border-radius: 8px; background: white; overflow: hidden; display: none; }
@@ -183,9 +180,9 @@
         .progress-bar-container { display: flex; align-items: center; gap: 8px; width: 100%; min-width: 140px; }
         .progress-bar { height: 10px; flex-grow: 1; background-color: #eef0f5; border-radius: 5px; overflow: hidden; }
         .progress-bar__fill { height: 100%; border-radius: 5px; }
-        .progress-bar__fill.high { background-color: #2563eb; } /* 75-100 blue */
-        .progress-bar__fill.mid { background-color: #eab308; }   /* 50-74 yellow */
-        .progress-bar__fill.low { background-color: #dc2626; }   /* 0-49 red */
+        .progress-bar__fill.high { background-color: #2563eb; }
+        .progress-bar__fill.mid { background-color: #eab308; }
+        .progress-bar__fill.low { background-color: #dc2626; }
         .progress-text { font-size: 12px; font-weight: 800; min-width: 42px; text-align: right; }
 
         .ranking-cards-list { display: flex; flex-direction: column; gap: 12px; }
@@ -826,9 +823,9 @@
         }
 
         function getProgressBarColorClass(rateNum) {
-            if (rateNum >= 75) return 'high'; // 75-100 blue
-            if (rateNum >= 50) return 'mid';  // 50-74 yellow
-            return 'low';                      // 0-49 red
+            if (rateNum >= 75) return 'high';
+            if (rateNum >= 50) return 'mid';
+            return 'low';
         }
 
         function getAttendedColorClass(rateNum) {
@@ -980,9 +977,8 @@
             eventDates.forEach((ev, evIdx) => {
                 headerHTML += `
                     <th class="col-event">
-                        <div style="display: flex; flex-direction: column; align-items: center;">
-                            <span class="${isManagementOrAdmin ? 'editable-num' : ''}" style="font-weight: 800; color: var(--color-primary);" onclick="${isManagementOrAdmin ? `editEventName(${evIdx})` : ''}" title="Click to edit event name">${ev.name || 'Event'}</span>
-                            <span>${ev.date}</span>
+                        <div style="display: flex; flex-direction: column; align-items: center; gap: 2px;">
+                            <span class="${isManagementOrAdmin ? 'editable-num' : ''}" style="font-weight: 800; color: var(--color-primary);" onclick="${isManagementOrAdmin ? `editEventName(${evIdx})` : ''}" title="Click to edit event name">${ev.name}</span>
                             ${isManagementOrAdmin ? `<span style="color:#d9381e; cursor:pointer; font-size:var(--font-xs); margin-top:2px;" onclick="removeEvent(${evIdx})">✕ Delete</span>` : ''}
                         </div>
                     </th>`;
@@ -1175,34 +1171,24 @@
 
         document.getElementById('btnAddEvent').addEventListener('click', () => {
             const eventNameInput = document.getElementById('newEventNameInput');
-            const dateInput = document.getElementById('newDateInput');
-            
             const eventName = eventNameInput.value.trim();
+
             if (!eventName) {
                 alert('Please enter an event name before adding it.');
                 eventNameInput.focus();
                 return;
             }
-            if (!dateInput.value) {
-                alert('Please select an event date.');
-                dateInput.focus();
-                return;
-            }
-
-            const parts = dateInput.value.split('-');
-            const formattedDate = parts.length === 3 ? `${parts[1]}-${parts[2]}` : dateInput.value;
 
             eventDates.push({ 
                 id: Date.now(), 
-                name: eventName, 
-                date: formattedDate
+                name: eventName 
             });
 
             members.forEach(m => { if (!m.events) m.events = new Array(eventDates.length).fill(false); });
-            logAction('ADD_EVENT', `Added event column: ${eventName} (${formattedDate})`);
+            logAction('ADD_EVENT', `Added event column: ${eventName}`);
             
             eventNameInput.value = '';
-            dateInput.value = '';
+            document.getElementById('newDateInput').value = '';
             saveData(); 
             render();
         });
