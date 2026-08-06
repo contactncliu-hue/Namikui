@@ -207,7 +207,6 @@
     }
     thead th.col-member { text-align: left; padding-left: 20px; }
     
-    /* Exact Black-Gold Table Header Date & Remove Icon Layout */
     thead th .table-date-header {
         font-family: var(--font-family-base);
         font-weight: 800;
@@ -263,7 +262,6 @@
     .ranking-card.top-4 { border: 2px solid #3182ce; }
     .ranking-card.top-5 { border: 2px solid var(--color-not-attended); }
 
-    /* Color-coded Weekly Bar Blocks for Overall Ranking Tab */
     .ranking-bars-container {
         display: flex;
         gap: 6px;
@@ -508,21 +506,17 @@
         });
         headersTr.innerHTML = headerHTML;
 
-        // Compute rankings per week so we can show ranking badges/medals inside the weekly table cells
-        const weeklyRanksMap = {}; // weekIdx -> map of memberId -> rank (1-based)
-        vsData.weeks.forEach((wk, wIdx) => {
-            const sortedByWeek = [...vsData.membersScores].map(m => ({
-                id: m.id,
-                score: m.scores[wIdx] || 0
-            })).sort((a, b) => b.score - a.score);
+        // Determine most recent week index
+        const latestWeekIdx = vsData.weeks.length > 0 ? vsData.weeks.length - 1 : 0;
 
-            weeklyRanksMap[wIdx] = {};
-            sortedByWeek.forEach((item, rIdx) => {
-                weeklyRanksMap[wIdx][item.id] = rIdx + 1;
-            });
+        // Sort members based on the most recent week's points descending
+        const sortedMembers = [...vsData.membersScores].sort((a, b) => {
+            const scoreA = vsData.weeks.length > 0 ? (a.scores[latestWeekIdx] || 0) : 0;
+            const scoreB = vsData.weeks.length > 0 ? (b.scores[latestWeekIdx] || 0) : 0;
+            return scoreB - scoreA;
         });
 
-        const filtered = vsData.membersScores.filter(m => m.name.toLowerCase().includes(filter));
+        const filtered = sortedMembers.filter(m => m.name.toLowerCase().includes(filter));
         document.getElementById('shownCount').innerText = `${filtered.length} members shown`;
         
         if (filtered.length === 0) {
@@ -532,24 +526,28 @@
 
         let bodyHTML = '';
         filtered.forEach((m, index) => {
-            bodyHTML += `<tr><td class="col-rank">${index + 1}</td><td class="col-member">${m.name}</td>`;
+            const rankNum = index + 1;
+            let rankBadgeHTML = '';
+            if (rankNum <= 5) {
+                let badgeClass = 'r5';
+                if (rankNum === 1) badgeClass = 'r1';
+                else if (rankNum === 2) badgeClass = 'r2';
+                else if (rankNum === 3) badgeClass = 'r3';
+                else if (rankNum === 4) badgeClass = 'r4';
+                rankBadgeHTML = `<span class="badge-rank ${badgeClass}" style="width:20px; height:20px; font-size:10px; margin-right:8px; display:inline-flex;">${rankNum}</span>`;
+            } else {
+                rankBadgeHTML = `<span style="font-weight:800; color:var(--color-text-muted); margin-right:8px;">#${rankNum}</span>`;
+            }
+
+            bodyHTML += `<tr>`;
+            bodyHTML += `<td class="col-rank">${rankNum}</td>`;
+            bodyHTML += `<td class="col-member"><div style="display:flex; align-items:center;">${rankBadgeHTML}<span>${m.name}</span></div></td>`;
             
             vsData.weeks.forEach((wk, wIdx) => {
                 const score = m.scores[wIdx] || 0;
                 const isBelowThreshold = score < 12000000;
                 const formattedScore = score.toLocaleString();
                 
-                const rankNum = weeklyRanksMap[wIdx][m.id];
-                let rankBadgeHTML = '';
-                if (rankNum <= 5) {
-                    let badgeClass = 'r5';
-                    if (rankNum === 1) badgeClass = 'r1';
-                    else if (rankNum === 2) badgeClass = 'r2';
-                    else if (rankNum === 3) badgeClass = 'r3';
-                    else if (rankNum === 4) badgeClass = 'r4';
-                    rankBadgeHTML = `<span class="badge-rank ${badgeClass}" style="width:18px; height:18px; font-size:9px; margin-right:4px; display:inline-flex;">${rankNum}</span>`;
-                }
-
                 const cellStyle = isBelowThreshold 
                     ? 'background: #fce8e6; color: var(--color-not-attended); font-weight: 800;' 
                     : 'background: #ffffff;';
@@ -557,10 +555,7 @@
                 bodyHTML += `
                     <td style="${cellStyle} ${isManagementOrAdmin ? 'cursor: pointer;' : ''}" 
                         ${isManagementOrAdmin ? `onclick="editVsScore('${m.id}', ${wIdx})"` : ''}>
-                        <div style="display:flex; align-items:center; justify-content:center;">
-                            ${rankBadgeHTML}
-                            <span>${formattedScore}</span>
-                        </div>
+                        ${formattedScore}
                     </td>`;
             });
             bodyHTML += `</tr>`;
@@ -577,7 +572,6 @@
             return { ...m, total };
         }).sort((a, b) => b.total - a.total);
 
-        // Calculate max total score across all members for proportional bar heights
         const maxTotal = Math.max(...rankedList.map(m => m.total), 1);
 
         const filtered = rankedList.filter(m => m.name.toLowerCase().includes(filter));
@@ -600,14 +594,11 @@
 
             const rankDisplay = idx < 5 ? `<span class="badge-rank ${rankBadgeClass}">${idx + 1}</span>` : `<span style="font-weight:800; color:var(--color-text-muted);">#${idx + 1}</span>`;
             
-            // Build weekly color-coded bar graphs
             let barsHTML = `<div class="ranking-bars-container">`;
             vsData.weeks.forEach((wk, wIdx) => {
                 const sVal = m.scores[wIdx] || 0;
-                // Calculate height proportionally up to 32px max
                 const barHeight = Math.max(Math.round((sVal / maxTotal) * 32), 6);
                 
-                // Color code individual bar based on rank for that specific week
                 const weeklyScoresList = [...vsData.membersScores].map(mem => mem.scores[wIdx] || 0).sort((a, b) => b - a);
                 const scoreRank = weeklyScoresList.indexOf(sVal) + 1;
                 
