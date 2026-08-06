@@ -159,7 +159,8 @@
 
         .col-rank { width: 40px; text-align: center; color: var(--color-text-muted); font-weight: 700; }
         .col-name { font-weight: 800; color: var(--color-text-dark); }
-        .col-attended { width: 130px; text-align: center; font-size: var(--font-sm); font-weight: 800; }
+        .col-attended { width: 110px; text-align: center; font-size: var(--font-sm); font-weight: 800; }
+        .col-percentage { width: 130px; text-align: center; font-size: var(--font-sm); font-weight: 800; }
         .col-event { width: 110px; text-align: center; }
         .col-actions { width: 80px; text-align: center; }
 
@@ -974,7 +975,7 @@
             const tableBody = document.getElementById('memberTableBody');
             const tableFooterRow = document.getElementById('tableFooterRow');
 
-            let headerHTML = `<th class="col-rank">#</th><th>MEMBER</th><th class="col-attended">EVENTS ATTENDED</th>`;
+            let headerHTML = `<th class="col-rank">#</th><th>MEMBER</th><th class="col-attended">ATTENDED</th><th class="col-percentage">PARTICIPATION %</th>`;
             if (showDiffMode) headerHTML += `<th>VS AVG</th>`;
 
             eventDates.forEach((ev, evIdx) => {
@@ -989,7 +990,6 @@
                     </th>`;
             });
 
-            if (isManagementOrAdmin) headerHTML += `<th class="col-actions">ACTIONS</th>`;
             tableHeaderRow.innerHTML = headerHTML;
             tableBody.innerHTML = '';
 
@@ -1012,10 +1012,10 @@
                     <tr class="${rankClass}">
                         <td class="col-rank">${rank}</td>
                         <td class="col-name">${member.name}</td>
-                        <td class="col-attended">
+                        <td class="col-attended" style="text-align: center; font-weight: 800;">${member.attended}</td>
+                        <td class="col-percentage">
                             <div style="display: flex; flex-direction: column; gap: 4px;">
-                                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 12px;">
-                                    <span style="font-weight: 800;">${member.attended}</span>
+                                <div style="display: flex; justify-content: flex-end; align-items: center; font-size: 12px;">
                                     <span style="font-weight: 800;" class="${colorClass === 'high' ? 'attended-high' : (colorClass === 'mid' ? 'attended-mid' : 'attended-low')}">${rateNum}%</span>
                                 </div>
                                 <div class="progress-bar">
@@ -1060,18 +1060,16 @@
                         </td>`;
                 });
 
-                if (isManagementOrAdmin) rowHTML += `<td class="col-actions"><button class="btn-icon-action" onclick="deleteMember(${member.id})">Delete</button></td>`;
                 rowHTML += `</tr>`;
                 tableBody.insertAdjacentHTML('beforeend', rowHTML);
             });
 
-            let footerHTML = `<tr><td colspan="3" style="font-weight: 800;">TOTAL ATTENDANCE</td>`;
+            let footerHTML = `<tr><td colspan="3" style="font-weight: 800;">TOTAL ATTENDANCE</td><td></td>`;
             if (showDiffMode) footerHTML += `<td></td>`;
             eventDates.forEach((ev, evIdx) => {
                 const eventTotal = members.reduce((sum, m) => sum + ((m.events && m.events[evIdx]) ? 1 : 0), 0);
                 footerHTML += `<td class="col-event" style="font-weight: 800; color: var(--color-primary);">${eventTotal}</td>`;
             });
-            if (isManagementOrAdmin) footerHTML += `<td></td>`;
             footerHTML += `</tr>`;
             tableFooterRow.innerHTML = footerHTML;
         }
@@ -1131,7 +1129,6 @@
                             </div>
                             <div style="width: 80px; text-align: center;">${diffHtml}</div>
                             ${showDiffMode ? `<div style="width: 75px; text-align: right;"><span class="${vsAvgClass}">${vsAvgString}</span></div>` : ''}
-                            ${isManagementOrAdmin ? `<button class="btn-icon-action" onclick="deleteMember(${member.id})">Delete</button>` : ''}
                         </div>
                     </div>`);
             });
@@ -1171,15 +1168,6 @@
             if (s) {
                 eventDates[i].subtext = s.trim();
                 logAction('EDIT_EVENT', `Updated event subtext index ${i} to ${s.trim()}`);
-                saveData(); render();
-            }
-        };
-
-        window.deleteMember = function(id) {
-            const m = members.find(x => x.id === id);
-            if (confirm(`Delete player ${m ? m.name : ''}?`)) {
-                logAction('DELETE_MEMBER', `Deleted player record: ${m ? m.name : id}`);
-                members = members.filter(m => m.id !== id);
                 saveData(); render();
             }
         };
