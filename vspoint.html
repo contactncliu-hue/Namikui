@@ -5,17 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>VS Points - Loopy's Playground</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Fredoka+One&family=Montserrat:wght@600;700;800&family=Noto+Sans+SC:wght@900&family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
     :root {
         --color-bg-main: #f5f4ef;
-        --color-primary: #1e285e;
-        --color-primary-dark: #161e45;
+        --color-primary: #3b52a4;
+        --color-primary-dark: #2d3a91;
         --color-text-dark: #2b3044;
         --color-text-muted: #8c93a6;
         --color-border-light: #e2e5ed;
-        --color-gold: #d49511;
-        --color-gold-bg: #fffbf0;
+        --color-gold: #f3a808;
+        --color-gold-bg: #fffdf0;
         --color-not-attended: #d9381e;
         --font-family-base: 'Montserrat', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
@@ -89,7 +89,7 @@
         margin-top: 4px;
     }
 
-    /* Toolbar matching Black Gold style exactly */
+    /* Toolbar matching Black Gold style */
     .toolbar-card {
         background: white;
         border: 2px solid var(--color-primary);
@@ -121,7 +121,7 @@
         transition: all 0.15s;
     }
     .vs-sub-tab.active {
-        background: var(--color-primary);
+        background: var(--color-primary-dark);
         color: white;
     }
 
@@ -190,7 +190,7 @@
         font-weight: 800;
         color: white;
     }
-    .r1 { background: #d49511; }
+    .r1 { background: #f3a808; }
     .r2 { background: #a0aec0; }
     .r3 { background: #b7791f; }
     .r4 { background: #3182ce; }
@@ -211,11 +211,11 @@
         font-family: var(--font-family-base);
     }
     thead th {
-        background-color: #eef2f9;
+        background-color: #e9ecf7;
         padding: 14px 12px;
         font-size: 11px;
         font-weight: 800;
-        color: var(--color-primary);
+        color: var(--color-primary-dark);
         text-transform: uppercase;
         border-bottom: 2px solid var(--color-primary);
         white-space: nowrap;
@@ -276,7 +276,7 @@
         border-radius: 3px;
         min-height: 8px;
     }
-    .bar-r1 { background-color: #d49511; }
+    .bar-r1 { background-color: #f3a808; }
     .bar-r2 { background-color: #a0aec0; }
     .bar-r3 { background-color: #b7791f; }
     .bar-r4 { background-color: #3182ce; }
@@ -669,7 +669,7 @@
                     <div style="display: flex; align-items: center; gap: 20px;">
                         ${barsHTML}
                         <div style="text-align: right; min-width: 90px;">
-                            <div style="font-size: 18px; font-weight: 800; color: var(--color-primary);">${m.total.toLocaleString()}</div>
+                            <div style="font-size: 18px; font-weight: 800; color: var(--color-primary-dark);">${m.total.toLocaleString()}</div>
                             <div style="font-size: 10px; font-weight: 700; color: var(--color-text-muted); text-transform: uppercase;">total pts</div>
                         </div>
                     </div>
