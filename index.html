@@ -34,10 +34,12 @@
             --color-yellow-text: #b89117;
             --color-gold: #f3a808;
 
+            /* Updated Font Families */
             --font-family-base: 'Open Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             --font-family-title: 'Cinzel', serif;
             --font-family-logo: 'Noto Sans SC', sans-serif;
 
+            /* Adjusted Font Sizes (Scaled up for enhanced visual hierarchy) */
             --font-xs: 13px;
             --font-sm: 15px;
             --font-md: 17px;
@@ -91,12 +93,21 @@
         .sidebar__icon { width: 16px; text-align: center; }
 
         .main { flex-grow: 1; padding: 24px; display: flex; flex-direction: column; gap: 20px; max-width: 1240px; }
-        
-        /* BLACK AND GOLD UNIFORM HEADER */
-        .mobile-header { display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; background: #111111; border: 2px solid #f3a808; border-radius: 6px; margin-bottom: 4px; }
-        .mobile-header__title { font-family: var(--font-family-title); font-size: var(--font-lg); color: #f3a808; text-transform: uppercase; letter-spacing: 1px; }
-        .hamburger { background: none; border: none; cursor: pointer; display: flex; flex-direction: column; gap: 5px; padding: 4px; }
-        .hamburger__line { width: 26px; height: 3px; background-color: #f3a808; border-radius: 2px; }
+        .mobile-header { display: none; justify-content: space-between; align-items: center; padding: 12px 16px; background: white; border: 2px solid var(--color-border); border-radius: 8px; margin-bottom: 12px; }
+        .hamburger { background: none; border: none; cursor: pointer; display: flex; flex-direction: column; gap: 4px; padding: 4px; }
+        .hamburger__line { width: 24px; height: 3px; background-color: var(--color-primary); border-radius: 2px; }
+
+        .header-bar { background-color: white; border: 2px solid var(--color-border); border-radius: 6px; padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; position: relative; }
+        .header-bar::before { content: ''; position: absolute; left: 12px; top: 12px; bottom: 12px; width: 4px; background-color: #e2cb6b; border-radius: 2px; }
+        .header-bar__title-group { padding-left: 12px; }
+        .header-bar__title { font-family: 'Fredoka One', cursive, sans-serif; font-size: var(--font-xxl); color: var(--color-primary); line-height: 1.1; text-transform: uppercase; }
+        .header-bar__subtitle { font-size: var(--font-xs); font-weight: 800; color: var(--color-primary); margin-top: 6px; display: flex; gap: 20px; letter-spacing: 0.5px; }
+        .header-bar__actions { display: flex; gap: 12px; align-items: center; }
+
+        .btn-action { background: white; border: 2px solid var(--color-primary); color: var(--color-primary); font-weight: 800; font-size: var(--font-xs); padding: 10px 18px; border-radius: 4px; cursor: pointer; font-family: var(--font-family-base); }
+        .btn-action--logout { background-color: #fce8e6; border-color: #d9381e; color: #d9381e; }
+        .btn-diff { background: white; border: 2px solid var(--color-primary); color: var(--color-primary); font-weight: 800; font-size: var(--font-xs); padding: 10px 18px; border-radius: 4px; cursor: pointer; font-family: var(--font-family-base); }
+        .btn-diff.active { background-color: var(--color-primary); color: white; }
 
         .admin-panel { background: #fffdf0; border: 2px dashed #d99f26; border-radius: 6px; padding: 16px 20px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
         .admin-panel__title { font-weight: 800; font-size: var(--font-xs); color: #b89117; text-transform: uppercase; width: 100%; margin-bottom: 6px; letter-spacing: 0.5px; }
@@ -185,8 +196,10 @@
 
         @media (max-width: 1024px) {
             .app { flex-direction: column; }
+            .mobile-header { display: flex; }
             .sidebar { position: fixed; top: 0; left: 0; height: 100vh; transform: translateX(-100%); }
             .sidebar--open { transform: translateX(0); }
+            .kpi-grid { grid-template-columns: repeat(2, 1fr); }
         }
     </style>
 </head>
@@ -289,15 +302,10 @@
         </aside>
 
         <main class="main">
-            <!-- Uniform Black and Gold Header with 3-lines sidebar button -->
-            <header class="mobile-header">
-                <h1 class="mobile-header__title">events</h1>
-                <button class="hamburger" id="hamburgerBtn" aria-label="Toggle Sidebar">
-                    <span class="hamburger__line"></span>
-                    <span class="hamburger__line"></span>
-                    <span class="hamburger__line"></span>
-                </button>
-            </header>
+            <div class="mobile-header">
+                <div class="sidebar__logo" style="width: 44px; height: 44px; font-size: 16px;">娜美</div>
+                <button class="hamburger" id="hamburgerBtn"><span class="hamburger__line"></span><span class="hamburger__line"></span><span class="hamburger__line"></span></button>
+            </div>
 
             <section id="viewHome" class="app-view">
                 <div class="generic-view-card">
@@ -342,7 +350,21 @@
                 </div>
             </section>
 
-            <section id="viewAttendance" class="app-view" style="display: flex; flex-direction: column; gap: 20px;">
+            <section id="viewAttendance" class="app-view" style="display: none; flex-direction: column; gap: 20px;">
+                <header class="header-bar" style="display: none;">
+                    <div class="header-bar__title-group">
+                        <h1 class="header-bar__title">Loopy's Playground</h1>
+                        <div class="header-bar__subtitle">
+                            <span>ALLIANCE MANAGEMENT TOOL</span>
+                            <span class="header-bar__stats" id="headerEventsCount">0 EVENTS - 0 MEMBERS</span>
+                        </div>
+                    </div>
+                    <div class="header-bar__actions">
+                        <input type="file" id="screenshotInput" accept="image/*" style="display: none;">
+                        <button class="btn-action btn-action--logout" id="btnLogout">LOG OUT</button>
+                    </div>
+                </header>
+
                 <section class="admin-panel" id="adminPanel" style="display: none;">
                     <div class="admin-panel__title">Event Tools (Management/Admin Auth Required)</div>
                     <div class="admin-panel__form">
@@ -764,6 +786,7 @@
             document.getElementById('kpiAvgRate').innerText = `${avgRate.toFixed(1)}%`;
             document.getElementById('badgeEventsCount').innerText = totalEvents;
             document.getElementById('kpiPctBase').innerText = `${totalEvents} events`;
+            document.getElementById('headerEventsCount').innerText = `${totalEvents} EVENTS - ${members.length} MEMBERS`;
 
             if (currentSubTab === 'attendance') {
                 renderAttendanceTable(filteredMembers, avgRate, isManagementOrAdmin, totalEvents, totalAttendedCount);
