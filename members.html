@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Members - Loopy's Playground</title>
+    <title>Black Gold - Loopy's Playground</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Fredoka+One&family=Montserrat:wght@600;700;800&family=Noto+Sans+SC:wght@900&family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -62,7 +62,7 @@
         .save-status--ok { display: block; background: #e6f4ea; color: #1f9d55; border: 1px solid #1f9d55; }
 
         .page-wrap {
-            max-width: 1450px;
+            max-width: 1400px;
             margin: 0 auto;
             padding: 32px 24px 60px;
         }
@@ -143,23 +143,21 @@
         .data-table tr.rank-2 { background-color: #faf9f5; }
         .data-table tr.rank-3 { background-color: #fcfbf7; }
 
-        .col-rank { width: 50px; text-align: center; color: var(--color-text-muted); font-weight: 700; white-space: nowrap; }
-        .col-name { font-weight: 800; color: var(--color-text-dark); text-align: left; padding-left: 16px; min-width: 320px; }
-        .col-cp { min-width: 170px; }
-        .col-f1 { min-width: 170px; }
+        .col-rank { width: 40px; text-align: center; color: var(--color-text-muted); font-weight: 700; }
+        .col-name { font-weight: 800; color: var(--color-text-dark); text-align: left; padding-left: 20px; }
 
-        .status-tabs { display: flex; border: 1px solid #d1d5db; border-radius: 4px; overflow: hidden; background: #f7f6f0; flex-shrink: 0; }
-        .status-tab { padding: 4px 8px; font-size: 10px; font-weight: 800; border: none; background: transparent; cursor: pointer; color: #8c93a6; }
+        .status-tabs { display: flex; border: 1px solid #d1d5db; border-radius: 4px; overflow: hidden; background: #f7f6f0; }
+        .status-tab { padding: 2px 6px; font-size: 10px; font-weight: 800; border: none; background: transparent; cursor: pointer; color: #8c93a6; }
         .status-tab.active-active { background: #16a34a; color: white; }
         .status-tab.active-inactive { background: #ca8a04; color: white; }
         .status-tab.active-removed { background: #dc2626; color: white; }
 
-        .rank-dot { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; cursor: pointer; user-select: none; border: 1px solid rgba(0,0,0,0.1); flex-shrink: 0; }
+        .rank-dot { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; cursor: pointer; user-select: none; border: 1px solid rgba(0,0,0,0.1); }
         .rank-dot-r1, .rank-dot-r2, .rank-dot-r3 { background: #eef2f9; color: var(--color-primary); }
         .rank-dot-r4 { background: #dc2626 !important; color: white !important; }
         .rank-dot-r5 { background: #2563eb !important; color: white !important; }
 
-        .faction-circle { width: 34px; height: 34px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-weight: 800; font-size: 12px; cursor: pointer; color: white; box-shadow: 0 1px 3px rgba(0,0,0,0.15); flex-shrink: 0; }
+        .faction-circle { width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-weight: 800; font-size: 12px; cursor: pointer; color: white; box-shadow: 0 1px 3px rgba(0,0,0,0.15); }
         .faction-f { background-color: #2563eb; }
         .faction-s { background-color: #9333ea; }
         .faction-r { background-color: #ea580c; }
@@ -167,12 +165,12 @@
         .diff-green { color: #16a34a; font-weight: 850; font-size: 12px; display: inline-flex; align-items: center; gap: 2px; }
         .diff-red { color: #dc2626; font-weight: 850; font-size: 12px; display: inline-flex; align-items: center; gap: 2px; }
 
-        .editable-input { width: 100%; background: #f7f6f0; border: 1px solid #d1d5db; border-radius: 4px; padding: 7px 10px; font-size: 12px; font-weight: 600; outline: none; font-family: var(--font-family-base); }
+        .editable-input { width: 100%; background: #f7f6f0; border: 1px solid #d1d5db; border-radius: 4px; padding: 6px 10px; font-size: 12px; font-weight: 600; outline: none; font-family: var(--font-family-base); }
         .editable-input:focus { border-color: var(--color-primary); background: white; }
-        .editable-select { width: 100%; background: #f7f6f0; border: 1px solid #d1d5db; border-radius: 4px; padding: 7px 10px; font-size: 12px; font-weight: 600; outline: none; cursor: pointer; font-family: var(--font-family-base); }
+        .editable-select { width: 100%; background: #f7f6f0; border: 1px solid #d1d5db; border-radius: 4px; padding: 6px 10px; font-size: 12px; font-weight: 600; outline: none; cursor: pointer; font-family: var(--font-family-base); }
 
         .col-level-cell { min-width: 110px; text-align: center; }
-        .col-note-cell { min-width: 220px; }
+        .col-note-cell { min-width: 200px; }
 
         .f1-history-badge { background: #f0f3fa; border: 1px solid var(--color-border-light); border-radius: 4px; padding: 4px 8px; font-size: 10px; font-weight: 800; color: var(--color-primary); cursor: pointer; display: inline-flex; align-items: center; gap: 4px; margin-top: 4px; transition: background 0.2s; font-family: var(--font-family-base); }
         .f1-history-badge:hover { background: #eef2f9; }
@@ -245,7 +243,7 @@
 
         <div class="manual-box">
             <i class="fa-solid fa-circle-info"></i>
-            <div><strong>Combat Power & F1 Power Manual:</strong> Combat Power uses standard comma formatting (0-00,000,000,000). F1 Power automatically handles G/M parsing and sorting (0-999.999 assumes Millions / M; decimal numbers like 00.00 assume Billions / G; G is higher than M). Note: This calculates power 100M and above. Press <kbd>Enter</kbd> to save changes instantly. Every time you input a new value, a new history record is appended so changes are properly tracked for the ± DIFF calculation.</div>
+            <div><strong>Combat Power & F1 Power Manual:</strong> Combat Power uses standard comma formatting (0-00,000,000,000). F1 Power automatically handles G/M parsing and sorting (0-999.999 assumes Millions / M; decimal numbers like 00.00 assume Billions / G; G is higher than M). Note: This calculates power 100M and above. Press <kbd>Enter</kbd> to save changes instantly. In-game names are directly editable for authorized admin/management users.</div>
         </div>
 
         <div class="table-card">
@@ -255,8 +253,8 @@
                         <tr>
                             <th class="col-rank">#</th>
                             <th class="col-name">In-Game Name</th>
-                            <th class="col-cp">Combat Power (CP)</th>
-                            <th class="col-f1">F1 Power</th>
+                            <th>Combat Power (CP)</th>
+                            <th>F1 Power</th>
                             <th style="text-align: center;">Faction</th>
                             <th class="col-level-cell" style="text-align: center;">Level</th>
                             <th style="text-align: center;">Rank</th>
@@ -343,11 +341,6 @@
         let showDiffMode = false;
         let currentStatusFilter = 'all';
 
-        // Centralized helper used across all views/tabs to strictly restrict active roster data
-        window.getActiveMembers = function() {
-            return members.filter(m => m.status !== 'removed');
-        };
-
         function parseCpWithCommas(cpStr) {
             if (!cpStr) return { formatted: '0', raw: 0 };
             let cleanStr = cpStr.toString().trim();
@@ -357,7 +350,7 @@
         }
 
         function parseCpToRaw(cpStr) {
-            if (!cpStr) return { formatted: '0G', raw: 0 };
+            if (!cpStr) return { formatted: '0M', raw: 0 };
             let cleanStr = cpStr.toString().trim().toUpperCase();
             let numVal = parseFloat(cleanStr.replace(/[^0-9.]/g, '')) || 0;
 
@@ -418,12 +411,11 @@
                     m.f1Cp = parsedF1.formatted;
                     m.f1Raw = parsedF1.raw;
 
-                    if (!m.f1History || !Array.isArray(m.f1History) || m.f1History.length === 0) {
+                    if (!m.f1History || !Array.isArray(m.f1History)) {
                         m.f1History = [{ date: new Date().toISOString().split('T')[0], val: m.f1Cp }];
                     }
                 });
             }
-
             render();
         }
 
@@ -450,21 +442,8 @@
 
             const filterQuery = document.getElementById('searchInput').value.toLowerCase();
 
-            // Count total active/inactive members (strictly excluding removed ones from general totals)
-            const activeOrInactiveMembers = members.filter(m => m.status !== 'removed');
-
             let filtered = members.filter(m => {
-                let matchesStatus = false;
-                if (currentStatusFilter === 'all') {
-                    matchesStatus = m.status !== 'removed';
-                } else if (currentStatusFilter === 'active') {
-                    matchesStatus = m.status === 'active';
-                } else if (currentStatusFilter === 'inactive') {
-                    matchesStatus = m.status === 'inactive';
-                } else if (currentStatusFilter === 'removed') {
-                    matchesStatus = m.status === 'removed';
-                }
-
+                const matchesStatus = currentStatusFilter === 'all' || m.status === currentStatusFilter;
                 const matchesSearch = m.name.toLowerCase().includes(filterQuery) || m.cp.toLowerCase().includes(filterQuery);
                 return matchesStatus && matchesSearch;
             });
@@ -474,8 +453,8 @@
             const tbody = document.getElementById('memberTableBody');
             const tableFooterRow = document.getElementById('tableFooterRow');
 
-            document.getElementById('pageSubtitle').innerText = `${activeOrInactiveMembers.length} members total`;
-            document.getElementById('shownCount').innerText = `${filtered.length}/${activeOrInactiveMembers.length} members shown`;
+            document.getElementById('pageSubtitle').innerText = `${members.length} members total`;
+            document.getElementById('shownCount').innerText = `${filtered.length}/${members.length} members shown`;
 
             if (filtered.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; padding: 24px; color: var(--color-text-muted);">No members found.</td></tr>`;
@@ -527,10 +506,6 @@
 
                 const historyCount = member.f1History ? member.f1History.length : 0;
 
-                const nameFieldContent = isManagementOrAdmin 
-                    ? `<input type="text" value="${member.name || ''}" onchange="updateMemberMeta(${member.id}, 'name', this.value)" onkeydown="if(event.key==='Enter') { this.blur(); }" class="editable-input" placeholder="Member name...">`
-                    : `<span>${member.name}</span>`;
-
                 html += `
                     <tr class="${rankClass}">
                         <td class="col-rank">${rank}</td>
@@ -541,7 +516,7 @@
                                     <button onclick="setPlayerStatus(${member.id}, 'inactive')" class="status-tab ${isInact ? 'active-inactive' : ''}" title="Inactive">I</button>
                                     <button onclick="setPlayerStatus(${member.id}, 'removed')" class="status-tab ${isRem ? 'active-removed' : ''}" title="Removed">R</button>
                                 </div>
-                                <div style="flex-grow: 1;">${nameFieldContent}</div>
+                                <input type="text" value="${member.name || ''}" ${isManagementOrAdmin ? `onchange="updateMemberName(${member.id}, this.value)" onkeydown="if(event.key==='Enter') { this.blur(); }"` : 'readonly'} class="editable-input" style="font-weight: 800;" placeholder="In-game name">
                                 <div class="rank-dot ${rankDotClass}" onclick="cycleRank(${member.id})" title="Click to cycle rank">${member.rank}</div>
                             </div>
                         </td>
@@ -574,7 +549,7 @@
 
             tbody.innerHTML = html;
             const colSpanVal = isManagementOrAdmin ? 10 : 9;
-            tableFooterRow.innerHTML = `<tr><td colspan="${colSpanVal}">Showing ${filtered.length} of ${activeOrInactiveMembers.length} active/inactive members</td></tr>`;
+            tableFooterRow.innerHTML = `<tr><td colspan="${colSpanVal}">Showing ${filtered.length} of ${members.length} members</td></tr>`;
         }
 
         function generateLevelOptions(currentVal) {
@@ -592,12 +567,7 @@
 
         window.setPlayerStatus = function(id, status) {
             const m = members.find(x => x.id === id);
-            if(m) { 
-                m.status = status; 
-                saveData().then(() => {
-                    render(); 
-                }); 
-            }
+            if(m) { m.status = status; saveData(); render(); }
         };
 
         window.cycleRank = function(id) {
@@ -606,7 +576,7 @@
             if(m) {
                 let idx = ranks.indexOf(m.rank);
                 m.rank = ranks[(idx + 1) % ranks.length];
-                saveData().then(() => render());
+                saveData(); render();
             }
         };
 
@@ -616,7 +586,15 @@
             if(m) {
                 let idx = factions.indexOf(m.faction || "F");
                 m.faction = factions[(idx + 1) % factions.length];
-                saveData().then(() => render());
+                saveData(); render();
+            }
+        };
+
+        window.updateMemberName = function(id, val) {
+            const m = members.find(x => x.id === id);
+            if(m) {
+                m.name = val.trim();
+                saveData();
             }
         };
 
@@ -626,7 +604,7 @@
                 const parsed = parseCpWithCommas(val);
                 m.cp = parsed.formatted;
                 m.rawCp = parsed.raw;
-                saveData().then(() => render());
+                saveData(); render();
             }
         };
 
@@ -634,18 +612,22 @@
             const m = members.find(x => x.id === id);
             if(m) {
                 const parsed = parseCpToRaw(val);
+                m.f1Cp = parsed.formatted;
+                m.f1Raw = parsed.raw;
                 
                 if (!m.f1History || !Array.isArray(m.f1History)) {
                     m.f1History = [];
                 }
 
-                const nowStr = new Date().toISOString().replace('T', ' ').substring(0, 16);
-                m.f1History.push({ date: nowStr, val: parsed.formatted });
+                const todayStr = new Date().toISOString().split('T')[0];
+                
+                if (m.f1History.length > 0 && m.f1History[m.f1History.length - 1].date === todayStr) {
+                    m.f1History[m.f1History.length - 1].val = parsed.formatted;
+                } else {
+                    m.f1History.push({ date: todayStr, val: parsed.formatted });
+                }
 
-                m.f1Cp = parsed.formatted;
-                m.f1Raw = parsed.raw;
-
-                saveData().then(() => render());
+                saveData(); render();
             }
         };
 
@@ -653,7 +635,7 @@
             const m = members.find(x => x.id === id);
             if(m) {
                 m[field] = val;
-                saveData().then(() => render());
+                saveData(); render();
             }
         };
 
@@ -661,7 +643,8 @@
             const m = members.find(x => x.id === id);
             if(m && confirm(`Are you sure you want to permanently remove ${m.name} from the roster?`)) {
                 members = members.filter(x => x.id !== id);
-                saveData().then(() => render());
+                saveData();
+                render();
             }
         };
 
@@ -669,7 +652,7 @@
             const m = members.find(x => x.id === id);
             if (!m) return;
 
-            document.getElementById('f1HistoryTitle').innerHTML = `${m.name} - F1 History <i class="fa-solid fa-xmark" style="cursor:pointer;" onclick="document.getElementById('f1HistoryModal').style.display='none'"></i>`;
+            document.getElementById('f1HistoryTitle').innerText = `${m.name} - F1 History`;
             const listEl = document.getElementById('f1HistoryList');
 
             if (!m.f1History || m.f1History.length === 0) {
@@ -705,10 +688,9 @@
             const m = members.find(x => x.id === memberId);
             if (m && m.f1History) {
                 m.f1History.splice(historyIndex, 1);
-                saveData().then(() => {
-                    openF1History(memberId);
-                    render();
-                });
+                saveData();
+                openF1History(memberId);
+                render();
             }
         };
 
@@ -742,7 +724,7 @@
 
             const parsedCp = parseCpWithCommas(cpInput);
             const initialF1 = parseCpToRaw('0G');
-            const nowStr = new Date().toISOString().replace('T', ' ').substring(0, 16);
+            const todayStr = new Date().toISOString().split('T')[0];
 
             members.push({
                 id: Date.now(),
@@ -751,7 +733,7 @@
                 rawCp: parsedCp.raw,
                 f1Cp: initialF1.formatted,
                 f1Raw: initialF1.raw,
-                f1History: [{ date: nowStr, val: initialF1.formatted }],
+                f1History: [{ date: todayStr, val: initialF1.formatted }],
                 faction,
                 level,
                 rank: 'R1',
@@ -759,12 +741,11 @@
                 note: ''
             });
 
-            saveData().then(() => {
-                document.getElementById('addMemberModal').style.display = 'none';
-                document.getElementById('newMemberName').value = '';
-                document.getElementById('newMemberCp').value = '';
-                render();
-            });
+            saveData();
+            document.getElementById('addMemberModal').style.display = 'none';
+            document.getElementById('newMemberName').value = '';
+            document.getElementById('newMemberCp').value = '';
+            render();
         });
 
         const importBtn = document.getElementById('importBtn');
@@ -777,7 +758,6 @@
             try {
                 const { data: { text } } = await Tesseract.recognize(file, 'eng');
                 let addedCount = 0;
-                const nowStr = new Date().toISOString().replace('T', ' ').substring(0, 16);
                 
                 text.split('\n').forEach(line => {
                     let cleanLine = line.trim();
@@ -802,7 +782,7 @@
                                 rawCp: parsedCp.raw, 
                                 f1Cp: defaultF1.formatted, 
                                 f1Raw: defaultF1.raw, 
-                                f1History: [{ date: nowStr, val: defaultF1.formatted }],
+                                f1History: [{ date: new Date().toISOString().split('T')[0], val: defaultF1.formatted }],
                                 faction: 'F', 
                                 level: '1', 
                                 rank: 'R1', 
@@ -813,9 +793,7 @@
                         addedCount++;
                     }
                 });
-                await saveData(); 
-                render(); 
-                alert(`OCR import completed! Successfully parsed ${addedCount} entries.`);
+                saveData(); render(); alert(`OCR import completed! Successfully parsed ${addedCount} entries.`);
             } catch (err) { alert('OCR Error during processing'); }
             finally { importBtn.innerText = 'UPLOAD SCREENSHOT'; importBtn.disabled = false; screenshotInput.value = ''; }
         });
