@@ -71,7 +71,7 @@
         /* MODAL */
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.4); display: none; align-items: center; justify-content: center; z-index: 1000; }
         .modal-card { background: white; padding: 32px; border-radius: 10px; width: 100%; max-width: 420px; border: 2px solid var(--color-primary); }
-        .modal-card h3 { margin-bottom: 16px; color: var(--color-primary); font-size: var(--font-lg); font-family: var(--font-family-title); }
+        .modal-card h3 { margin-bottom: 16px; color: var(--color-primary); font-size: 16px; font-family: var(--font-family-title); }
         .modal-card input, .modal-card select, .modal-card textarea { width: 100%; padding: 14px; margin-bottom: 16px; border: 1px solid #ccc; border-radius: 6px; font-size: var(--font-sm); font-family: var(--font-family-base); outline: none; }
         .modal-card-btns { display: flex; justify-content: flex-end; gap: 12px; }
         .login-error-msg { color: #dc2626; font-size: var(--font-xs); font-weight: 700; margin-bottom: 12px; display: none; text-align: left; }
@@ -726,7 +726,7 @@
 
                 <!-- Chat Sub-View -->
                 <div id="discSubChat" class="generic-view-card" style="display: flex; flex-direction: column; height: 500px;">
-                    <h2 style="margin-bottom: 8px;">Management Chat Room</h2>
+                    <h2 style="margin-bottom: 8px; font-size:16px; color:var(--color-text-dark);">Management Chat Room</h2>
                     <p style="margin-bottom: 16px; font-size: 12px; color: var(--color-text-muted);">Confidential communication channel restricted strictly to Management and Admin personnel.</p>
                     <div id="chatMessagesContainer" style="flex-grow: 1; overflow-y: auto; border: 1px solid var(--color-border-light); border-radius: 6px; padding: 12px; display: flex; flex-direction: column; gap: 10px; background: #fafafa; margin-bottom: 12px;">
                         <div class="home-empty-state">No messages sent yet. Start the conversation!</div>
@@ -741,7 +741,7 @@
                 <div id="discSubAnnounce" class="generic-view-card" style="display: none; flex-direction: column; gap: 20px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
                         <div>
-                            <h2>Announcements, Polls & Notices</h2>
+                            <h2 style="font-size:16px; color:var(--color-text-dark);">Announcements, Polls & Notices</h2>
                             <p style="font-size: 12px; color: var(--color-text-muted);">Create time-bounded polls, official management notices, and view archived polls.</p>
                         </div>
                         <div style="display: flex; gap: 10px;">
@@ -773,7 +773,7 @@
 
             <section id="viewHistory" class="app-view" style="display: none;">
                 <div class="generic-view-card">
-                    <h2>Audit Logs & Edit History</h2>
+                    <h2 style="font-size:16px; color:var(--color-text-dark);">Audit Logs & Edit History</h2>
                     <p style="margin-bottom: 16px; color: #62697b;">Detailed accountability log showing who added data, modified records, or deleted parameters across the workspace.</p>
                     <div class="table-wrapper">
                         <table class="data-table">
@@ -819,10 +819,11 @@
 
     <div class="modal-overlay" id="createNoticeModal">
         <div class="modal-card" style="max-width: 500px;">
-            <h3>Add Management Notice</h3>
+            <h3 id="createNoticeModalTitle">Add Management Notice</h3>
             <input type="text" id="noticeTitleInput" placeholder="Notice Title">
             <textarea id="noticeContentInput" placeholder="Notice Details..." rows="4" style="width: 100%; padding: 14px; margin-bottom: 16px; border: 1px solid #ccc; border-radius: 6px; font-family: var(--font-family-base); outline: none; resize: vertical;"></textarea>
             <div class="modal-card-btns">
+                <button class="btn-action-custom" id="btnDeleteNotice" style="display:none; color:#dc2626; border-color:#dc2626;" onclick="deleteManagementNotice()">Delete</button>
                 <button class="btn-action-custom" onclick="document.getElementById('createNoticeModal').style.display='none'">Cancel</button>
                 <button class="btn-action-custom" onclick="submitCreateNotice()" style="background:#3b52a4; color:white;">Post Notice</button>
             </div>
@@ -1019,6 +1020,8 @@
         // Notice Board announcements (separate from Discussion Room notices), with audience visibility
         let noticeAnnouncements = [];
         let editingNoticeAnnId = null;
+        // Discussion Room official notices - tracks which one is being edited (null = creating new)
+        let editingManagementNoticeId = null;
         // Home dashboard uploaded photos/videos
         let homePhotos = [];
         let pendingPhotoUpload = null; // holds { dataUrl } while admin/mgmt picks visibility
@@ -2122,10 +2125,109 @@
             }
         };
 
+        // Admin: edit an active poll's question/options via prompts
+        window.adminEditPoll = function(pollId) {
+            if (currentUser.role !== 'admin') {
+                alert('Only Admin can edit polls.');
+                return;
+            }
+            const poll = polls.find(p => p.id === pollId);
+            if (!poll) return;
+
+            const newQuestion = prompt('Edit poll question:', poll.question);
+            if (newQuestion === null) return;
+            const trimmedQ = newQuestion.trim();
+            if (!trimmedQ) { alert('Poll question cannot be empty.'); return; }
+
+            const updatedOptionTexts = [];
+            for (let i = 0; i < poll.options.length; i++) {
+                const newOptText = prompt(`Edit option ${i + 1}:`, poll.options[i].text);
+                if (newOptText === null || !newOptText.trim()) {
+                    alert('Poll options cannot be empty. Edit cancelled.');
+                    return;
+                }
+                updatedOptionTexts.push(newOptText.trim());
+            }
+
+            poll.question = trimmedQ;
+            poll.options.forEach((opt, i) => { opt.text = updatedOptionTexts[i]; });
+
+            logAction('ADMIN_EDIT_POLL', `Admin edited poll: "${trimmedQ}"`);
+            saveData();
+            renderDiscussionRoom();
+        };
+
+        // Admin: archive (close) a poll immediately, before its timer expires
+        window.adminArchivePoll = function(pollId) {
+            if (currentUser.role !== 'admin') {
+                alert('Only Admin can archive polls.');
+                return;
+            }
+            const poll = polls.find(p => p.id === pollId);
+            if (!poll) return;
+            if (confirm(`Archive poll "${poll.question}" now? This will close it to voting immediately.`)) {
+                poll.expiresAt = Date.now();
+                logAction('ADMIN_ARCHIVE_POLL', `Admin archived poll early: "${poll.question}"`);
+                saveData();
+                renderDiscussionRoom();
+            }
+        };
+
+        // Admin: permanently delete a poll (active or archived)
+        window.adminDeletePoll = function(pollId) {
+            if (currentUser.role !== 'admin') {
+                alert('Only Admin can delete polls.');
+                return;
+            }
+            const poll = polls.find(p => p.id === pollId);
+            if (confirm(`Permanently delete poll "${poll ? poll.question : ''}"?`)) {
+                logAction('ADMIN_DELETE_POLL', `Admin deleted poll: ${poll ? poll.question : pollId}`);
+                polls = polls.filter(p => p.id !== pollId);
+                saveData();
+                renderDiscussionRoom();
+            }
+        };
+
         window.openCreateNoticeModal = function() {
+            editingManagementNoticeId = null;
+            document.getElementById('createNoticeModalTitle').innerText = 'Add Management Notice';
             document.getElementById('noticeTitleInput').value = '';
             document.getElementById('noticeContentInput').value = '';
+            document.getElementById('btnDeleteNotice').style.display = 'none';
             document.getElementById('createNoticeModal').style.display = 'flex';
+        };
+
+        // Admin: open the notice modal pre-filled for editing an existing official notice
+        window.adminEditNotice = function(noticeId) {
+            if (currentUser.role !== 'admin') {
+                alert('Only Admin can edit notices.');
+                return;
+            }
+            const n = notices.find(nn => nn.id === noticeId);
+            if (!n) return;
+            editingManagementNoticeId = noticeId;
+            document.getElementById('createNoticeModalTitle').innerText = 'Edit Management Notice';
+            document.getElementById('noticeTitleInput').value = n.title;
+            document.getElementById('noticeContentInput').value = n.content;
+            document.getElementById('btnDeleteNotice').style.display = 'inline-flex';
+            document.getElementById('createNoticeModal').style.display = 'flex';
+        };
+
+        window.deleteManagementNotice = function() {
+            if (currentUser.role !== 'admin') {
+                alert('Only Admin can delete notices.');
+                return;
+            }
+            if (!editingManagementNoticeId) return;
+            const n = notices.find(nn => nn.id === editingManagementNoticeId);
+            if (confirm(`Delete notice "${n ? n.title : ''}"?`)) {
+                logAction('ADMIN_DELETE_NOTICE', `Admin deleted official notice: ${n ? n.title : editingManagementNoticeId}`);
+                notices = notices.filter(nn => nn.id !== editingManagementNoticeId);
+                saveData();
+                editingManagementNoticeId = null;
+                document.getElementById('createNoticeModal').style.display = 'none';
+                renderDiscussionRoom();
+            }
         };
 
         window.submitCreateNotice = function() {
@@ -2136,22 +2238,38 @@
                 return;
             }
 
-            if (!notices) notices = [];
-            notices.unshift({
-                id: Date.now(),
-                title: title,
-                content: content,
-                date: new Date().toLocaleDateString(),
-                author: currentUser.username
-            });
+            if (editingManagementNoticeId) {
+                if (currentUser.role !== 'admin') {
+                    alert('Only Admin can edit notices.');
+                    return;
+                }
+                const n = notices.find(nn => nn.id === editingManagementNoticeId);
+                if (n) {
+                    n.title = title;
+                    n.content = content;
+                    logAction('ADMIN_EDIT_NOTICE', `Admin edited official notice: "${title}"`);
+                }
+            } else {
+                if (!notices) notices = [];
+                notices.unshift({
+                    id: Date.now(),
+                    title: title,
+                    content: content,
+                    date: new Date().toLocaleDateString(),
+                    author: currentUser.username
+                });
+                logAction('CREATE_NOTICE', `Posted notice: "${title}"`);
+            }
 
-            logAction('CREATE_NOTICE', `Posted notice: "${title}"`);
+            editingManagementNoticeId = null;
             saveData();
             document.getElementById('createNoticeModal').style.display = 'none';
             renderDiscussionRoom();
         };
 
         function renderDiscussionRoom() {
+            const isAdmin = currentUser.role === 'admin';
+
             const chatContainer = document.getElementById('chatMessagesContainer');
             if (chatContainer) {
                 if (!chatMessages || chatMessages.length === 0) {
@@ -2191,7 +2309,16 @@
 
                         return `
                             <div style="background: white; border: 1px solid var(--color-border); border-radius: 6px; padding: 16px;">
-                                <div style="font-weight: 800; font-size: 14px; color: var(--color-primary-dark); margin-bottom: 4px;">${poll.question}</div>
+                                <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">
+                                    <div style="font-weight: 800; font-size: 14px; color: var(--color-primary-dark); margin-bottom: 4px;">${poll.question}</div>
+                                    ${isAdmin ? `
+                                        <div style="display:flex; gap:8px; flex-shrink:0;">
+                                            <span style="color:var(--color-primary); cursor:pointer; font-weight:800; font-size:11px;" onclick="adminEditPoll(${poll.id})">Edit</span>
+                                            <span style="color:#b89117; cursor:pointer; font-weight:800; font-size:11px;" onclick="adminArchivePoll(${poll.id})">Archive</span>
+                                            <span style="color:#dc2626; cursor:pointer; font-weight:800; font-size:11px;" onclick="adminDeletePoll(${poll.id})">Delete</span>
+                                        </div>
+                                    ` : ''}
+                                </div>
                                 <div style="font-size: 11px; color: var(--color-text-muted); margin-bottom: 12px;">Expires in: ${hours}h ${mins}m · Total Votes: ${totalVotes}</div>
                                 <div style="display: flex; flex-direction: column; gap: 8px;">
                                     ${poll.options.map((opt, oIdx) => {
@@ -2222,7 +2349,10 @@
                         const totalVotes = poll.options.reduce((sum, o) => sum + o.votes.length, 0);
                         return `
                             <div style="background: #f1f3f7; border: 1px solid var(--color-border-light); border-radius: 6px; padding: 14px; opacity: 0.85;">
-                                <div style="font-weight: 800; font-size: 13px; color: var(--color-text-dark); margin-bottom: 2px;">[CLOSED] ${poll.question}</div>
+                                <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">
+                                    <div style="font-weight: 800; font-size: 13px; color: var(--color-text-dark); margin-bottom: 2px;">[CLOSED] ${poll.question}</div>
+                                    ${isAdmin ? `<span style="color:#dc2626; cursor:pointer; font-weight:800; font-size:11px; flex-shrink:0;" onclick="adminDeletePoll(${poll.id})">Delete</span>` : ''}
+                                </div>
                                 <div style="font-size: 11px; color: var(--color-text-muted); margin-bottom: 8px;">Total Votes: ${totalVotes}</div>
                                 <div style="display: flex; flex-direction: column; gap: 6px;">
                                     ${poll.options.map((opt, oIdx) => {
@@ -2248,7 +2378,10 @@
                         <div style="background: white; border: 1px solid var(--color-border); border-radius: 6px; padding: 16px;">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
                                 <span style="font-weight: 800; font-size: 14px; color: var(--color-primary);">${n.title}</span>
-                                <span style="font-size: 11px; color: var(--color-text-muted);">${n.date}</span>
+                                <div style="display:flex; align-items:center; gap:10px;">
+                                    <span style="font-size: 11px; color: var(--color-text-muted);">${n.date}</span>
+                                    ${isAdmin ? `<span style="color:var(--color-primary); cursor:pointer; font-weight:800; font-size:11px;" onclick="adminEditNotice(${n.id})">Edit</span>` : ''}
+                                </div>
                             </div>
                             <div style="font-size: 13px; color: var(--color-text-dark); line-height: 1.5; white-space: pre-wrap;">${n.content}</div>
                         </div>
