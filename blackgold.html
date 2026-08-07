@@ -554,6 +554,10 @@
         const today = new Date();
         today.setHours(0,0,0,0);
 
+        // Threshold date: exactly 14 days (2 weeks) ago
+        const twoWeeksAgo = new Date(today);
+        twoWeeksAgo.setDate(today.getDate() - 14);
+
         filtered.forEach((member, index) => {
             let penaltyWeeks = 0;
             let cellsHTML = '';
@@ -563,9 +567,11 @@
                 
                 const sessionDate = parseDateString(d.date);
                 sessionDate.setHours(0,0,0,0);
-                const hasPassed = sessionDate <= today;
+                
+                // Penalty only applies if session has passed and is within the last 14 days
+                const isWithinPenaltyWindow = sessionDate <= today && sessionDate >= twoWeeksAgo;
 
-                if (hasPassed && entry.slot !== null && !entry.attended) {
+                if (isWithinPenaltyWindow && entry.slot !== null && !entry.attended) {
                     penaltyWeeks += 2;
                 }
 
