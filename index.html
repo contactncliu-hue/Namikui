@@ -1583,9 +1583,9 @@
                             }
                         } else {
                             if (isChecked) {
-                                changeBadgeHTML = `<div style="font-size: var(--font-xs); margin-top: 2px;"><span class="diff-green">▲ Up</span></div>`;
+                                changeBadgeHTML = `<div style="font-size: var(--font-xs); margin-top: 2px;"><span class="diff-green">▲</span></div>`;
                             } else {
-                                changeBadgeHTML = `<div style="font-size: var(--font-xs); margin-top: 2px;"><span class="diff-yellow">▬ Same</span></div>`;
+                                changeBadgeHTML = `<div style="font-size: var(--font-xs); margin-top: 2px;"><span class="diff-yellow">▬</span></div>`;
                             }
                         }
                     }
@@ -1640,11 +1640,11 @@
                 let diffHtml = '';
                 if (showDiffMode) {
                     if (diffVal > 0) {
-                        diffHtml = `<span class="diff-green">▲ Up</span>`;
+                        diffHtml = `<span class="diff-green">▲</span>`;
                     } else if (diffVal < 0) {
-                        diffHtml = `<span class="diff-red">▼ Down</span>`;
+                        diffHtml = `<span class="diff-red">▼</span>`;
                     } else {
-                        diffHtml = `<span class="diff-yellow">▬ Same</span>`;
+                        diffHtml = `<span class="diff-yellow">▬</span>`;
                     }
                 }
 
