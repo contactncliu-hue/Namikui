@@ -445,11 +445,21 @@
 
             const filterQuery = document.getElementById('searchInput').value.toLowerCase();
 
-            // Count total active/inactive members (excluding removed ones for general statistics)
+            // Count total active/inactive members (strictly excluding removed ones from general totals)
             const activeOrInactiveMembers = members.filter(m => m.status !== 'removed');
 
             let filtered = members.filter(m => {
-                const matchesStatus = currentStatusFilter === 'all' ? m.status !== 'removed' : m.status === currentStatusFilter;
+                let matchesStatus = false;
+                if (currentStatusFilter === 'all') {
+                    matchesStatus = m.status !== 'removed';
+                } else if (currentStatusFilter === 'active') {
+                    matchesStatus = m.status === 'active';
+                } else if (currentStatusFilter === 'inactive') {
+                    matchesStatus = m.status === 'inactive';
+                } else if (currentStatusFilter === 'removed') {
+                    matchesStatus = m.status === 'removed';
+                }
+
                 const matchesSearch = m.name.toLowerCase().includes(filterQuery) || m.cp.toLowerCase().includes(filterQuery);
                 return matchesStatus && matchesSearch;
             });
@@ -580,8 +590,6 @@
             if(m) { 
                 m.status = status; 
                 saveData().then(() => {
-                    // Removed members are kept in the 'members' list so they appear under the 'Removed' filter tab,
-                    // but they are automatically filtered out everywhere else across other pages/tabs.
                     render(); 
                 }); 
             }
