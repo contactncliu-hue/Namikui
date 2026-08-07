@@ -398,6 +398,10 @@
     };
     let currentVsSubTab = 'weekly';
 
+    function getActiveMembers() {
+        return members.filter(m => m.status !== 'removed');
+    }
+
     function parseDateString(dateStr) {
         if (!dateStr) return new Date(0);
         let parts = dateStr.split('-');
@@ -446,8 +450,8 @@
                 }
             });
 
-            // Automatically remove any members from VS points who have been deleted from the members tab
-            const activeMemberIds = new Set(members.map(m => String(m.id)));
+            // Automatically remove any members from VS points who have been deleted or marked as removed from the members tab
+            const activeMemberIds = new Set(getActiveMembers().map(m => String(m.id)));
             vsData.membersScores = vsData.membersScores.filter(s => activeMemberIds.has(String(s.id)));
             
             sortWeeksAndScores();
@@ -515,9 +519,10 @@
                 : '· Viewing mode (Read-only)';
         }
 
+        const activeMembers = getActiveMembers();
         const subtitleEl = document.getElementById('vsSubtitleInfo');
         if (subtitleEl) {
-            subtitleEl.innerText = `${members.length} members · ${vsData.weeks.length} sessions`;
+            subtitleEl.innerText = `${activeMembers.length} members · ${vsData.weeks.length} sessions`;
         }
 
         const searchVal = document.getElementById('vsSearchInput')?.value.toLowerCase() || '';
@@ -551,14 +556,18 @@
 
         const latestWeekIdx = vsData.weeks.length > 0 ? vsData.weeks.length - 1 : 0;
 
-        const sortedMembers = [...vsData.membersScores].sort((a, b) => {
+        const activeMembers = getActiveMembers();
+        const activeMemberIds = new Set(activeMembers.map(m => String(m.id)));
+        const activeScores = vsData.membersScores.filter(m => activeMemberIds.has(String(m.id)));
+
+        const sortedMembers = [...activeScores].sort((a, b) => {
             const scoreA = vsData.weeks.length > 0 ? (a.scores[latestWeekIdx] || 0) : 0;
             const scoreB = vsData.weeks.length > 0 ? (b.scores[latestWeekIdx] || 0) : 0;
             return scoreB - scoreA;
         });
 
         const filtered = sortedMembers.filter(m => m.name.toLowerCase().includes(filter));
-        document.getElementById('shownCount').innerText = `${filtered.length}/${members.length} members shown`;
+        document.getElementById('shownCount').innerText = `${filtered.length}/${activeMembers.length} members shown`;
         
         if (filtered.length === 0) {
             bodyTb.innerHTML = `<tr><td colspan="${2 + vsData.weeks.length}" style="text-align:center; padding:40px; color:var(--color-text-muted); font-weight:700;">No members found.</td></tr>`;
@@ -608,15 +617,19 @@
         const container = document.getElementById('vsRankingCardsList');
         if (!container) return;
         
-        const rankedList = [...vsData.membersScores].map(m => {
+        const activeMembers = getActiveMembers();
+        const activeMemberIds = new Set(activeMembers.map(m => String(m.id)));
+        const activeScores = vsData.membersScores.filter(m => activeMemberIds.has(String(m.id)));
+
+        const rankedList = [...activeScores].map(m => {
             const total = m.scores.reduce((a, b) => a + b, 0);
             return { ...m, total };
         }).sort((a, b) => b.total - a.total);
 
-        const maxTotal = Math.max(...rankedList.map(m => m.total), 1);
+        const maxTotal = Math.max(...rankedList.map(m => total = m.total), 1);
 
         const filtered = rankedList.filter(m => m.name.toLowerCase().includes(filter));
-        document.getElementById('shownCount').innerText = `${filtered.length}/${members.length} members shown`;
+        document.getElementById('shownCount').innerText = `${filtered.length}/${activeMembers.length} members shown`;
 
         if (filtered.length === 0) {
             container.innerHTML = `<div style="text-align:center; padding:40px; color:var(--color-text-muted); font-weight:700; background:white; border-radius:6px; border:1px solid var(--color-border-light);">No rankings available.</div>`;
@@ -640,7 +653,7 @@
                 const sVal = m.scores[wIdx] || 0;
                 const barHeight = Math.max(Math.round((sVal / maxTotal) * 32), 6);
                 
-                const weeklyScoresList = [...vsData.membersScores].map(mem => mem.scores[wIdx] || 0).sort((a, b) => b - a);
+                const weeklyScoresList = [...activeScores].map(mem => mem.scores[wIdx] || 0).sort((a, b) => b - a);
                 const scoreRank = weeklyScoresList.indexOf(sVal) + 1;
                 
                 let barColorClass = 'bar-default';
