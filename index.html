@@ -530,6 +530,10 @@
             { username: 'member1', pass: 'member123', role: 'member' }
         ];
 
+        window.getActiveMembers = function(memberList) {
+            return memberList.filter(m => m.status !== 'removed');
+        };
+
         async function loadDataFromCloud() {
             try {
                 const { data, error } = await db.from('app_data').select('*');
@@ -800,19 +804,20 @@
             document.getElementById('userPermissionBadge').innerText = `Role: ${(currentUser.role || 'guest').toUpperCase()}`;
             document.getElementById('userAvatarIcon').innerText = (currentUser.username || 'G').charAt(0).toUpperCase();
 
-            members.sort((a, b) => b.attended - a.attended);
+            let activeMembers = getActiveMembers(members);
+            activeMembers.sort((a, b) => b.attended - a.attended);
 
-            const totalAttendedCount = members.reduce((sum, m) => sum + m.attended, 0);
-            const avgAttendance = members.length ? (totalAttendedCount / members.length) : 0;
+            const totalAttendedCount = activeMembers.reduce((sum, m) => sum + m.attended, 0);
+            const avgAttendance = activeMembers.length ? (totalAttendedCount / activeMembers.length) : 0;
             const avgRate = totalEvents > 0 ? (avgAttendance / totalEvents) * 100 : 0;
 
-            const filteredMembers = members.filter(m => m.name.toLowerCase().includes(filterQuery));
+            const filteredMembers = activeMembers.filter(m => m.name.toLowerCase().includes(filterQuery));
 
-            document.getElementById('kpiMembers').innerText = members.length;
+            document.getElementById('kpiMembers').innerText = activeMembers.length;
             document.getElementById('kpiAvgAttendance').innerText = avgAttendance.toFixed(1);
             document.getElementById('kpiAvgRate').innerText = `${avgRate.toFixed(1)}%`;
             document.getElementById('kpiPctBase').innerText = `${totalEvents} events`;
-            document.getElementById('headerEventsCount').innerText = `${members.length} members · ${totalEvents} sessions`;
+            document.getElementById('headerEventsCount').innerText = `${activeMembers.length} members · ${totalEvents} sessions`;
             document.getElementById('footerMembersShown').innerText = `${filteredMembers.length} members shown`;
 
             if (currentSubTab === 'attendance') {
@@ -841,12 +846,13 @@
         function renderMembersDirectory() {
             const body = document.getElementById('membersDirectoryBody');
             if(!body) return;
-            if(members.length === 0) {
+            const activeMembers = getActiveMembers(members);
+            if(activeMembers.length === 0) {
                 body.innerHTML = `<tr><td colspan="4" style="text-align: center; color: #8c93a6;">No members registered yet.</td></tr>`;
                 return;
             }
             const totalEvents = eventDates.length;
-            body.innerHTML = members.map((m, idx) => {
+            body.innerHTML = activeMembers.map((m, idx) => {
                 const rate = totalEvents > 0 ? ((m.attended / totalEvents) * 100).toFixed(1) : 0;
                 return `
                     <tr>
@@ -878,7 +884,11 @@
                 return;
             }
 
-            const scoredList = vsData.membersScores.map(ms => {
+            const activeMembers = getActiveMembers(members);
+            const activeMemberNames = new Set(activeMembers.map(m => m.name.toLowerCase()));
+            const filteredScores = vsData.membersScores.filter(ms => activeMemberNames.has(ms.name.toLowerCase()));
+
+            const scoredList = filteredScores.map(ms => {
                 const total = (ms.scores || []).reduce((a, b) => a + (b || 0), 0);
                 return { ...ms, totalScore: total };
             });
@@ -1066,7 +1076,7 @@
             let footerHTML = `<tr><td colspan="3" style="font-weight: 800;">TOTAL ATTENDANCE</td><td></td>`;
             if (showDiffMode) footerHTML += `<td></td>`;
             eventDates.forEach((ev, evIdx) => {
-                const eventTotal = members.reduce((sum, m) => sum + ((m.events && m.events[evIdx]) ? 1 : 0), 0);
+                const eventTotal = filteredMembers.reduce((sum, m) => sum + ((m.events && m.events[evIdx]) ? 1 : 0), 0);
                 footerHTML += `<td class="col-event" style="font-weight: 800; color: var(--color-primary);">${eventTotal}</td>`;
             });
             footerHTML += `</tr>`;
