@@ -144,7 +144,15 @@
         .badge-rank.r5, .top-pill--5 { background-color: #e53e3e; }
         .vs-hint { color: var(--color-text-muted); font-weight: 600; font-size: 11px; font-style: italic; }
 
-        .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); border: 2px solid var(--color-border); border-radius: 8px; background: white; overflow: hidden; display: none; }
+        .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); border: 2px solid var(--color-border); border-radius: 8px; background: white; overflow: hidden; }
+        .kpi-card { padding: 20px 24px; border-right: 1px solid var(--color-border-light); background: var(--color-bg-card); }
+        .kpi-card:last-child { border-right: none; }
+        .kpi-card:nth-child(2) { background-color: var(--color-primary-light); }
+        .kpi-card:nth-child(4) { background-color: var(--color-gold-bg); }
+        .kpi-card__label { font-family: var(--font-family-ui); font-size: 11px; font-weight: 800; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+        .kpi-card__value { font-family: var(--font-family-ui); font-size: var(--font-xxl); font-weight: 800; color: var(--color-primary-dark); }
+        #kpiAvgRate { color: #a8382a; }
+        #kpiPctBase { font-family: 'Courier New', Courier, monospace; font-size: var(--font-xl); font-weight: 700; color: var(--color-gold); }
 
         .table-card { background: white; border: 2px solid var(--color-border); border-radius: 6px; overflow: hidden; display: flex; flex-direction: column; }
         .table-wrapper { overflow-x: auto; }
@@ -480,31 +488,10 @@
                 </div>
             </section>
 
-            <section id="viewBlackGold" class="app-view" style="display: none; flex-direction: column; gap: 18px;">
+            <section id="viewBlackGold" class="app-view" style="display: none;">
                 <div class="generic-view-card">
-                    <h2>Black Gold Management</h2>
-                    <p style="margin-bottom: 18px;">Resource tracking, allocation logs, and mineral asset management for alliance operations.</p>
-                    <div style="display: flex; gap: 12px; margin-bottom: 18px;" id="blackGoldAdminControls" style="display: none;">
-                        <input type="text" id="bgItemName" placeholder="Resource/Item Name" style="padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; width: 200px;">
-                        <input type="number" id="bgItemQty" placeholder="Quantity" style="padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; width: 120px;">
-                        <button class="btn-action-custom btn-action-custom--add" onclick="addBlackGoldItem()">+ Add Asset</button>
-                    </div>
-                    <div class="table-wrapper">
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th>#</th>
-                                    <th>Asset / Resource</th>
-                                    <th>Quantity</th>
-                                    <th>Last Updated</th>
-                                    <th class="col-actions" id="bgActionsHeader" style="display: none;">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="blackGoldTableBody">
-                                <tr><td colspan="5" style="text-align: center; color: #8c93a6;">Loading Black Gold assets...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
+                    <h2>Black Gold</h2>
+                    <p>Black Gold asset tracking and management system.</p>
                 </div>
             </section>
 
@@ -548,13 +535,6 @@
                     <span class="vs-hint" id="adminHelpText">· Admin/Mgmt: Click any table cell or event name to edit. Use ✕ under date columns to delete session.</span>
                 </div>
 
-                <section class="kpi-grid">
-                    <div class="kpi-card"><div class="kpi-card__label">Members</div><div class="kpi-card__value" id="kpiMembers">0</div></div>
-                    <div class="kpi-card"><div class="kpi-card__label">Avg Attendance</div><div class="kpi-card__value" id="kpiAvgAttendance">0.0</div></div>
-                    <div class="kpi-card"><div class="kpi-card__label">Avg Rate</div><div class="kpi-card__value" id="kpiAvgRate">0.0%</div></div>
-                    <div class="kpi-card"><div class="kpi-card__label">Pct Base</div><div class="kpi-card__value" id="kpiPctBase">0 events</div></div>
-                </section>
-
                 <div class="table-card" id="subViewAttendance">
                     <div class="table-wrapper">
                         <table class="data-table">
@@ -565,6 +545,13 @@
                     </div>
                 </div>
                 <section class="ranking-cards-list" id="subViewRanking" style="display: none;"></section>
+
+                <section class="kpi-grid">
+                    <div class="kpi-card"><div class="kpi-card__label">Members</div><div class="kpi-card__value" id="kpiMembers">0</div></div>
+                    <div class="kpi-card"><div class="kpi-card__label">Avg Attendance</div><div class="kpi-card__value" id="kpiAvgAttendance">0.0</div></div>
+                    <div class="kpi-card"><div class="kpi-card__label">Avg Rate</div><div class="kpi-card__value" id="kpiAvgRate">0.0%</div></div>
+                    <div class="kpi-card"><div class="kpi-card__label">Pct Base</div><div class="kpi-card__value" id="kpiPctBase">0 events</div></div>
+                </section>
 
                 <div class="footer-info-bar">
                     <span>♦ Loopy's Playground · Alliance Management Tool</span>
@@ -738,7 +725,6 @@
         let chatMessages = [];
         let polls = [];
         let notices = [];
-        let blackGoldItems = [];
         let vsData = { weeks: [], membersScores: [] };
         let accounts = [
             { username: 'loopy', pass: '2851849', role: 'admin' },
@@ -764,7 +750,6 @@
                         if (row.key === 'chatMessages') chatMessages = row.value || [];
                         if (row.key === 'polls') polls = row.value || [];
                         if (row.key === 'notices') notices = row.value || [];
-                        if (row.key === 'blackGoldItems') blackGoldItems = row.value || [];
                     });
                 }
             } catch (err) {
@@ -800,7 +785,6 @@
                 await db.from('app_data').upsert({ id: 8, key: 'chatMessages', value: chatMessages }, { onConflict: 'id' });
                 await db.from('app_data').upsert({ id: 9, key: 'polls', value: polls }, { onConflict: 'id' });
                 await db.from('app_data').upsert({ id: 10, key: 'notices', value: notices }, { onConflict: 'id' });
-                await db.from('app_data').upsert({ id: 11, key: 'blackGoldItems', value: blackGoldItems }, { onConflict: 'id' });
             } catch (err) {
                 console.error('Save error:', err);
             }
@@ -1016,11 +1000,6 @@
             document.getElementById('vsAdminPanel').style.display = isManagementOrAdmin ? 'flex' : 'none';
             document.getElementById('importBtn').style.display = isManagementOrAdmin ? 'inline-flex' : 'none';
             document.getElementById('adminHelpText').style.display = isManagementOrAdmin ? 'inline' : 'none';
-            
-            const bgAdminControls = document.getElementById('blackGoldAdminControls');
-            if (bgAdminControls) bgAdminControls.style.display = isManagementOrAdmin ? 'flex' : 'none';
-            const bgActionsHeader = document.getElementById('bgActionsHeader');
-            if (bgActionsHeader) bgActionsHeader.style.display = isManagementOrAdmin ? 'table-cell' : 'none';
 
             const showManagementArea = isManagementOrAdmin;
             document.getElementById('adminSectionHeader').style.display = showManagementArea ? 'block' : 'none';
@@ -1041,7 +1020,7 @@
 
             const filteredMembers = activeMembers.filter(m => m.name.toLowerCase().includes(filterQuery));
 
-            document.getElementById('kpiMembers').innerText = activeMembers.length;
+            document.getElementById('kpiMembers').innerText = `${activeMembers.length}/100`;
             document.getElementById('kpiAvgAttendance').innerText = avgAttendance.toFixed(1);
             document.getElementById('kpiAvgRate').innerText = `${avgRate.toFixed(1)}%`;
             document.getElementById('kpiPctBase').innerText = `${totalEvents} events`;
@@ -1058,80 +1037,9 @@
             }
 
             renderMembersDirectory();
-            renderBlackGoldTable(isManagementOrAdmin);
             renderVsPointsTable(isManagementOrAdmin);
             renderAuditTable();
             renderDiscussionRoom();
-        }
-
-        // Black Gold Management Features
-        window.addBlackGoldItem = function() {
-            const nameInput = document.getElementById('bgItemName');
-            const qtyInput = document.getElementById('bgItemQty');
-            const name = nameInput.value.trim();
-            const qty = parseInt(qtyInput.value, 10);
-
-            if (!name || isNaN(qty)) {
-                alert('Please enter a valid asset name and quantity.');
-                return;
-            }
-
-            if (!blackGoldItems) blackGoldItems = [];
-            blackGoldItems.push({
-                id: Date.now(),
-                name: name,
-                qty: qty,
-                updatedAt: new Date().toLocaleDateString()
-            });
-
-            logAction('ADD_BLACK_GOLD', `Added Black Gold asset: ${name} (Qty: ${qty})`);
-            nameInput.value = '';
-            qtyInput.value = '';
-            saveData();
-            render();
-        };
-
-        window.deleteBlackGoldItem = function(itemId) {
-            if (confirm('Delete this asset from Black Gold records?')) {
-                const item = blackGoldItems.find(i => i.id === itemId);
-                logAction('DELETE_BLACK_GOLD', `Deleted Black Gold asset: ${item ? item.name : itemId}`);
-                blackGoldItems = blackGoldItems.filter(i => i.id !== itemId);
-                saveData();
-                render();
-            }
-        };
-
-        window.editBlackGoldQty = function(itemId) {
-            const item = blackGoldItems.find(i => i.id === itemId);
-            if (!item) return;
-            const val = prompt(`Update quantity for ${item.name}:`, item.qty);
-            if (val !== null && !isNaN(val)) {
-                item.qty = parseInt(val, 10);
-                item.updatedAt = new Date().toLocaleDateString();
-                logAction('EDIT_BLACK_GOLD', `Updated quantity for Black Gold asset [${item.name}] to ${item.qty}`);
-                saveData();
-                render();
-            }
-        };
-
-        function renderBlackGoldTable(isManagementOrAdmin) {
-            const body = document.getElementById('blackGoldTableBody');
-            if (!body) return;
-
-            if (!blackGoldItems || blackGoldItems.length === 0) {
-                body.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #8c93a6;">No Black Gold assets recorded yet.</td></tr>`;
-                return;
-            }
-
-            body.innerHTML = blackGoldItems.map((item, idx) => `
-                <tr>
-                    <td class="col-rank">${idx + 1}</td>
-                    <td style="font-weight: 800; color: var(--color-text-dark);">${item.name}</td>
-                    <td><span class="${isManagementOrAdmin ? 'editable-num' : ''}" onclick="${isManagementOrAdmin ? `editBlackGoldItem(${item.id})` : ''}">${item.qty.toLocaleString()}</span></td>
-                    <td style="color: var(--color-text-muted); font-size: 11px;">${item.updatedAt}</td>
-                    ${isManagementOrAdmin ? `<td class="col-actions"><button class="btn-icon-action" onclick="deleteBlackGoldItem(${item.id})">Delete</button></td>` : ''}
-                </tr>
-            `).join('');
         }
 
         // Discussion Room Sub-Tabs and Features (Chat, Polls, Notices)
@@ -1653,7 +1561,7 @@
                                     <div class="progress-bar__fill ${colorClass}" style="width: ${rateNum}%;"></div>
                                 </div>
                             </div>
-                        </td>`;
+                        `;
                 
                 if (showDiffMode) {
                     rowHTML += `<td><span class="${vsAvgClass}">${vsAvgString}</span></td>`;
