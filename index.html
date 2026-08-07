@@ -363,10 +363,10 @@
                     <li><a class="sidebar__item sidebar__item--active" data-view="home"><span class="sidebar__icon">✧</span> HOME</a></li>
                     <li><a class="sidebar__item" data-view="notice"><span class="sidebar__icon">✧</span> NOTICE</a></li>
                     <li><a class="sidebar__item" data-view="board"><span class="sidebar__icon">✧</span> BOARD</a></li>
-                    <li><a class="sidebar__item" data-view="members"><span class="sidebar__icon">✧</span> MEMBERS</a></li>
-                    <li><a class="sidebar__item" data-view="blackgold"><span class="sidebar__icon">✧</span> BLACK GOLD</a></li>
+                    <li><a class="sidebar__item" href="members.html"><span class="sidebar__icon">✧</span> MEMBERS</a></li>
+                    <li><a class="sidebar__item" href="blackgold.html"><span class="sidebar__icon">✧</span> BLACK GOLD</a></li>
                     <li><a class="sidebar__item" data-view="attendance"><span class="sidebar__icon">✧</span> EVENT ATTENDANCE</a></li>
-                    <li><a class="sidebar__item" data-view="vspoints"><span class="sidebar__icon">✧</span> VS POINTS</a></li>
+                    <li><a class="sidebar__item" href="vspoint.html"><span class="sidebar__icon">✧</span> VS POINTS</a></li>
                 </ul>
                 <div class="sidebar__section-title" id="adminSectionHeader" style="display: none;">MANAGEMENT & ADMIN</div>
                 <ul class="sidebar__menu" id="adminMenuContainer">
@@ -488,13 +488,6 @@
                 </div>
             </section>
 
-            <section id="viewBlackGold" class="app-view" style="display: none;">
-                <div class="generic-view-card">
-                    <h2>Black Gold</h2>
-                    <p>Black Gold asset tracking and management system.</p>
-                </div>
-            </section>
-
             <section id="viewAttendance" class="app-view" style="display: none; flex-direction: column; gap: 14px;">
                 <div class="page-header-top">
                     <a href="#" class="page-header-top__back" onclick="document.querySelector('.sidebar__item[data-view=\'home\']').click(); return false;">← Back to Dashboard</a>
@@ -525,6 +518,13 @@
                     </div>
                 </section>
 
+                <section class="kpi-grid">
+                    <div class="kpi-card"><div class="kpi-card__label">Members</div><div class="kpi-card__value" id="kpiMembers">0</div></div>
+                    <div class="kpi-card"><div class="kpi-card__label">Avg Attendance</div><div class="kpi-card__value" id="kpiAvgAttendance">0.0</div></div>
+                    <div class="kpi-card"><div class="kpi-card__label">Avg Rate</div><div class="kpi-card__value" id="kpiAvgRate">0.0%</div></div>
+                    <div class="kpi-card"><div class="kpi-card__label">Pct Base</div><div class="kpi-card__value" id="kpiPctBase">0 events</div></div>
+                </section>
+
                 <div class="top-legend-bar" id="topLegendBar">
                     <span class="top-legend-bar__title">TOP 5:</span>
                     <span class="legend-pill-item"><span class="badge-rank r1">1</span> 1st</span>
@@ -545,13 +545,6 @@
                     </div>
                 </div>
                 <section class="ranking-cards-list" id="subViewRanking" style="display: none;"></section>
-
-                <section class="kpi-grid">
-                    <div class="kpi-card"><div class="kpi-card__label">Members</div><div class="kpi-card__value" id="kpiMembers">0</div></div>
-                    <div class="kpi-card"><div class="kpi-card__label">Avg Attendance</div><div class="kpi-card__value" id="kpiAvgAttendance">0.0</div></div>
-                    <div class="kpi-card"><div class="kpi-card__label">Avg Rate</div><div class="kpi-card__value" id="kpiAvgRate">0.0%</div></div>
-                    <div class="kpi-card"><div class="kpi-card__label">Pct Base</div><div class="kpi-card__value" id="kpiPctBase">0 events</div></div>
-                </section>
 
                 <div class="footer-info-bar">
                     <span>♦ Loopy's Playground · Alliance Management Tool</span>
@@ -835,7 +828,6 @@
                     'notice': 'viewNotice',
                     'board': 'viewBoard',
                     'members': 'viewMembers',
-                    'blackgold': 'viewBlackGold',
                     'attendance': 'viewAttendance',
                     'vspoints': 'viewVsPoints',
                     'discussion': 'viewDiscussion',
@@ -1516,7 +1508,7 @@
             const tableFooterRow = document.getElementById('tableFooterRow');
 
             let headerHTML = `<th class="col-rank">#</th><th>MEMBER</th><th class="col-attended">ATTENDED</th><th class="col-percentage">PARTICIPATION %</th>`;
-            if (showDiffMode) headerHTML += `<th>AVG</th>`;
+            if (showDiffMode) headerHTML += `<th>VS AVG</th>`;
 
             eventDates.forEach((ev, evIdx) => {
                 headerHTML += `
@@ -1561,7 +1553,7 @@
                                     <div class="progress-bar__fill ${colorClass}" style="width: ${rateNum}%;"></div>
                                 </div>
                             </div>
-                        `;
+                        </td>`;
                 
                 if (showDiffMode) {
                     rowHTML += `<td><span class="${vsAvgClass}">${vsAvgString}</span></td>`;
@@ -1583,9 +1575,9 @@
                             }
                         } else {
                             if (isChecked) {
-                                changeBadgeHTML = `<div style="font-size: var(--font-xs); margin-top: 2px;"><span class="diff-green">▲</span></div>`;
+                                changeBadgeHTML = `<div style="font-size: var(--font-xs); margin-top: 2px;"><span class="diff-green">▲ Up</span></div>`;
                             } else {
-                                changeBadgeHTML = `<div style="font-size: var(--font-xs); margin-top: 2px;"><span class="diff-yellow">▬</span></div>`;
+                                changeBadgeHTML = `<div style="font-size: var(--font-xs); margin-top: 2px;"><span class="diff-yellow">▬ Same</span></div>`;
                             }
                         }
                     }
@@ -1640,11 +1632,11 @@
                 let diffHtml = '';
                 if (showDiffMode) {
                     if (diffVal > 0) {
-                        diffHtml = `<span class="diff-green">▲</span>`;
+                        diffHtml = `<span class="diff-green">▲ Up</span>`;
                     } else if (diffVal < 0) {
-                        diffHtml = `<span class="diff-red">▼</span>`;
+                        diffHtml = `<span class="diff-red">▼ Down</span>`;
                     } else {
-                        diffHtml = `<span class="diff-yellow">▬</span>`;
+                        diffHtml = `<span class="diff-yellow">▬ Same</span>`;
                     }
                 }
 
