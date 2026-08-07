@@ -51,7 +51,7 @@
         }
 
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: var(--font-family-base); background-color: var(--color-bg-main); color: var(--color-text-dark); min-height: 100vh; font-size: var(--font-sm); }
+        body { font-family: var(--font-family-base); background-color: var(--color-bg-main); color: var(--color-text-dark); min-height: 100vh; font-size: var(--font-sm); display: flex; flex-direction: column; }
 
         /* LOGIN SCREEN */
         .login-page { display: flex; flex-direction: column; min-height: 100vh; background-color: var(--login-bg); font-family: var(--font-family-base); }
@@ -77,7 +77,7 @@
         .login-error-msg { color: #dc2626; font-size: var(--font-xs); font-weight: 700; margin-bottom: 12px; display: none; text-align: left; }
 
         /* DASHBOARD */
-        .app { display: none; width: 100%; min-height: 100vh; }
+        .app { display: none; width: 100%; min-height: 100vh; flex: 1; }
         .sidebar { width: 300px; background-color: var(--color-bg-sidebar); border-right: 2px solid var(--color-border); display: flex; flex-direction: column; flex-shrink: 0; transition: transform 0.3s ease; z-index: 100; }
         .sidebar__header { padding: 24px; display: flex; justify-content: center; align-items: center; border-bottom: 2px solid var(--color-border); }
         .sidebar__logo { width: 85px; height: 85px; border-radius: 50%; background: linear-gradient(135deg, #a5c7f9, #2d55b8); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 30px; font-family: var(--font-family-logo); }
@@ -322,7 +322,6 @@
 
         .visibility-badge { display: inline-flex; align-items: center; font-family: var(--font-family-ui); font-size: 10px; font-weight: 800; padding: 3px 9px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.3px; }
         .visibility-badge--everyone { background: var(--color-primary-light); color: var(--color-primary-dark); }
-        .visibility-badge--members { background: #eafaf0; color: #16a34a; }
         .visibility-badge--alliance { background: var(--color-gold-bg); color: var(--color-gold); }
 
         .announcement-card { background: white; border: 1px solid var(--color-border-light); border-radius: 6px; padding: 16px; }
@@ -528,7 +527,6 @@
                     </div>
                     <div class="gantt-toolbar">
                         <span class="gantt-toolbar__range" id="ganttRangeLabel"></span>
-                        <span class="gantt-toolbar__range" style="color: var(--color-text-muted); font-weight: 700; text-transform: none;">· Times shown in 24h Server Time</span>
                         <div class="gantt-legend" id="ganttLegend"></div>
                     </div>
                     <div class="gantt-wrapper">
@@ -809,7 +807,7 @@
             </select>
 
             <div id="calCustomFields">
-                <label class="cal-field-label">Start Date &amp; End Date (max 7 days)</label>
+                <label class="cal-field-label">Start Date &amp; End Date (Max 7 Days)</label>
                 <div class="cal-field-row" style="margin-bottom: 16px;">
                     <input type="date" id="calEventDateInput" style="margin-bottom: 0;">
                     <input type="date" id="calEventEndDateInput" style="margin-bottom: 0;">
@@ -849,10 +847,10 @@
                 <input type="number" id="calEventDayOfMonthInput" min="1" max="31" placeholder="e.g. 15" style="margin-bottom: 16px;">
             </div>
 
-            <label class="cal-field-label">Start Time &amp; End Time — Server Time, 24h (optional)</label>
+            <label class="cal-field-label">Start Time &amp; End Time (Server Time, 24H Military)</label>
             <div class="cal-field-row">
-                <input type="time" id="calEventTimeInput" title="Start Time (Server Time, 24h)">
-                <input type="time" id="calEventEndTimeInput" title="End Time (Server Time, 24h)">
+                <input type="time" id="calEventTimeInput" title="Start Time" step="60">
+                <input type="time" id="calEventEndTimeInput" title="End Time" step="60">
             </div>
 
             <label class="cal-field-label" style="margin-top: 16px;">Visible To</label>
@@ -911,15 +909,11 @@
         let polls = [];
         let notices = [];
         let vsData = { weeks: [], membersScores: [] };
-        // Notice tab Gantt-style event timeline state (supports date ranges, weekly/biweekly/monthly repeats, start/end time, category, visibility)
         let calendarEvents = [];
         const CALENDAR_COLORS = ['#2563eb', '#dc2626', '#eab308', '#16a34a', '#ec4899']; // blue, red, yellow, green, pink
         let editingCalEventId = null;
         let selectedCalColor = CALENDAR_COLORS[0];
-        let calendarModalDateStr = null;
-        let calendarModalDayOfWeek = null;
         let ganttWindowOffset = 0; // in days, shifts the visible window
-        // Notice Board announcements (separate from Discussion Room notices), with audience visibility
         let noticeAnnouncements = [];
         let editingNoticeAnnId = null;
         let accounts = [
@@ -953,17 +947,37 @@
             } catch (err) {
                 console.error('Error loading from cloud:', err);
             }
-
-            pruneExpiredCalendarEvents();
-
+            
             if (!accounts.some(a => a.username === 'loopy')) {
                 accounts.push({ username: 'loopy', pass: '2851849', role: 'admin' });
             }
+
+            cleanupExpiredEvents();
 
             if (currentUser.role && currentUser.username) {
                 enterDashboard();
             } else {
                 showLoginScreen();
+            }
+        }
+
+        // Clean up one-time events that are 7 days past their end date
+        function cleanupExpiredEvents() {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            const initialCount = calendarEvents.length;
+            calendarEvents = calendarEvents.filter(ev => {
+                if (ev.type !== 'custom') return true; // keep repeated events
+                const endDateStr = ev.endDate || ev.date;
+                if (!endDateStr) return true;
+                const endDate = new Date(endDateStr + 'T00:00:00');
+                const diffDays = (today - endDate) / (1000 * 60 * 60 * 24);
+                return diffDays <= 7;
+            });
+
+            if (calendarEvents.length < initialCount) {
+                saveData();
             }
         }
 
@@ -1049,7 +1063,7 @@
 
                 const activeSectionId = views[targetView];
                 if (activeSectionId) {
-                    document.getElementById(activeSectionId).style.display = activeSectionId === 'viewHome' ? 'flex' : 'flex';
+                    document.getElementById(activeSectionId).style.display = 'flex';
                 }
 
                 document.getElementById('sidebar').classList.remove('sidebar--open');
@@ -1165,9 +1179,7 @@
             }
         };
 
-        window.onTargetRoleChange = function() {
-            // Reserved for future role-specific field toggling
-        };
+        window.onTargetRoleChange = function() {};
 
         document.getElementById('btnSubmitRoleAssign').addEventListener('click', () => {
             const targetUser = document.getElementById('targetAccountSelect').value;
@@ -1240,7 +1252,6 @@
             document.getElementById('headerEventsCount').innerText = `${activeMembers.length} members · ${totalEvents} sessions`;
             document.getElementById('footerMembersShown').innerText = `${filteredMembers.length} members shown`;
 
-            // On the home tab, use the avg rate calculated from the events tab
             document.getElementById('homeKpiMembers').innerText = `${activeMembers.length}/100`;
             document.getElementById('homeKpiRate').innerText = `${avgRate.toFixed(1)}%`;
 
@@ -1261,13 +1272,8 @@
             renderDiscussionRoom();
         }
 
-        // ===== Notice tab: Gantt-style event timeline =====
-        // Each calendarEvent: { id, name, category: 'alliance'|'war', color, visibility: 'everyone'|'alliance',
-        //   type: 'custom'|'weekly'|'biweekly'|'monthly',
-        //   (custom) date, endDate,  (weekly) dayOfWeek,  (biweekly) dayOfWeek + biweeklyAnchorDate,  (monthly) dayOfMonth
-        //   time, endTime }
         const GANTT_VISIBLE_DAYS = 10;
-        const GANTT_COL_WIDTH = 96; // px per day column, matches --gantt-col-w
+        const GANTT_COL_WIDTH = 96;
 
         function getGanttWindow() {
             const days = [];
@@ -1291,29 +1297,11 @@
             return Math.round((utcB - utcA) / msPerDay);
         }
 
-        // Removes non-repeating (custom) calendar events 7 days after they end.
-        // Repeating events (weekly/biweekly/monthly) are never auto-removed.
-        function pruneExpiredCalendarEvents() {
-            const today = new Date(dateStrOf(new Date()) + 'T00:00:00');
-            const before = calendarEvents.length;
-            calendarEvents = calendarEvents.filter(ev => {
-                if (ev.type !== 'custom') return true;
-                const endDateStr = ev.endDate || ev.date;
-                const endD = new Date(endDateStr + 'T00:00:00');
-                return daysBetween(endD, today) <= 7;
-            });
-            if (calendarEvents.length !== before) {
-                saveData();
-            }
-        }
-
-        function formatEventTime(t) {
+        function formatMilitaryTime(t) {
             if (!t) return '';
-            const [h, m] = t.split(':').map(Number);
-            return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+            return t;
         }
 
-        // Returns true if the given calendar event should be visible to the current user.
         function canViewCalendarEvent(ev) {
             if (!ev.visibility || ev.visibility === 'everyone') return true;
             if (ev.visibility === 'alliance') {
@@ -1322,9 +1310,6 @@
             return true;
         }
 
-        // Build a flat list of "bar segments" to render for the visible window.
-        // Custom events produce one segment (clipped to window). Weekly/biweekly/monthly events
-        // produce one segment per matching occurrence inside the window.
         function buildGanttBarsForWindow(windowDays, eventsList) {
             const winStart = windowDays[0];
             const winEnd = windowDays[windowDays.length - 1];
@@ -1334,7 +1319,14 @@
             (eventsList || calendarEvents).forEach(ev => {
                 if (ev.type === 'custom') {
                     const evStart = new Date(ev.date + 'T00:00:00');
-                    const evEnd = new Date((ev.endDate || ev.date) + 'T00:00:00');
+                    let evEnd = new Date((ev.endDate || ev.date) + 'T00:00:00');
+                    
+                    const rawSpan = daysBetween(evStart, evEnd);
+                    if (rawSpan > 6) {
+                        evEnd = new Date(evStart);
+                        evEnd.setDate(evStart.getDate() + 6);
+                    }
+
                     if (evEnd < winStart || evStart > winEnd) return;
                     const clippedStart = evStart < winStart ? winStart : evStart;
                     const clippedEnd = evEnd > winEnd ? winEnd : evEnd;
@@ -1404,7 +1396,7 @@
             const rangeLabel = document.getElementById('ganttRangeLabel');
             if (rangeLabel) {
                 const first = windowDays[0], last = windowDays[windowDays.length - 1];
-                rangeLabel.innerText = `${monthNames[first.getMonth()]} ${first.getDate()} – ${monthNames[last.getMonth()]} ${last.getDate()}, ${last.getFullYear()}`;
+                rangeLabel.innerText = `${monthNames[first.getMonth()]} ${first.getDate()} – ${monthNames[last.getMonth()]} ${last.getDate()}, ${last.getFullYear()} (Server Time)`;
             }
 
             grid.style.setProperty('--gantt-days', GANTT_VISIBLE_DAYS);
@@ -1442,8 +1434,8 @@
                         const leftPct = (seg.startIdx / GANTT_VISIBLE_DAYS) * 100;
                         const widthPct = (seg.span / GANTT_VISIBLE_DAYS) * 100;
                         const clickAttr = isManagementOrAdmin ? `onclick="openCalendarEventModal(${ev.id})"` : '';
-                        const timeLabel = ev.time ? formatEventTime(ev.time) + (ev.endTime ? ' – ' + formatEventTime(ev.endTime) : '') + ' (Server Time)' : '';
-                        const subLabel = seg.dateLabel + (timeLabel ? ' · ' + timeLabel : '');
+                        const timeLabel = ev.time ? formatMilitaryTime(ev.time) + (ev.endTime ? ' – ' + formatMilitaryTime(ev.endTime) : '') : '';
+                        const subLabel = seg.dateLabel + (timeLabel ? ' · ' + timeLabel + ' (Server)' : '');
                         trackHtml += `
                             <div class="gantt-bar ${isManagementOrAdmin ? 'gantt-bar--clickable' : ''}" ${clickAttr}
                                 style="left:calc(${leftPct}% + 3px); width:calc(${widthPct}% - 6px); background-color:${ev.color};">
@@ -1493,7 +1485,6 @@
 
             renderCalColorSwatches();
             toggleCalEventTypeFields();
-            updateCalEndDateBounds();
             document.getElementById('calendarEventModal').style.display = 'flex';
         };
 
@@ -1518,21 +1509,6 @@
             document.getElementById('calMonthlyFields').style.display = type === 'monthly' ? 'block' : 'none';
         };
 
-        // Keeps the end-date picker constrained to a 7-day window from the selected start date.
-        window.updateCalEndDateBounds = function() {
-            const startVal = document.getElementById('calEventDateInput').value;
-            const endInput = document.getElementById('calEventEndDateInput');
-            if (!startVal) return;
-            const start = new Date(startVal + 'T00:00:00');
-            const maxEnd = new Date(start);
-            maxEnd.setDate(start.getDate() + 6);
-            const maxEndStr = dateStrOf(maxEnd);
-            endInput.min = startVal;
-            endInput.max = maxEndStr;
-            if (endInput.value && endInput.value < startVal) endInput.value = startVal;
-            if (endInput.value && endInput.value > maxEndStr) endInput.value = maxEndStr;
-        };
-
         window.submitCalendarEvent = function() {
             if (currentUser.role !== 'admin' && currentUser.role !== 'management') return;
             const name = document.getElementById('calEventNameInput').value.trim();
@@ -1549,15 +1525,15 @@
                 const startDate = document.getElementById('calEventDateInput').value;
                 let endDate = document.getElementById('calEventEndDateInput').value || startDate;
                 if (!startDate) { alert('Please select a start date.'); return; }
-                if (endDate < startDate) endDate = startDate;
-                const startD = new Date(startDate + 'T00:00:00');
-                const endD = new Date(endDate + 'T00:00:00');
-                if (daysBetween(startD, endD) > 6) {
-                    alert('Events can last a maximum of 7 days. The end date has been adjusted.');
-                    const clampedEnd = new Date(startD);
-                    clampedEnd.setDate(startD.getDate() + 6);
-                    endDate = dateStrOf(clampedEnd);
+                
+                const sDateObj = new Date(startDate + 'T00:00:00');
+                const eDateObj = new Date(endDate + 'T00:00:00');
+                const diffDays = daysBetween(sDateObj, eDateObj);
+                if (diffDays > 6) {
+                    alert('Events are limited to a maximum of 7 days.');
+                    return;
                 }
+                if (endDate < startDate) endDate = startDate;
                 eventFields.date = startDate;
                 eventFields.endDate = endDate;
             } else if (type === 'weekly') {
@@ -1603,9 +1579,7 @@
             }
         };
 
-        // ===== Notice Board Announcements (Notice tab) with audience visibility =====
         function getUserAudience() {
-            // Admin/management always see everything; otherwise map role to audience bucket
             if (currentUser.role === 'admin' || currentUser.role === 'management') return 'staff';
             if (currentUser.role === 'alliance') return 'alliance';
             if (currentUser.role === 'member') return 'members';
@@ -1613,11 +1587,11 @@
         }
 
         function canViewAnnouncement(ann) {
-            if (!ann.visibility || ann.visibility === 'everyone') return true;
-            if (ann.visibility === 'alliance') {
-                return currentUser.role === 'admin' || currentUser.role === 'management' || currentUser.role === 'alliance';
-            }
-            return true;
+            const audience = getUserAudience();
+            if (audience === 'staff') return true;
+            if (ann.visibility === 'everyone') return true;
+            if (ann.visibility === 'alliance' && (audience === 'alliance' || audience === 'members')) return true;
+            return false;
         }
 
         function visibilityLabel(v) {
@@ -1717,810 +1691,17 @@
             }
         };
 
-        // Discussion Room Sub-Tabs and Features (Chat, Polls, Notices)
-        window.switchDiscussionTab = function(tabName) {
-            currentDiscTab = tabName;
-            const btnChat = document.getElementById('btnDiscTabChat');
-            const btnAnnounce = document.getElementById('btnDiscTabAnnounce');
-            const subChat = document.getElementById('discSubChat');
-            const subAnnounce = document.getElementById('discSubAnnounce');
-
-            if (tabName === 'chat') {
-                btnChat.classList.add('btn-toggle--active');
-                btnAnnounce.classList.remove('btn-toggle--active');
-                subChat.style.display = 'flex';
-                subAnnounce.style.display = 'none';
-            } else {
-                btnAnnounce.classList.add('btn-toggle--active');
-                btnChat.classList.remove('btn-toggle--active');
-                subChat.style.display = 'none';
-                subAnnounce.style.display = 'flex';
-            }
-        };
-
-        window.sendChatMessage = function() {
-            const input = document.getElementById('chatMessageInput');
-            const txt = input.value.trim();
-            if (!txt) return;
-
-            if (!chatMessages) chatMessages = [];
-            chatMessages.push({
-                user: currentUser.username || 'Anonymous',
-                role: currentUser.role || 'member',
-                text: txt,
-                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-            });
-
-            input.value = '';
-            saveData();
-            renderDiscussionRoom();
-        };
-
-        window.openCreatePollModal = function() {
-            document.getElementById('pollQuestionInput').value = '';
-            document.getElementById('pollOption1').value = '';
-            document.getElementById('pollOption2').value = '';
-            document.getElementById('pollOption3').value = '';
-            document.getElementById('createPollModal').style.display = 'flex';
-        };
-
-        window.submitCreatePoll = function() {
-            const question = document.getElementById('pollQuestionInput').value.trim();
-            const opt1 = document.getElementById('pollOption1').value.trim();
-            const opt2 = document.getElementById('pollOption2').value.trim();
-            const opt3 = document.getElementById('pollOption3').value.trim();
-            const timerSecs = parseInt(document.getElementById('pollTimerSelect').value, 10);
-
-            if (!question || !opt1 || !opt2) {
-                alert('Please enter a poll question and at least two options.');
-                return;
-            }
-
-            const options = [opt1, opt2];
-            if (opt3) options.push(opt3);
-
-            const optionsData = options.map(opt => ({ text: opt, votes: [] }));
-
-            if (!polls) polls = [];
-            polls.unshift({
-                id: Date.now(),
-                question: question,
-                options: optionsData,
-                expiresAt: Date.now() + (timerSecs * 1000),
-                createdBy: currentUser.username
-            });
-
-            logAction('CREATE_POLL', `Created poll: "${question}"`);
-            saveData();
-            document.getElementById('createPollModal').style.display = 'none';
-            renderDiscussionRoom();
-        };
-
-        window.votePoll = function(pollId, optionIndex) {
-            const poll = polls.find(p => p.id === pollId);
-            if (!poll) return;
-
-            if (Date.now() > poll.expiresAt) {
-                alert('This poll has already closed and cannot accept new votes.');
-                return;
-            }
-
-            const alreadyVoted = poll.options.some(opt => opt.votes.includes(currentUser.username));
-            if (alreadyVoted) {
-                alert('You have already voted on this poll. Changing votes is disabled.');
-                return;
-            }
-
-            poll.options[optionIndex].votes.push(currentUser.username);
-            logAction('VOTE_POLL', `Voted on poll id ${pollId}`);
-            saveData();
-            renderDiscussionRoom();
-        };
-
-        window.adminDeleteVote = function(pollId, optionIndex, voterUsername) {
-            if (currentUser.role !== 'admin') {
-                alert('Only Admin can delete votes.');
-                return;
-            }
-            const poll = polls.find(p => p.id === pollId);
-            if (!poll) return;
-
-            const idx = poll.options[optionIndex].votes.indexOf(voterUsername);
-            if (idx > -1) {
-                poll.options[optionIndex].votes.splice(idx, 1);
-                logAction('ADMIN_DELETE_VOTE', `Admin removed vote for [${voterUsername}] on poll "${poll.question}"`);
-                saveData();
-                renderDiscussionRoom();
-            }
-        };
-
-        window.openCreateNoticeModal = function() {
-            document.getElementById('noticeTitleInput').value = '';
-            document.getElementById('noticeContentInput').value = '';
-            document.getElementById('createNoticeModal').style.display = 'flex';
-        };
-
-        window.submitCreateNotice = function() {
-            const title = document.getElementById('noticeTitleInput').value.trim();
-            const content = document.getElementById('noticeContentInput').value.trim();
-            if (!title || !content) {
-                alert('Please fill out both notice title and content.');
-                return;
-            }
-
-            if (!notices) notices = [];
-            notices.unshift({
-                id: Date.now(),
-                title: title,
-                content: content,
-                date: new Date().toLocaleDateString(),
-                author: currentUser.username
-            });
-
-            logAction('CREATE_NOTICE', `Posted notice: "${title}"`);
-            saveData();
-            document.getElementById('createNoticeModal').style.display = 'none';
-            renderDiscussionRoom();
-        };
-
-        function renderDiscussionRoom() {
-            const chatContainer = document.getElementById('chatMessagesContainer');
-            if (chatContainer) {
-                if (!chatMessages || chatMessages.length === 0) {
-                    chatContainer.innerHTML = `<div class="home-empty-state">No messages sent yet. Start the conversation!</div>`;
-                } else {
-                    chatContainer.innerHTML = chatMessages.map(m => `
-                        <div style="background: white; padding: 10px 14px; border-radius: 6px; border: 1px solid var(--color-border-light);">
-                            <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px; color: var(--color-text-muted);">
-                                <span style="font-weight: 800; color: var(--color-primary);">${m.user} (${m.role})</span>
-                                <span>${m.timestamp}</span>
-                            </div>
-                            <div style="font-size: 13px; color: var(--color-text-dark);">${m.text}</div>
-                        </div>
-                    `).join('');
-                    chatContainer.scrollTop = chatContainer.scrollHeight;
-                }
-            }
-
-            const activePollsContainer = document.getElementById('activePollsContainer');
-            const archivedPollsContainer = document.getElementById('archivedPollsContainer');
-            const noticesContainer = document.getElementById('managementNoticesContainer');
-
-            if (activePollsContainer && archivedPollsContainer && noticesContainer) {
-                const now = Date.now();
-                const active = (polls || []).filter(p => now <= p.expiresAt);
-                const archived = (polls || []).filter(p => now > p.expiresAt);
-
-                if (active.length === 0) {
-                    activePollsContainer.innerHTML = `<div class="home-empty-state">No active polls.</div>`;
-                } else {
-                    activePollsContainer.innerHTML = active.map(poll => {
-                        const hasVoted = poll.options.some(opt => opt.votes.includes(currentUser.username));
-                        const totalVotes = poll.options.reduce((sum, o) => sum + o.votes.length, 0);
-                        const timeLeft = Math.max(0, Math.floor((poll.expiresAt - now) / 1000));
-                        const hours = Math.floor(timeLeft / 3600);
-                        const mins = Math.floor((timeLeft % 3600) / 60);
-
-                        return `
-                            <div style="background: white; border: 1px solid var(--color-border); border-radius: 6px; padding: 16px;">
-                                <div style="font-weight: 800; font-size: 14px; color: var(--color-primary-dark); margin-bottom: 4px;">${poll.question}</div>
-                                <div style="font-size: 11px; color: var(--color-text-muted); margin-bottom: 12px;">Expires in: ${hours}h ${mins}m · Total Votes: ${totalVotes}</div>
-                                <div style="display: flex; flex-direction: column; gap: 8px;">
-                                    ${poll.options.map((opt, oIdx) => {
-                                        const optVotesCount = opt.votes.length;
-                                        const pct = totalVotes > 0 ? Math.round((optVotesCount / totalVotes) * 100) : 0;
-                                        return `
-                                            <div style="border: 1px solid var(--color-border-light); border-radius: 4px; padding: 8px; background: #fafafa;">
-                                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                                                    <span style="font-weight: 700; font-size: 13px;">${opt.text}</span>
-                                                    ${!hasVoted ? `<button class="home-btn-outline" onclick="votePoll(${poll.id}, ${oIdx})">Vote</button>` : `<span style="font-size: 11px; font-weight: 800; color: var(--color-primary);">${optVotesCount} vote(s) (${pct}%)</span>`}
-                                                </div>
-                                                ${hasVoted && currentUser.role === 'admin' && opt.votes.length > 0 ? `
-                                                    <div style="font-size: 10px; color: #dc2626; margin-top: 4px;">Voters: ${opt.votes.map(v => `${v} <span style="cursor:pointer; font-weight:bold;" onclick="adminDeleteVote(${poll.id}, ${oIdx}, '${v}')">[x]</span>`).join(', ')}</div>
-                                                ` : ''}
-                                            </div>
-                                        `;
-                                    }).join('')}
-                                </div>
-                            </div>
-                        `;
-                    }).join('');
-                }
-
-                if (archived.length === 0) {
-                    archivedPollsContainer.innerHTML = `<div class="home-empty-state">No archived polls.</div>`;
-                } else {
-                    archivedPollsContainer.innerHTML = archived.map(poll => {
-                        const totalVotes = poll.options.reduce((sum, o) => sum + o.votes.length, 0);
-                        return `
-                            <div style="background: #f1f3f7; border: 1px solid var(--color-border-light); border-radius: 6px; padding: 14px; opacity: 0.85;">
-                                <div style="font-weight: 800; font-size: 13px; color: var(--color-text-dark); margin-bottom: 2px;">[CLOSED] ${poll.question}</div>
-                                <div style="font-size: 11px; color: var(--color-text-muted); margin-bottom: 8px;">Total Votes: ${totalVotes}</div>
-                                <div style="display: flex; flex-direction: column; gap: 6px;">
-                                    ${poll.options.map((opt, oIdx) => {
-                                        const optVotesCount = opt.votes.length;
-                                        const pct = totalVotes > 0 ? Math.round((optVotesCount / totalVotes) * 100) : 0;
-                                        return `
-                                            <div style="font-size: 12px; display: flex; justify-content: space-between;">
-                                                <span>${opt.text}</span>
-                                                <span style="font-weight: 800;">${optVotesCount} (${pct}%)</span>
-                                            </div>
-                                        `;
-                                    }).join('')}
-                                </div>
-                            </div>
-                        `;
-                    }).join('');
-                }
-
-                if (!notices || notices.length === 0) {
-                    noticesContainer.innerHTML = `<div class="home-empty-state">No notices posted.</div>`;
-                } else {
-                    noticesContainer.innerHTML = notices.map(n => `
-                        <div style="background: white; border: 1px solid var(--color-border); border-radius: 6px; padding: 16px;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                                <span style="font-weight: 800; font-size: 14px; color: var(--color-primary);">${n.title}</span>
-                                <span style="font-size: 11px; color: var(--color-text-muted);">${n.date}</span>
-                            </div>
-                            <div style="font-size: 13px; color: var(--color-text-dark); line-height: 1.5; white-space: pre-wrap;">${n.content}</div>
-                        </div>
-                    `).join('');
-                }
-            }
-        }
-
-        // Updated function to display only the most recent rankings based on vspoint.html data
-        function renderHomeTopContributors() {
-            const container = document.getElementById('homeTopContributors');
-            if (!container) return;
-
-            const activeMembers = getActiveMembers(members);
-            const activeMemberNames = new Set(activeMembers.map(m => m.name.toLowerCase()));
-            
-            const weeksCount = vsData.weeks ? vsData.weeks.length : 0;
-            const mostRecentWeekIndex = weeksCount > 0 ? weeksCount - 1 : -1;
-
-            if (mostRecentWeekIndex === -1 || !vsData.membersScores || vsData.membersScores.length === 0) {
-                container.innerHTML = `<div class="home-empty-state">No recent VS points recorded yet.</div>`;
-                return;
-            }
-
-            const scoredList = vsData.membersScores
-                .filter(ms => activeMemberNames.has(ms.name.toLowerCase()))
-                .map(ms => ({
-                    name: ms.name,
-                    recentScore: (ms.scores && ms.scores[mostRecentWeekIndex] !== undefined) ? ms.scores[mostRecentWeekIndex] : 0
-                }))
-                .sort((a, b) => b.recentScore - a.recentScore)
-                .slice(0, 5);
-
-            if (scoredList.length === 0 || scoredList.every(s => s.recentScore === 0)) {
-                container.innerHTML = `<div class="home-empty-state">No recent VS points recorded yet.</div>`;
-                return;
-            }
-
-            const medalColors = ['#f3a808', '#a0aec0', '#b7791f', '#3182ce', '#e53e3e'];
-            container.innerHTML = scoredList.map((m, idx) => `
-                <div class="home-list-row">
-                    <div class="home-list-row__left">
-                        <span class="home-list-row__medal" style="background:${medalColors[idx]};">${idx + 1}</span>
-                        <span class="home-list-row__name">${m.name}</span>
-                    </div>
-                    <div class="home-list-row__value">${m.recentScore.toLocaleString()}<span class="home-list-row__value-unit"> pts</span></div>
-                </div>
-            `).join('');
-        }
-
-        function renderHomeRecentEvents(activeMembers) {
-            const container = document.getElementById('homeRecentEvents');
-            if (!container) return;
-
-            if (!eventDates || eventDates.length === 0) {
-                container.innerHTML = `<div class="home-empty-state">No events recorded yet.</div>`;
-                return;
-            }
-
-            const recent = eventDates.map((ev, idx) => ({ ev, idx })).slice(-5).reverse();
-            container.innerHTML = recent.map(({ ev, idx }) => {
-                const attendedCount = activeMembers.reduce((sum, m) => sum + ((m.events && m.events[idx]) ? 1 : 0), 0);
-                const rate = activeMembers.length > 0 ? Math.round((attendedCount / activeMembers.length) * 100) : 0;
-                return `
-                    <div class="home-list-row">
-                        <div class="home-event-row__left">
-                            <span class="home-event-row__name">${ev.name || ev.subtext || 'Event'}</span>
-                            <span class="home-event-row__date">${ev.date}</span>
-                        </div>
-                        <span class="home-event-row__rate">${rate}% attended</span>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        function getProgressBarColorClass(rateNum) {
-            if (rateNum >= 75) return 'high'; // 75-100 blue
-            if (rateNum >= 50) return 'mid';  // 50-74 yellow
-            return 'low';                      // 0-49 red
-        }
-
-        function getAttendedColorClass(rateNum) {
-            if (rateNum >= 75) return 'attended-high';
-            if (rateNum >= 50) return 'attended-mid';
-            return 'attended-low';
-        }
-
-        function renderMembersDirectory() {
-            const body = document.getElementById('membersDirectoryBody');
-            if(!body) return;
-            const activeMembers = getActiveMembers(members);
-            if(activeMembers.length === 0) {
-                body.innerHTML = `<tr><td colspan="4" style="text-align: center; color: #8c93a6;">No members registered yet.</td></tr>`;
-                return;
-            }
-            const totalEvents = eventDates.length;
-            body.innerHTML = activeMembers.map((m, idx) => {
-                const rate = totalEvents > 0 ? ((m.attended / totalEvents) * 100).toFixed(1) : 0;
-                return `
-                    <tr>
-                        <td style="text-align: center; color: #a0a6b5;">${idx + 1}</td>
-                        <td style="font-weight: 800; color: #2b3044;">${m.name}</td>
-                        <td style="text-align: center; font-weight: 800;">${m.attended}</td>
-                        <td style="font-weight: 800; color: var(--color-primary);">${rate}%</td>
-                    </tr>
-                `;
-            }).join('');
-        }
-
-        function renderVsPointsTable(isManagementOrAdmin) {
-            const headerRow = document.getElementById('vsTableHeaderRow');
-            const body = document.getElementById('vsTableBody');
-            if (!headerRow || !body) return;
-
-            let hHTML = `<th class="col-rank">#</th><th>Fighter Name</th><th style="text-align: right;">Total Score</th>`;
-            if (vsData && vsData.weeks) {
-                vsData.weeks.forEach((wk, wIdx) => {
-                    hHTML += `<th style="text-align: right;">${wk} ${isManagementOrAdmin ? `<span style="color:#d9381e; cursor:pointer;" onclick="removeVsWeek(${wIdx})">x</span>` : ''}</th>`;
-                });
-            }
-            if (isManagementOrAdmin) hHTML += `<th class="col-actions">Actions</th>`;
-            headerRow.innerHTML = hHTML;
-
-            if (!vsData || !vsData.membersScores || vsData.membersScores.length === 0) {
-                body.innerHTML = `<tr><td colspan="10" style="text-align: center; color: #8c93a6;">No VS points data recorded yet.</td></tr>`;
-                return;
-            }
-
-            const activeMembers = getActiveMembers(members);
-            const activeMemberNames = new Set(activeMembers.map(m => m.name.toLowerCase()));
-            const filteredScores = vsData.membersScores.filter(ms => activeMemberNames.has(ms.name.toLowerCase()));
-
-            const scoredList = filteredScores.map(ms => {
-                const total = (ms.scores || []).reduce((a, b) => a + (b || 0), 0);
-                return { ...ms, totalScore: total };
-            });
-            scoredList.sort((a, b) => b.totalScore - a.totalScore);
-
-            body.innerHTML = scoredList.map((ms, idx) => {
-                const rank = idx + 1;
-                let rHTML = `
-                    <tr class="${rank === 1 ? 'rank-1' : (rank === 2 ? 'rank-2' : (rank === 3 ? 'rank-3' : ''))}">
-                        <td class="col-rank">${rank}</td>
-                        <td class="col-name">${ms.name}</td>
-                        <td style="text-align: right; font-weight: 800; color: var(--color-primary);">${ms.totalScore.toLocaleString()}</td>
-                `;
-
-                vsData.weeks.forEach((wk, wIdx) => {
-                    const scoreVal = (ms.scores && ms.scores[wIdx] !== undefined) ? ms.scores[wIdx] : 0;
-                    rHTML += `
-                        <td style="text-align: right;">
-                            <span class="${isManagementOrAdmin ? 'editable-num' : ''}" onclick="${isManagementOrAdmin ? `editVsScore(${ms.id}, ${wIdx})` : ''}">${scoreVal.toLocaleString()}</span>
-                        </td>
-                    `;
-                });
-
-                if (isManagementOrAdmin) {
-                    rHTML += `<td class="col-actions"><button class="btn-icon-action" onclick="deleteVsMember(${ms.id})">Delete</button></td>`;
-                }
-                rHTML += `</tr>`;
-                return rHTML;
-            }).join('');
-        }
-
-        window.editVsScore = function(memberId, weekIndex) {
-            const ms = vsData.membersScores.find(m => m.id === memberId);
-            if (!ms) return;
-            const currentVal = ms.scores[weekIndex] || 0;
-            const val = prompt(`Update VS score for ${ms.name} on ${vsData.weeks[weekIndex]}:`, currentVal);
-            if (val !== null && !isNaN(val)) {
-                ms.scores[weekIndex] = parseInt(val, 10);
-                logAction('EDIT_VS_SCORE', `Updated VS score for [${ms.name}] on week ${vsData.weeks[weekIndex]} to ${ms.scores[weekIndex]}`);
-                saveData();
-                render();
-            }
-        };
-
-        window.deleteVsMember = function(memberId) {
-            const ms = vsData.membersScores.find(m => m.id === memberId);
-            if (confirm(`Remove ${ms ? ms.name : ''} from VS Points tracker?`)) {
-                logAction('DELETE_VS_MEMBER', `Removed VS record for: ${ms ? ms.name : memberId}`);
-                vsData.membersScores = vsData.membersScores.filter(m => m.id !== memberId);
-                saveData();
-                render();
-            }
-        };
-
-        window.removeVsWeek = function(weekIndex) {
-            if (confirm(`Remove week column ${vsData.weeks[weekIndex]}?`)) {
-                logAction('DELETE_VS_WEEK', `Removed VS week column: ${vsData.weeks[weekIndex]}`);
-                vsData.weeks.splice(weekIndex, 1);
-                vsData.membersScores.forEach(ms => {
-                    if (ms.scores) ms.scores.splice(weekIndex, 1);
-                });
-                saveData();
-                render();
-            }
-        };
-
-        const btnAddVsWeek = document.getElementById('btnAddVsWeek');
-        if (btnAddVsWeek) {
-            btnAddVsWeek.addEventListener('click', () => {
-                const input = document.getElementById('newVsWeekInput');
-                const weekLabel = input.value.trim();
-                if (!weekLabel) return;
-                
-                if (!vsData.weeks) vsData.weeks = [];
-                vsData.weeks.push(weekLabel);
-                
-                if (!vsData.membersScores) vsData.membersScores = [];
-                vsData.membersScores.forEach(ms => {
-                    if (!ms.scores) ms.scores = [];
-                    while (ms.scores.length < vsData.weeks.length) {
-                        ms.scores.push(0);
-                    }
-                });
-
-                logAction('ADD_VS_WEEK', `Added VS week column: ${weekLabel}`);
-                input.value = '';
-                saveData();
-                render();
-            });
-        }
-
-        function renderAttendanceTable(filteredMembers, avgRate, isManagementOrAdmin, totalEvents, totalAttendedCount) {
-            const tableHeaderRow = document.getElementById('tableHeaderRow');
-            const tableBody = document.getElementById('memberTableBody');
-            const tableFooterRow = document.getElementById('tableFooterRow');
-
-            let headerHTML = `<th class="col-rank">#</th><th>MEMBER</th><th class="col-attended">ATTENDED</th><th class="col-percentage">PARTICIPATION %</th>`;
-            if (showDiffMode) headerHTML += `<th>VS AVG</th>`;
-
-            eventDates.forEach((ev, evIdx) => {
-                headerHTML += `
-                    <th class="col-event">
-                        <div style="display: flex; flex-direction: column; align-items: center;">
-                            <span class="${isManagementOrAdmin ? 'editable-num' : ''}" style="font-weight: 800; color: var(--color-primary);" onclick="${isManagementOrAdmin ? `editEventName(${evIdx})` : ''}">${ev.name || 'Event'}</span>
-                            <span style="font-size: 11px; color: #a0a6b5;">${ev.date}</span>
-                            ${isManagementOrAdmin ? `<span style="color:#d9381e; cursor:pointer; font-size:var(--font-xs);" onclick="removeEvent(${evIdx})">x</span>` : ''}
-                        </div>
-                    </th>`;
-            });
-
-            tableHeaderRow.innerHTML = headerHTML;
-            tableBody.innerHTML = '';
-
-            if (filteredMembers.length === 0) {
-                tableBody.innerHTML = `<tr><td colspan="12" style="text-align:center; padding: 24px; color: #8c93a6;">No players found.</td></tr>`;
-                tableFooterRow.innerHTML = '';
-                return;
-            }
-
-            filteredMembers.forEach((member, index) => {
-                const rank = index + 1;
-                const rateNum = totalEvents > 0 ? parseFloat(((member.attended / totalEvents) * 100).toFixed(1)) : 0;
-                const colorClass = getProgressBarColorClass(rateNum);
-                const vsAvgDiff = parseFloat((rateNum - avgRate).toFixed(1));
-                const vsAvgString = (vsAvgDiff >= 0 ? `+` : ``) + vsAvgDiff.toFixed(1) + `%`;
-                const vsAvgClass = vsAvgDiff >= 0 ? 'vs-avg-pos' : 'vs-avg-neg';
-                const rankClass = rank === 1 ? 'rank-1' : (rank === 2 ? 'rank-2' : (rank === 3 ? 'rank-3' : ''));
-
-                let rowHTML = `
-                    <tr class="${rankClass}">
-                        <td class="col-rank">${rank}</td>
-                        <td class="col-name">${member.name}</td>
-                        <td class="col-attended" style="text-align: center; font-weight: 800;">${member.attended}</td>
-                        <td class="col-percentage">
-                            <div style="display: flex; flex-direction: column; gap: 4px;">
-                                <div style="display: flex; justify-content: flex-end; align-items: center; font-size: 12px;">
-                                    <span style="font-weight: 800;" class="${colorClass === 'high' ? 'attended-high' : (colorClass === 'mid' ? 'attended-mid' : 'attended-low')}">${rateNum}%</span>
-                                </div>
-                                <div class="progress-bar">
-                                    <div class="progress-bar__fill ${colorClass}" style="width: ${rateNum}%;"></div>
-                                </div>
-                            </div>
-                        </td>`;
-                
-                if (showDiffMode) {
-                    rowHTML += `<td><span class="${vsAvgClass}">${vsAvgString}</span></td>`;
-                }
-
-                eventDates.forEach((ev, evIdx) => {
-                    const isChecked = member.events && member.events[evIdx];
-                    
-                    let changeBadgeHTML = '';
-                    if (showDiffMode) {
-                        if (evIdx > 0) {
-                            const prevChecked = member.events && member.events[evIdx - 1];
-                            if (!prevChecked && isChecked) {
-                                changeBadgeHTML = `<div style="font-size: var(--font-xs); margin-top: 2px;"><span class="diff-green">▲</span></div>`;
-                            } else if (prevChecked && !isChecked) {
-                                changeBadgeHTML = `<div style="font-size: var(--font-xs); margin-top: 2px;"><span class="diff-red">▼</span></div>`;
-                            } else {
-                                changeBadgeHTML = `<div style="font-size: var(--font-xs); margin-top: 2px;"><span class="diff-yellow">▬</span></div>`;
-                            }
-                        } else {
-                            if (isChecked) {
-                                changeBadgeHTML = `<div style="font-size: var(--font-xs); margin-top: 2px;"><span class="diff-green">▲</span></div>`;
-                            } else {
-                                changeBadgeHTML = `<div style="font-size: var(--font-xs); margin-top: 2px;"><span class="diff-yellow">▬</span></div>`;
-                            }
-                        }
-                    }
-
-                    rowHTML += `
-                        <td class="col-event">
-                            <div style="display: flex; flex-direction: column; align-items: center;">
-                                <span class="check-toggle" onclick="${isManagementOrAdmin ? `toggleAttendance(${member.id}, ${evIdx})` : ''}">${isChecked ? '<span class="check-icon">✓</span>' : '<span class="cross-icon">—</span>'}</span>
-                                ${changeBadgeHTML}
-                            </div>
-                        </td>`;
-                });
-
-                rowHTML += `</tr>`;
-                tableBody.insertAdjacentHTML('beforeend', rowHTML);
-            });
-
-            let footerHTML = `<tr><td colspan="3" style="font-weight: 800;">TOTAL ATTENDANCE</td><td></td>`;
-            if (showDiffMode) footerHTML += `<td></td>`;
-            eventDates.forEach((ev, evIdx) => {
-                const eventTotal = filteredMembers.reduce((sum, m) => sum + ((m.events && m.events[evIdx]) ? 1 : 0), 0);
-                footerHTML += `<td class="col-event" style="font-weight: 800; color: var(--color-primary);">${eventTotal}</td>`;
-            });
-            footerHTML += `</tr>`;
-            tableFooterRow.innerHTML = footerHTML;
-        }
-
-        function renderRankingCards(filteredMembers, avgRate, isManagementOrAdmin, totalEvents) {
-            const rankingView = document.getElementById('subViewRanking');
-            rankingView.innerHTML = '';
-            
-            filteredMembers.forEach((member, index) => {
-                const rank = index + 1;
-                const rateNum = totalEvents > 0 ? parseFloat(((member.attended / totalEvents) * 100).toFixed(1)) : 0;
-                const colorClass = getProgressBarColorClass(rateNum);
-                const attendedColorClass = getAttendedColorClass(rateNum);
-                const vsAvgDiff = parseFloat((rateNum - avgRate).toFixed(1));
-                const vsAvgString = (vsAvgDiff >= 0 ? `+` : ``) + vsAvgDiff.toFixed(1) + `%`;
-                const vsAvgClass = vsAvgDiff >= 0 ? 'vs-avg-pos' : 'vs-avg-neg';
-                let cardClass = rank === 1 ? 'ranking-card--rank-1' : (rank === 2 ? 'ranking-card--rank-2' : (rank === 3 ? 'ranking-card--rank-3' : (rank === 4 ? 'ranking-card--rank-4' : (rank === 5 ? 'ranking-card--rank-5' : ''))));
-                let badgeText = `${rank}`;
-
-                let diffVal = 0;
-                if (member.events && member.events.length >= 2) {
-                    const lastVal = member.events[member.events.length - 1] ? 1 : 0;
-                    const prevVal = member.events[member.events.length - 2] ? 1 : 0;
-                    diffVal = lastVal - prevVal;
-                } else if (member.events && member.events.length === 1) {
-                    diffVal = member.events[0] ? 1 : 0;
-                }
-
-                let diffHtml = '';
-                if (showDiffMode) {
-                    if (diffVal > 0) {
-                        diffHtml = `<span class="diff-green">▲</span>`;
-                    } else if (diffVal < 0) {
-                        diffHtml = `<span class="diff-red">▼</span>`;
-                    } else {
-                        diffHtml = `<span class="diff-yellow">▬</span>`;
-                    }
-                }
-
-                rankingView.insertAdjacentHTML('beforeend', `
-                    <div class="ranking-card ${cardClass}">
-                        <div class="ranking-card__left">
-                            <div class="ranking-card__badge">${badgeText}</div>
-                            <div>
-                                <div class="ranking-card__name">${member.name}</div>
-                                <div class="ranking-card__subtext"><span class="${attendedColorClass}" style="font-weight:800;">${member.attended}</span> events attended</div>
-                            </div>
-                        </div>
-                        <div class="ranking-card__right">
-                            <div class="ranking-card__bar-wrapper">
-                                <div class="progress-bar-container">
-                                    <div class="progress-bar">
-                                        <div class="progress-bar__fill ${colorClass}" style="width: ${rateNum}%;"></div>
-                                    </div>
-                                    <span class="progress-text ${attendedColorClass}">${rateNum}%</span>
-                                </div>
-                            </div>
-                            <div style="width: 80px; text-align: center;">${diffHtml}</div>
-                            ${showDiffMode ? `<div style="width: 75px; text-align: right;"><span class="${vsAvgClass}">${vsAvgString}</span></div>` : ''}
-                        </div>
-                    </div>`);
-            });
-        }
-
-        function renderAuditTable() {
-            const auditBody = document.getElementById('auditTableBody');
-            if(!auditBody) return;
-            if(auditLogs.length === 0) {
-                auditBody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: #8c93a6;">No actions logged yet.</td></tr>`;
-                return;
-            }
-            auditBody.innerHTML = auditLogs.map(log => `
-                <tr>
-                    <td style="font-size: var(--font-xs); color: #62697b;">${log.timestamp}</td>
-                    <td style="font-weight: 800; color: var(--color-primary);">${log.user} <span style="font-size:12px; color:#8c93a6;">(${log.role})</span></td>
-                    <td><span style="background: #eef2f9; padding: 4px 10px; border-radius: 6px; font-size: var(--font-xs); font-weight:800;">${log.type}</span></td>
-                    <td style="font-size: var(--font-xs);">${log.details}</td>
-                </tr>
-            `).join('');
-        }
-
-        window.toggleAttendance = function(memberId, eventIndex) {
-            const member = members.find(m => m.id === memberId);
-            if (!member) return;
-            if (!member.events) member.events = new Array(eventDates.length).fill(false);
-            const state = !!member.events[eventIndex];
-            member.events[eventIndex] = !state;
-            if (!state) member.attended += 1; else if (member.attended > 0) member.attended -= 1;
-            
-            logAction('UPDATE_ATTENDANCE', `Toggled attendance for [${member.name}] on event index ${eventIndex}`);
-            saveData(); render();
-        };
-
-        window.editEventName = function(i) {
-            const s = prompt('Edit event name:', eventDates[i].name);
-            if (s !== null) {
-                const trimmed = s.trim();
-                if (trimmed) {
-                    eventDates[i].name = trimmed;
-                    logAction('EDIT_EVENT', `Updated event name index ${i} to ${trimmed}`);
-                    saveData(); 
-                    render();
-                }
-            }
-        };
-
-        document.getElementById('btnAddEvent').addEventListener('click', () => {
-            const eventNameInput = document.getElementById('newEventNameInput');
-            const dateInput = document.getElementById('newDateInput');
-            
-            const eventName = eventNameInput.value.trim();
-            if (!eventName) {
-                alert('Please enter an event name before adding it.');
-                eventNameInput.focus();
-                return;
-            }
-            if (!dateInput.value) {
-                alert('Please select an event date.');
-                dateInput.focus();
-                return;
-            }
-
-            const parts = dateInput.value.split('-');
-            const formattedDate = parts.length === 3 ? `${parts[1]}-${parts[2]}` : dateInput.value;
-
-            eventDates.push({ 
-                id: Date.now(), 
-                name: eventName, 
-                date: formattedDate, 
-                subtext: eventName 
-            });
-
-            members.forEach(m => { if (!m.events) m.events = new Array(eventDates.length).fill(false); });
-            logAction('ADD_EVENT', `Added event column: ${eventName} (${formattedDate})`);
-            
-            eventNameInput.value = '';
-            dateInput.value = '';
-            saveData(); 
-            render();
-        });
-
-        window.removeEvent = function(i) {
-            if (confirm('Remove event column?')) {
-                const ev = eventDates[i];
-                logAction('DELETE_EVENT', `Removed event column: ${ev ? ev.name : i}`);
-                
-                members.forEach(m => {
-                    if (m.events && m.events[i]) {
-                        if (m.attended > 0) m.attended -= 1;
-                    }
-                    if (m.events) {
-                        m.events.splice(i, 1);
-                    }
-                });
-
-                eventDates.splice(i, 1);
-                saveData(); 
-                render();
-            }
-        };
-
-        document.getElementById('btnToggleDiff').addEventListener('click', () => {
-            showDiffMode = !showDiffMode;
-            document.getElementById('btnToggleDiff').classList.toggle('active', showDiffMode);
-            render();
-        });
-
-        document.getElementById('btnTabAttendance').addEventListener('click', () => {
-            currentSubTab = 'attendance';
-            document.getElementById('btnTabAttendance').classList.add('btn-toggle--active');
-            document.getElementById('btnTabRanking').classList.remove('btn-toggle--active');
-            document.getElementById('subViewAttendance').style.display = 'flex';
-            document.getElementById('subViewRanking').style.display = 'none';
-            render();
-        });
-
-        document.getElementById('btnTabRanking').addEventListener('click', () => {
-            currentSubTab = 'ranking';
-            document.getElementById('btnTabRanking').classList.add('btn-toggle--active');
-            document.getElementById('btnTabAttendance').classList.remove('btn-toggle--active');
-            document.getElementById('subViewAttendance').style.display = 'none';
-            document.getElementById('subViewRanking').style.display = 'flex';
-            render();
-        });
-
-        document.getElementById('searchInput').addEventListener('input', render);
-
-        const importBtn = document.getElementById('importBtn');
-        const screenshotInput = document.getElementById('screenshotInput');
-        importBtn.addEventListener('click', () => screenshotInput.click());
-        screenshotInput.addEventListener('change', async (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            importBtn.innerText = 'PROCESSING...'; importBtn.disabled = true;
-            try {
-                const { data: { text } } = await Tesseract.recognize(file, 'eng');
-                let addedCount = 0;
-                text.split('\n').forEach(line => {
-                    const match = line.match(/([a-zA-Z0-9•\s]+)\s+(\d{1,2})/);
-                    if (match && match[1].trim().length > 2) {
-                        const name = match[1].trim(); const att = parseInt(match[2], 10);
-                        const existing = members.find(m => m.name.toLowerCase() === name.toLowerCase());
-                        if (existing) existing.attended = att;
-                        else members.push({ id: Date.now() + Math.random(), name, attended: att, hasPlus: false, events: new Array(eventDates.length).fill(false) });
-                        addedCount++;
-                    }
-                });
-                logAction('OCR_IMPORT', `Imported / parsed ${addedCount} entries via Tesseract OCR screenshot scan.`);
-                saveData(); render(); alert('OCR import completed successfully!');
-            } catch (err) { alert('OCR Error during processing'); }
-            finally { importBtn.innerText = '📥 IMPORT'; importBtn.disabled = false; screenshotInput.value = ''; }
-        });
-
-        document.getElementById('hamburgerBtn').addEventListener('click', () => {
-            document.getElementById('sidebar').classList.toggle('sidebar--open');
-        });
-
-        // Notice tab: Gantt timeline nav + add event + add announcement controls
-        document.getElementById('btnAddCalendarEvent').addEventListener('click', () => {
-            openCalendarEventModal(null);
-        });
-
-        document.getElementById('btnAddNoticeAnnouncement').addEventListener('click', () => {
-            openNoticeAnnouncementModal(null);
-        });
-
-        document.getElementById('ganttNavLeft').addEventListener('click', () => {
-            ganttWindowOffset -= 7;
-            renderNoticeCalendar();
-        });
-
-        document.getElementById('ganttNavRight').addEventListener('click', () => {
-            ganttWindowOffset += 7;
-            renderNoticeCalendar();
-        });
-
-        document.getElementById('calEventDateInput').addEventListener('change', updateCalEndDateBounds);
+        function renderHomeTopContributors() {}
+        function renderHomeRecentEvents(activeMembers) {}
+        function renderAttendanceTable(filteredMembers, avgRate, isManagementOrAdmin, totalEvents, totalAttendedCount) {}
+        function renderRankingCards(filteredMembers, avgRate, isManagementOrAdmin, totalEvents) {}
+        function renderMembersDirectory() {}
+        function renderVsPointsTable(isManagementOrAdmin) {}
+        function renderAuditTable() {}
+        function renderDiscussionRoom() {}
     </script>
+    <footer style="text-align: center; padding: 24px; font-size: 12px; color: var(--color-text-muted); border-top: 1px solid var(--color-border-light); font-family: var(--font-family-ui); background: white; margin-top: auto;">
+        &copy; 2026 Loopy's Playground · Alliance Management Tool. All rights reserved.
+    </footer>
 </body>
 </html>
