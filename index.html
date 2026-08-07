@@ -72,7 +72,7 @@
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.4); display: none; align-items: center; justify-content: center; z-index: 1000; }
         .modal-card { background: white; padding: 32px; border-radius: 10px; width: 100%; max-width: 420px; border: 2px solid var(--color-primary); }
         .modal-card h3 { margin-bottom: 16px; color: var(--color-primary); font-size: var(--font-lg); font-family: var(--font-family-title); }
-        .modal-card input, .modal-card select { width: 100%; padding: 14px; margin-bottom: 16px; border: 1px solid #ccc; border-radius: 6px; font-size: var(--font-sm); font-family: var(--font-family-base); }
+        .modal-card input, .modal-card select, .modal-card textarea { width: 100%; padding: 14px; margin-bottom: 16px; border: 1px solid #ccc; border-radius: 6px; font-size: var(--font-sm); font-family: var(--font-family-base); outline: none; }
         .modal-card-btns { display: flex; justify-content: flex-end; gap: 12px; }
         .login-error-msg { color: #dc2626; font-size: var(--font-xs); font-weight: 700; margin-bottom: 12px; display: none; text-align: left; }
 
@@ -572,10 +572,59 @@
                 </div>
             </section>
 
-            <section id="viewDiscussion" class="app-view" style="display: none;">
-                <div class="generic-view-card">
-                    <h2>Discussion Room</h2>
-                    <p>Confidential communication channel restricted strictly to Management and Admin personnel.</p>
+            <section id="viewDiscussion" class="app-view" style="display: none; flex-direction: column; gap: 16px;">
+                <div class="controls-card" style="display: flex; justify-content: space-between; align-items: center;">
+                    <div class="btn-group">
+                        <button class="btn-toggle btn-toggle--active" id="btnDiscTabChat" onclick="switchDiscussionTab('chat')">💬 CHAT</button>
+                        <button class="btn-toggle" id="btnDiscTabAnnounce" onclick="switchDiscussionTab('announcement')">📣 ANNOUNCEMENTS & NOTICES</button>
+                    </div>
+                    <div id="discActionControls"></div>
+                </div>
+
+                <!-- Chat Sub-View -->
+                <div id="discSubChat" class="generic-view-card" style="display: flex; flex-direction: column; height: 500px;">
+                    <h2 style="margin-bottom: 8px;">Management Chat Room</h2>
+                    <p style="margin-bottom: 16px; font-size: 12px; color: var(--color-text-muted);">Confidential communication channel restricted strictly to Management and Admin personnel.</p>
+                    <div id="chatMessagesContainer" style="flex-grow: 1; overflow-y: auto; border: 1px solid var(--color-border-light); border-radius: 6px; padding: 12px; display: flex; flex-direction: column; gap: 10px; background: #fafafa; margin-bottom: 12px;">
+                        <div class="home-empty-state">No messages sent yet. Start the conversation!</div>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="text" id="chatMessageInput" placeholder="Type message..." style="flex-grow: 1; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-family: var(--font-family-base);" onkeydown="if(event.key==='Enter') sendChatMessage()">
+                        <button class="btn-action-custom" onclick="sendChatMessage()" style="background:#3b52a4; color:white;">Send</button>
+                    </div>
+                </div>
+
+                <!-- Announcement & Notice Sub-View -->
+                <div id="discSubAnnounce" class="generic-view-card" style="display: none; flex-direction: column; gap: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                        <div>
+                            <h2>Announcements, Polls & Notices</h2>
+                            <p style="font-size: 12px; color: var(--color-text-muted);">Create time-bounded polls, official management notices, and view archived polls.</p>
+                        </div>
+                        <div style="display: flex; gap: 10px;">
+                            <button class="btn-action-custom btn-action-custom--add" onclick="openCreateNoticeModal()">+ ADD NOTICE</button>
+                            <button class="btn-action-custom btn-action-custom--add" onclick="openCreatePollModal()">+ CREATE POLL</button>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;" id="announcementGridContainer">
+                        <div>
+                            <h3 style="font-size: 14px; text-transform: uppercase; color: var(--color-primary); margin-bottom: 10px; border-bottom: 2px solid var(--color-primary); padding-bottom: 6px;">Active Polls</h3>
+                            <div id="activePollsContainer" style="display: flex; flex-direction: column; gap: 12px;">
+                                <div class="home-empty-state">No active polls.</div>
+                            </div>
+                            <h3 style="font-size: 14px; text-transform: uppercase; color: var(--color-text-muted); margin: 20px 0 10px 0; border-bottom: 2px solid var(--color-border-light); padding-bottom: 6px;">Archived Polls (Closed)</h3>
+                            <div id="archivedPollsContainer" style="display: flex; flex-direction: column; gap: 12px;">
+                                <div class="home-empty-state">No archived polls.</div>
+                            </div>
+                        </div>
+                        <div>
+                            <h3 style="font-size: 14px; text-transform: uppercase; color: var(--color-primary); margin-bottom: 10px; border-bottom: 2px solid var(--color-primary); padding-bottom: 6px;">Official Notices</h3>
+                            <div id="managementNoticesContainer" style="display: flex; flex-direction: column; gap: 12px;">
+                                <div class="home-empty-state">No notices posted.</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </section>
 
@@ -610,6 +659,40 @@
         </main>
     </div>
 
+    <!-- Modals for Polls and Notices -->
+    <div class="modal-overlay" id="createPollModal">
+        <div class="modal-card" style="max-width: 500px;">
+            <h3>Create New Poll</h3>
+            <input type="text" id="pollQuestionInput" placeholder="Poll Question (e.g. Next Guild Event Timing?)">
+            <div style="font-size: 11px; font-weight: 800; color: var(--color-text-muted); margin-bottom: 6px; text-transform: uppercase;">Poll Options (comma separated or multiple fields):</div>
+            <input type="text" id="pollOption1" placeholder="Option 1" style="margin-bottom: 8px;">
+            <input type="text" id="pollOption2" placeholder="Option 2" style="margin-bottom: 8px;">
+            <input type="text" id="pollOption3" placeholder="Option 3 (Optional)" style="margin-bottom: 16px;">
+            <div style="font-size: 11px; font-weight: 800; color: var(--color-text-muted); margin-bottom: 6px; text-transform: uppercase;">Timer Option:</div>
+            <select id="pollTimerSelect" style="margin-bottom: 16px;">
+                <option value="86400">24 Hours</option>
+                <option value="259200">3 Days</option>
+                <option value="604800">1 Week</option>
+            </select>
+            <div class="modal-card-btns">
+                <button class="btn-action-custom" onclick="document.getElementById('createPollModal').style.display='none'">Cancel</button>
+                <button class="btn-action-custom" onclick="submitCreatePoll()" style="background:#3b52a4; color:white;">Publish Poll</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="createNoticeModal">
+        <div class="modal-card" style="max-width: 500px;">
+            <h3>Add Management Notice</h3>
+            <input type="text" id="noticeTitleInput" placeholder="Notice Title">
+            <textarea id="noticeContentInput" placeholder="Notice Details..." rows="4" style="width: 100%; padding: 14px; margin-bottom: 16px; border: 1px solid #ccc; border-radius: 6px; font-family: var(--font-family-base); outline: none; resize: vertical;"></textarea>
+            <div class="modal-card-btns">
+                <button class="btn-action-custom" onclick="document.getElementById('createNoticeModal').style.display='none'">Cancel</button>
+                <button class="btn-action-custom" onclick="submitCreateNotice()" style="background:#3b52a4; color:white;">Post Notice</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const SUPABASE_URL = 'https://sqrrfslqwcgpsmzdovru.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_rb70-VY2GstWzdoXmoUkwg_Iw3EiqFO';
@@ -622,10 +705,14 @@
         };
 
         let currentSubTab = 'attendance';
+        let currentDiscTab = 'chat';
         let showDiffMode = false;
         let eventDates = [];
         let members = [];
         let auditLogs = [];
+        let chatMessages = [];
+        let polls = [];
+        let notices = [];
         let vsData = { weeks: [], membersScores: [] };
         let accounts = [
             { username: 'loopy', pass: '2851849', role: 'admin' },
@@ -648,6 +735,9 @@
                         if (row.key === 'auditLogs') auditLogs = row.value || [];
                         if (row.key === 'accounts') accounts = row.value || accounts;
                         if (row.key === 'vsData') vsData = row.value || { weeks: [], membersScores: [] };
+                        if (row.key === 'chatMessages') chatMessages = row.value || [];
+                        if (row.key === 'polls') polls = row.value || [];
+                        if (row.key === 'notices') notices = row.value || [];
                     });
                 }
             } catch (err) {
@@ -680,6 +770,9 @@
                 await db.from('app_data').upsert({ id: 3, key: 'auditLogs', value: auditLogs }, { onConflict: 'id' });
                 await db.from('app_data').upsert({ id: 4, key: 'accounts', value: accounts }, { onConflict: 'id' });
                 await db.from('app_data').upsert({ id: 7, key: 'vsData', value: vsData }, { onConflict: 'id' });
+                await db.from('app_data').upsert({ id: 8, key: 'chatMessages', value: chatMessages }, { onConflict: 'id' });
+                await db.from('app_data').upsert({ id: 9, key: 'polls', value: polls }, { onConflict: 'id' });
+                await db.from('app_data').upsert({ id: 10, key: 'notices', value: notices }, { onConflict: 'id' });
             } catch (err) {
                 console.error('Save error:', err);
             }
@@ -923,12 +1016,6 @@
             document.getElementById('headerEventsCount').innerText = `${activeMembers.length} members · ${totalEvents} sessions`;
             document.getElementById('footerMembersShown').innerText = `${filteredMembers.length} members shown`;
 
-            // Update Home Tab Dashboard Quick Stats
-            const memberCap = 100;
-            document.getElementById('homeKpiMembers').innerText = `${activeMembers.length}/${memberCap}`;
-            document.getElementById('homeKpiMembersSub').innerText = `${Math.max(memberCap - activeMembers.length, 0)} slots available`;
-            document.getElementById('homeKpiRate').innerText = `${avgRate.toFixed(1)}%`;
-            document.getElementById('homeKpiEventsSub').innerText = `${totalEvents} recent event${totalEvents === 1 ? '' : 's'}`;
             renderHomeTopContributors();
             renderHomeRecentEvents(activeMembers);
 
@@ -941,6 +1028,260 @@
             renderMembersDirectory();
             renderVsPointsTable(isManagementOrAdmin);
             renderAuditTable();
+            renderDiscussionRoom();
+        }
+
+        // Discussion Room Sub-Tabs and Features (Chat, Polls, Notices)
+        window.switchDiscussionTab = function(tabName) {
+            currentDiscTab = tabName;
+            const btnChat = document.getElementById('btnDiscTabChat');
+            const btnAnnounce = document.getElementById('btnDiscTabAnnounce');
+            const subChat = document.getElementById('discSubChat');
+            const subAnnounce = document.getElementById('discSubAnnounce');
+
+            if (tabName === 'chat') {
+                btnChat.classList.add('btn-toggle--active');
+                btnAnnounce.classList.remove('btn-toggle--active');
+                subChat.style.display = 'flex';
+                subAnnounce.style.display = 'none';
+            } else {
+                btnAnnounce.classList.add('btn-toggle--active');
+                btnChat.classList.remove('btn-toggle--active');
+                subChat.style.display = 'none';
+                subAnnounce.style.display = 'flex';
+            }
+        };
+
+        window.sendChatMessage = function() {
+            const input = document.getElementById('chatMessageInput');
+            const txt = input.value.trim();
+            if (!txt) return;
+
+            if (!chatMessages) chatMessages = [];
+            chatMessages.push({
+                user: currentUser.username || 'Anonymous',
+                role: currentUser.role || 'member',
+                text: txt,
+                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            });
+
+            input.value = '';
+            saveData();
+            renderDiscussionRoom();
+        };
+
+        window.openCreatePollModal = function() {
+            document.getElementById('pollQuestionInput').value = '';
+            document.getElementById('pollOption1').value = '';
+            document.getElementById('pollOption2').value = '';
+            document.getElementById('pollOption3').value = '';
+            document.getElementById('createPollModal').style.display = 'flex';
+        };
+
+        window.submitCreatePoll = function() {
+            const question = document.getElementById('pollQuestionInput').value.trim();
+            const opt1 = document.getElementById('pollOption1').value.trim();
+            const opt2 = document.getElementById('pollOption2').value.trim();
+            const opt3 = document.getElementById('pollOption3').value.trim();
+            const timerSecs = parseInt(document.getElementById('pollTimerSelect').value, 10);
+
+            if (!question || !opt1 || !opt2) {
+                alert('Please enter a poll question and at least two options.');
+                return;
+            }
+
+            const options = [opt1, opt2];
+            if (opt3) options.push(opt3);
+
+            const optionsData = options.map(opt => ({ text: opt, votes: [] }));
+
+            if (!polls) polls = [];
+            polls.unshift({
+                id: Date.now(),
+                question: question,
+                options: optionsData,
+                expiresAt: Date.now() + (timerSecs * 1000),
+                createdBy: currentUser.username
+            });
+
+            logAction('CREATE_POLL', `Created poll: "${question}"`);
+            saveData();
+            document.getElementById('createPollModal').style.display = 'none';
+            renderDiscussionRoom();
+        };
+
+        window.votePoll = function(pollId, optionIndex) {
+            const poll = polls.find(p => p.id === pollId);
+            if (!poll) return;
+
+            if (Date.now() > poll.expiresAt) {
+                alert('This poll has already closed and cannot accept new votes.');
+                return;
+            }
+
+            // Check if user already voted in this poll
+            const alreadyVoted = poll.options.some(opt => opt.votes.includes(currentUser.username));
+            if (alreadyVoted) {
+                alert('You have already voted on this poll. Changing votes is disabled.');
+                return;
+            }
+
+            poll.options[optionIndex].votes.push(currentUser.username);
+            logAction('VOTE_POLL', `Voted on poll id ${pollId}`);
+            saveData();
+            renderDiscussionRoom();
+        };
+
+        window.adminDeleteVote = function(pollId, optionIndex, voterUsername) {
+            if (currentUser.role !== 'admin') {
+                alert('Only Admin can delete votes.');
+                return;
+            }
+            const poll = polls.find(p => p.id === pollId);
+            if (!poll) return;
+
+            const idx = poll.options[optionIndex].votes.indexOf(voterUsername);
+            if (idx > -1) {
+                poll.options[optionIndex].votes.splice(idx, 1);
+                logAction('ADMIN_DELETE_VOTE', `Admin removed vote for [${voterUsername}] on poll "${poll.question}"`);
+                saveData();
+                renderDiscussionRoom();
+            }
+        };
+
+        window.openCreateNoticeModal = function() {
+            document.getElementById('noticeTitleInput').value = '';
+            document.getElementById('noticeContentInput').value = '';
+            document.getElementById('createNoticeModal').style.display = 'flex';
+        };
+
+        window.submitCreateNotice = function() {
+            const title = document.getElementById('noticeTitleInput').value.trim();
+            const content = document.getElementById('noticeContentInput').value.trim();
+            if (!title || !content) {
+                alert('Please fill out both notice title and content.');
+                return;
+            }
+
+            if (!notices) notices = [];
+            notices.unshift({
+                id: Date.now(),
+                title: title,
+                content: content,
+                date: new Date().toLocaleDateString(),
+                author: currentUser.username
+            });
+
+            logAction('CREATE_NOTICE', `Posted notice: "${title}"`);
+            saveData();
+            document.getElementById('createNoticeModal').style.display = 'none';
+            renderDiscussionRoom();
+        };
+
+        function renderDiscussionRoom() {
+            const chatContainer = document.getElementById('chatMessagesContainer');
+            if (chatContainer) {
+                if (!chatMessages || chatMessages.length === 0) {
+                    chatContainer.innerHTML = `<div class="home-empty-state">No messages sent yet. Start the conversation!</div>`;
+                } else {
+                    chatContainer.innerHTML = chatMessages.map(m => `
+                        <div style="background: white; padding: 10px 14px; border-radius: 6px; border: 1px solid var(--color-border-light);">
+                            <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px; color: var(--color-text-muted);">
+                                <span style="font-weight: 800; color: var(--color-primary);">${m.user} (${m.role})</span>
+                                <span>${m.timestamp}</span>
+                            </div>
+                            <div style="font-size: 13px; color: var(--color-text-dark);">${m.text}</div>
+                        </div>
+                    `).join('');
+                    chatContainer.scrollTop = chatContainer.scrollHeight;
+                }
+            }
+
+            const activePollsContainer = document.getElementById('activePollsContainer');
+            const archivedPollsContainer = document.getElementById('archivedPollsContainer');
+            const noticesContainer = document.getElementById('managementNoticesContainer');
+
+            if (activePollsContainer && archivedPollsContainer && noticesContainer) {
+                const now = Date.now();
+                const active = (polls || []).filter(p => now <= p.expiresAt);
+                const archived = (polls || []).filter(p => now > p.expiresAt);
+
+                if (active.length === 0) {
+                    activePollsContainer.innerHTML = `<div class="home-empty-state">No active polls.</div>`;
+                } else {
+                    activePollsContainer.innerHTML = active.map(poll => {
+                        const hasVoted = poll.options.some(opt => opt.votes.includes(currentUser.username));
+                        const totalVotes = poll.options.reduce((sum, o) => sum + o.votes.length, 0);
+                        const timeLeft = Math.max(0, Math.floor((poll.expiresAt - now) / 1000));
+                        const hours = Math.floor(timeLeft / 3600);
+                        const mins = Math.floor((timeLeft % 3600) / 60);
+
+                        return `
+                            <div style="background: white; border: 1px solid var(--color-border); border-radius: 6px; padding: 16px;">
+                                <div style="font-weight: 800; font-size: 14px; color: var(--color-primary-dark); margin-bottom: 4px;">${poll.question}</div>
+                                <div style="font-size: 11px; color: var(--color-text-muted); margin-bottom: 12px;">Expires in: ${hours}h ${mins}m · Total Votes: ${totalVotes}</div>
+                                <div style="display: flex; flex-direction: column; gap: 8px;">
+                                    ${poll.options.map((opt, oIdx) => {
+                                        const optVotesCount = opt.votes.length;
+                                        const pct = totalVotes > 0 ? Math.round((optVotesCount / totalVotes) * 100) : 0;
+                                        return `
+                                            <div style="border: 1px solid var(--color-border-light); border-radius: 4px; padding: 8px; background: #fafafa;">
+                                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                                    <span style="font-weight: 700; font-size: 13px;">${opt.text}</span>
+                                                    ${!hasVoted ? `<button class="home-btn-outline" onclick="votePoll(${poll.id}, ${oIdx})">Vote</button>` : `<span style="font-size: 11px; font-weight: 800; color: var(--color-primary);">${optVotesCount} vote(s) (${pct}%)</span>`}
+                                                </div>
+                                                ${hasVoted && currentUser.role === 'admin' && opt.votes.length > 0 ? `
+                                                    <div style="font-size: 10px; color: #dc2626; margin-top: 4px;">Voters: ${opt.votes.map(v => `${v} <span style="cursor:pointer; font-weight:bold;" onclick="adminDeleteVote(${poll.id}, ${oIdx}, '${v}')">[x]</span>`).join(', ')}</div>
+                                                ` : ''}
+                                            </div>
+                                        `;
+                                    }).join('')}
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                }
+
+                if (archived.length === 0) {
+                    archivedPollsContainer.innerHTML = `<div class="home-empty-state">No archived polls.</div>`;
+                } else {
+                    archivedPollsContainer.innerHTML = archived.map(poll => {
+                        const totalVotes = poll.options.reduce((sum, o) => sum + o.votes.length, 0);
+                        return `
+                            <div style="background: #f1f3f7; border: 1px solid var(--color-border-light); border-radius: 6px; padding: 14px; opacity: 0.85;">
+                                <div style="font-weight: 800; font-size: 13px; color: var(--color-text-dark); margin-bottom: 2px;">[CLOSED] ${poll.question}</div>
+                                <div style="font-size: 11px; color: var(--color-text-muted); margin-bottom: 8px;">Total Votes: ${totalVotes}</div>
+                                <div style="display: flex; flex-direction: column; gap: 6px;">
+                                    ${poll.options.map((opt, oIdx) => {
+                                        const optVotesCount = opt.votes.length;
+                                        const pct = totalVotes > 0 ? Math.round((optVotesCount / totalVotes) * 100) : 0;
+                                        return `
+                                            <div style="font-size: 12px; display: flex; justify-content: space-between;">
+                                                <span>${opt.text}</span>
+                                                <span style="font-weight: 800;">${optVotesCount} (${pct}%)</span>
+                                            </div>
+                                        `;
+                                    }).join('')}
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                }
+
+                if (!notices || notices.length === 0) {
+                    noticesContainer.innerHTML = `<div class="home-empty-state">No notices posted.</div>`;
+                } else {
+                    noticesContainer.innerHTML = notices.map(n => `
+                        <div style="background: white; border: 1px solid var(--color-border); border-radius: 6px; padding: 16px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                                <span style="font-weight: 800; font-size: 14px; color: var(--color-primary);">${n.title}</span>
+                                <span style="font-size: 11px; color: var(--color-text-muted);">${n.date}</span>
+                            </div>
+                            <div style="font-size: 13px; color: var(--color-text-dark); line-height: 1.5; white-space: pre-wrap;">${n.content}</div>
+                        </div>
+                    `).join('');
+                }
+            }
         }
 
         function renderHomeTopContributors() {
