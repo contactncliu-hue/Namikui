@@ -216,22 +216,54 @@
         .generic-view-card h2 { color: var(--color-primary); font-family: 'Fredoka One', cursive, sans-serif; font-size: var(--font-lg); margin-bottom: 12px; }
         .generic-view-card p { font-size: var(--font-sm); line-height: 1.6; }
 
-        /* Home Page Dashboard Specific Cards & Styles */
-        .home-hero-card { background: linear-gradient(135deg, var(--color-primary-dark), var(--color-primary)); color: white; border-radius: 10px; padding: 32px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 4px 12px rgba(59, 82, 164, 0.15); }
-        .home-hero-card h1 { font-family: var(--font-family-title); font-size: var(--font-xl); font-weight: 700; letter-spacing: 1px; }
-        .home-hero-card p { font-size: var(--font-sm); opacity: 0.9; max-width: 800px; line-height: 1.6; }
-        
-        .home-stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
-        .home-stat-card { background: white; border: 2px solid var(--color-border-light); border-radius: 8px; padding: 20px; display: flex; flex-direction: column; gap: 6px; }
-        .home-stat-card__title { font-size: 11px; font-weight: 800; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
-        .home-stat-card__value { font-size: var(--font-xl); font-weight: 800; color: var(--color-primary); font-family: var(--font-family-ui); }
-        
-        .home-quick-links { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
-        .home-link-card { background: white; border: 2px solid var(--color-border-light); border-radius: 8px; padding: 20px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; text-decoration: none; transition: all 0.2s; }
-        .home-link-card:hover { border-color: var(--color-primary); background-color: var(--color-primary-light); transform: translateY(-2px); }
-        .home-link-card__content h3 { font-family: var(--font-family-ui); font-size: var(--font-md); font-weight: 800; color: var(--color-primary-dark); margin-bottom: 4px; }
-        .home-link-card__content p { font-size: var(--font-xs); color: var(--color-text-muted); font-weight: 600; }
-        .home-link-card__arrow { font-size: var(--font-lg); font-weight: 800; color: var(--color-primary); }
+        /* ===== Home Dashboard Layout ===== */
+        .home-card { background: white; border: 2px solid var(--color-border); border-radius: 8px; padding: 24px; position: relative; overflow: hidden; }
+        .home-card--accent-gold::after,
+        .home-card--accent-red::after {
+            content: '';
+            position: absolute;
+            top: 0; right: 0;
+            width: 0; height: 0;
+            border-style: solid;
+            border-width: 0 42px 42px 0;
+        }
+        .home-card--accent-gold::after { border-color: transparent var(--color-gold) transparent transparent; }
+        .home-card--accent-red::after { border-color: transparent #b6432e transparent transparent; }
+
+        .home-card__header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 10px; }
+        .home-card__header-title { font-family: var(--font-family-ui); font-weight: 800; font-size: 16px; color: var(--color-text-dark); text-transform: uppercase; display: flex; align-items: center; gap: 10px; letter-spacing: 0.3px; }
+        .home-card__header-actions { display: flex; align-items: center; gap: 14px; }
+        .home-btn-outline { background: white; border: 2px solid var(--color-gold); color: var(--color-gold); font-family: var(--font-family-ui); font-weight: 800; font-size: 11px; padding: 8px 14px; border-radius: 6px; cursor: pointer; letter-spacing: 0.5px; }
+        .home-btn-outline:hover { background-color: var(--color-gold); color: white; }
+        .home-view-all { font-family: var(--font-family-ui); font-weight: 700; font-size: 12px; color: var(--color-text-muted); cursor: pointer; }
+        .home-view-all:hover { color: var(--color-primary); }
+
+        .home-quad-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        @media (max-width: 900px) { .home-quad-grid { grid-template-columns: 1fr; } }
+
+        .home-stat-block__label { font-family: var(--font-family-ui); font-size: 11px; font-weight: 800; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+        .home-stat-block__row { display: flex; align-items: center; justify-content: space-between; }
+        .home-stat-block__value { font-family: var(--font-family-ui); font-size: 38px; font-weight: 800; color: var(--color-primary-dark); letter-spacing: 0.5px; }
+        .home-stat-block__value--gold { color: var(--color-gold); }
+        .home-stat-block__icon { width: 52px; height: 52px; border-radius: 8px; background: var(--color-primary-light); display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
+        .home-stat-block__sub { font-family: var(--font-family-ui); font-size: 12px; font-weight: 600; color: var(--color-text-muted); margin-top: 8px; }
+
+        .home-list { display: flex; flex-direction: column; }
+        .home-list-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--color-border-light); font-family: var(--font-family-ui); }
+        .home-list-row:last-child { border-bottom: none; padding-bottom: 0; }
+        .home-list-row:first-child { padding-top: 0; }
+        .home-list-row__left { display: flex; align-items: center; gap: 12px; }
+        .home-list-row__medal { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; color: white; flex-shrink: 0; }
+        .home-list-row__name { font-weight: 800; font-size: 14px; color: var(--color-text-dark); }
+        .home-list-row__value { font-weight: 800; font-size: 14px; color: var(--color-text-dark); }
+        .home-list-row__value-unit { font-weight: 600; font-size: 11px; color: var(--color-text-muted); margin-left: 2px; }
+
+        .home-event-row__left { display: flex; flex-direction: column; }
+        .home-event-row__name { font-weight: 800; font-size: 14px; color: var(--color-text-dark); }
+        .home-event-row__date { font-weight: 600; font-size: 11px; color: var(--color-text-muted); margin-top: 2px; }
+        .home-event-row__rate { font-weight: 800; font-size: 13px; color: var(--color-not-attended); }
+
+        .home-empty-state { text-align: center; padding: 32px 0; color: var(--color-text-muted); font-family: var(--font-family-ui); font-weight: 600; font-size: 13px; }
 
         .footer-info-bar { display: flex; justify-content: space-between; align-items: center; font-family: var(--font-family-ui); font-size: 10px; font-weight: 700; color: var(--color-text-muted); padding: 0 4px; text-transform: uppercase; letter-spacing: 0.5px; }
 
@@ -348,57 +380,64 @@
             </div>
 
             <section id="viewHome" class="app-view" style="display: flex; flex-direction: column; gap: 20px;">
-                <div class="home-hero-card">
-                    <h1>Loopy's Playground — Alliance Hub</h1>
-                    <p>Welcome back, commander. Access all alliance management trackers, fighter rosters, event attendance metrics, and tactical tools directly from your control panel.</p>
-                </div>
-
-                <div class="home-stats-grid">
-                    <div class="home-stat-card">
-                        <span class="home-stat-card__title">Active Fighters</span>
-                        <span class="home-stat-card__value" id="homeKpiMembers">0</span>
+                <div class="home-card home-card--accent-gold">
+                    <div class="home-card__header">
+                        <div class="home-card__header-title">🖼️ RECENT PHOTOS / VIDEOS</div>
+                        <div class="home-card__header-actions">
+                            <button type="button" class="home-btn-outline">+ UPLOAD</button>
+                            <span class="home-view-all">VIEW ALL ›</span>
+                        </div>
                     </div>
-                    <div class="home-stat-card">
-                        <span class="home-stat-card__title">Total Event Sessions</span>
-                        <span class="home-stat-card__value" id="homeKpiEvents">0</span>
-                    </div>
-                    <div class="home-stat-card">
-                        <span class="home-stat-card__title">Average Participation Rate</span>
-                        <span class="home-stat-card__value" id="homeKpiRate">0.0%</span>
+                    <div id="homePhotosContainer">
+                        <div class="home-empty-state">No photos or videos yet.</div>
                     </div>
                 </div>
 
-                <div style="font-family: var(--font-family-ui); font-size: var(--font-md); font-weight: 800; color: var(--color-primary-dark); text-transform: uppercase; margin-top: 4px;">Quick Navigation</div>
-                
-                <div class="home-quick-links">
-                    <a class="home-link-card" data-view-target="attendance">
-                        <div class="home-link-card__content">
-                            <h3>Event Attendance</h3>
-                            <p>Track sessions, participation percentages, and user rankings.</p>
+                <div class="home-quad-grid">
+                    <div class="home-card">
+                        <div class="home-stat-block__label">TOTAL MEMBERS</div>
+                        <div class="home-stat-block__row">
+                            <div class="home-stat-block__value" id="homeKpiMembers">0/100</div>
+                            <div class="home-stat-block__icon">👥</div>
                         </div>
-                        <span class="home-link-card__arrow">→</span>
-                    </a>
-                    <a class="home-link-card" data-view-target="vspoints">
-                        <div class="home-link-card__content">
-                            <h3>VS Points Tracker</h3>
-                            <p>Review weekly battle points and scoring breakdowns.</p>
+                        <div class="home-stat-block__sub" id="homeKpiMembersSub">0 slots available</div>
+                    </div>
+                    <div class="home-card">
+                        <div class="home-stat-block__label">EVENT ATTENDANCE</div>
+                        <div class="home-stat-block__row">
+                            <div class="home-stat-block__value home-stat-block__value--gold" id="homeKpiRate">0%</div>
+                            <div class="home-stat-block__icon">📅</div>
                         </div>
-                        <span class="home-link-card__arrow">→</span>
-                    </a>
-                    <a class="home-link-card" data-view-target="notice">
-                        <div class="home-link-card__content">
-                            <h3>Notice Board</h3>
-                            <p>Check recent announcements and alliance updates.</p>
+                        <div class="home-stat-block__sub" id="homeKpiEventsSub">0 recent events</div>
+                    </div>
+                </div>
+
+                <div class="home-quad-grid">
+                    <div class="home-card">
+                        <div class="home-card__header-title" style="margin-bottom: 18px;">⚔️ TOP 5 CONTRIBUTORS</div>
+                        <div class="home-list" id="homeTopContributors">
+                            <div class="home-empty-state">No VS points recorded yet.</div>
                         </div>
-                        <span class="home-link-card__arrow">→</span>
-                    </a>
-                    <a class="home-link-card" data-view-target="board">
-                        <div class="home-link-card__content">
-                            <h3>Community Board</h3>
-                            <p>Alliance coordination stream and operational notes.</p>
+                    </div>
+                    <div class="home-card">
+                        <div class="home-card__header-title" style="margin-bottom: 18px;">📅 RECENT EVENTS</div>
+                        <div class="home-list" id="homeRecentEvents">
+                            <div class="home-empty-state">No events recorded yet.</div>
                         </div>
-                        <span class="home-link-card__arrow">→</span>
-                    </a>
+                    </div>
+                </div>
+
+                <div class="home-card home-card--accent-red">
+                    <div class="home-card__header">
+                        <div class="home-card__header-title">📣 NOTICES</div>
+                        <div class="home-card__header-actions">
+                            <button type="button" class="home-btn-outline">+ POST</button>
+                            <span class="home-view-all">VIEW ALL ›</span>
+                        </div>
+                    </div>
+                    <div id="homeNoticesContainer">
+                        <div class="home-empty-state">No notices yet.</div>
+                    </div>
                 </div>
             </section>
 
@@ -713,18 +752,6 @@
             });
         });
 
-        // Quick Link cards click listeners on Home view
-        document.querySelectorAll('.home-link-card[data-view-target]').forEach(card => {
-            card.addEventListener('click', (e) => {
-                e.preventDefault();
-                const targetView = card.getAttribute('data-view-target');
-                const sidebarItem = document.querySelector(`.sidebar__item[data-view="${targetView}"]`);
-                if (sidebarItem) {
-                    sidebarItem.click();
-                }
-            });
-        });
-
         const loginScreen = document.getElementById('loginScreen');
         const appDashboard = document.getElementById('appDashboard');
         const loginModal = document.getElementById('loginModal');
@@ -898,9 +925,13 @@
             document.getElementById('footerMembersShown').innerText = `${filteredMembers.length} members shown`;
 
             // Update Home Tab Dashboard Quick Stats
-            document.getElementById('homeKpiMembers').innerText = activeMembers.length;
-            document.getElementById('homeKpiEvents').innerText = totalEvents;
+            const memberCap = 100;
+            document.getElementById('homeKpiMembers').innerText = `${activeMembers.length}/${memberCap}`;
+            document.getElementById('homeKpiMembersSub').innerText = `${Math.max(memberCap - activeMembers.length, 0)} slots available`;
             document.getElementById('homeKpiRate').innerText = `${avgRate.toFixed(1)}%`;
+            document.getElementById('homeKpiEventsSub').innerText = `${totalEvents} recent event${totalEvents === 1 ? '' : 's'}`;
+            renderHomeTopContributors();
+            renderHomeRecentEvents(activeMembers);
 
             if (currentSubTab === 'attendance') {
                 renderAttendanceTable(filteredMembers, avgRate, isManagementOrAdmin, totalEvents, totalAttendedCount);
@@ -911,6 +942,60 @@
             renderMembersDirectory();
             renderVsPointsTable(isManagementOrAdmin);
             renderAuditTable();
+        }
+
+        function renderHomeTopContributors() {
+            const container = document.getElementById('homeTopContributors');
+            if (!container) return;
+
+            const activeMembers = getActiveMembers(members);
+            const activeMemberNames = new Set(activeMembers.map(m => m.name.toLowerCase()));
+            const scoredList = (vsData.membersScores || [])
+                .filter(ms => activeMemberNames.has(ms.name.toLowerCase()))
+                .map(ms => ({ name: ms.name, total: (ms.scores || []).reduce((a, b) => a + (b || 0), 0) }))
+                .sort((a, b) => b.total - a.total)
+                .slice(0, 5);
+
+            if (scoredList.length === 0) {
+                container.innerHTML = `<div class="home-empty-state">No VS points recorded yet.</div>`;
+                return;
+            }
+
+            const medalColors = ['#f3a808', '#a0aec0', '#b7791f', '#3182ce', '#e53e3e'];
+            container.innerHTML = scoredList.map((m, idx) => `
+                <div class="home-list-row">
+                    <div class="home-list-row__left">
+                        <span class="home-list-row__medal" style="background:${medalColors[idx]};">${idx + 1}</span>
+                        <span class="home-list-row__name">${m.name}</span>
+                    </div>
+                    <div class="home-list-row__value">${m.total.toLocaleString()}<span class="home-list-row__value-unit"> pts</span></div>
+                </div>
+            `).join('');
+        }
+
+        function renderHomeRecentEvents(activeMembers) {
+            const container = document.getElementById('homeRecentEvents');
+            if (!container) return;
+
+            if (!eventDates || eventDates.length === 0) {
+                container.innerHTML = `<div class="home-empty-state">No events recorded yet.</div>`;
+                return;
+            }
+
+            const recent = eventDates.map((ev, idx) => ({ ev, idx })).slice(-5).reverse();
+            container.innerHTML = recent.map(({ ev, idx }) => {
+                const attendedCount = activeMembers.reduce((sum, m) => sum + ((m.events && m.events[idx]) ? 1 : 0), 0);
+                const rate = activeMembers.length > 0 ? Math.round((attendedCount / activeMembers.length) * 100) : 0;
+                return `
+                    <div class="home-list-row">
+                        <div class="home-event-row__left">
+                            <span class="home-event-row__name">${ev.name || ev.subtext || 'Event'}</span>
+                            <span class="home-event-row__date">${ev.date}</span>
+                        </div>
+                        <span class="home-event-row__rate">${rate}% attended</span>
+                    </div>
+                `;
+            }).join('');
         }
 
         function getProgressBarColorClass(rateNum) {
