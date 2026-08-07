@@ -211,7 +211,8 @@
         text-align: center;
     }
     thead th.col-member { text-align: left; padding-left: 20px; }
-    thead th .date-label { font-size: 13px; font-weight: 800; color: var(--color-text-dark); }
+    thead th .date-label { font-size: 13px; font-weight: 800; color: var(--color-text-dark); cursor: pointer; }
+    thead th .date-label:hover { text-decoration: underline; color: var(--color-primary); }
     thead th .week-label { font-size: 9px; font-weight: 700; color: var(--color-text-muted); text-transform: none; margin-top: 2px; }
     thead th .remove-date-btn {
         display: inline-block;
@@ -355,7 +356,7 @@
         <div class="legend-item"><span class="status-badge-legend" style="background:#e6f4ea; color:#1f9d55; border:1px solid #1f9d55;">Attended</span></div>
         <div class="legend-item"><span class="status-badge-legend" style="background:#ffb000; color:#3d2c00; border:1px solid #c98c00;">Main Player</span></div>
         <div class="legend-item"><span class="status-badge-legend" style="background:#c8e0dd; color:#1e3a38; border:1px solid #95b8b5;">Substitute</span></div>
-        <span class="legend-hint" id="legendHint">· Unassigned slots count as 0 penalty. Penalties count only for passed weeks where a member was assigned to Slot A or B and did not attend. Dates are strictly ordered chronologically.</span>
+        <span class="legend-hint" id="legendHint">· Unassigned slots count as 0 penalty. Penalties count only for passed weeks where a member was assigned to Slot A or B and did not attend. Dates are strictly ordered chronologically. Click any date header to edit it.</span>
     </div>
 
     <div class="table-card">
@@ -393,8 +394,6 @@
     const isManagementOrAdmin = currentUser.role === 'admin' || currentUser.role === 'management';
 
     // --- SAVE STATUS INDICATOR ---
-    // Shows a small badge top-right so save failures are visible immediately,
-    // instead of only discovering them after a refresh wipes the change.
     const saveStatusEl = document.getElementById('saveStatus');
     let saveStatusTimer = null;
     function showSaveStatus(kind, text) {
@@ -446,10 +445,6 @@
                     if (row.key === 'members') members = row.value || [];
                     if (row.key === 'blackGoldDates') bgDates = row.value || [];
                     if (row.key === 'blackGoldAssignments') {
-                        // Guard: if this was ever accidentally saved as an array
-                        // (e.g. from early testing), treat it as corrupted and
-                        // reset to a clean object rather than loading a value
-                        // that could silently blow up on the next save.
                         assignments = (row.value && !Array.isArray(row.value)) ? row.value : {};
                     }
                 });
@@ -463,10 +458,6 @@
         render();
     }
 
-    // Both save functions now explicitly check the {error} Supabase returns
-    // (it does NOT throw on failure by default) and surface it via the
-    // on-screen badge, an alert, and the console -- so a failed save is
-    // never silent again.
     async function saveDates() {
         showSaveStatus('saving', 'Saving…');
         try {
@@ -526,9 +517,10 @@
         let html = `<th class="col-rank">#</th><th class="col-member">Member</th>`;
 
         bgDates.forEach((d, idx) => {
+            const dateClickAttr = isManagementOrAdmin ? `onclick="editDate('${d.id}')" title="Click to edit date"` : '';
             html += `
                 <th>
-                    <div class="date-label">${d.date}</div>
+                    <div class="date-label" ${dateClickAttr}>${d.date}</div>
                     <div class="week-label">Week ${idx + 1}</div>
                     ${isManagementOrAdmin ? `<span class="remove-date-btn" onclick="removeDate('${d.id}')">✕</span>` : ''}
                 </th>
@@ -558,15 +550,10 @@
             bgDates.forEach(d => {
                 const entry = getEntry(member.id, d.id);
                 
-                // Check if session date has passed/is today
                 const sessionDate = parseDateString(d.date);
                 sessionDate.setHours(0,0,0,0);
                 const hasPassed = sessionDate <= today;
 
-                // Penalty counts ONLY if:
-                // 1. The session date has passed (or is today)
-                // 2. The member is assigned to slot 'A' or 'B' (not unassigned/null)
-                // 3. The member did not attend
                 if (hasPassed && entry.slot !== null && !entry.attended) {
                     penaltyWeeks += 2;
                 }
@@ -658,6 +645,47 @@
         render();
     };
 
+    window.editDate = function(dateId) {
+        const d = bgDates.find(x => x.id === dateId);
+        if (!d) return;
+
+        // Try to pre-convert current MM-DD-YYYY or MM-DD to YYYY-MM-DD for standard input picker
+        let defaultVal = '';
+        const parsed = parseDateString(d.date);
+        if (!isNaN(parsed) && parsed.getTime() > 0) {
+            const yyyy = parsed.getFullYear();
+            const mm = String(parsed.getMonth() + 1).padStart(2, '0');
+            const dd = String(parsed.getDate()).padStart(2, '0');
+            defaultVal = `${yyyy}-${mm}-${dd}`;
+        }
+
+        const newDateInput = prompt(`Edit date (Format: MM-DD-YYYY or select via date prompt):`, d.date);
+        if (newDateInput === null) return; // Cancelled
+        const trimmed = newDateInput.trim();
+        if (!trimmed) {
+            alert('Date cannot be empty.');
+            return;
+        }
+
+        // Standardize format if they type it directly
+        let formattedDate = trimmed;
+        let parts = trimmed.split('-');
+        if (parts.length === 3 && parts[0].length === 4) {
+            // YYYY-MM-DD -> MM-DD-YYYY
+            formattedDate = `${parts[1]}-${parts[2]}-${parts[0]}`;
+        }
+
+        if (bgDates.some(x => x.id !== dateId && x.date === formattedDate)) {
+            alert('Another session with this date already exists.');
+            return;
+        }
+
+        d.date = formattedDate;
+        bgDates.sort((a, b) => parseDateString(a.date) - parseDateString(b.date));
+        saveDates();
+        render();
+    };
+
     window.removeDate = function(dateId) {
         const d = bgDates.find(x => x.id === dateId);
         if (!confirm(`Remove session "${d ? d.date : ''}"? This also clears all slots, attendance, and role markers for it.`)) return;
@@ -687,7 +715,6 @@
         }
 
         bgDates.push({ id: 'd' + Date.now(), date: formattedDate });
-        // Automatically sort dates chronologically
         bgDates.sort((a, b) => parseDateString(a.date) - parseDateString(b.date));
         picker.value = '';
         
