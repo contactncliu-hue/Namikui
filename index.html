@@ -284,28 +284,29 @@
 
         .gantt-wrapper { border: 2px solid var(--color-border); border-radius: 6px; background: white; overflow: hidden; }
         .gantt-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-        .gantt-grid { display: grid; min-width: max-content; }
-        .gantt-header-row { display: grid; grid-template-columns: 190px repeat(var(--gantt-days), var(--gantt-col-w)); border-bottom: 2px solid var(--color-primary); background-color: #e9ecf7; position: sticky; top: 0; z-index: 2; }
-        .gantt-header-row__label { padding: 10px 14px; font-family: var(--font-family-ui); font-size: 11px; font-weight: 800; color: var(--color-primary-dark); text-transform: uppercase; display: flex; align-items: center; position: sticky; left: 0; background-color: #e9ecf7; z-index: 3; border-right: 1px solid var(--color-border-light); }
-        .gantt-header-cell { padding: 8px 4px; text-align: center; font-family: var(--font-family-ui); border-right: 1px solid var(--color-border-light); }
+        .gantt-grid { min-width: max-content; }
+
+        .gantt-body-wrapper { position: relative; }
+        .gantt-today-stripe { position: absolute; top: 0; bottom: 0; background-color: rgba(243, 168, 8, 0.10); border-left: 2px solid var(--color-gold); border-right: 2px solid var(--color-gold); z-index: 0; pointer-events: none; }
+
+        .gantt-group-header { font-family: var(--font-family-ui); font-size: 12px; font-weight: 800; color: var(--color-primary-dark); text-transform: uppercase; letter-spacing: 0.5px; padding: 10px 14px; background-color: #eceff8; border-bottom: 2px solid var(--color-primary); border-top: 1px solid var(--color-border-light); position: relative; z-index: 1; width: calc(var(--gantt-days) * var(--gantt-col-w)); }
+
+        .gantt-header-row { display: flex; width: calc(var(--gantt-days) * var(--gantt-col-w)); border-bottom: 2px solid var(--color-primary); background-color: #e9ecf7; position: sticky; top: 0; z-index: 2; }
+        .gantt-header-cell { flex: 0 0 var(--gantt-col-w); width: var(--gantt-col-w); padding: 8px 4px; text-align: center; font-family: var(--font-family-ui); border-right: 1px solid var(--color-border-light); }
         .gantt-header-cell__dow { font-size: 10px; font-weight: 800; color: var(--color-text-muted); text-transform: uppercase; }
         .gantt-header-cell__num { font-size: 14px; font-weight: 800; color: var(--color-text-dark); }
         .gantt-header-cell--today { background-color: var(--color-gold-bg); }
         .gantt-header-cell--today .gantt-header-cell__num { color: var(--color-gold); }
         .gantt-header-cell--weekend { background-color: #f7f7f4; }
 
-        .gantt-row { display: grid; grid-template-columns: 190px repeat(var(--gantt-days), var(--gantt-col-w)); border-bottom: 1px solid var(--color-border-light); position: relative; min-height: 52px; }
+        .gantt-row { position: relative; width: calc(var(--gantt-days) * var(--gantt-col-w)); min-height: 54px; border-bottom: 1px solid var(--color-border-light); }
         .gantt-row:nth-child(even) { background-color: #fafbfd; }
-        .gantt-row__label { padding: 10px 14px; font-family: var(--font-family-ui); font-size: 12px; font-weight: 800; color: var(--color-text-dark); display: flex; flex-direction: column; justify-content: center; gap: 2px; position: sticky; left: 0; background-color: inherit; border-right: 1px solid var(--color-border-light); }
-        .gantt-row__label-sub { font-size: 10px; font-weight: 600; color: var(--color-text-muted); text-transform: uppercase; }
-        .gantt-row__track { grid-column: 2 / -1; position: relative; display: grid; grid-template-columns: repeat(var(--gantt-days), var(--gantt-col-w)); }
-        .gantt-row__track::before { content: ''; position: absolute; inset: 0; background-image: repeating-linear-gradient(to right, var(--color-border-light) 0, var(--color-border-light) 1px, transparent 1px, transparent var(--gantt-col-w)); pointer-events: none; }
 
-        .gantt-bar { position: absolute; top: 8px; height: 34px; border-radius: 7px; display: flex; align-items: center; padding: 0 10px; font-family: var(--font-family-ui); font-size: 11px; font-weight: 800; color: var(--color-text-dark); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; box-shadow: 0 1px 2px rgba(0,0,0,0.08); }
+        .gantt-bar { position: absolute; top: 6px; height: 42px; border-radius: 7px; display: flex; flex-direction: column; justify-content: center; gap: 1px; padding: 5px 10px; font-family: var(--font-family-ui); color: #ffffff; white-space: nowrap; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.18); }
         .gantt-bar--clickable { cursor: pointer; transition: box-shadow 0.15s, transform 0.15s; }
-        .gantt-bar--clickable:hover { box-shadow: 0 3px 8px rgba(0,0,0,0.18); transform: translateY(-1px); }
-        .gantt-bar__time { font-weight: 600; opacity: 0.85; margin-right: 6px; }
-        .gantt-bar__repeat-icon { margin-right: 4px; }
+        .gantt-bar--clickable:hover { box-shadow: 0 3px 9px rgba(0,0,0,0.3); transform: translateY(-1px); }
+        .gantt-bar__name { font-size: 12px; font-weight: 800; overflow: hidden; text-overflow: ellipsis; }
+        .gantt-bar__date { font-size: 10px; font-weight: 700; opacity: 0.92; overflow: hidden; text-overflow: ellipsis; }
 
         .gantt-empty-state { padding: 40px 20px; text-align: center; font-family: var(--font-family-ui); font-weight: 700; font-size: 13px; color: var(--color-text-muted); }
         .gantt-nav-btn { background: white; border: 2px solid var(--color-border); color: var(--color-primary); font-size: 16px; font-weight: 800; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
@@ -786,15 +787,24 @@
         </div>
     </div>
 
-    <!-- Calendar event add/edit modal for the Notice tab Gantt timeline (name + date range/weekly + time + color) -->
+    <!-- Calendar event add/edit modal for the Notice tab Gantt timeline (name + category + repeat + time + visibility + color) -->
     <div class="modal-overlay" id="calendarEventModal">
         <div class="modal-card" style="max-width: 420px;">
             <h3 id="calendarEventModalTitle">Add Calendar Event</h3>
             <input type="text" id="calEventNameInput" placeholder="Event Name">
-            <label class="cal-field-label">Event Type</label>
+
+            <label class="cal-field-label">Category</label>
+            <select id="calEventCategorySelect" style="margin-bottom: 16px;">
+                <option value="alliance">Alliance Event</option>
+                <option value="war">War Event</option>
+            </select>
+
+            <label class="cal-field-label">Repeats</label>
             <select id="calEventTypeSelect" onchange="toggleCalEventTypeFields()" style="margin-bottom: 16px;">
                 <option value="custom">One-Time / Date Range</option>
-                <option value="weekly">Repeats Weekly</option>
+                <option value="weekly">Weekly</option>
+                <option value="biweekly">Every 2 Weeks</option>
+                <option value="monthly">Monthly</option>
             </select>
 
             <div id="calCustomFields">
@@ -818,11 +828,37 @@
                 </select>
             </div>
 
+            <div id="calBiweeklyFields" style="display:none;">
+                <label class="cal-field-label">Day of Week</label>
+                <select id="calEventBiweeklyWeekdaySelect" style="margin-bottom: 16px;">
+                    <option value="0">Sunday</option>
+                    <option value="1">Monday</option>
+                    <option value="2">Tuesday</option>
+                    <option value="3">Wednesday</option>
+                    <option value="4">Thursday</option>
+                    <option value="5">Friday</option>
+                    <option value="6">Saturday</option>
+                </select>
+                <label class="cal-field-label">Starting From</label>
+                <input type="date" id="calEventBiweeklyAnchorInput" style="margin-bottom: 16px;">
+            </div>
+
+            <div id="calMonthlyFields" style="display:none;">
+                <label class="cal-field-label">Day of Month</label>
+                <input type="number" id="calEventDayOfMonthInput" min="1" max="31" placeholder="e.g. 15" style="margin-bottom: 16px;">
+            </div>
+
             <label class="cal-field-label">Start Time &amp; End Time (optional)</label>
             <div class="cal-field-row">
                 <input type="time" id="calEventTimeInput" title="Start Time">
                 <input type="time" id="calEventEndTimeInput" title="End Time">
             </div>
+
+            <label class="cal-field-label" style="margin-top: 16px;">Visible To</label>
+            <select id="calEventVisibilitySelect" style="margin-bottom: 16px;">
+                <option value="everyone">Everyone</option>
+                <option value="alliance">Alliance Members + Staff Only</option>
+            </select>
 
             <div style="font-size: 11px; font-weight: 800; color: var(--color-text-muted); margin-bottom: 6px; text-transform: uppercase;">Color:</div>
             <div class="color-swatch-row" id="calEventColorSwatches"></div>
@@ -875,14 +911,14 @@
         let polls = [];
         let notices = [];
         let vsData = { weeks: [], membersScores: [] };
-        // Notice tab Gantt-style event timeline state (supports date ranges, weekly repeats, start/end time)
+        // Notice tab Gantt-style event timeline state (supports date ranges, weekly/biweekly/monthly repeats, start/end time, category, visibility)
         let calendarEvents = [];
-        const CALENDAR_COLORS = ['#3b52a4', '#f3a808', '#16a34a', '#dc2626', '#a855f7', '#0ea5e9', '#b7791f'];
+        const CALENDAR_COLORS = ['#2563eb', '#dc2626', '#eab308', '#16a34a', '#ec4899']; // blue, red, yellow, green, pink
         let editingCalEventId = null;
         let selectedCalColor = CALENDAR_COLORS[0];
         let calendarModalDateStr = null;
         let calendarModalDayOfWeek = null;
-        let ganttWindowOffset = 0; // in days, shifts the visible 14-day window
+        let ganttWindowOffset = 0; // in days, shifts the visible window
         // Notice Board announcements (separate from Discussion Room notices), with audience visibility
         let noticeAnnouncements = [];
         let editingNoticeAnnId = null;
@@ -1224,10 +1260,12 @@
         }
 
         // ===== Notice tab: Gantt-style event timeline =====
-        // Each calendarEvent: { id, name, time, endTime, color, type: 'custom'|'weekly',
-        //   (custom) date, endDate,  (weekly) dayOfWeek }
-        const GANTT_VISIBLE_DAYS = 14;
-        const GANTT_COL_WIDTH = 68; // px per day column, matches --gantt-col-w
+        // Each calendarEvent: { id, name, category: 'alliance'|'war', color, visibility: 'everyone'|'alliance',
+        //   type: 'custom'|'weekly'|'biweekly'|'monthly',
+        //   (custom) date, endDate,  (weekly) dayOfWeek,  (biweekly) dayOfWeek + biweeklyAnchorDate,  (monthly) dayOfMonth
+        //   time, endTime }
+        const GANTT_VISIBLE_DAYS = 10;
+        const GANTT_COL_WIDTH = 96; // px per day column, matches --gantt-col-w
 
         function getGanttWindow() {
             const days = [];
@@ -1259,15 +1297,25 @@
             return `${h12}:${String(m).padStart(2, '0')} ${period}`;
         }
 
+        // Returns true if the given calendar event should be visible to the current user.
+        function canViewCalendarEvent(ev) {
+            if (!ev.visibility || ev.visibility === 'everyone') return true;
+            if (ev.visibility === 'alliance') {
+                return currentUser.role === 'admin' || currentUser.role === 'management' || currentUser.role === 'alliance';
+            }
+            return true;
+        }
+
         // Build a flat list of "bar segments" to render for the visible window.
-        // Custom events produce one segment (clipped to window). Weekly events
-        // produce one segment per matching weekday occurrence inside the window.
-        function buildGanttBarsForWindow(windowDays) {
+        // Custom events produce one segment (clipped to window). Weekly/biweekly/monthly events
+        // produce one segment per matching occurrence inside the window.
+        function buildGanttBarsForWindow(windowDays, eventsList) {
             const winStart = windowDays[0];
             const winEnd = windowDays[windowDays.length - 1];
+            const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
             const bars = [];
 
-            calendarEvents.forEach(ev => {
+            (eventsList || calendarEvents).forEach(ev => {
                 if (ev.type === 'custom') {
                     const evStart = new Date(ev.date + 'T00:00:00');
                     const evEnd = new Date((ev.endDate || ev.date) + 'T00:00:00');
@@ -1276,11 +1324,29 @@
                     const clippedEnd = evEnd > winEnd ? winEnd : evEnd;
                     const startIdx = daysBetween(winStart, clippedStart);
                     const span = daysBetween(clippedStart, clippedEnd) + 1;
-                    bars.push({ event: ev, startIdx, span, occurrenceKey: ev.id + '-' + ev.date });
+                    const dateLabel = (ev.endDate && ev.endDate !== ev.date)
+                        ? `${monthNames[evStart.getMonth()]} ${evStart.getDate()} – ${monthNames[evEnd.getMonth()]} ${evEnd.getDate()}`
+                        : `${monthNames[evStart.getMonth()]} ${evStart.getDate()}`;
+                    bars.push({ event: ev, startIdx, span, dateLabel, occurrenceKey: ev.id + '-' + ev.date });
                 } else if (ev.type === 'weekly') {
                     windowDays.forEach((d, idx) => {
                         if (d.getDay() === ev.dayOfWeek) {
-                            bars.push({ event: ev, startIdx: idx, span: 1, occurrenceKey: ev.id + '-' + dateStrOf(d), isRepeatOccurrence: true });
+                            bars.push({ event: ev, startIdx: idx, span: 1, isRepeatOccurrence: true, dateLabel: `${monthNames[d.getMonth()]} ${d.getDate()}`, occurrenceKey: ev.id + '-' + dateStrOf(d) });
+                        }
+                    });
+                } else if (ev.type === 'biweekly') {
+                    const anchor = new Date((ev.biweeklyAnchorDate || dateStrOf(new Date())) + 'T00:00:00');
+                    windowDays.forEach((d, idx) => {
+                        if (d.getDay() !== ev.dayOfWeek) return;
+                        const diff = daysBetween(anchor, d);
+                        if (((diff % 14) + 14) % 14 === 0) {
+                            bars.push({ event: ev, startIdx: idx, span: 1, isRepeatOccurrence: true, dateLabel: `${monthNames[d.getMonth()]} ${d.getDate()}`, occurrenceKey: ev.id + '-' + dateStrOf(d) });
+                        }
+                    });
+                } else if (ev.type === 'monthly') {
+                    windowDays.forEach((d, idx) => {
+                        if (d.getDate() === ev.dayOfMonth) {
+                            bars.push({ event: ev, startIdx: idx, span: 1, isRepeatOccurrence: true, dateLabel: `${monthNames[d.getMonth()]} ${d.getDate()}`, occurrenceKey: ev.id + '-' + dateStrOf(d) });
                         }
                     });
                 }
@@ -1293,7 +1359,7 @@
             if (!legend) return;
             const namesSeen = new Set();
             const items = [];
-            calendarEvents.forEach(ev => {
+            calendarEvents.filter(canViewCalendarEvent).forEach(ev => {
                 if (namesSeen.has(ev.name)) return;
                 namesSeen.add(ev.name);
                 items.push(ev);
@@ -1328,14 +1394,13 @@
             grid.style.setProperty('--gantt-days', GANTT_VISIBLE_DAYS);
             grid.style.setProperty('--gantt-col-w', GANTT_COL_WIDTH + 'px');
 
-            // Group events into rows: one row per unique event definition (by id)
-            const rows = calendarEvents.slice().sort((a, b) => a.name.localeCompare(b.name));
-            const barsBySegment = buildGanttBarsForWindow(windowDays);
+            const visibleEvents = calendarEvents.filter(canViewCalendarEvent);
+            const barsBySegment = buildGanttBarsForWindow(windowDays, visibleEvents);
+            const todayIdx = windowDays.findIndex(d => dateStrOf(d) === todayStr);
 
-            let headerHtml = `<div class="gantt-header-row">
-                <div class="gantt-header-row__label">EVENT</div>`;
-            windowDays.forEach(d => {
-                const isToday = dateStrOf(d) === todayStr;
+            let headerHtml = `<div class="gantt-header-row">`;
+            windowDays.forEach((d, idx) => {
+                const isToday = idx === todayIdx;
                 const isWeekend = d.getDay() === 0 || d.getDay() === 6;
                 const classes = ['gantt-header-cell'];
                 if (isToday) classes.push('gantt-header-cell--today');
@@ -1347,44 +1412,44 @@
             });
             headerHtml += `</div>`;
 
-            let rowsHtml = '';
-            if (rows.length === 0) {
-                rowsHtml = `<div class="gantt-empty-state">${isManagementOrAdmin ? 'No events scheduled yet. Click "+ ADD EVENT" to create one.' : 'No events scheduled yet.'}</div>`;
-            } else {
-                rows.forEach(ev => {
+            const todayStripeHtml = todayIdx >= 0
+                ? `<div class="gantt-today-stripe" style="left:calc(${(todayIdx / GANTT_VISIBLE_DAYS) * 100}%); width:calc(${(1 / GANTT_VISIBLE_DAYS) * 100}%);"></div>`
+                : '';
+
+            function buildGroupHtml(groupLabel, groupIcon, groupEvents) {
+                if (groupEvents.length === 0) return '';
+                let html = `<div class="gantt-group-header">${groupIcon} ${groupLabel}</div>`;
+                groupEvents.forEach(ev => {
                     const segs = barsBySegment.filter(b => b.event.id === ev.id);
                     let trackHtml = '';
                     segs.forEach(seg => {
                         const leftPct = (seg.startIdx / GANTT_VISIBLE_DAYS) * 100;
                         const widthPct = (seg.span / GANTT_VISIBLE_DAYS) * 100;
-                        const clickAttr = isManagementOrAdmin
-                            ? `onclick="openCalendarEventModal(${ev.id})"`
-                            : '';
+                        const clickAttr = isManagementOrAdmin ? `onclick="openCalendarEventModal(${ev.id})"` : '';
                         const timeLabel = ev.time ? formatEventTime(ev.time) + (ev.endTime ? ' – ' + formatEventTime(ev.endTime) : '') : '';
+                        const subLabel = seg.dateLabel + (timeLabel ? ' · ' + timeLabel : '');
                         trackHtml += `
                             <div class="gantt-bar ${isManagementOrAdmin ? 'gantt-bar--clickable' : ''}" ${clickAttr}
-                                style="left:calc(${leftPct}% + 2px); width:calc(${widthPct}% - 4px); background-color:${ev.color}33; border:1.5px solid ${ev.color};">
-                                ${seg.isRepeatOccurrence ? '<span class="gantt-bar__repeat-icon">↻</span>' : ''}
-                                ${timeLabel ? `<span class="gantt-bar__time">${timeLabel}</span>` : ''}
-                                <span>${ev.name}</span>
+                                style="left:calc(${leftPct}% + 3px); width:calc(${widthPct}% - 6px); background-color:${ev.color};">
+                                <span class="gantt-bar__name">${seg.isRepeatOccurrence ? '↻ ' : ''}${ev.name}</span>
+                                <span class="gantt-bar__date">${subLabel}</span>
                             </div>`;
                     });
-
-                    const subLabel = ev.type === 'weekly'
-                        ? `Weekly · ${weekdayNames[ev.dayOfWeek]}`
-                        : (ev.endDate && ev.endDate !== ev.date ? `${ev.date} → ${ev.endDate}` : ev.date);
-
-                    rowsHtml += `<div class="gantt-row">
-                        <div class="gantt-row__label">
-                            <span>${ev.name}</span>
-                            <span class="gantt-row__label-sub">${subLabel}</span>
-                        </div>
-                        <div class="gantt-row__track">${trackHtml}</div>
-                    </div>`;
+                    html += `<div class="gantt-row">${trackHtml}</div>`;
                 });
+                return html;
             }
 
-            grid.innerHTML = headerHtml + rowsHtml;
+            const allianceEvents = visibleEvents.filter(e => (e.category || 'alliance') === 'alliance').sort((a, b) => a.name.localeCompare(b.name));
+            const warEvents = visibleEvents.filter(e => e.category === 'war').sort((a, b) => a.name.localeCompare(b.name));
+
+            let bodyHtml = buildGroupHtml('Alliance Events', '🛡️', allianceEvents) + buildGroupHtml('War Events', '⚔️', warEvents);
+
+            if (visibleEvents.length === 0) {
+                bodyHtml = `<div class="gantt-empty-state">${isManagementOrAdmin ? 'No events scheduled yet. Click "+ ADD EVENT" to create one.' : 'No events scheduled yet.'}</div>`;
+            }
+
+            grid.innerHTML = `<div class="gantt-body-wrapper">${todayStripeHtml}${headerHtml}${bodyHtml}</div>`;
             renderGanttLegend();
         }
 
@@ -1396,12 +1461,17 @@
 
             document.getElementById('calendarEventModalTitle').innerText = existing ? 'Edit Calendar Event' : 'Add Calendar Event';
             document.getElementById('calEventNameInput').value = existing ? existing.name : '';
+            document.getElementById('calEventCategorySelect').value = existing ? (existing.category || 'alliance') : 'alliance';
             document.getElementById('calEventTimeInput').value = existing ? (existing.time || '') : '';
             document.getElementById('calEventEndTimeInput').value = existing ? (existing.endTime || '') : '';
             document.getElementById('calEventTypeSelect').value = existing ? existing.type : 'custom';
             document.getElementById('calEventWeekdaySelect').value = existing && existing.type === 'weekly' ? existing.dayOfWeek : new Date().getDay();
+            document.getElementById('calEventBiweeklyWeekdaySelect').value = existing && existing.type === 'biweekly' ? existing.dayOfWeek : new Date().getDay();
+            document.getElementById('calEventBiweeklyAnchorInput').value = existing && existing.type === 'biweekly' ? (existing.biweeklyAnchorDate || todayStr) : todayStr;
+            document.getElementById('calEventDayOfMonthInput').value = existing && existing.type === 'monthly' ? existing.dayOfMonth : '';
             document.getElementById('calEventDateInput').value = existing && existing.type === 'custom' ? existing.date : todayStr;
             document.getElementById('calEventEndDateInput').value = existing && existing.type === 'custom' ? (existing.endDate || existing.date) : todayStr;
+            document.getElementById('calEventVisibilitySelect').value = existing ? (existing.visibility || 'everyone') : 'everyone';
             selectedCalColor = existing ? existing.color : CALENDAR_COLORS[0];
             document.getElementById('btnDeleteCalEvent').style.display = existing ? 'inline-flex' : 'none';
 
@@ -1425,51 +1495,54 @@
 
         window.toggleCalEventTypeFields = function() {
             const type = document.getElementById('calEventTypeSelect').value;
-            document.getElementById('calWeeklyFields').style.display = type === 'weekly' ? 'block' : 'none';
             document.getElementById('calCustomFields').style.display = type === 'custom' ? 'block' : 'none';
+            document.getElementById('calWeeklyFields').style.display = type === 'weekly' ? 'block' : 'none';
+            document.getElementById('calBiweeklyFields').style.display = type === 'biweekly' ? 'block' : 'none';
+            document.getElementById('calMonthlyFields').style.display = type === 'monthly' ? 'block' : 'none';
         };
 
         window.submitCalendarEvent = function() {
             if (currentUser.role !== 'admin' && currentUser.role !== 'management') return;
             const name = document.getElementById('calEventNameInput').value.trim();
+            const category = document.getElementById('calEventCategorySelect').value;
             const time = document.getElementById('calEventTimeInput').value;
             const endTime = document.getElementById('calEventEndTimeInput').value;
             const type = document.getElementById('calEventTypeSelect').value;
+            const visibility = document.getElementById('calEventVisibilitySelect').value;
             if (!name) { alert('Please enter an event name.'); return; }
+
+            const eventFields = { name, category, time: time || null, endTime: endTime || null, type, color: selectedCalColor, visibility };
 
             if (type === 'custom') {
                 const startDate = document.getElementById('calEventDateInput').value;
                 let endDate = document.getElementById('calEventEndDateInput').value || startDate;
                 if (!startDate) { alert('Please select a start date.'); return; }
                 if (endDate < startDate) endDate = startDate;
+                eventFields.date = startDate;
+                eventFields.endDate = endDate;
+            } else if (type === 'weekly') {
+                eventFields.dayOfWeek = parseInt(document.getElementById('calEventWeekdaySelect').value, 10);
+            } else if (type === 'biweekly') {
+                eventFields.dayOfWeek = parseInt(document.getElementById('calEventBiweeklyWeekdaySelect').value, 10);
+                const anchor = document.getElementById('calEventBiweeklyAnchorInput').value;
+                if (!anchor) { alert('Please select a starting date for the biweekly event.'); return; }
+                eventFields.biweeklyAnchorDate = anchor;
+            } else if (type === 'monthly') {
+                const dom = parseInt(document.getElementById('calEventDayOfMonthInput').value, 10);
+                if (!dom || dom < 1 || dom > 31) { alert('Please enter a valid day of month (1-31).'); return; }
+                eventFields.dayOfMonth = dom;
+            }
 
-                if (editingCalEventId) {
-                    const ev = calendarEvents.find(e => e.id === editingCalEventId);
-                    if (ev) {
-                        ev.name = name; ev.time = time || null; ev.endTime = endTime || null;
-                        ev.type = 'custom'; ev.color = selectedCalColor;
-                        ev.date = startDate; ev.endDate = endDate;
-                        delete ev.dayOfWeek;
-                        logAction('EDIT_CALENDAR_EVENT', `Updated calendar event: ${name}`);
-                    }
-                } else {
-                    calendarEvents.push({ id: Date.now() + Math.floor(Math.random() * 1000), name, time: time || null, endTime: endTime || null, type: 'custom', color: selectedCalColor, date: startDate, endDate: endDate });
-                    logAction('ADD_CALENDAR_EVENT', `Added calendar event: ${name} (${startDate} → ${endDate})`);
+            if (editingCalEventId) {
+                const ev = calendarEvents.find(e => e.id === editingCalEventId);
+                if (ev) {
+                    delete ev.date; delete ev.endDate; delete ev.dayOfWeek; delete ev.biweeklyAnchorDate; delete ev.dayOfMonth;
+                    Object.assign(ev, eventFields);
+                    logAction('EDIT_CALENDAR_EVENT', `Updated calendar event: ${name}`);
                 }
             } else {
-                const dayOfWeek = parseInt(document.getElementById('calEventWeekdaySelect').value, 10);
-                if (editingCalEventId) {
-                    const ev = calendarEvents.find(e => e.id === editingCalEventId);
-                    if (ev) {
-                        ev.name = name; ev.time = time || null; ev.endTime = endTime || null;
-                        ev.type = 'weekly'; ev.color = selectedCalColor; ev.dayOfWeek = dayOfWeek;
-                        delete ev.date; delete ev.endDate;
-                        logAction('EDIT_CALENDAR_EVENT', `Updated calendar event: ${name}`);
-                    }
-                } else {
-                    calendarEvents.push({ id: Date.now() + Math.floor(Math.random() * 1000), name, time: time || null, endTime: endTime || null, type: 'weekly', color: selectedCalColor, dayOfWeek: dayOfWeek });
-                    logAction('ADD_CALENDAR_EVENT', `Added weekly recurring event: ${name}`);
-                }
+                calendarEvents.push(Object.assign({ id: Date.now() + Math.floor(Math.random() * 1000) }, eventFields));
+                logAction('ADD_CALENDAR_EVENT', `Added calendar event: ${name} (${type})`);
             }
 
             saveData();
