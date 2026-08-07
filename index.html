@@ -354,6 +354,7 @@
                 <ul class="sidebar__menu">
                     <li><a class="sidebar__item sidebar__item--active" data-view="home"><span class="sidebar__icon">|</span> HOME</a></li>
                     <li><a class="sidebar__item" data-view="notice"><span class="sidebar__icon">|</span> NOTICE</a></li>
+                    <li><a class="sidebar__item" data-view="board"><span class="sidebar__icon">|</span> BOARD</a></li>
                     <li><a class="sidebar__item" href="members.html"><span class="sidebar__icon">|</span> MEMBERS</a></li>
                     <li><a class="sidebar__item" href="blackgold.html"><span class="sidebar__icon">|</span> BLACK GOLD</a></li>
                     <li><a class="sidebar__item" data-view="attendance"><span class="sidebar__icon">|</span> EVENT ATTENDANCE</a></li>
@@ -362,7 +363,6 @@
                 <div class="sidebar__section-title" id="adminSectionHeader" style="display: none;">MANAGEMENT & ADMIN</div>
                 <ul class="sidebar__menu" id="adminMenuContainer">
                     <li id="navDiscussionLi" style="display: none;"><a class="sidebar__item" data-view="discussion"><span class="sidebar__icon">|</span> DISCUSSION ROOM</a></li>
-                    <li id="navQuestionsLi" style="display: none;"><a class="sidebar__item" data-view="questions"><span class="sidebar__icon">|</span> QUESTIONS</a></li>
                     <li id="navHistoryLi" style="display: none;"><a class="sidebar__item" data-view="history"><span class="sidebar__icon">|</span> EDIT HISTORY & AUDIT</a></li>
                     <li id="assignRolesNavLi" style="display: none;"><a class="sidebar__item" onclick="openRoleAssignModal()"><span class="sidebar__icon">|</span> ASSIGN USER ROLES</a></li>
                 </ul>
@@ -424,12 +424,32 @@
                         </div>
                     </div>
                 </div>
+
+                <div class="home-card home-card--accent-red">
+                    <div class="home-card__header">
+                        <div class="home-card__header-title">📣 NOTICES</div>
+                        <div class="home-card__header-actions">
+                            <button type="button" class="home-btn-outline">+ POST</button>
+                            <span class="home-view-all">VIEW ALL ›</span>
+                        </div>
+                    </div>
+                    <div id="homeNoticesContainer">
+                        <div class="home-empty-state">No notices yet.</div>
+                    </div>
+                </div>
             </section>
 
             <section id="viewNotice" class="app-view" style="display: none;">
                 <div class="generic-view-card">
                     <h2>Notice Board</h2>
                     <p>Clan updates, upcoming schedules, and main notices posted by management tier staff.</p>
+                </div>
+            </section>
+
+            <section id="viewBoard" class="app-view" style="display: none;">
+                <div class="generic-view-card">
+                    <h2>Community Board</h2>
+                    <p>Alliance coordination stream and operational notes.</p>
                 </div>
             </section>
 
@@ -457,6 +477,7 @@
 
             <section id="viewAttendance" class="app-view" style="display: none; flex-direction: column; gap: 14px;">
                 <div class="page-header-top">
+                    <a href="#" class="page-header-top__back" onclick="document.querySelector('.sidebar__item[data-view=\'home\']').click(); return false;">← Back to Dashboard</a>
                     <h1 class="page-header-top__title">Event Attendance</h1>
                     <div class="page-header-top__subtext" id="headerEventsCount">0 members · 0 sessions</div>
                 </div>
@@ -551,11 +572,6 @@
             </section>
 
             <section id="viewDiscussion" class="app-view" style="display: none; flex-direction: column; gap: 16px;">
-                <div class="page-header-top">
-                    <h1 class="page-header-top__title">Discussion Room</h1>
-                    <div class="page-header-top__subtext">Management communication and official notices</div>
-                </div>
-
                 <div class="controls-card" style="display: flex; justify-content: space-between; align-items: center;">
                     <div class="btn-group">
                         <button class="btn-toggle btn-toggle--active" id="btnDiscTabChat" onclick="switchDiscussionTab('chat')">💬 CHAT</button>
@@ -608,13 +624,6 @@
                             </div>
                         </div>
                     </div>
-                </div>
-            </section>
-
-            <section id="viewQuestions" class="app-view" style="display: none;">
-                <div class="generic-view-card">
-                    <h2>Questions and Support</h2>
-                    <p>Administrative query logs and high-tier support settings.</p>
                 </div>
             </section>
 
@@ -779,9 +788,9 @@
                 e.preventDefault();
                 const targetView = item.getAttribute('data-view');
 
-                const adminOnlyViews = ['questions', 'history'];
+                const adminOnlyViews = ['history'];
                 const managementAndAdminViews = ['discussion'];
-                const restrictedViews = ['discussion', 'questions', 'history'];
+                const restrictedViews = ['discussion', 'history'];
 
                 if (adminOnlyViews.includes(targetView) && currentUser.role !== 'admin') {
                     alert('Access Denied: This area is strictly restricted to Admin accounts only.');
@@ -804,11 +813,11 @@
                 const views = {
                     'home': 'viewHome',
                     'notice': 'viewNotice',
+                    'board': 'viewBoard',
                     'members': 'viewMembers',
                     'attendance': 'viewAttendance',
                     'vspoints': 'viewVsPoints',
                     'discussion': 'viewDiscussion',
-                    'questions': 'viewQuestions',
                     'history': 'viewHistory'
                 };
 
@@ -974,7 +983,6 @@
             const showManagementArea = isManagementOrAdmin;
             document.getElementById('adminSectionHeader').style.display = showManagementArea ? 'block' : 'none';
             document.getElementById('navDiscussionLi').style.display = isManagementOrAdmin ? 'block' : 'none';
-            document.getElementById('navQuestionsLi').style.display = isAdmin ? 'block' : 'none';
             document.getElementById('navHistoryLi').style.display = isAdmin ? 'block' : 'none';
             document.getElementById('assignRolesNavLi').style.display = isAdmin ? 'block' : 'none';
 
@@ -1265,20 +1273,33 @@
             }
         }
 
+        // Updated function to display only the most recent rankings based on vspoint.html data
         function renderHomeTopContributors() {
             const container = document.getElementById('homeTopContributors');
             if (!container) return;
 
             const activeMembers = getActiveMembers(members);
             const activeMemberNames = new Set(activeMembers.map(m => m.name.toLowerCase()));
-            const scoredList = (vsData.membersScores || [])
+            
+            const weeksCount = vsData.weeks ? vsData.weeks.length : 0;
+            const mostRecentWeekIndex = weeksCount > 0 ? weeksCount - 1 : -1;
+
+            if (mostRecentWeekIndex === -1 || !vsData.membersScores || vsData.membersScores.length === 0) {
+                container.innerHTML = `<div class="home-empty-state">No recent VS points recorded yet.</div>`;
+                return;
+            }
+
+            const scoredList = vsData.membersScores
                 .filter(ms => activeMemberNames.has(ms.name.toLowerCase()))
-                .map(ms => ({ name: ms.name, total: (ms.scores || []).reduce((a, b) => a + (b || 0), 0) }))
-                .sort((a, b) => b.total - a.total)
+                .map(ms => ({
+                    name: ms.name,
+                    recentScore: (ms.scores && ms.scores[mostRecentWeekIndex] !== undefined) ? ms.scores[mostRecentWeekIndex] : 0
+                }))
+                .sort((a, b) => b.recentScore - a.recentScore)
                 .slice(0, 5);
 
-            if (scoredList.length === 0) {
-                container.innerHTML = `<div class="home-empty-state">No VS points recorded yet.</div>`;
+            if (scoredList.length === 0 || scoredList.every(s => s.recentScore === 0)) {
+                container.innerHTML = `<div class="home-empty-state">No recent VS points recorded yet.</div>`;
                 return;
             }
 
@@ -1289,7 +1310,7 @@
                         <span class="home-list-row__medal" style="background:${medalColors[idx]};">${idx + 1}</span>
                         <span class="home-list-row__name">${m.name}</span>
                     </div>
-                    <div class="home-list-row__value">${m.total.toLocaleString()}<span class="home-list-row__value-unit"> pts</span></div>
+                    <div class="home-list-row__value">${m.recentScore.toLocaleString()}<span class="home-list-row__value-unit"> pts</span></div>
                 </div>
             `).join('');
         }
