@@ -419,9 +419,6 @@
                 });
             }
 
-            // --- FILTER OUT MEMBERS MARKED AS 'removed' ('R') FROM GENERAL/OTHER APP VIEWS ---
-            members = members.filter(m => m.status !== 'removed');
-
             render();
         }
 
@@ -448,8 +445,11 @@
 
             const filterQuery = document.getElementById('searchInput').value.toLowerCase();
 
+            // Count total active/inactive members (excluding removed ones for general statistics)
+            const activeOrInactiveMembers = members.filter(m => m.status !== 'removed');
+
             let filtered = members.filter(m => {
-                const matchesStatus = currentStatusFilter === 'all' || m.status === currentStatusFilter;
+                const matchesStatus = currentStatusFilter === 'all' ? m.status !== 'removed' : m.status === currentStatusFilter;
                 const matchesSearch = m.name.toLowerCase().includes(filterQuery) || m.cp.toLowerCase().includes(filterQuery);
                 return matchesStatus && matchesSearch;
             });
@@ -459,8 +459,8 @@
             const tbody = document.getElementById('memberTableBody');
             const tableFooterRow = document.getElementById('tableFooterRow');
 
-            document.getElementById('pageSubtitle').innerText = `${members.length} members total`;
-            document.getElementById('shownCount').innerText = `${filtered.length}/${members.length} members shown`;
+            document.getElementById('pageSubtitle').innerText = `${activeOrInactiveMembers.length} members total`;
+            document.getElementById('shownCount').innerText = `${filtered.length}/${activeOrInactiveMembers.length} members shown`;
 
             if (filtered.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; padding: 24px; color: var(--color-text-muted);">No members found.</td></tr>`;
@@ -559,7 +559,7 @@
 
             tbody.innerHTML = html;
             const colSpanVal = isManagementOrAdmin ? 10 : 9;
-            tableFooterRow.innerHTML = `<tr><td colspan="${colSpanVal}">Showing ${filtered.length} of ${members.length} members</td></tr>`;
+            tableFooterRow.innerHTML = `<tr><td colspan="${colSpanVal}">Showing ${filtered.length} of ${activeOrInactiveMembers.length} active/inactive members</td></tr>`;
         }
 
         function generateLevelOptions(currentVal) {
@@ -580,10 +580,8 @@
             if(m) { 
                 m.status = status; 
                 saveData().then(() => {
-                    // If marked as removed, instantly filter them out from active lists everywhere
-                    if (status === 'removed') {
-                        members = members.filter(x => x.id !== id);
-                    }
+                    // Removed members are kept in the 'members' list so they appear under the 'Removed' filter tab,
+                    // but they are automatically filtered out everywhere else across other pages/tabs.
                     render(); 
                 }); 
             }
