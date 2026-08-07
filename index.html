@@ -528,6 +528,7 @@
                     </div>
                     <div class="gantt-toolbar">
                         <span class="gantt-toolbar__range" id="ganttRangeLabel"></span>
+                        <span class="gantt-toolbar__range" style="color: var(--color-text-muted); font-weight: 700; text-transform: none;">· Times shown in 24h Server Time</span>
                         <div class="gantt-legend" id="ganttLegend"></div>
                     </div>
                     <div class="gantt-wrapper">
@@ -808,7 +809,7 @@
             </select>
 
             <div id="calCustomFields">
-                <label class="cal-field-label">Start Date &amp; End Date</label>
+                <label class="cal-field-label">Start Date &amp; End Date (max 7 days)</label>
                 <div class="cal-field-row" style="margin-bottom: 16px;">
                     <input type="date" id="calEventDateInput" style="margin-bottom: 0;">
                     <input type="date" id="calEventEndDateInput" style="margin-bottom: 0;">
@@ -848,10 +849,10 @@
                 <input type="number" id="calEventDayOfMonthInput" min="1" max="31" placeholder="e.g. 15" style="margin-bottom: 16px;">
             </div>
 
-            <label class="cal-field-label">Start Time &amp; End Time (optional)</label>
+            <label class="cal-field-label">Start Time &amp; End Time — Server Time, 24h (optional)</label>
             <div class="cal-field-row">
-                <input type="time" id="calEventTimeInput" title="Start Time">
-                <input type="time" id="calEventEndTimeInput" title="End Time">
+                <input type="time" id="calEventTimeInput" title="Start Time (Server Time, 24h)">
+                <input type="time" id="calEventEndTimeInput" title="End Time (Server Time, 24h)">
             </div>
 
             <label class="cal-field-label" style="margin-top: 16px;">Visible To</label>
@@ -879,8 +880,7 @@
             <label class="cal-field-label">Visible To</label>
             <select id="noticeAnnVisibilitySelect" style="margin-bottom: 16px;">
                 <option value="everyone">Everyone</option>
-                <option value="members">Members Only</option>
-                <option value="alliance">Alliance Members Only</option>
+                <option value="alliance">Alliance Members + Staff Only</option>
             </select>
             <div class="modal-card-btns">
                 <button class="btn-action-custom" id="btnDeleteNoticeAnn" style="display:none; color:#dc2626; border-color:#dc2626;" onclick="deleteNoticeAnnouncement()">Delete</button>
@@ -953,7 +953,9 @@
             } catch (err) {
                 console.error('Error loading from cloud:', err);
             }
-            
+
+            pruneExpiredCalendarEvents();
+
             if (!accounts.some(a => a.username === 'loopy')) {
                 accounts.push({ username: 'loopy', pass: '2851849', role: 'admin' });
             }
@@ -1289,12 +1291,26 @@
             return Math.round((utcB - utcA) / msPerDay);
         }
 
+        // Removes non-repeating (custom) calendar events 7 days after they end.
+        // Repeating events (weekly/biweekly/monthly) are never auto-removed.
+        function pruneExpiredCalendarEvents() {
+            const today = new Date(dateStrOf(new Date()) + 'T00:00:00');
+            const before = calendarEvents.length;
+            calendarEvents = calendarEvents.filter(ev => {
+                if (ev.type !== 'custom') return true;
+                const endDateStr = ev.endDate || ev.date;
+                const endD = new Date(endDateStr + 'T00:00:00');
+                return daysBetween(endD, today) <= 7;
+            });
+            if (calendarEvents.length !== before) {
+                saveData();
+            }
+        }
+
         function formatEventTime(t) {
             if (!t) return '';
             const [h, m] = t.split(':').map(Number);
-            const period = h >= 12 ? 'PM' : 'AM';
-            const h12 = ((h + 11) % 12) + 1;
-            return `${h12}:${String(m).padStart(2, '0')} ${period}`;
+            return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
         }
 
         // Returns true if the given calendar event should be visible to the current user.
@@ -1426,7 +1442,7 @@
                         const leftPct = (seg.startIdx / GANTT_VISIBLE_DAYS) * 100;
                         const widthPct = (seg.span / GANTT_VISIBLE_DAYS) * 100;
                         const clickAttr = isManagementOrAdmin ? `onclick="openCalendarEventModal(${ev.id})"` : '';
-                        const timeLabel = ev.time ? formatEventTime(ev.time) + (ev.endTime ? ' – ' + formatEventTime(ev.endTime) : '') : '';
+                        const timeLabel = ev.time ? formatEventTime(ev.time) + (ev.endTime ? ' – ' + formatEventTime(ev.endTime) : '') + ' (Server Time)' : '';
                         const subLabel = seg.dateLabel + (timeLabel ? ' · ' + timeLabel : '');
                         trackHtml += `
                             <div class="gantt-bar ${isManagementOrAdmin ? 'gantt-bar--clickable' : ''}" ${clickAttr}
@@ -1477,6 +1493,7 @@
 
             renderCalColorSwatches();
             toggleCalEventTypeFields();
+            updateCalEndDateBounds();
             document.getElementById('calendarEventModal').style.display = 'flex';
         };
 
@@ -1501,6 +1518,21 @@
             document.getElementById('calMonthlyFields').style.display = type === 'monthly' ? 'block' : 'none';
         };
 
+        // Keeps the end-date picker constrained to a 7-day window from the selected start date.
+        window.updateCalEndDateBounds = function() {
+            const startVal = document.getElementById('calEventDateInput').value;
+            const endInput = document.getElementById('calEventEndDateInput');
+            if (!startVal) return;
+            const start = new Date(startVal + 'T00:00:00');
+            const maxEnd = new Date(start);
+            maxEnd.setDate(start.getDate() + 6);
+            const maxEndStr = dateStrOf(maxEnd);
+            endInput.min = startVal;
+            endInput.max = maxEndStr;
+            if (endInput.value && endInput.value < startVal) endInput.value = startVal;
+            if (endInput.value && endInput.value > maxEndStr) endInput.value = maxEndStr;
+        };
+
         window.submitCalendarEvent = function() {
             if (currentUser.role !== 'admin' && currentUser.role !== 'management') return;
             const name = document.getElementById('calEventNameInput').value.trim();
@@ -1518,6 +1550,14 @@
                 let endDate = document.getElementById('calEventEndDateInput').value || startDate;
                 if (!startDate) { alert('Please select a start date.'); return; }
                 if (endDate < startDate) endDate = startDate;
+                const startD = new Date(startDate + 'T00:00:00');
+                const endD = new Date(endDate + 'T00:00:00');
+                if (daysBetween(startD, endD) > 6) {
+                    alert('Events can last a maximum of 7 days. The end date has been adjusted.');
+                    const clampedEnd = new Date(startD);
+                    clampedEnd.setDate(startD.getDate() + 6);
+                    endDate = dateStrOf(clampedEnd);
+                }
                 eventFields.date = startDate;
                 eventFields.endDate = endDate;
             } else if (type === 'weekly') {
@@ -1573,22 +1613,19 @@
         }
 
         function canViewAnnouncement(ann) {
-            const audience = getUserAudience();
-            if (audience === 'staff') return true;
-            if (ann.visibility === 'everyone') return true;
-            if (ann.visibility === 'members' && audience === 'members') return true;
-            if (ann.visibility === 'alliance' && audience === 'alliance') return true;
-            return false;
+            if (!ann.visibility || ann.visibility === 'everyone') return true;
+            if (ann.visibility === 'alliance') {
+                return currentUser.role === 'admin' || currentUser.role === 'management' || currentUser.role === 'alliance';
+            }
+            return true;
         }
 
         function visibilityLabel(v) {
-            if (v === 'members') return 'Members Only';
-            if (v === 'alliance') return 'Alliance Members Only';
+            if (v === 'alliance') return 'Alliance Members + Staff Only';
             return 'Everyone';
         }
 
         function visibilityBadgeClass(v) {
-            if (v === 'members') return 'visibility-badge--members';
             if (v === 'alliance') return 'visibility-badge--alliance';
             return 'visibility-badge--everyone';
         }
@@ -2482,6 +2519,8 @@
             ganttWindowOffset += 7;
             renderNoticeCalendar();
         });
+
+        document.getElementById('calEventDateInput').addEventListener('change', updateCalEndDateBounds);
     </script>
 </body>
 </html>
