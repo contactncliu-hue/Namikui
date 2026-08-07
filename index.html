@@ -152,7 +152,7 @@
         .kpi-card__label { font-family: var(--font-family-ui); font-size: 11px; font-weight: 800; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
         .kpi-card__value { font-family: var(--font-family-ui); font-size: var(--font-xxl); font-weight: 800; color: var(--color-primary-dark); }
         #kpiAvgRate { color: #a8382a; }
-        #kpiPctBase { font-family: 'Courier New', Courier, monospace; font-size: var(--font-xl); font-weight: 700; color: var(--color-gold); }
+        #kpiPctBase { font-family: var(--font-family-ui); font-size: var(--font-xxl); font-weight: 800; color: var(--color-gold); }
 
         .table-card { background: white; border: 2px solid var(--color-border); border-radius: 6px; overflow: hidden; display: flex; flex-direction: column; }
         .table-wrapper { overflow-x: auto; }
@@ -451,7 +451,8 @@
                     <div class="home-card__header">
                         <div class="home-card__header-title">🖼️ RECENT PHOTOS / VIDEOS</div>
                         <div class="home-card__header-actions">
-                            <button type="button" class="home-btn-outline">+ UPLOAD</button>
+                            <button type="button" class="home-btn-outline" id="btnHomeUploadPhoto" style="display:none;">+ UPLOAD</button>
+                            <input type="file" id="homePhotoInput" accept="image/*" style="display:none;">
                             <span class="home-view-all">VIEW ALL ›</span>
                         </div>
                     </div>
@@ -498,8 +499,8 @@
                     <div class="home-card__header">
                         <div class="home-card__header-title">📣 NOTICES</div>
                         <div class="home-card__header-actions">
-                            <button type="button" class="home-btn-outline">+ POST</button>
-                            <span class="home-view-all">VIEW ALL ›</span>
+                            <button type="button" class="home-btn-outline" id="btnHomePostNotice" style="display:none;">+ POST</button>
+                            <span class="home-view-all" id="homeNoticesViewAll">VIEW ALL ›</span>
                         </div>
                     </div>
                     <div id="homeNoticesContainer">
@@ -517,7 +518,7 @@
 
                 <div class="generic-view-card" style="padding: 24px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:16px;">
-                        <h2 style="margin-bottom:0;">📅 Event Timeline</h2>
+                        <h2 style="margin-bottom:0; font-size:16px; color:var(--color-text-dark);">📅 Event Timeline</h2>
                         <div style="display:flex; align-items:center; gap:10px;">
                             <div class="gantt-nav-group">
                                 <button class="gantt-nav-btn" id="ganttNavLeft" aria-label="Earlier">‹</button>
@@ -922,6 +923,8 @@
         // Notice Board announcements (separate from Discussion Room notices), with audience visibility
         let noticeAnnouncements = [];
         let editingNoticeAnnId = null;
+        // Home dashboard uploaded photos/videos
+        let homePhotos = [];
         let accounts = [
             { username: 'loopy', pass: '2851849', role: 'admin' },
             { username: 'manager1', pass: 'manager123', role: 'management' },
@@ -948,6 +951,7 @@
                         if (row.key === 'notices') notices = row.value || [];
                         if (row.key === 'calendarEvents') calendarEvents = row.value || [];
                         if (row.key === 'noticeAnnouncements') noticeAnnouncements = row.value || [];
+                        if (row.key === 'homePhotos') homePhotos = row.value || [];
                     });
                 }
             } catch (err) {
@@ -987,6 +991,7 @@
                 await db.from('app_data').upsert({ id: 10, key: 'notices', value: notices }, { onConflict: 'id' });
                 await db.from('app_data').upsert({ id: 11, key: 'calendarEvents', value: calendarEvents }, { onConflict: 'id' });
                 await db.from('app_data').upsert({ id: 12, key: 'noticeAnnouncements', value: noticeAnnouncements }, { onConflict: 'id' });
+                await db.from('app_data').upsert({ id: 13, key: 'homePhotos', value: homePhotos }, { onConflict: 'id' });
             } catch (err) {
                 console.error('Save error:', err);
             }
@@ -1246,6 +1251,8 @@
 
             renderHomeTopContributors();
             renderHomeRecentEvents(activeMembers);
+            renderHomeNotices();
+            renderHomePhotos();
             renderNoticeCalendar();
             renderNoticeAnnouncements();
 
@@ -1259,6 +1266,52 @@
             renderVsPointsTable(isManagementOrAdmin);
             renderAuditTable();
             renderDiscussionRoom();
+        }
+
+        // ===== Home dashboard: Notices card (linked to the Notice tab's Notice Board) =====
+        function renderHomeNotices() {
+            const container = document.getElementById('homeNoticesContainer');
+            if (!container) return;
+            const isManagementOrAdmin = currentUser.role === 'admin' || currentUser.role === 'management';
+            const postBtn = document.getElementById('btnHomePostNotice');
+            if (postBtn) postBtn.style.display = isManagementOrAdmin ? 'inline-flex' : 'none';
+
+            const visible = (noticeAnnouncements || []).filter(canViewAnnouncement).slice(0, 3);
+
+            if (visible.length === 0) {
+                container.innerHTML = `<div class="home-empty-state">No notices yet.</div>`;
+                return;
+            }
+
+            container.innerHTML = visible.map(ann => `
+                <div class="home-list-row">
+                    <div class="home-event-row__left">
+                        <span class="home-event-row__name">${ann.title}</span>
+                        <span class="home-event-row__date">${ann.date}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // ===== Home dashboard: Photos/Videos upload (Alliance + Management/Admin roles) =====
+        function renderHomePhotos() {
+            const container = document.getElementById('homePhotosContainer');
+            if (!container) return;
+            const canUpload = currentUser.role === 'admin' || currentUser.role === 'management' || currentUser.role === 'alliance';
+            const uploadBtn = document.getElementById('btnHomeUploadPhoto');
+            if (uploadBtn) uploadBtn.style.display = canUpload ? 'inline-flex' : 'none';
+
+            if (!homePhotos || homePhotos.length === 0) {
+                container.innerHTML = `<div class="home-empty-state">No photos or videos yet.</div>`;
+                return;
+            }
+
+            container.innerHTML = `<div style="display:flex; gap:12px; flex-wrap:wrap;">` +
+                homePhotos.slice(0, 8).map(p => `
+                    <div style="width:110px; height:110px; border-radius:6px; overflow:hidden; border:1px solid var(--color-border-light);">
+                        <img src="${p.dataUrl}" style="width:100%; height:100%; object-fit:cover;" alt="${p.uploader || 'photo'}">
+                    </div>
+                `).join('') + `</div>`;
         }
 
         // ===== Notice tab: Gantt-style event timeline =====
@@ -2521,6 +2574,43 @@
         });
 
         document.getElementById('calEventDateInput').addEventListener('change', updateCalEndDateBounds);
+
+        // Home dashboard: Notices card links to the Notice tab's Notice Board
+        document.getElementById('homeNoticesViewAll').addEventListener('click', () => {
+            const noticeNavItem = document.querySelector('.sidebar__item[data-view="notice"]');
+            if (noticeNavItem) noticeNavItem.click();
+        });
+
+        document.getElementById('btnHomePostNotice').addEventListener('click', () => {
+            openNoticeAnnouncementModal(null);
+        });
+
+        // Home dashboard: Photo/Video upload (Alliance + Management/Admin roles)
+        document.getElementById('btnHomeUploadPhoto').addEventListener('click', () => {
+            document.getElementById('homePhotoInput').click();
+        });
+
+        document.getElementById('homePhotoInput').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const canUpload = currentUser.role === 'admin' || currentUser.role === 'management' || currentUser.role === 'alliance';
+            if (!canUpload) return;
+            const reader = new FileReader();
+            reader.onload = () => {
+                if (!homePhotos) homePhotos = [];
+                homePhotos.unshift({
+                    id: Date.now(),
+                    dataUrl: reader.result,
+                    uploader: currentUser.username,
+                    date: new Date().toLocaleDateString()
+                });
+                logAction('UPLOAD_PHOTO', `Uploaded a photo/video to the Home dashboard.`);
+                saveData();
+                renderHomePhotos();
+            };
+            reader.readAsDataURL(file);
+            e.target.value = '';
+        });
     </script>
 </body>
 </html>
