@@ -411,6 +411,10 @@
     // assignments[memberId][dateId] = { slot: 'A' | 'B' | null, attended: true | false, playerRole: 'main' | 'sub' | null }
     let assignments = {};
 
+    function getActiveMembers() {
+        return members.filter(m => m.status !== 'removed');
+    }
+
     function getEntry(memberId, dateId) {
         if (!assignments[memberId]) assignments[memberId] = {};
         if (!assignments[memberId][dateId]) {
@@ -498,11 +502,12 @@
 
     // --- RENDER ---
     function render() {
+        const activeMembers = getActiveMembers();
         const query = document.getElementById('searchInput').value.toLowerCase();
-        const filtered = members.filter(m => m.name.toLowerCase().includes(query));
+        const filtered = activeMembers.filter(m => m.name.toLowerCase().includes(query));
 
-        document.getElementById('pageSubtitle').innerText = `${members.length} members · ${bgDates.length} sessions`;
-        document.getElementById('shownCount').innerText = `${filtered.length}/${members.length} members shown`;
+        document.getElementById('pageSubtitle').innerText = `${activeMembers.length} members · ${bgDates.length} sessions`;
+        document.getElementById('shownCount').innerText = `${filtered.length}/${activeMembers.length} members shown`;
         document.getElementById('btnAddDate').style.display = isManagementOrAdmin ? 'inline-block' : 'none';
         document.getElementById('calendarPicker').style.display = isManagementOrAdmin ? 'inline-block' : 'none';
         
@@ -609,9 +614,10 @@
         const footer = document.getElementById('tableFooter');
         let html = `<tr><td colspan="2" class="col-member">A / B COUNT</td>`;
 
+        const activeMembers = getActiveMembers();
         bgDates.forEach(d => {
             let countA = 0, countB = 0;
-            members.forEach(m => {
+            activeMembers.forEach(m => {
                 const entry = getEntry(m.id, d.id);
                 if (entry.slot === 'A') countA++;
                 if (entry.slot === 'B') countB++;
