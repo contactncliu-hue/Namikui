@@ -354,7 +354,6 @@
                 <ul class="sidebar__menu">
                     <li><a class="sidebar__item sidebar__item--active" data-view="home"><span class="sidebar__icon">|</span> HOME</a></li>
                     <li><a class="sidebar__item" data-view="notice"><span class="sidebar__icon">|</span> NOTICE</a></li>
-                    <li><a class="sidebar__item" data-view="board"><span class="sidebar__icon">|</span> BOARD</a></li>
                     <li><a class="sidebar__item" href="members.html"><span class="sidebar__icon">|</span> MEMBERS</a></li>
                     <li><a class="sidebar__item" href="blackgold.html"><span class="sidebar__icon">|</span> BLACK GOLD</a></li>
                     <li><a class="sidebar__item" data-view="attendance"><span class="sidebar__icon">|</span> EVENT ATTENDANCE</a></li>
@@ -425,32 +424,12 @@
                         </div>
                     </div>
                 </div>
-
-                <div class="home-card home-card--accent-red">
-                    <div class="home-card__header">
-                        <div class="home-card__header-title">📣 NOTICES</div>
-                        <div class="home-card__header-actions">
-                            <button type="button" class="home-btn-outline">+ POST</button>
-                            <span class="home-view-all">VIEW ALL ›</span>
-                        </div>
-                    </div>
-                    <div id="homeNoticesContainer">
-                        <div class="home-empty-state">No notices yet.</div>
-                    </div>
-                </div>
             </section>
 
             <section id="viewNotice" class="app-view" style="display: none;">
                 <div class="generic-view-card">
                     <h2>Notice Board</h2>
                     <p>Clan updates, upcoming schedules, and main notices posted by management tier staff.</p>
-                </div>
-            </section>
-
-            <section id="viewBoard" class="app-view" style="display: none;">
-                <div class="generic-view-card">
-                    <h2>Community Board</h2>
-                    <p>Alliance coordination stream and operational notes.</p>
                 </div>
             </section>
 
@@ -478,7 +457,6 @@
 
             <section id="viewAttendance" class="app-view" style="display: none; flex-direction: column; gap: 14px;">
                 <div class="page-header-top">
-                    <a href="#" class="page-header-top__back" onclick="document.querySelector('.sidebar__item[data-view=\'home\']').click(); return false;">← Back to Dashboard</a>
                     <h1 class="page-header-top__title">Event Attendance</h1>
                     <div class="page-header-top__subtext" id="headerEventsCount">0 members · 0 sessions</div>
                 </div>
@@ -573,6 +551,11 @@
             </section>
 
             <section id="viewDiscussion" class="app-view" style="display: none; flex-direction: column; gap: 16px;">
+                <div class="page-header-top">
+                    <h1 class="page-header-top__title">Discussion Room</h1>
+                    <div class="page-header-top__subtext">Management communication and official notices</div>
+                </div>
+
                 <div class="controls-card" style="display: flex; justify-content: space-between; align-items: center;">
                     <div class="btn-group">
                         <button class="btn-toggle btn-toggle--active" id="btnDiscTabChat" onclick="switchDiscussionTab('chat')">💬 CHAT</button>
@@ -821,7 +804,6 @@
                 const views = {
                     'home': 'viewHome',
                     'notice': 'viewNotice',
-                    'board': 'viewBoard',
                     'members': 'viewMembers',
                     'attendance': 'viewAttendance',
                     'vspoints': 'viewVsPoints',
@@ -1119,7 +1101,6 @@
                 return;
             }
 
-            // Check if user already voted in this poll
             const alreadyVoted = poll.options.some(opt => opt.votes.includes(currentUser.username));
             if (alreadyVoted) {
                 alert('You have already voted on this poll. Changing votes is disabled.');
