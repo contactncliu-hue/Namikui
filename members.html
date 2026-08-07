@@ -343,6 +343,11 @@
         let showDiffMode = false;
         let currentStatusFilter = 'all';
 
+        // Centralized helper used across all views/tabs to strictly restrict active roster data
+        window.getActiveMembers = function() {
+            return members.filter(m => m.status !== 'removed');
+        };
+
         function parseCpWithCommas(cpStr) {
             if (!cpStr) return { formatted: '0', raw: 0 };
             let cleanStr = cpStr.toString().trim();
