@@ -275,6 +275,28 @@
 
         .footer-info-bar { display: flex; justify-content: space-between; align-items: center; font-family: var(--font-family-ui); font-size: 10px; font-weight: 700; color: var(--color-text-muted); padding: 0 4px; text-transform: uppercase; letter-spacing: 0.5px; }
 
+        /* ===== NOTICE TAB: 7-DAY EVENT CALENDAR (NEW) ===== */
+        .calendar-strip-wrapper { position: relative; display: flex; align-items: center; gap: 8px; }
+        .calendar-strip { display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; scroll-behavior: smooth; padding: 4px 2px 10px 2px; flex: 1; -webkit-overflow-scrolling: touch; }
+        .calendar-strip::-webkit-scrollbar { height: 6px; }
+        .calendar-strip::-webkit-scrollbar-thumb { background: var(--color-border-light); border-radius: 4px; }
+        .calendar-day-card { scroll-snap-align: start; flex: 0 0 150px; background: #fafbfc; border: 1px solid var(--color-border-light); border-radius: 8px; padding: 14px 12px; display: flex; flex-direction: column; gap: 10px; min-height: 140px; }
+        .calendar-day-card--today { border: 2px solid var(--color-primary); background: var(--color-primary-light); }
+        .calendar-day-card--editable { cursor: pointer; transition: box-shadow 0.15s, transform 0.1s; }
+        .calendar-day-card--editable:hover { box-shadow: 0 2px 12px rgba(59,82,164,0.18); transform: translateY(-1px); }
+        .calendar-day-card__date { font-family: var(--font-family-ui); font-size: 11px; font-weight: 800; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.4px; }
+        .calendar-day-card__daynum { font-family: var(--font-family-ui); font-size: 20px; font-weight: 800; color: var(--color-text-dark); }
+        .calendar-day-card__badge { font-family: var(--font-family-ui); font-size: 9px; font-weight: 800; color: white; background: var(--color-primary); padding: 2px 6px; border-radius: 3px; align-self: flex-start; text-transform: uppercase; }
+        .calendar-day-card__event-name { font-family: var(--font-family-ui); font-size: 12px; font-weight: 700; color: var(--color-text-dark); line-height: 1.3; word-break: break-word; }
+        .calendar-day-card__empty { font-family: var(--font-family-ui); font-size: 11px; font-weight: 600; color: var(--color-text-light); font-style: italic; }
+        .calendar-day-card__bar-track { height: 8px; width: 100%; background: var(--color-border-light); border-radius: 4px; overflow: hidden; margin-top: auto; }
+        .calendar-day-card__bar-fill { height: 100%; border-radius: 4px; width: 100%; }
+        .calendar-nav-btn { background: white; border: 2px solid var(--color-border); color: var(--color-primary); font-size: 18px; font-weight: 800; width: 34px; height: 34px; border-radius: 50%; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+        .calendar-nav-btn:hover { background: var(--color-primary-light); }
+        .color-swatch-row { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+        .color-swatch { width: 28px; height: 28px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; }
+        .color-swatch--selected { border-color: var(--color-text-dark); box-shadow: 0 0 0 2px white inset; }
+
         @media (max-width: 1024px) {
             .app { flex-direction: column; }
             .mobile-header { display: flex; }
@@ -451,7 +473,25 @@
                 </div>
             </section>
 
-            <section id="viewNotice" class="app-view" style="display: none;">
+            <!-- NOTICE TAB (UPDATED: header + 7-day swipeable progress-bar calendar) -->
+            <section id="viewNotice" class="app-view" style="display: none; flex-direction: column; gap: 18px;">
+                <div class="page-header-top">
+                    <h1 class="page-header-top__title">Notices</h1>
+                    <div class="page-header-top__subtext">Alliance notices and the 7-day event calendar</div>
+                </div>
+
+                <div class="generic-view-card" style="padding: 24px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:16px;">
+                        <h2 style="margin-bottom:0;">📅 7-Day Event Calendar</h2>
+                        <button class="btn-action-custom btn-action-custom--add" id="btnAddCalendarEvent" style="display:none;">+ ADD EVENT</button>
+                    </div>
+                    <div class="calendar-strip-wrapper">
+                        <button class="calendar-nav-btn" id="calNavLeft" aria-label="Scroll left">‹</button>
+                        <div class="calendar-strip" id="noticeCalendarStrip"></div>
+                        <button class="calendar-nav-btn" id="calNavRight" aria-label="Scroll right">›</button>
+                    </div>
+                </div>
+
                 <div class="generic-view-card">
                     <h2>Notice Board</h2>
                     <p>Clan updates, upcoming schedules, and main notices posted by management tier staff.</p>
@@ -694,6 +734,35 @@
         </div>
     </div>
 
+    <!-- NEW: Calendar event add/edit modal for the Notice tab -->
+    <div class="modal-overlay" id="calendarEventModal">
+        <div class="modal-card" style="max-width: 420px;">
+            <h3 id="calendarEventModalTitle">Add Calendar Event</h3>
+            <input type="text" id="calEventNameInput" placeholder="Event Name">
+            <select id="calEventTypeSelect" onchange="toggleCalEventTypeFields()">
+                <option value="weekly">Repeats Weekly</option>
+                <option value="custom">Custom Date</option>
+            </select>
+            <select id="calEventWeekdaySelect">
+                <option value="0">Sunday</option>
+                <option value="1">Monday</option>
+                <option value="2">Tuesday</option>
+                <option value="3">Wednesday</option>
+                <option value="4">Thursday</option>
+                <option value="5">Friday</option>
+                <option value="6">Saturday</option>
+            </select>
+            <input type="date" id="calEventDateInput" style="display:none;">
+            <div style="font-size: 11px; font-weight: 800; color: var(--color-text-muted); margin-bottom: 6px; text-transform: uppercase;">Color:</div>
+            <div class="color-swatch-row" id="calEventColorSwatches"></div>
+            <div class="modal-card-btns">
+                <button class="btn-action-custom" id="btnDeleteCalEvent" style="display:none; color:#dc2626; border-color:#dc2626;" onclick="deleteCalendarEvent()">Delete</button>
+                <button class="btn-action-custom" onclick="document.getElementById('calendarEventModal').style.display='none'">Cancel</button>
+                <button class="btn-action-custom" onclick="submitCalendarEvent()" style="background:#3b52a4; color:white;">Save</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const SUPABASE_URL = 'https://sqrrfslqwcgpsmzdovru.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_rb70-VY2GstWzdoXmoUkwg_Iw3EiqFO';
@@ -715,6 +784,11 @@
         let polls = [];
         let notices = [];
         let vsData = { weeks: [], membersScores: [] };
+        // NEW: Notice tab 7-day calendar state
+        let calendarEvents = [];
+        const CALENDAR_COLORS = ['#3b52a4', '#f3a808', '#16a34a', '#dc2626', '#a855f7', '#0ea5e9', '#b7791f'];
+        let editingCalEventId = null;
+        let selectedCalColor = CALENDAR_COLORS[0];
         let accounts = [
             { username: 'loopy', pass: '2851849', role: 'admin' },
             { username: 'manager1', pass: 'manager123', role: 'management' },
@@ -739,6 +813,8 @@
                         if (row.key === 'chatMessages') chatMessages = row.value || [];
                         if (row.key === 'polls') polls = row.value || [];
                         if (row.key === 'notices') notices = row.value || [];
+                        // NEW
+                        if (row.key === 'calendarEvents') calendarEvents = row.value || [];
                     });
                 }
             } catch (err) {
@@ -774,6 +850,8 @@
                 await db.from('app_data').upsert({ id: 8, key: 'chatMessages', value: chatMessages }, { onConflict: 'id' });
                 await db.from('app_data').upsert({ id: 9, key: 'polls', value: polls }, { onConflict: 'id' });
                 await db.from('app_data').upsert({ id: 10, key: 'notices', value: notices }, { onConflict: 'id' });
+                // NEW
+                await db.from('app_data').upsert({ id: 11, key: 'calendarEvents', value: calendarEvents }, { onConflict: 'id' });
             } catch (err) {
                 console.error('Save error:', err);
             }
@@ -1020,6 +1098,8 @@
 
             renderHomeTopContributors();
             renderHomeRecentEvents(activeMembers);
+            // NEW: notice tab 7-day calendar
+            renderNoticeCalendar();
 
             if (currentSubTab === 'attendance') {
                 renderAttendanceTable(filteredMembers, avgRate, isManagementOrAdmin, totalEvents, totalAttendedCount);
@@ -1032,6 +1112,152 @@
             renderAuditTable();
             renderDiscussionRoom();
         }
+
+        // ===== NEW: Notice tab 7-day event calendar =====
+        function get7DayWindow() {
+            const days = [];
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            for (let i = 0; i < 7; i++) {
+                const d = new Date(today);
+                d.setDate(today.getDate() + i);
+                days.push(d);
+            }
+            return days;
+        }
+
+        function findCalendarEventForDate(d) {
+            const dow = d.getDay();
+            const dateStr = d.toISOString().slice(0, 10);
+            const custom = calendarEvents.find(ev => ev.type === 'custom' && ev.date === dateStr);
+            if (custom) return custom;
+            return calendarEvents.find(ev => ev.type === 'weekly' && ev.dayOfWeek === dow) || null;
+        }
+
+        function renderNoticeCalendar() {
+            const strip = document.getElementById('noticeCalendarStrip');
+            if (!strip) return;
+            const isManagementOrAdmin = currentUser.role === 'admin' || currentUser.role === 'management';
+            const addBtn = document.getElementById('btnAddCalendarEvent');
+            if (addBtn) addBtn.style.display = isManagementOrAdmin ? 'inline-flex' : 'none';
+
+            const days = get7DayWindow();
+            const todayStr = days[0].toISOString().slice(0, 10);
+            const weekdayNames = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+            const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+            strip.innerHTML = days.map(d => {
+                const dateStr = d.toISOString().slice(0, 10);
+                const isToday = dateStr === todayStr;
+                const ev = findCalendarEventForDate(d);
+                const cardClasses = ['calendar-day-card'];
+                if (isToday) cardClasses.push('calendar-day-card--today');
+                if (isManagementOrAdmin) cardClasses.push('calendar-day-card--editable');
+
+                const clickAttr = isManagementOrAdmin
+                    ? `onclick="openCalendarEventModal('${dateStr}', ${d.getDay()}${ev ? `, ${ev.id}` : ''})"`
+                    : '';
+
+                return `
+                    <div class="${cardClasses.join(' ')}" ${clickAttr}>
+                        <div>
+                            <div class="calendar-day-card__date">${weekdayNames[d.getDay()]}, ${monthNames[d.getMonth()]} ${d.getDate()}</div>
+                            <div class="calendar-day-card__daynum">${isToday ? 'Today' : d.getDate()}</div>
+                        </div>
+                        ${ev ? `
+                            <div class="calendar-day-card__badge">${ev.type === 'weekly' ? 'Weekly' : 'One-time'}</div>
+                            <div class="calendar-day-card__event-name">${ev.name}</div>
+                            <div class="calendar-day-card__bar-track"><div class="calendar-day-card__bar-fill" style="background:${ev.color};"></div></div>
+                        ` : `
+                            <div class="calendar-day-card__empty">${isManagementOrAdmin ? 'Tap to add event' : 'No event'}</div>
+                            <div class="calendar-day-card__bar-track"><div class="calendar-day-card__bar-fill" style="background:transparent;"></div></div>
+                        `}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        window.openCalendarEventModal = function(dateStr, dayOfWeek, existingId) {
+            if (currentUser.role !== 'admin' && currentUser.role !== 'management') return;
+            editingCalEventId = existingId || null;
+            const existing = existingId ? calendarEvents.find(e => e.id === existingId) : null;
+
+            document.getElementById('calendarEventModalTitle').innerText = existing ? 'Edit Calendar Event' : 'Add Calendar Event';
+            document.getElementById('calEventNameInput').value = existing ? existing.name : '';
+            document.getElementById('calEventTypeSelect').value = existing ? existing.type : 'weekly';
+            document.getElementById('calEventWeekdaySelect').value = existing ? existing.dayOfWeek : dayOfWeek;
+            document.getElementById('calEventDateInput').value = existing ? (existing.date || dateStr) : dateStr;
+            selectedCalColor = existing ? existing.color : CALENDAR_COLORS[0];
+            document.getElementById('btnDeleteCalEvent').style.display = existing ? 'inline-flex' : 'none';
+
+            renderCalColorSwatches();
+            toggleCalEventTypeFields();
+            document.getElementById('calendarEventModal').style.display = 'flex';
+        };
+
+        function renderCalColorSwatches() {
+            const container = document.getElementById('calEventColorSwatches');
+            if (!container) return;
+            container.innerHTML = CALENDAR_COLORS.map(c => `
+                <div class="color-swatch ${c === selectedCalColor ? 'color-swatch--selected' : ''}" style="background:${c};" onclick="selectCalColor('${c}')"></div>
+            `).join('');
+        }
+
+        window.selectCalColor = function(c) {
+            selectedCalColor = c;
+            renderCalColorSwatches();
+        };
+
+        window.toggleCalEventTypeFields = function() {
+            const type = document.getElementById('calEventTypeSelect').value;
+            document.getElementById('calEventWeekdaySelect').style.display = type === 'weekly' ? 'block' : 'none';
+            document.getElementById('calEventDateInput').style.display = type === 'custom' ? 'block' : 'none';
+        };
+
+        window.submitCalendarEvent = function() {
+            const name = document.getElementById('calEventNameInput').value.trim();
+            const type = document.getElementById('calEventTypeSelect').value;
+            if (!name) { alert('Please enter an event name.'); return; }
+
+            if (editingCalEventId) {
+                const ev = calendarEvents.find(e => e.id === editingCalEventId);
+                if (ev) {
+                    ev.name = name;
+                    ev.type = type;
+                    ev.color = selectedCalColor;
+                    if (type === 'weekly') {
+                        ev.dayOfWeek = parseInt(document.getElementById('calEventWeekdaySelect').value, 10);
+                        delete ev.date;
+                    } else {
+                        ev.date = document.getElementById('calEventDateInput').value;
+                        delete ev.dayOfWeek;
+                    }
+                    logAction('EDIT_CALENDAR_EVENT', `Updated calendar event: ${name}`);
+                }
+            } else {
+                const newEvent = { id: Date.now(), name, type, color: selectedCalColor };
+                if (type === 'weekly') newEvent.dayOfWeek = parseInt(document.getElementById('calEventWeekdaySelect').value, 10);
+                else newEvent.date = document.getElementById('calEventDateInput').value;
+                calendarEvents.push(newEvent);
+                logAction('ADD_CALENDAR_EVENT', `Added calendar event: ${name}`);
+            }
+
+            saveData();
+            document.getElementById('calendarEventModal').style.display = 'none';
+            renderNoticeCalendar();
+        };
+
+        window.deleteCalendarEvent = function() {
+            if (!editingCalEventId) return;
+            const ev = calendarEvents.find(e => e.id === editingCalEventId);
+            if (confirm(`Delete calendar event "${ev ? ev.name : ''}"?`)) {
+                logAction('DELETE_CALENDAR_EVENT', `Deleted calendar event: ${ev ? ev.name : editingCalEventId}`);
+                calendarEvents = calendarEvents.filter(e => e.id !== editingCalEventId);
+                saveData();
+                document.getElementById('calendarEventModal').style.display = 'none';
+                renderNoticeCalendar();
+            }
+        };
 
         // Discussion Room Sub-Tabs and Features (Chat, Polls, Notices)
         window.switchDiscussionTab = function(tabName) {
@@ -1815,6 +2041,20 @@
 
         document.getElementById('hamburgerBtn').addEventListener('click', () => {
             document.getElementById('sidebar').classList.toggle('sidebar--open');
+        });
+
+        // NEW: Notice tab calendar controls
+        document.getElementById('btnAddCalendarEvent').addEventListener('click', () => {
+            const today = new Date();
+            openCalendarEventModal(today.toISOString().slice(0, 10), today.getDay(), null);
+        });
+
+        document.getElementById('calNavLeft').addEventListener('click', () => {
+            document.getElementById('noticeCalendarStrip').scrollBy({ left: -166, behavior: 'smooth' });
+        });
+
+        document.getElementById('calNavRight').addEventListener('click', () => {
+            document.getElementById('noticeCalendarStrip').scrollBy({ left: 166, behavior: 'smooth' });
         });
     </script>
 </body>
