@@ -151,7 +151,9 @@
         .kpi-card:nth-child(4) { background-color: var(--color-gold-bg); }
         .kpi-card__label { font-family: var(--font-family-ui); font-size: 11px; font-weight: 800; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
         .kpi-card__value { font-family: var(--font-family-ui); font-size: var(--font-xxl); font-weight: 800; color: var(--color-primary-dark); }
-        #kpiAvgRate { color: #a8382a; }
+        #kpiAvgRate.attended-high { color: #2563eb; }
+        #kpiAvgRate.attended-mid { color: #b89117; }
+        #kpiAvgRate.attended-low { color: #dc2626; }
         #kpiPctBase { font-family: var(--font-family-ui); font-size: var(--font-xxl); font-weight: 800; color: var(--color-gold); }
 
         .table-card { background: white; border: 2px solid var(--color-border); border-radius: 6px; overflow: hidden; display: flex; flex-direction: column; }
@@ -274,6 +276,44 @@
         .home-empty-state { text-align: center; padding: 32px 0; color: var(--color-text-muted); font-family: var(--font-family-ui); font-weight: 600; font-size: 13px; }
 
         .footer-info-bar { display: flex; justify-content: space-between; align-items: center; font-family: var(--font-family-ui); font-size: 10px; font-weight: 700; color: var(--color-text-muted); padding: 0 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+        /* ===== HOME: NOTICE ROW WITH DESCRIPTION ===== */
+        .home-notice-row { padding: 12px 0; border-bottom: 1px solid var(--color-border-light); font-family: var(--font-family-ui); }
+        .home-notice-row:last-child { border-bottom: none; padding-bottom: 0; }
+        .home-notice-row:first-child { padding-top: 0; }
+        .home-notice-row__top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 4px; }
+        .home-notice-row__name { font-weight: 800; font-size: 14px; color: var(--color-text-dark); }
+        .home-notice-row__date { font-weight: 600; font-size: 11px; color: var(--color-text-muted); white-space: nowrap; flex-shrink: 0; margin-top: 2px; }
+        .home-notice-row__desc { font-size: 12px; color: var(--color-text-muted); line-height: 1.5; font-weight: 600; }
+
+        /* ===== HOME: PHOTO/VIDEO GALLERY ===== */
+        .photo-thumb { position: relative; width: 110px; height: 110px; border-radius: 6px; overflow: hidden; border: 1px solid var(--color-border-light); cursor: pointer; flex-shrink: 0; }
+        .photo-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.15s; }
+        .photo-thumb:hover img { transform: scale(1.06); }
+        .photo-thumb__overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.0); display: flex; align-items: center; justify-content: center; transition: background 0.15s; }
+        .photo-thumb:hover .photo-thumb__overlay { background: rgba(0,0,0,0.35); }
+        .photo-thumb__expand-icon { color: white; font-size: 22px; opacity: 0; transition: opacity 0.15s; }
+        .photo-thumb:hover .photo-thumb__expand-icon { opacity: 1; }
+        .photo-thumb__badge { position: absolute; bottom: 4px; left: 4px; font-family: var(--font-family-ui); font-size: 9px; font-weight: 800; padding: 2px 6px; border-radius: 10px; text-transform: uppercase; background: rgba(0,0,0,0.55); color: white; letter-spacing: 0.3px; }
+
+        .photo-gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 14px; }
+        .photo-gallery-grid .photo-thumb { width: 100%; height: 140px; }
+
+        .lightbox-overlay { position: fixed; inset: 0; background: rgba(15,17,26,0.86); display: none; align-items: center; justify-content: center; z-index: 1200; padding: 24px; }
+        .lightbox-card { max-width: 720px; width: 100%; background: white; border-radius: 10px; overflow: hidden; display: flex; flex-direction: column; max-height: 90vh; }
+        .lightbox-card__img-wrap { background: #000; display: flex; align-items: center; justify-content: center; max-height: 60vh; overflow: hidden; }
+        .lightbox-card__img-wrap img { width: 100%; max-height: 60vh; object-fit: contain; display: block; }
+        .lightbox-card__body { padding: 18px 20px; display: flex; flex-direction: column; gap: 10px; }
+        .lightbox-card__meta-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; font-family: var(--font-family-ui); }
+        .lightbox-card__meta { font-size: 12px; color: var(--color-text-muted); font-weight: 700; }
+        .lightbox-card__btns { display: flex; justify-content: flex-end; gap: 10px; }
+
+        .gallery-modal-card { background: white; border-radius: 10px; width: 100%; max-width: 900px; max-height: 85vh; display: flex; flex-direction: column; border: 2px solid var(--color-primary); }
+        .gallery-modal-card__header { display: flex; justify-content: space-between; align-items: center; padding: 20px 24px; border-bottom: 2px solid var(--color-border-light); }
+        .gallery-modal-card__header h3 { margin-bottom: 0; }
+        .gallery-modal-card__body { padding: 20px 24px; overflow-y: auto; }
+        .gallery-modal-close { background: none; border: none; font-size: 22px; color: var(--color-text-muted); cursor: pointer; line-height: 1; }
+        .gallery-modal-close:hover { color: var(--color-text-dark); }
 
         /* ===== NOTICE TAB: GANTT-STYLE EVENT TIMELINE ===== */
         .gantt-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
@@ -453,7 +493,7 @@
                         <div class="home-card__header-actions">
                             <button type="button" class="home-btn-outline" id="btnHomeUploadPhoto" style="display:none;">+ UPLOAD</button>
                             <input type="file" id="homePhotoInput" accept="image/*" style="display:none;">
-                            <span class="home-view-all">VIEW ALL ›</span>
+                            <span class="home-view-all" id="homePhotosViewAll">VIEW ALL ›</span>
                         </div>
                     </div>
                     <div id="homePhotosContainer">
@@ -891,6 +931,62 @@
         </div>
     </div>
 
+    <!-- Photo/Video upload visibility modal (admin/management only) -->
+    <div class="modal-overlay" id="photoUploadVisibilityModal">
+        <div class="modal-card" style="max-width: 420px;">
+            <h3>Upload Photo / Video</h3>
+            <div id="photoUploadPreviewWrap" style="margin-bottom: 16px; border-radius: 6px; overflow: hidden; border: 1px solid var(--color-border-light); max-height: 220px; display:flex; align-items:center; justify-content:center; background:#f5f4ef;">
+                <img id="photoUploadPreviewImg" style="width:100%; max-height:220px; object-fit:contain;" alt="preview">
+            </div>
+            <label class="cal-field-label">Visible To</label>
+            <select id="photoUploadVisibilitySelect" style="margin-bottom: 16px;">
+                <option value="everyone">Everyone</option>
+                <option value="alliance">Alliance Members + Staff Only</option>
+            </select>
+            <div class="modal-card-btns">
+                <button class="btn-action-custom" onclick="cancelPhotoUpload()">Cancel</button>
+                <button class="btn-action-custom" onclick="confirmPhotoUpload()" style="background:#3b52a4; color:white;">Upload</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Photo/Video lightbox (expanded view) -->
+    <div class="lightbox-overlay" id="photoLightboxOverlay">
+        <div class="lightbox-card">
+            <div class="lightbox-card__img-wrap">
+                <img id="lightboxImg" src="" alt="photo">
+            </div>
+            <div class="lightbox-card__body">
+                <div class="lightbox-card__meta-row">
+                    <span class="lightbox-card__meta" id="lightboxMeta"></span>
+                    <span class="visibility-badge" id="lightboxVisibilityBadge"></span>
+                </div>
+                <div id="lightboxVisibilityEditRow" style="display:none;">
+                    <label class="cal-field-label">Visible To</label>
+                    <select id="lightboxVisibilitySelect" style="margin-bottom: 0;"></select>
+                </div>
+                <div class="lightbox-card__btns">
+                    <button class="btn-action-custom" id="btnLightboxSaveVisibility" style="display:none;" onclick="saveLightboxVisibility()">Save Visibility</button>
+                    <button class="btn-action-custom" id="btnLightboxDelete" style="display:none; color:#dc2626; border-color:#dc2626;" onclick="deleteLightboxPhoto()">Delete</button>
+                    <button class="btn-action-custom" onclick="closePhotoLightbox()" style="background:#3b52a4; color:white;">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Photo/Video gallery popup (VIEW ALL) -->
+    <div class="modal-overlay" id="photoGalleryModal">
+        <div class="gallery-modal-card">
+            <div class="gallery-modal-card__header">
+                <h3>🖼️ Photo &amp; Video Gallery</h3>
+                <button class="gallery-modal-close" onclick="closePhotoGalleryModal()">✕</button>
+            </div>
+            <div class="gallery-modal-card__body">
+                <div class="photo-gallery-grid" id="photoGalleryGrid"></div>
+            </div>
+        </div>
+    </div>
+
     <script>
         const SUPABASE_URL = 'https://sqrrfslqwcgpsmzdovru.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_rb70-VY2GstWzdoXmoUkwg_Iw3EiqFO';
@@ -925,6 +1021,8 @@
         let editingNoticeAnnId = null;
         // Home dashboard uploaded photos/videos
         let homePhotos = [];
+        let pendingPhotoUpload = null; // holds { dataUrl } while admin/mgmt picks visibility
+        let currentLightboxPhotoId = null;
         let accounts = [
             { username: 'loopy', pass: '2851849', role: 'admin' },
             { username: 'manager1', pass: 'manager123', role: 'management' },
@@ -1240,7 +1338,10 @@
 
             document.getElementById('kpiMembers').innerText = `${activeMembers.length}/100`;
             document.getElementById('kpiAvgAttendance').innerText = avgAttendance.toFixed(1);
-            document.getElementById('kpiAvgRate').innerText = `${avgRate.toFixed(1)}%`;
+            const kpiAvgRateEl = document.getElementById('kpiAvgRate');
+            kpiAvgRateEl.innerText = `${avgRate.toFixed(1)}%`;
+            kpiAvgRateEl.classList.remove('attended-high', 'attended-mid', 'attended-low');
+            kpiAvgRateEl.classList.add(getAttendedColorClass(avgRate));
             document.getElementById('kpiPctBase').innerText = `${totalEvents} events`;
             document.getElementById('headerEventsCount').innerText = `${activeMembers.length} members · ${totalEvents} sessions`;
             document.getElementById('footerMembersShown').innerText = `${filteredMembers.length} members shown`;
@@ -1284,16 +1385,38 @@
             }
 
             container.innerHTML = visible.map(ann => `
-                <div class="home-list-row">
-                    <div class="home-event-row__left">
-                        <span class="home-event-row__name">${ann.title}</span>
-                        <span class="home-event-row__date">${ann.date}</span>
+                <div class="home-notice-row">
+                    <div class="home-notice-row__top">
+                        <span class="home-notice-row__name">${ann.title}</span>
+                        <span class="home-notice-row__date">${ann.date}</span>
                     </div>
+                    <div class="home-notice-row__desc">${ann.content}</div>
                 </div>
             `).join('');
         }
 
-        // ===== Home dashboard: Photos/Videos upload (Alliance + Management/Admin roles) =====
+        // ===== Home dashboard: Photos/Videos (Alliance + Management/Admin roles) =====
+
+        // Returns true if the given home photo/video should be visible to the current user.
+        function canViewPhoto(photo) {
+            if (!photo.visibility || photo.visibility === 'everyone') return true;
+            if (photo.visibility === 'alliance') {
+                return currentUser.role === 'admin' || currentUser.role === 'management' || currentUser.role === 'alliance';
+            }
+            return true;
+        }
+
+        function buildPhotoThumbHtml(p, size) {
+            const badgeLabel = (p.visibility === 'alliance') ? 'Alliance + Staff' : 'Everyone';
+            return `
+                <div class="photo-thumb" style="${size ? `width:${size}px; height:${size}px;` : ''}" onclick="openPhotoLightbox(${p.id})">
+                    <img src="${p.dataUrl}" alt="${p.uploader || 'photo'}">
+                    <div class="photo-thumb__overlay"><span class="photo-thumb__expand-icon">⤢</span></div>
+                    <span class="photo-thumb__badge">${badgeLabel}</span>
+                </div>
+            `;
+        }
+
         function renderHomePhotos() {
             const container = document.getElementById('homePhotosContainer');
             if (!container) return;
@@ -1301,18 +1424,130 @@
             const uploadBtn = document.getElementById('btnHomeUploadPhoto');
             if (uploadBtn) uploadBtn.style.display = canUpload ? 'inline-flex' : 'none';
 
-            if (!homePhotos || homePhotos.length === 0) {
+            const visiblePhotos = (homePhotos || []).filter(canViewPhoto);
+
+            if (visiblePhotos.length === 0) {
                 container.innerHTML = `<div class="home-empty-state">No photos or videos yet.</div>`;
                 return;
             }
 
             container.innerHTML = `<div style="display:flex; gap:12px; flex-wrap:wrap;">` +
-                homePhotos.slice(0, 8).map(p => `
-                    <div style="width:110px; height:110px; border-radius:6px; overflow:hidden; border:1px solid var(--color-border-light);">
-                        <img src="${p.dataUrl}" style="width:100%; height:100%; object-fit:cover;" alt="${p.uploader || 'photo'}">
-                    </div>
-                `).join('') + `</div>`;
+                visiblePhotos.slice(0, 8).map(p => buildPhotoThumbHtml(p)).join('') + `</div>`;
         }
+
+        // ===== Photo gallery popup (VIEW ALL) =====
+        window.openPhotoGalleryModal = function() {
+            const grid = document.getElementById('photoGalleryGrid');
+            const visiblePhotos = (homePhotos || []).filter(canViewPhoto);
+            if (visiblePhotos.length === 0) {
+                grid.innerHTML = `<div class="home-empty-state">No photos or videos yet.</div>`;
+            } else {
+                grid.innerHTML = visiblePhotos.map(p => buildPhotoThumbHtml(p)).join('');
+            }
+            document.getElementById('photoGalleryModal').style.display = 'flex';
+        };
+
+        window.closePhotoGalleryModal = function() {
+            document.getElementById('photoGalleryModal').style.display = 'none';
+        };
+
+        // ===== Photo lightbox (expand / delete / change visibility) =====
+        window.openPhotoLightbox = function(photoId) {
+            const photo = (homePhotos || []).find(p => p.id === photoId);
+            if (!photo) return;
+            currentLightboxPhotoId = photoId;
+
+            const isManagementOrAdmin = currentUser.role === 'admin' || currentUser.role === 'management';
+
+            document.getElementById('lightboxImg').src = photo.dataUrl;
+            document.getElementById('lightboxMeta').innerText = `Uploaded by ${photo.uploader || 'Unknown'} · ${photo.date || ''}`;
+
+            const badge = document.getElementById('lightboxVisibilityBadge');
+            badge.innerText = (photo.visibility === 'alliance') ? 'Alliance + Staff Only' : 'Everyone';
+            badge.className = 'visibility-badge ' + (photo.visibility === 'alliance' ? 'visibility-badge--alliance' : 'visibility-badge--everyone');
+
+            const editRow = document.getElementById('lightboxVisibilityEditRow');
+            const saveBtn = document.getElementById('btnLightboxSaveVisibility');
+            const deleteBtn = document.getElementById('btnLightboxDelete');
+
+            if (isManagementOrAdmin) {
+                editRow.style.display = 'block';
+                saveBtn.style.display = 'inline-flex';
+                deleteBtn.style.display = 'inline-flex';
+                const sel = document.getElementById('lightboxVisibilitySelect');
+                sel.innerHTML = `
+                    <option value="everyone">Everyone</option>
+                    <option value="alliance">Alliance Members + Staff Only</option>
+                `;
+                sel.value = photo.visibility || 'everyone';
+            } else {
+                editRow.style.display = 'none';
+                saveBtn.style.display = 'none';
+                deleteBtn.style.display = 'none';
+            }
+
+            document.getElementById('photoLightboxOverlay').style.display = 'flex';
+        };
+
+        window.closePhotoLightbox = function() {
+            document.getElementById('photoLightboxOverlay').style.display = 'none';
+            currentLightboxPhotoId = null;
+        };
+
+        window.saveLightboxVisibility = function() {
+            if (currentUser.role !== 'admin' && currentUser.role !== 'management') return;
+            if (!currentLightboxPhotoId) return;
+            const photo = homePhotos.find(p => p.id === currentLightboxPhotoId);
+            if (!photo) return;
+            const newVis = document.getElementById('lightboxVisibilitySelect').value;
+            photo.visibility = newVis;
+            logAction('EDIT_PHOTO_VISIBILITY', `Updated visibility of a home dashboard photo/video to: ${newVis === 'alliance' ? 'Alliance Members + Staff Only' : 'Everyone'}`);
+            saveData();
+            renderHomePhotos();
+            closePhotoLightbox();
+            if (document.getElementById('photoGalleryModal').style.display === 'flex') {
+                openPhotoGalleryModal();
+            }
+        };
+
+        window.deleteLightboxPhoto = function() {
+            if (currentUser.role !== 'admin' && currentUser.role !== 'management') return;
+            if (!currentLightboxPhotoId) return;
+            if (confirm('Delete this photo/video from the Home dashboard?')) {
+                logAction('DELETE_PHOTO', `Deleted a photo/video from the Home dashboard.`);
+                homePhotos = homePhotos.filter(p => p.id !== currentLightboxPhotoId);
+                saveData();
+                closePhotoLightbox();
+                renderHomePhotos();
+                if (document.getElementById('photoGalleryModal').style.display === 'flex') {
+                    openPhotoGalleryModal();
+                }
+            }
+        };
+
+        // ===== Photo upload flow =====
+        window.cancelPhotoUpload = function() {
+            pendingPhotoUpload = null;
+            document.getElementById('photoUploadVisibilityModal').style.display = 'none';
+        };
+
+        window.confirmPhotoUpload = function() {
+            if (!pendingPhotoUpload) return;
+            const visibility = document.getElementById('photoUploadVisibilitySelect').value;
+            if (!homePhotos) homePhotos = [];
+            homePhotos.unshift({
+                id: Date.now(),
+                dataUrl: pendingPhotoUpload.dataUrl,
+                uploader: currentUser.username,
+                date: new Date().toLocaleDateString(),
+                visibility: visibility
+            });
+            logAction('UPLOAD_PHOTO', `Uploaded a photo/video to the Home dashboard (visible to: ${visibility === 'alliance' ? 'Alliance Members + Staff Only' : 'Everyone'}).`);
+            pendingPhotoUpload = null;
+            document.getElementById('photoUploadVisibilityModal').style.display = 'none';
+            saveData();
+            renderHomePhotos();
+        };
 
         // ===== Notice tab: Gantt-style event timeline =====
         // Each calendarEvent: { id, name, category: 'alliance'|'war', color, visibility: 'everyone'|'alliance',
@@ -2585,6 +2820,11 @@
             openNoticeAnnouncementModal(null);
         });
 
+        // Home dashboard: Photo/Video gallery "VIEW ALL" popup
+        document.getElementById('homePhotosViewAll').addEventListener('click', () => {
+            openPhotoGalleryModal();
+        });
+
         // Home dashboard: Photo/Video upload (Alliance + Management/Admin roles)
         document.getElementById('btnHomeUploadPhoto').addEventListener('click', () => {
             document.getElementById('homePhotoInput').click();
@@ -2595,18 +2835,29 @@
             if (!file) return;
             const canUpload = currentUser.role === 'admin' || currentUser.role === 'management' || currentUser.role === 'alliance';
             if (!canUpload) return;
+            const isManagementOrAdmin = currentUser.role === 'admin' || currentUser.role === 'management';
             const reader = new FileReader();
             reader.onload = () => {
-                if (!homePhotos) homePhotos = [];
-                homePhotos.unshift({
-                    id: Date.now(),
-                    dataUrl: reader.result,
-                    uploader: currentUser.username,
-                    date: new Date().toLocaleDateString()
-                });
-                logAction('UPLOAD_PHOTO', `Uploaded a photo/video to the Home dashboard.`);
-                saveData();
-                renderHomePhotos();
+                if (isManagementOrAdmin) {
+                    // Admin/Management choose visibility before the upload is saved
+                    pendingPhotoUpload = { dataUrl: reader.result };
+                    document.getElementById('photoUploadPreviewImg').src = reader.result;
+                    document.getElementById('photoUploadVisibilitySelect').value = 'everyone';
+                    document.getElementById('photoUploadVisibilityModal').style.display = 'flex';
+                } else {
+                    // Alliance members upload directly, visible to alliance + staff only
+                    if (!homePhotos) homePhotos = [];
+                    homePhotos.unshift({
+                        id: Date.now(),
+                        dataUrl: reader.result,
+                        uploader: currentUser.username,
+                        date: new Date().toLocaleDateString(),
+                        visibility: 'alliance'
+                    });
+                    logAction('UPLOAD_PHOTO', `Uploaded a photo/video to the Home dashboard.`);
+                    saveData();
+                    renderHomePhotos();
+                }
             };
             reader.readAsDataURL(file);
             e.target.value = '';
