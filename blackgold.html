@@ -163,7 +163,7 @@
         padding: 0 4px;
     }
     .legend-item { display: flex; align-items: center; gap: 6px; }
-    .legend-hint { color: var(--color-text-muted); font-weight: 600; font-size: 11px; width: 100%; margin-top: -4px; }
+    .legend-hint { color: var(--color-text-muted); font-weight: 600; font-size: 11px; width: 100%; margin-top: -4px; display: none !important; }
 
     .slot-badge {
         width: 24px; height: 24px;
@@ -505,7 +505,13 @@
         document.getElementById('shownCount').innerText = `${filtered.length}/${members.length} members shown`;
         document.getElementById('btnAddDate').style.display = isManagementOrAdmin ? 'inline-block' : 'none';
         document.getElementById('calendarPicker').style.display = isManagementOrAdmin ? 'inline-block' : 'none';
-        document.getElementById('legendHint').style.display = isManagementOrAdmin ? 'inline' : 'none';
+        
+        const legendHint = document.getElementById('legendHint');
+        if (isManagementOrAdmin) {
+            legendHint.style.setProperty('display', 'inline', 'important');
+        } else {
+            legendHint.style.setProperty('display', 'none', 'important');
+        }
 
         renderHeader();
         renderBody(filtered);
@@ -649,7 +655,6 @@
         const d = bgDates.find(x => x.id === dateId);
         if (!d) return;
 
-        // Try to pre-convert current MM-DD-YYYY or MM-DD to YYYY-MM-DD for standard input picker
         let defaultVal = '';
         const parsed = parseDateString(d.date);
         if (!isNaN(parsed) && parsed.getTime() > 0) {
@@ -659,19 +664,17 @@
             defaultVal = `${yyyy}-${mm}-${dd}`;
         }
 
-        const newDateInput = prompt(`Edit date (Format: MM-DD-YYYY or select via date prompt):`, d.date);
-        if (newDateInput === null) return; // Cancelled
+        const newDateInput = prompt(`Edit date (Format: MM-DD-YYYY):`, d.date);
+        if (newDateInput === null) return;
         const trimmed = newDateInput.trim();
         if (!trimmed) {
             alert('Date cannot be empty.');
             return;
         }
 
-        // Standardize format if they type it directly
         let formattedDate = trimmed;
         let parts = trimmed.split('-');
         if (parts.length === 3 && parts[0].length === 4) {
-            // YYYY-MM-DD -> MM-DD-YYYY
             formattedDate = `${parts[1]}-${parts[2]}-${parts[0]}`;
         }
 
@@ -705,7 +708,7 @@
             alert('Please select a date from the calendar picker first.');
             return;
         }
-        const selectedDate = picker.value; // Format: YYYY-MM-DD
+        const selectedDate = picker.value;
         const parts = selectedDate.split('-');
         const formattedDate = `${parts[1]}-${parts[2]}-${parts[0]}`;
 
