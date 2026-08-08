@@ -27,6 +27,13 @@
             --color-main: #ffb000;
 
             --font-family-base: 'Montserrat', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+            /* Sidebar-only tokens, matched to index.html for uniformity */
+            --font-family-ui: 'Montserrat', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            --font-family-logo: 'Noto Sans SC', sans-serif;
+            --color-bg-sidebar: #ffffff;
+            --color-border: #3b52a4;
+            --color-primary-light: #eceff8;
         }
 
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -208,15 +215,79 @@
             .controls-card { flex-direction: column; align-items: stretch; }
             .search-box { max-width: none; }
         }
+
+        /* ===== Sidebar / App Shell (copied from index.html for uniformity) ===== */
+        .app-shell { display: flex; width: 100%; min-height: 100vh; }
+        .sidebar { width: 300px; background-color: var(--color-bg-sidebar); border-right: 2px solid var(--color-border); display: flex; flex-direction: column; flex-shrink: 0; transition: transform 0.3s ease; z-index: 100; }
+        .sidebar__header { padding: 24px; display: flex; justify-content: center; align-items: center; border-bottom: 2px solid var(--color-border); }
+        .sidebar__logo { width: 85px; height: 85px; border-radius: 50%; background: linear-gradient(135deg, #a5c7f9, #2d55b8); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 30px; font-family: var(--font-family-logo); }
+        .sidebar__user { padding: 18px 24px; display: flex; align-items: center; gap: 14px; font-weight: 700; font-size: 14px; color: #62697b; border-bottom: 1px solid var(--color-border-light); }
+        .sidebar__user-avatar { width: 42px; height: 42px; border-radius: 50%; background-color: var(--color-primary); color: white; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; }
+        .sidebar__nav { display: flex; flex-direction: column; gap: 6px; overflow-y: auto; padding-bottom: 24px; flex-grow: 1; }
+        .sidebar__footer { padding: 14px 24px; border-top: 1px solid var(--color-border-light); margin-top: auto; }
+        .sidebar__menu { list-style: none; }
+        .sidebar__section-title { font-size: 12px; font-weight: 800; color: #8c93a6; padding: 18px 24px 8px 24px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .sidebar__item { display: flex; align-items: center; padding: 14px 24px; color: #555b6e; font-weight: 700; font-size: 12px; text-decoration: none; gap: 14px; cursor: pointer; transition: background 0.2s; }
+        .sidebar__item:hover { background-color: #f0f2f8; }
+        .sidebar__item--active { background-color: var(--color-primary); color: white; }
+        .sidebar__item--logout { color: #d9381e; }
+        .sidebar__item--logout:hover { background-color: #fce8e6; }
+        .sidebar__icon { width: 18px; text-align: center; }
+
+        .app-shell__main { flex-grow: 1; display: flex; flex-direction: column; min-width: 0; }
+        .mobile-header { display: none; justify-content: flex-end; align-items: center; padding: 10px 14px; background: transparent; border: none; }
+        .hamburger { background: none; border: none; cursor: pointer; display: flex; flex-direction: column; gap: 5px; padding: 5px; }
+        .hamburger__line { width: 26px; height: 3px; background-color: var(--color-primary); border-radius: 2px; }
+
+        @media (max-width: 1024px) {
+            .app-shell { flex-direction: column; }
+            .mobile-header { display: flex; }
+            .sidebar { position: fixed; top: 0; left: 0; height: 100vh; transform: translateX(-100%); }
+            .sidebar--open { transform: translateX(0); }
+        }
     </style>
 </head>
 <body>
 <div class="top-accent-bar"></div>
 <div class="save-status" id="saveStatus"></div>
 
-    <main class="page-wrap">
-        <a class="back-link" href="index.html"><i class="fa-solid fa-arrow-left"></i> Back to Dashboard</a>
+    <div class="app-shell">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar__header"><div class="sidebar__logo">娜美</div></div>
+            <div class="sidebar__user">
+                <div class="sidebar__user-avatar" id="userAvatarIcon">U</div>
+                <div>
+                    <div id="userRoleDisplay" style="font-size: 12px; text-transform: uppercase;">USERNAME</div>
+                    <div id="userPermissionBadge" style="font-size: 12px; color: #8c93a6;">Role</div>
+                </div>
+            </div>
+            <nav class="sidebar__nav">
+                <ul class="sidebar__menu">
+                    <li><a class="sidebar__item" href="index.html"><span class="sidebar__icon">✧</span> HOME</a></li>
+                    <li><a class="sidebar__item" href="index.html"><span class="sidebar__icon">✧</span> NOTICE</a></li>
+                    <li><a class="sidebar__item sidebar__item--active" href="members.html"><span class="sidebar__icon">✧</span> MEMBERS</a></li>
+                    <li><a class="sidebar__item" href="blackgold.html"><span class="sidebar__icon">✧</span> BLACK GOLD</a></li>
+                    <li><a class="sidebar__item" href="index.html"><span class="sidebar__icon">✧</span> EVENT ATTENDANCE</a></li>
+                    <li><a class="sidebar__item" href="vspoint.html"><span class="sidebar__icon">✧</span> VS POINTS</a></li>
+                </ul>
+                <div class="sidebar__section-title" id="adminSectionHeader" style="display: none;">MANAGEMENT & ADMIN</div>
+                <ul class="sidebar__menu" id="adminMenuContainer">
+                    <li id="navDiscussionLi" style="display: none;"><a class="sidebar__item" href="index.html"><span class="sidebar__icon">|</span> DISCUSSION ROOM</a></li>
+                    <li id="navHistoryLi" style="display: none;"><a class="sidebar__item" href="index.html"><span class="sidebar__icon">|</span> EDIT HISTORY & AUDIT</a></li>
+                    <li id="assignRolesNavLi" style="display: none;"><a class="sidebar__item" href="index.html"><span class="sidebar__icon">|</span> ASSIGN USER ROLES</a></li>
+                </ul>
+            </nav>
+            <div class="sidebar__footer">
+                <a class="sidebar__item sidebar__item--logout" id="sidebarLogoutBtn"><span class="sidebar__icon">|</span> LOG OUT</a>
+            </div>
+        </aside>
 
+        <div class="app-shell__main">
+            <div class="mobile-header">
+                <button class="hamburger" id="hamburgerBtn"><span class="hamburger__line"></span><span class="hamburger__line"></span><span class="hamburger__line"></span></button>
+            </div>
+
+    <div class="page-wrap">
         <div class="page-header">
             <div class="page-header__title">Members</div>
             <div class="page-header__subtitle" id="pageSubtitle">0 members total</div>
@@ -277,7 +348,9 @@
             <span>♦ Loopy's Playground · Alliance Management Tool</span>
             <span id="shownCount">0/0 members shown</span>
         </div>
-    </main>
+    </div>
+        </div>
+    </div>
 
     <div class="modal-overlay" id="addMemberModal">
         <div class="modal-card">
@@ -404,9 +477,6 @@
 
             if (members.length === 0) {
                 members = [
-                    { id: 1, name: "ZGUNDAM", cp: "5,840,000,000", rawCp: 5840000000, f1Cp: "5G", f1Raw: 5000000000, f1History: [{date: '2026-08-01', val: '5G'}], faction: "R", level: "10", rank: "R5", status: "active", note: "-" },
-                    { id: 2, name: "Dong gu", cp: "5,590,000,000", rawCp: 5590000000, f1Cp: "5G", f1Raw: 5000000000, f1History: [{date: '2026-08-01', val: '5G'}], faction: "S", level: "i2", rank: "R4", status: "active", note: "-" },
-                    { id: 3, name: "RRAVII", cp: "5,390,000,000", rawCp: 5390000000, f1Cp: "4G", f1Raw: 4000000000, f1History: [{date: '2026-08-01', val: '4G'}], faction: "F", level: "15", rank: "R5", status: "active", note: "R5" }
                 ];
             } else {
                 members.forEach(m => {
@@ -852,6 +922,39 @@
         });
 
         window.addEventListener('DOMContentLoaded', loadDataFromCloud);
+
+        // ===== Sidebar (added for uniformity with index.html) =====
+        function initSidebar() {
+            const isAdmin = currentUser.role === 'admin';
+            const isManagementOrAdmin = currentUser.role === 'admin' || currentUser.role === 'management';
+
+            document.getElementById('adminSectionHeader').style.display = isManagementOrAdmin ? 'block' : 'none';
+            document.getElementById('navDiscussionLi').style.display = isManagementOrAdmin ? 'block' : 'none';
+            document.getElementById('navHistoryLi').style.display = isAdmin ? 'block' : 'none';
+            document.getElementById('assignRolesNavLi').style.display = isAdmin ? 'block' : 'none';
+
+            document.getElementById('userRoleDisplay').innerText = (currentUser.username || 'Guest').toUpperCase();
+            document.getElementById('userPermissionBadge').innerText = `Role: ${(currentUser.role || 'guest').toUpperCase()}`;
+            document.getElementById('userAvatarIcon').innerText = (currentUser.username || 'G').charAt(0).toUpperCase();
+        }
+
+        const sidebarHamburgerBtn = document.getElementById('hamburgerBtn');
+        if (sidebarHamburgerBtn) {
+            sidebarHamburgerBtn.addEventListener('click', () => {
+                document.getElementById('sidebar').classList.toggle('sidebar--open');
+            });
+        }
+
+        const sidebarLogoutBtn = document.getElementById('sidebarLogoutBtn');
+        if (sidebarLogoutBtn) {
+            sidebarLogoutBtn.addEventListener('click', () => {
+                localStorage.removeItem('amt_userRole');
+                localStorage.removeItem('amt_username');
+                window.location.href = 'index.html';
+            });
+        }
+
+        window.addEventListener('DOMContentLoaded', initSidebar);
     </script>
 </body>
 </html>
