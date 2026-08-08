@@ -86,7 +86,7 @@
     .sidebar__item--logout:hover { background-color: #fce8e6; }
     .sidebar__icon { width: 18px; text-align: center; }
 
-    .main { flex-grow: 1; padding: 28px; display: flex; flex-direction: column; gap: 18px; max-width: 1320px; }
+    .main { flex-grow: 1; padding: 28px; display: flex; flex-direction: column; gap: 18px; max-width: 1600px; }
     .mobile-header { display: none; justify-content: flex-end; align-items: center; padding: 10px 14px; background: transparent; border: none; margin-bottom: 8px; }
     .hamburger { background: none; border: none; cursor: pointer; display: flex; flex-direction: column; gap: 5px; padding: 5px; }
     .hamburger__line { width: 26px; height: 3px; background-color: var(--color-primary); border-radius: 2px; }
@@ -438,9 +438,9 @@
     }
     .map-role-add-btn:hover { background: var(--color-primary); color: white; }
 
-    .map-diagram-wrap { flex: 1 1 auto; min-width: 320px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+    .map-diagram-wrap { flex: 1 1 auto; min-width: 420px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
     .map-diagram {
-        position: relative; width: 100%; max-width: 860px; aspect-ratio: 1093 / 1096;
+        position: relative; width: 100%; max-width: 1180px; aspect-ratio: 1093 / 1096;
         background: #c58f5f;
         border-radius: 14px; border: 3px solid #93672f; box-shadow: inset 0 0 30px rgba(0,0,0,0.15);
         overflow: hidden;
@@ -533,8 +533,12 @@
         font-size: 13px;
     }
 
-    @media (max-width: 1200px) {
-        .map-diagram { max-width: 620px; }
+    @media (max-width: 1500px) {
+        .map-diagram { max-width: 900px; }
+    }
+
+    @media (max-width: 1100px) {
+        .map-diagram { max-width: 700px; }
     }
 
     @media (max-width: 900px) {
@@ -606,11 +610,9 @@
                 <span class="search-box__icon">🔍</span>
                 <input type="text" id="searchInput" placeholder="Search member...">
             </div>
-            <div class="toolbar-spacer" id="abToolbarControls">
-                <input type="date" id="calendarPicker" style="display: none; padding: 8px; border: 2px solid var(--color-gold); background: var(--color-gold-bg); border-radius: 4px; font-family: var(--font-family-base); font-weight: 800; font-size: 12px; cursor: pointer;">
-                <button class="btn-gold" id="btnAddDate" style="display: none;">+ ADD DATE</button>
-            </div>
             <div class="toolbar-spacer" id="mapToolbarControls" style="display: none;">
+                <input type="date" id="mapCalendarPicker" style="display: none; padding: 8px; border: 2px solid var(--color-gold); background: var(--color-gold-bg); border-radius: 4px; font-family: var(--font-family-base); font-weight: 800; font-size: 12px; cursor: pointer;">
+                <button class="btn-gold" id="mapBtnAddDate" style="display: none;">+ ADD DATE</button>
                 <button class="btn-gold" id="btnAddTeam" style="display: none;">+ ADD GROUP</button>
                 <button class="btn-danger-outline" id="btnRemoveTeam" style="display: none;">− REMOVE GROUP</button>
             </div>
@@ -654,7 +656,7 @@
                     <button class="map-subtab-btn map-subtab-btn--active" id="mapSubtabA">TEAM A</button>
                     <button class="map-subtab-btn" id="mapSubtabB">TEAM B</button>
                 </div>
-                <div class="map-toolbar__hint" id="mapAdminHint" style="display:none;">Click a numbered marker on the map to change its number · use the select boxes on the left to assign members (auto-pulls Faction &amp; F1 Power from Members) · click a group's color swatch to recolor it · use the role dropdown to change a role's name, or pick from the dropdown at the bottom of a group's table and click + ADD ROLE to create a new one. Assigning a member here automatically sets their Slot (A or B, matching this tab) and Main/Substitute status on the most recent A/B Slots session.</div>
+                <div class="map-toolbar__hint" id="mapAdminHint" style="display:none;">Click a numbered marker on the map to change its number · use the select boxes on the left to assign members (auto-pulls Faction &amp; F1 Power from Members) · click a group's color swatch to recolor it · use the role dropdown to change a role's name, or pick from the dropdown at the bottom of a group's table and click + ADD ROLE to create a new one. Assigning a member here automatically sets their Slot (A or B, matching this tab) and Main/Substitute status on the most recent A/B Slots session. A member can only be assigned to one team (A or B) per session.</div>
                 <div class="map-body">
                     <div class="map-table-wrapper" id="mapTableWrapper"></div>
                     <div class="map-diagram-wrap">
@@ -1007,7 +1009,6 @@
         document.getElementById('calendarSection').style.display = tab === 'calendar' ? 'block' : 'none';
 
         document.getElementById('abSearchBox').style.display = tab === 'ab' ? 'block' : 'none';
-        document.getElementById('abToolbarControls').style.display = tab === 'ab' ? 'flex' : 'none';
         document.getElementById('mapToolbarControls').style.display = tab === 'map' ? 'flex' : 'none';
         document.getElementById('calendarToolbarControls').style.display = tab === 'calendar' ? 'flex' : 'none';
 
@@ -1042,8 +1043,8 @@
             document.getElementById('tabMap').title = 'Not available for your role';
         }
 
-        document.getElementById('btnAddDate').style.display = isManagementOrAdmin ? 'inline-block' : 'none';
-        document.getElementById('calendarPicker').style.display = isManagementOrAdmin ? 'inline-block' : 'none';
+        document.getElementById('mapBtnAddDate').style.display = isManagementOrAdmin ? 'inline-block' : 'none';
+        document.getElementById('mapCalendarPicker').style.display = isManagementOrAdmin ? 'inline-block' : 'none';
         document.getElementById('btnAddTeam').style.display = isManagementOrAdmin ? 'inline-block' : 'none';
         document.getElementById('btnRemoveTeam').style.display = isManagementOrAdmin ? 'inline-block' : 'none';
         document.getElementById('mapAdminHint').style.display = isManagementOrAdmin ? 'block' : 'none';
@@ -1259,7 +1260,7 @@
         render();
     };
 
-    // Shared "add date" flow used by both the A/B Slots toolbar and the Calendar tab — they write
+    // Shared "add date" flow used by the Map tab and the Calendar tab — they write
     // to the exact same bgDates array/table, so a date added from either place shows up in both.
     async function addDateFromPicker(pickerId) {
         const picker = document.getElementById(pickerId);
@@ -1284,7 +1285,7 @@
         render();
     }
 
-    document.getElementById('btnAddDate').addEventListener('click', () => addDateFromPicker('calendarPicker'));
+    document.getElementById('mapBtnAddDate').addEventListener('click', () => addDateFromPicker('mapCalendarPicker'));
     document.getElementById('calBtnAddDate').addEventListener('click', () => addDateFromPicker('calCalendarPicker'));
 
     document.getElementById('searchInput').addEventListener('input', render);
@@ -1364,10 +1365,15 @@
         return bgDates[bgDates.length - 1].id;
     }
 
+    // Whether memberId currently holds ANY role, on ANY group, on the given board.
+    function isMemberAssignedOnBoard(memberId, board) {
+        if (!memberId) return false;
+        return mapBoards[board].some(t => Object.values(t.roles).some(v => v && String(v) === String(memberId)));
+    }
+
     // Assigning a member to a role on the Team A / Team B map automatically sets their Slot
     // (matching the active board) and Main/Substitute status (matching the role) on the most
-    // recent A/B Slots session. This is one-directional: clearing a map assignment does not
-    // undo the A/B Slots entry.
+    // recent A/B Slots session.
     function syncMapAssignmentToAB(memberId, board, roleKey) {
         if (!memberId) return;
         const dateId = getLatestDateId();
@@ -1376,6 +1382,21 @@
         entry.slot = board === 'A' ? 'A' : 'B';
         entry.playerRole = (roleKey === 'substitute') ? 'sub' : 'main';
         saveAssignments();
+    }
+
+    // Clears a member's A/B Slots entry for the latest session, but ONLY if that entry's slot
+    // still matches the board being cleared from — so unassigning a member on Team A never
+    // touches an assignment that actually belongs to Team B, and vice versa.
+    function clearMemberSlotForBoard(memberId, board) {
+        if (!memberId) return;
+        const dateId = getLatestDateId();
+        if (!dateId) return;
+        const entry = getEntry(memberId, dateId);
+        if (entry.slot === board) {
+            entry.slot = null;
+            entry.playerRole = null;
+            saveAssignments();
+        }
     }
 
     function renderMap() {
@@ -1543,9 +1564,31 @@
         if (!isManagementOrAdmin) return;
         const team = currentTeams().find(t => t.id === teamId);
         if (!team) return;
-        team.roles[roleKey] = memberId || null;
-        saveMapBoard(activeBoard);
-        if (memberId) syncMapAssignmentToAB(memberId, activeBoard, roleKey);
+
+        const otherBoard = activeBoard === 'A' ? 'B' : 'A';
+
+        if (memberId) {
+            // A member can only be on one team (A or B) for a given session — block cross-team assignment.
+            if (isMemberAssignedOnBoard(memberId, otherBoard)) {
+                const m = findMemberById(memberId);
+                alert(`${m ? m.name : 'This member'} is already assigned on Team ${otherBoard} and can't be assigned to both teams for the same session. Remove them from Team ${otherBoard} first.`);
+                render();
+                return;
+            }
+            team.roles[roleKey] = memberId;
+            saveMapBoard(activeBoard);
+            syncMapAssignmentToAB(memberId, activeBoard, roleKey);
+        } else {
+            // Unassigning: only touch THIS group's role slot on THIS board — never the other team.
+            const previousMemberId = team.roles[roleKey];
+            team.roles[roleKey] = null;
+            saveMapBoard(activeBoard);
+            // Only clear their A/B slot if they no longer hold any role on this same board
+            // (they might still be assigned to a different group's role on this board).
+            if (previousMemberId && !isMemberAssignedOnBoard(previousMemberId, activeBoard)) {
+                clearMemberSlotForBoard(previousMemberId, activeBoard);
+            }
+        }
         render();
     };
 
