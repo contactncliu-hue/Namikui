@@ -139,7 +139,7 @@
         letter-spacing: 0.5px;
     }
 
-    /* Tab switch (A/B SLOTS vs MAP) */
+    /* Tab switch (A/B SLOTS vs MAP vs CALENDAR) */
     .tab-switch { display: flex; border-radius: 4px; overflow: hidden; border: 2px solid var(--color-primary); }
     .tab-switch__btn {
         font-family: var(--font-family-base);
@@ -420,8 +420,6 @@
     .map-role-table td { padding: 7px 12px; border-bottom: 1px solid var(--color-border-light); font-size: 11px; vertical-align: middle; }
     .map-role-table tr:last-child td { border-bottom: none; }
     .map-role-label { font-weight: 800; color: var(--color-text-dark); width: 118px; white-space: nowrap; }
-    .map-role-label-edit { cursor: pointer; }
-    .map-role-label-edit:hover { text-decoration: underline; color: var(--color-primary); }
     .map-role-faction-cell { width: 30px; text-align: center; }
     .map-role-select {
         width: 100%; padding: 5px 8px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 11px;
@@ -440,9 +438,9 @@
     }
     .map-role-add-btn:hover { background: var(--color-primary); color: white; }
 
-    .map-diagram-wrap { flex: 1 1 auto; min-width: 300px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+    .map-diagram-wrap { flex: 1 1 auto; min-width: 320px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
     .map-diagram {
-        position: relative; width: 100%; max-width: 520px; aspect-ratio: 1093 / 1096;
+        position: relative; width: 100%; max-width: 860px; aspect-ratio: 1093 / 1096;
         background: #c58f5f;
         border-radius: 14px; border: 3px solid #93672f; box-shadow: inset 0 0 30px rgba(0,0,0,0.15);
         overflow: hidden;
@@ -535,9 +533,14 @@
         font-size: 13px;
     }
 
+    @media (max-width: 1200px) {
+        .map-diagram { max-width: 620px; }
+    }
+
     @media (max-width: 900px) {
         .map-body { flex-direction: column; }
         .map-table-wrapper { width: 100%; flex: 1 1 auto; }
+        .map-diagram { max-width: 100%; }
     }
 
     @media (max-width: 640px) {
@@ -597,6 +600,7 @@
             <div class="tab-switch">
                 <button class="tab-switch__btn tab-switch__btn--active" id="tabAB" title="A / B Slots">A / B SLOTS</button>
                 <button class="tab-switch__btn" id="tabMap" title="Formation Map">MAP</button>
+                <button class="tab-switch__btn" id="tabCalendar" title="Calendar">CALENDAR</button>
             </div>
             <div class="search-box" id="abSearchBox">
                 <span class="search-box__icon">🔍</span>
@@ -609,6 +613,10 @@
             <div class="toolbar-spacer" id="mapToolbarControls" style="display: none;">
                 <button class="btn-gold" id="btnAddTeam" style="display: none;">+ ADD GROUP</button>
                 <button class="btn-danger-outline" id="btnRemoveTeam" style="display: none;">− REMOVE GROUP</button>
+            </div>
+            <div class="toolbar-spacer" id="calendarToolbarControls" style="display: none;">
+                <input type="date" id="calCalendarPicker" style="display: none; padding: 8px; border: 2px solid var(--color-gold); background: var(--color-gold-bg); border-radius: 4px; font-family: var(--font-family-base); font-weight: 800; font-size: 12px; cursor: pointer;">
+                <button class="btn-gold" id="calBtnAddDate" style="display: none;">+ ADD DATE</button>
             </div>
         </div>
 
@@ -646,7 +654,7 @@
                     <button class="map-subtab-btn map-subtab-btn--active" id="mapSubtabA">TEAM A</button>
                     <button class="map-subtab-btn" id="mapSubtabB">TEAM B</button>
                 </div>
-                <div class="map-toolbar__hint" id="mapAdminHint" style="display:none;">Click a numbered marker on the map to change its number · use the select boxes on the left to assign members (auto-pulls Faction &amp; F1 Power from Members) · click a group's color swatch to recolor it · click a role name to rename it. Assigning a member here automatically sets their Slot (A or B, matching this tab) and Main/Substitute status on the most recent A/B Slots session.</div>
+                <div class="map-toolbar__hint" id="mapAdminHint" style="display:none;">Click a numbered marker on the map to change its number · use the select boxes on the left to assign members (auto-pulls Faction &amp; F1 Power from Members) · click a group's color swatch to recolor it · use the role dropdown to change a role's name, or pick from the dropdown at the bottom of a group's table and click + ADD ROLE to create a new one. Assigning a member here automatically sets their Slot (A or B, matching this tab) and Main/Substitute status on the most recent A/B Slots session.</div>
                 <div class="map-body">
                     <div class="map-table-wrapper" id="mapTableWrapper"></div>
                     <div class="map-diagram-wrap">
@@ -661,6 +669,29 @@
                 <div class="map-legend-item"><span class="map-legend-swatch" style="background:#8a5a2b;"></span> Oil</div>
                 <div class="map-legend-item"><span class="map-legend-swatch" style="background:#e07b1f;"></span> Rare Earth Factory</div>
                 <div class="map-legend-item"><span class="map-legend-swatch" style="background:linear-gradient(90deg,#3b52a4 50%,#c0392b 50%);"></span> Base</div>
+            </div>
+        </div>
+
+        <!-- ===== CALENDAR SECTION ===== -->
+        <div id="calendarSection" style="display: none;">
+            <div class="legend-row">
+                <span class="legend-hint" id="calendarHint" style="display:inline !important; margin-top:0;">· Sessions added or removed here sync directly with the A/B Slots tab — they're the same dates.</span>
+            </div>
+            <div class="table-card">
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th class="col-member">Session Date</th>
+                                <th>Week</th>
+                                <th>A Count</th>
+                                <th>B Count</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="calendarBody"></tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
@@ -740,7 +771,7 @@
     let activeBoard = 'A'; // 'A' | 'B' — which Team sub-tab of the Map tab is showing
     // roleDefs = [{ key, label }] — shared role taxonomy used by every group on both boards.
     let roleDefs = [];
-    let activeTab = 'ab'; // 'ab' | 'map'
+    let activeTab = 'ab'; // 'ab' | 'map' | 'calendar'
 
     // Fixed physical positions on the map (percent left/top), matching the reference formation map 1:1,
     // plus two additional positions to support up to 8 groups.
@@ -766,6 +797,10 @@
         { key: 'ballSupport', label: 'Ball Support' },
         { key: 'substitute', label: 'Substitute' }
     ];
+
+    // Preset role names offered in the customization dropdowns (admin/management can still type a
+    // fully custom name via the "+ Custom..." option in either dropdown).
+    const PRESET_ROLES = ['Ball Capture', 'Territory Capture', 'Ball Support', 'Substitute', 'Scout', 'Reserve', 'Defense', 'Attack'];
 
     function getActiveMembers() {
         return members.filter(m => m.status !== 'removed');
@@ -965,18 +1000,22 @@
 
         document.getElementById('tabAB').classList.toggle('tab-switch__btn--active', tab === 'ab');
         document.getElementById('tabMap').classList.toggle('tab-switch__btn--active', tab === 'map');
+        document.getElementById('tabCalendar').classList.toggle('tab-switch__btn--active', tab === 'calendar');
 
         document.getElementById('abSlotsSection').style.display = tab === 'ab' ? 'block' : 'none';
         document.getElementById('mapSection').style.display = tab === 'map' ? 'block' : 'none';
+        document.getElementById('calendarSection').style.display = tab === 'calendar' ? 'block' : 'none';
 
         document.getElementById('abSearchBox').style.display = tab === 'ab' ? 'block' : 'none';
         document.getElementById('abToolbarControls').style.display = tab === 'ab' ? 'flex' : 'none';
         document.getElementById('mapToolbarControls').style.display = tab === 'map' ? 'flex' : 'none';
+        document.getElementById('calendarToolbarControls').style.display = tab === 'calendar' ? 'flex' : 'none';
 
         render();
     }
     document.getElementById('tabAB').addEventListener('click', () => switchTab('ab'));
     document.getElementById('tabMap').addEventListener('click', () => switchTab('map'));
+    document.getElementById('tabCalendar').addEventListener('click', () => switchTab('calendar'));
 
     // --- MAP SUB-TAB SWITCHING (Team A / Team B) ---
     function switchMapSubtab(board) {
@@ -1008,6 +1047,8 @@
         document.getElementById('btnAddTeam').style.display = isManagementOrAdmin ? 'inline-block' : 'none';
         document.getElementById('btnRemoveTeam').style.display = isManagementOrAdmin ? 'inline-block' : 'none';
         document.getElementById('mapAdminHint').style.display = isManagementOrAdmin ? 'block' : 'none';
+        document.getElementById('calBtnAddDate').style.display = isManagementOrAdmin ? 'inline-block' : 'none';
+        document.getElementById('calCalendarPicker').style.display = isManagementOrAdmin ? 'inline-block' : 'none';
 
         const legendHint = document.getElementById('legendHint');
         if (isManagementOrAdmin) {
@@ -1020,8 +1061,10 @@
             renderHeader();
             renderBody(filtered);
             renderFooter();
-        } else {
+        } else if (activeTab === 'map') {
             renderMap();
+        } else if (activeTab === 'calendar') {
+            renderCalendar();
         }
     }
 
@@ -1216,8 +1259,10 @@
         render();
     };
 
-    document.getElementById('btnAddDate').addEventListener('click', async () => {
-        const picker = document.getElementById('calendarPicker');
+    // Shared "add date" flow used by both the A/B Slots toolbar and the Calendar tab — they write
+    // to the exact same bgDates array/table, so a date added from either place shows up in both.
+    async function addDateFromPicker(pickerId) {
+        const picker = document.getElementById(pickerId);
         if (!picker.value) {
             alert('Please select a date from the calendar picker first.');
             return;
@@ -1237,9 +1282,48 @@
 
         await saveDates();
         render();
-    });
+    }
+
+    document.getElementById('btnAddDate').addEventListener('click', () => addDateFromPicker('calendarPicker'));
+    document.getElementById('calBtnAddDate').addEventListener('click', () => addDateFromPicker('calCalendarPicker'));
 
     document.getElementById('searchInput').addEventListener('input', render);
+
+    // ================= CALENDAR TAB =================
+    function renderCalendar() {
+        const body = document.getElementById('calendarBody');
+
+        if (bgDates.length === 0) {
+            body.innerHTML = `<tr><td colspan="5" class="empty-state">No sessions yet. ${isManagementOrAdmin ? 'Pick a date above and click + ADD DATE.' : ''}</td></tr>`;
+            return;
+        }
+
+        const activeMembers = getActiveMembers();
+        let html = '';
+        bgDates.forEach((d, idx) => {
+            let countA = 0, countB = 0;
+            activeMembers.forEach(m => {
+                const entry = getEntry(m.id, d.id);
+                if (entry.slot === 'A') countA++;
+                if (entry.slot === 'B') countB++;
+            });
+
+            const dateAttrs = isManagementOrAdmin
+                ? `onclick="editDate('${d.id}')" title="Click to edit date" style="cursor:pointer;"`
+                : '';
+
+            html += `
+                <tr>
+                    <td class="col-member" ${dateAttrs}>${d.date}</td>
+                    <td>Week ${idx + 1}</td>
+                    <td><span class="ab-count-a">${countA}</span></td>
+                    <td><span class="ab-count-b">${countB}</span></td>
+                    <td>${isManagementOrAdmin ? `<span class="remove-date-btn" style="cursor:pointer; font-size:11px;" onclick="removeDate('${d.id}')">✕ Remove</span>` : '—'}</td>
+                </tr>
+            `;
+        });
+        body.innerHTML = html;
+    }
 
     // ================= MAP TAB =================
 
@@ -1262,6 +1346,15 @@
             html += `<option value="${m.id}" ${String(m.id) === String(selectedId) ? 'selected' : ''}>${m.name}</option>`;
         });
         return html;
+    }
+
+    // Dropdown options for a role's name field: preset role names plus the role's current label
+    // (if it's not already one of the presets) plus a "+ Custom..." option to type a new name.
+    function roleLabelOptionsHtml(currentLabel) {
+        let opts = PRESET_ROLES.slice();
+        if (!opts.includes(currentLabel)) opts.unshift(currentLabel);
+        opts.push('__custom__');
+        return opts.map(o => `<option value="${o}" ${o === currentLabel ? 'selected' : ''}>${o === '__custom__' ? '+ Custom...' : o}</option>`).join('');
     }
 
     // Finds the most recently added / latest chronological Black Gold session, used as the
@@ -1327,12 +1420,13 @@
                             ${roleDefs.map(role => {
                                 const assignedMember = findMemberById(team.roles[role.key]);
                                 const power = assignedMember ? (assignedMember.f1Cp || '0G') : '—';
-                                const labelAttrs = isManagementOrAdmin
-                                    ? `class="map-role-label map-role-label-edit" onclick="renameRole('${role.key}')" title="Click to rename this role"`
-                                    : `class="map-role-label"`;
                                 return `
                                     <tr>
-                                        <td ${labelAttrs}>${role.label}</td>
+                                        <td class="map-role-label">
+                                            ${isManagementOrAdmin
+                                                ? `<select class="map-role-select" title="Change this role's name" onchange="changeRoleLabel('${role.key}', this.value)">${roleLabelOptionsHtml(role.label)}</select>`
+                                                : role.label}
+                                        </td>
                                         <td class="map-role-faction-cell">${factionCircleHtml(assignedMember)}</td>
                                         <td>
                                             <select class="map-role-select" ${isManagementOrAdmin ? `onchange="assignMapRole('${team.id}','${role.key}', this.value)"` : 'disabled'}>
@@ -1344,7 +1438,14 @@
                                     </tr>
                                 `;
                             }).join('')}
-                            ${isAdmin ? `<tr><td colspan="5" class="map-role-add-row"><button class="map-role-add-btn" onclick="addCustomRole()">+ ADD CUSTOM ROLE</button></td></tr>` : ''}
+                            ${isManagementOrAdmin ? `
+                            <tr><td colspan="5" class="map-role-add-row">
+                                <select class="map-role-select" id="newRoleSelect_${team.id}" style="width:auto; display:inline-block; margin-right:8px; margin-bottom:6px;">
+                                    ${PRESET_ROLES.map(r => `<option value="${r}">${r}</option>`).join('')}
+                                    <option value="__custom__">+ Custom Role...</option>
+                                </select>
+                                <button class="map-role-add-btn" onclick="addRoleFromDropdown('newRoleSelect_${team.id}')">+ ADD ROLE</button>
+                            </td></tr>` : ''}
                         </tbody>
                     </table>
                 </div>
@@ -1468,19 +1569,25 @@
         render();
     };
 
-    // Rename an existing role (admin & management)
-    window.renameRole = function(key) {
+    // Change an existing role's name via its dropdown (admin & management). Picking "+ Custom..."
+    // falls back to a text prompt so any name is still possible.
+    window.changeRoleLabel = function(key, value) {
         if (!isManagementOrAdmin) return;
         const role = roleDefs.find(r => r.key === key);
         if (!role) return;
-        const newLabel = prompt('Edit role name:', role.label);
-        if (newLabel === null) return;
-        const trimmed = newLabel.trim();
-        if (!trimmed) {
-            alert('Role name cannot be empty.');
-            return;
+        if (value === '__custom__') {
+            const newLabel = prompt('Enter custom role name:', role.label);
+            if (newLabel === null) { render(); return; }
+            const trimmed = newLabel.trim();
+            if (!trimmed) {
+                alert('Role name cannot be empty.');
+                render();
+                return;
+            }
+            role.label = trimmed;
+        } else {
+            role.label = value;
         }
-        role.label = trimmed;
         saveRoleDefs();
         render();
     };
@@ -1504,18 +1611,26 @@
         render();
     };
 
-    // Add a brand-new custom role — admin only
-    window.addCustomRole = function() {
-        if (!isAdmin) return;
-        const label = prompt('Enter a name for the new custom role:');
-        if (label === null) return;
-        const trimmed = label.trim();
-        if (!trimmed) {
-            alert('Role name cannot be empty.');
-            return;
+    // Add a brand-new role from the dropdown (admin & management). Picking "+ Custom Role..."
+    // falls back to a text prompt so any name is still possible.
+    window.addRoleFromDropdown = function(selectId) {
+        if (!isManagementOrAdmin) return;
+        const select = document.getElementById(selectId);
+        if (!select) return;
+        const value = select.value;
+        let label = value;
+        if (value === '__custom__') {
+            const newLabel = prompt('Enter a name for the new custom role:');
+            if (newLabel === null) return;
+            const trimmed = newLabel.trim();
+            if (!trimmed) {
+                alert('Role name cannot be empty.');
+                return;
+            }
+            label = trimmed;
         }
         const key = 'custom_' + Date.now();
-        roleDefs.push({ key, label: trimmed });
+        roleDefs.push({ key, label });
         saveRoleDefs();
         render();
     };
