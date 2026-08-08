@@ -409,8 +409,8 @@
 
     .map-diagram-wrap { flex: 1 1 auto; min-width: 300px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
     .map-diagram {
-        position: relative; width: 100%; max-width: 520px; aspect-ratio: 1 / 1;
-        background: radial-gradient(circle at 50% 50%, #dcb287, #b98a55 78%);
+        position: relative; width: 100%; max-width: 520px; aspect-ratio: 1093 / 1096;
+        background: #c58f5f;
         border-radius: 14px; border: 3px solid #93672f; box-shadow: inset 0 0 30px rgba(0,0,0,0.15);
         overflow: hidden;
     }
@@ -436,24 +436,23 @@
     /* Numbered pins — the ONLY interactive/interchangeable element on the map */
     .map-pin {
         position: absolute;
-        width: 44px; height: 44px;
-        transform: translate(-50%, -50%) rotate(-45deg);
-        border-radius: 50% 50% 50% 0;
-        background: #5c4127;
-        border: 2px solid #3f2c14;
-        box-shadow: 0 3px 6px rgba(0,0,0,0.35);
+        width: 46px; height: 54px;
+        transform: translate(-50%, -62%);
         display: flex; align-items: center; justify-content: center;
         cursor: pointer;
         transition: transform 0.12s;
     }
-    .map-pin:active { transform: translate(-50%, -50%) rotate(-45deg) scale(0.92); }
+    .map-pin:active { transform: translate(-50%, -62%) scale(0.92); }
     .map-pin--readonly { cursor: default; }
+    .map-pin svg { width: 100%; height: 100%; filter: drop-shadow(0 3px 4px rgba(0,0,0,0.35)); }
     .map-pin__num {
-        transform: rotate(45deg);
+        position: absolute;
+        left: 50%; top: 40%;
+        transform: translate(-50%, -50%);
         color: #fff;
         font-weight: 800;
         font-family: var(--font-family-base);
-        font-size: 15px;
+        font-size: 16px;
     }
 
     .map-locked-state {
@@ -677,12 +676,12 @@
     // Fixed physical positions on the map (percent left/top), matching the reference formation map 1:1.
     // Slot index 0-5 never moves — only the number displayed on that marker can change.
     const SLOT_POSITIONS = [
-        { left: 68.2, top: 67.8 }, // slot 0 (default marker "1")
-        { left: 81.2, top: 54.3 }, // slot 1 (default marker "2")
-        { left: 62.5, top: 36.5 }, // slot 2 (default marker "3")
-        { left: 30.8, top: 67.8 }, // slot 3 (default marker "4")
-        { left: 17.8, top: 54.3 }, // slot 4 (default marker "5")
-        { left: 36.2, top: 36.5 }  // slot 5 (default marker "6")
+        { left: 70.91, top: 63.69 }, // slot 0 (default marker "1")
+        { left: 83.26, top: 49.54 }, // slot 1 (default marker "2")
+        { left: 67.52, top: 32.48 }, // slot 2 (default marker "3")
+        { left: 30.65, top: 63.69 }, // slot 3 (default marker "4")
+        { left: 18.30, top: 49.54 }, // slot 4 (default marker "5")
+        { left: 34.03, top: 32.48 }  // slot 5 (default marker "6")
     ];
     const MAX_SLOTS = SLOT_POSITIONS.length;
 
@@ -1182,47 +1181,70 @@
         wrap.innerHTML = html;
     }
 
-    // Fixed decorative background (house, stars, hospital crosses, shields, dotted roads, connector arrows)
-    // matching the reference formation map 1:1 — never changes when markers are added/removed/renumbered.
+    // Fixed decorative background (house, stars, hospital crosses, resource pouches) — no arrows —
+    // matching the new reference formation map 1:1. Never changes when markers are added/removed/renumbered.
     function staticMapBackgroundHtml() {
         return `
-            <svg class="map-dotted-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
-                <line x1="85.1" y1="11.5" x2="100" y2="0" stroke="#8a5a2f" stroke-width="0.6" stroke-dasharray="1.6,1.6"/>
-                <line x1="11.8" y1="81" x2="0" y2="100" stroke="#8a5a2f" stroke-width="0.6" stroke-dasharray="1.6,1.6"/>
+            <svg class="map-dotted-svg" viewBox="0 0 1093 1096" preserveAspectRatio="xMidYMid slice">
+                <rect x="0" y="0" width="1093" height="1096" fill="#c58f5f"/>
+
+                <defs>
+                    <path id="mapPouchShape" d="
+                        M58,4
+                        L92,4
+                        Q102,4 102,14
+                        L102,26
+                        Q106,28 118,28
+                        Q138,30 140,46
+                        Q142,60 126,60
+                        Q130,64 132,68
+                        L132,128
+                        Q130,148 100,156
+                        Q75,160 50,156
+                        Q20,148 18,128
+                        L18,68
+                        Q20,64 24,60
+                        Q8,60 10,46
+                        Q12,30 32,28
+                        Q44,28 48,26
+                        L48,14
+                        Q48,4 58,4
+                        Z"/>
+                </defs>
+
+                <!-- house -->
+                <g>
+                    <rect x="450" y="618" width="210" height="30" rx="15" fill="#c97b3d"/>
+                    <rect x="468" y="516" width="174" height="106" rx="10" fill="#c97b3d"/>
+                    <polygon points="555,412 458,522 652,522" fill="#c97b3d" stroke="#c97b3d" stroke-width="10" stroke-linejoin="round"/>
+                    <rect x="534" y="560" width="42" height="58" fill="#c58f5f"/>
+                </g>
+
+                <!-- stars -->
+                <g fill="#f4c94c" stroke="#f4c94c" stroke-width="6" stroke-linejoin="round">
+                    <polygon points="200,92 217,137 265,137 226,165 241,210 200,182 159,210 174,165 135,137 183,137"/>
+                    <polygon points="890,850 907,895 955,895 916,923 931,968 890,940 849,968 864,923 825,895 873,895"/>
+                </g>
+
+                <!-- crosses -->
+                <g fill="#4b7c40" stroke="#4b7c40" stroke-width="9" stroke-linejoin="round">
+                    <path d="M534,105 h42 v25 h25 v42 h-25 v25 h-42 v-25 h-25 v-42 h25 z"/>
+                    <path d="M534,863 h42 v25 h25 v42 h-25 v25 h-42 v-25 h-25 v-42 h25 z"/>
+                </g>
+
+                <!-- resource pouches -->
+                <use href="#mapPouchShape" x="835" y="55" fill="#4a6fd8"/>
+                <use href="#mapPouchShape" x="125" y="850" fill="#c33f2f"/>
             </svg>
+        `;
+    }
 
-            <!-- Gray connector arrows (marker → star / hospital cross) -->
-            <i class="fa-solid fa-arrow-right map-arrow-static" style="left:18%; top:35%; font-size:22px; color:#7a828f; transform: translate(-50%,-50%) rotate(-90deg);"></i>
-            <i class="fa-solid fa-arrow-right map-arrow-static" style="left:27%; top:27%; font-size:20px; color:#7a828f; transform: translate(-50%,-50%) rotate(-135deg);"></i>
-            <i class="fa-solid fa-arrow-right map-arrow-static" style="left:43%; top:29%; font-size:20px; color:#7a828f; transform: translate(-50%,-50%) rotate(-45deg);"></i>
-            <i class="fa-solid fa-arrow-right map-arrow-static" style="left:56%; top:29%; font-size:20px; color:#7a828f; transform: translate(-50%,-50%) rotate(-135deg);"></i>
-            <i class="fa-solid fa-arrow-right map-arrow-static" style="left:81%; top:68%; font-size:22px; color:#7a828f; transform: translate(-50%,-50%) rotate(90deg);"></i>
-            <i class="fa-solid fa-arrow-right map-arrow-static" style="left:58%; top:74%; font-size:20px; color:#7a828f; transform: translate(-50%,-50%) rotate(135deg);"></i>
-            <i class="fa-solid fa-arrow-right map-arrow-static" style="left:41%; top:74%; font-size:20px; color:#7a828f; transform: translate(-50%,-50%) rotate(45deg);"></i>
-
-            <!-- Orange connector arrows (marker → house) -->
-            <i class="fa-solid fa-arrow-right map-arrow-static" style="left:68%; top:49%; font-size:22px; color:#c07830; transform: translate(-50%,-50%) rotate(180deg);"></i>
-            <i class="fa-solid fa-arrow-right map-arrow-static" style="left:26%; top:49%; font-size:22px; color:#c07830; transform: translate(-50%,-50%) rotate(20deg);"></i>
-            <i class="fa-solid fa-arrow-right map-arrow-static" style="left:41%; top:60%; font-size:20px; color:#c07830; transform: translate(-50%,-50%) rotate(-45deg);"></i>
-
-            <!-- Small blue arrows into the house -->
-            <i class="fa-solid fa-arrow-right map-arrow-static" style="left:57%; top:45%; font-size:16px; color:#2f5fad; transform: translate(-50%,-50%) rotate(135deg);"></i>
-            <i class="fa-solid fa-arrow-right map-arrow-static" style="left:43%; top:55%; font-size:16px; color:#2f5fad; transform: translate(-50%,-50%) rotate(-45deg);"></i>
-
-            <!-- House (center) -->
-            <i class="fa-solid fa-house map-icon-static" style="left:49.5%; top:51.3%; font-size:15%; color:#8a6031;"></i>
-
-            <!-- Hospital crosses -->
-            <i class="fa-solid fa-plus map-icon-static" style="left:49.5%; top:23.4%; font-size:11%; color:#3f9142;"></i>
-            <i class="fa-solid fa-plus map-icon-static" style="left:49.5%; top:81%; font-size:11%; color:#3f9142;"></i>
-
-            <!-- Stars -->
-            <i class="fa-solid fa-star map-icon-static" style="left:18.4%; top:17.1%; font-size:13%; color:#f0c419;"></i>
-            <i class="fa-solid fa-star map-icon-static" style="left:81.2%; top:81%; font-size:13%; color:#f0c419;"></i>
-
-            <!-- Shields -->
-            <i class="fa-solid fa-shield-halved map-icon-static" style="left:85.1%; top:11.5%; font-size:13%; color:#3b52a4;"></i>
-            <i class="fa-solid fa-shield-halved map-icon-static" style="left:11.8%; top:81%; font-size:13%; color:#c0392b;"></i>
+    // Teardrop marker artwork used for each numbered pin.
+    function mapPinSvg() {
+        return `
+            <svg viewBox="0 0 100 130" xmlns="http://www.w3.org/2000/svg">
+                <path d="M50,4 L83,43 A44,44 0 1 1 17,43 Z" fill="#966426"/>
+            </svg>
         `;
     }
 
@@ -1235,6 +1257,7 @@
             const clickAttr = isManagementOrAdmin ? `onclick="cycleTeamNumber('${team.id}')" title="Click to change this marker's number"` : '';
             html += `
                 <div class="map-pin ${isManagementOrAdmin ? '' : 'map-pin--readonly'}" style="left:${pos.left}%; top:${pos.top}%;" ${clickAttr}>
+                    ${mapPinSvg()}
                     <span class="map-pin__num">${team.number}</span>
                 </div>
             `;
