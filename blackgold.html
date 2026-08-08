@@ -204,7 +204,7 @@
     .btn-danger-outline:hover { background-color: #d9381e; color: white; }
     .toolbar-spacer { margin-left: auto; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 
-    /* Legend */
+    /* Legend (A/B slots tab) */
     .legend-row {
         display: flex;
         align-items: center;
@@ -375,14 +375,16 @@
     .map-toolbar__controls { display: flex; gap: 8px; }
     .map-toolbar__hint { font-family: var(--font-family-base); font-weight: 600; font-size: 11px; color: var(--color-text-muted); width: 100%; }
 
-    .map-body { display: flex; gap: 24px; flex-wrap: wrap; align-items: flex-start; }
-    .map-table-wrapper { flex: 1 1 380px; min-width: 320px; display: flex; flex-direction: column; gap: 14px; }
+    /* Members roster fixed on the LEFT, map diagram on the RIGHT */
+    .map-body { display: flex; gap: 24px; align-items: flex-start; }
+    .map-table-wrapper { flex: 0 0 380px; width: 380px; min-width: 280px; display: flex; flex-direction: column; gap: 14px; }
 
     .map-team-block { border: 2px solid var(--color-border-light); border-radius: 6px; overflow: hidden; }
     .map-team-header {
         padding: 10px 14px; font-family: var(--font-family-base); font-weight: 800; font-size: 12px;
         color: white; display: flex; align-items: center; justify-content: space-between;
         text-transform: uppercase; letter-spacing: 0.5px;
+        background: #5c4127;
     }
     .map-team-header__title { display: flex; align-items: center; gap: 8px; }
     .map-team-header__number {
@@ -405,59 +407,54 @@
     .map-role-select:disabled { cursor: default; background: #f0f1f5; color: #8c93a6; }
     .map-role-power { font-weight: 800; color: var(--color-primary-dark); font-size: 11px; white-space: nowrap; width: 62px; text-align: right; }
 
-    .map-diagram-wrap { flex: 1 1 420px; min-width: 340px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+    .map-diagram-wrap { flex: 1 1 auto; min-width: 300px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
     .map-diagram {
-        position: relative; width: 100%; max-width: 460px; aspect-ratio: 1 / 1;
+        position: relative; width: 100%; max-width: 520px; aspect-ratio: 1 / 1;
         background: radial-gradient(circle at 50% 50%, #dcb287, #b98a55 78%);
         border-radius: 14px; border: 3px solid #93672f; box-shadow: inset 0 0 30px rgba(0,0,0,0.15);
+        overflow: hidden;
     }
-    .map-house {
-        position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-        width: 15%; height: 15%; min-width: 46px; min-height: 46px; border-radius: 10px;
-        background: #8a6031; display: flex; align-items: center; justify-content: center;
-        font-size: 22px; color: #ffe9c2; box-shadow: 0 3px 8px rgba(0,0,0,0.35);
-    }
-    .map-node {
-        position: absolute; transform: translate(-50%, -50%);
-        display: flex; flex-direction: column; align-items: center; gap: 4px;
-    }
-    .map-node__icon {
-        width: 15%; height: 15%; min-width: 38px; min-height: 38px; border-radius: 50%;
-        display: flex; align-items: center; justify-content: center; font-size: 16px; color: white;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.3); border: 2px solid rgba(255,255,255,0.5);
-    }
-    .icon-star { background: #f0c419; color: #6b4e00; }
-    .icon-cross { background: #3f9142; }
-    .icon-shield-blue { background: #3b52a4; }
-    .icon-shield-red { background: #c0392b; }
-    .map-node__team-name {
-        font-family: var(--font-family-base); font-weight: 800; font-size: 9px; color: #3d2c14;
-        background: rgba(255,255,255,0.75); padding: 1px 6px; border-radius: 8px; white-space: nowrap;
-        max-width: 90px; overflow: hidden; text-overflow: ellipsis;
-    }
-    .map-arrow-group {
-        position: absolute; transform: translate(-50%, -50%);
-        display: flex; flex-direction: column; align-items: center; gap: 2px;
-    }
-    .map-arrow-icon {
-        font-size: 20px; color: #4a3316; transition: transform 0.15s; display: inline-block;
-    }
-    .map-arrow-icon--rotatable { cursor: pointer; }
-    .map-arrow-icon--rotatable:hover { color: var(--color-primary); }
-    .map-arrow-number {
-        width: 24px; height: 24px; border-radius: 50%; background: #4a3316; color: white;
-        font-family: var(--font-family-base); font-weight: 800; font-size: 11px;
-        display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 3px rgba(0,0,0,0.3);
-    }
-    .map-arrow-number--clickable { cursor: pointer; }
-    .map-arrow-number--clickable:hover { background: var(--color-primary); }
 
-    .map-legend-row {
-        display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
-        font-family: var(--font-family-base); font-weight: 700; font-size: 11px; color: var(--color-text-dark);
+    /* Static decorative map icons (house / stars / crosses / shields) — fixed, non-interactive */
+    .map-icon-static {
+        position: absolute;
+        transform: translate(-50%, -50%);
+        pointer-events: none;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.25);
     }
-    .map-legend-item { display: flex; align-items: center; gap: 6px; }
-    .map-legend-dot { width: 16px; height: 16px; border-radius: 50%; display: inline-block; box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+
+    /* Static connector arrows — fixed, non-interactive */
+    .map-arrow-static {
+        position: absolute;
+        transform-origin: center;
+        pointer-events: none;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    }
+
+    .map-dotted-svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+
+    /* Numbered pins — the ONLY interactive/interchangeable element on the map */
+    .map-pin {
+        position: absolute;
+        width: 44px; height: 44px;
+        transform: translate(-50%, -50%) rotate(-45deg);
+        border-radius: 50% 50% 50% 0;
+        background: #5c4127;
+        border: 2px solid #3f2c14;
+        box-shadow: 0 3px 6px rgba(0,0,0,0.35);
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer;
+        transition: transform 0.12s;
+    }
+    .map-pin:active { transform: translate(-50%, -50%) rotate(-45deg) scale(0.92); }
+    .map-pin--readonly { cursor: default; }
+    .map-pin__num {
+        transform: rotate(45deg);
+        color: #fff;
+        font-weight: 800;
+        font-family: var(--font-family-base);
+        font-size: 15px;
+    }
 
     .map-locked-state {
         text-align: center; padding: 40px 20px; color: var(--color-text-muted);
@@ -487,12 +484,16 @@
         font-size: 13px;
     }
 
+    @media (max-width: 900px) {
+        .map-body { flex-direction: column; }
+        .map-table-wrapper { width: 100%; flex: 1 1 auto; }
+    }
+
     @media (max-width: 640px) {
         .page-header__title { font-size: 26px; }
         .toolbar-card { flex-direction: column; align-items: stretch; }
         .toolbar-spacer { margin-left: 0; }
         .search-box { max-width: none; }
-        .map-body { flex-direction: column; }
     }
 </style>
 </head>
@@ -555,8 +556,8 @@
                 <button class="btn-gold" id="btnAddDate" style="display: none;">+ ADD DATE</button>
             </div>
             <div class="toolbar-spacer" id="mapToolbarControls" style="display: none;">
-                <button class="btn-gold" id="btnAddTeam" style="display: none;">+ ADD TEAM</button>
-                <button class="btn-danger-outline" id="btnRemoveTeam" style="display: none;">− REMOVE TEAM</button>
+                <button class="btn-gold" id="btnAddTeam" style="display: none;">+ ADD MARKER</button>
+                <button class="btn-danger-outline" id="btnRemoveTeam" style="display: none;">− REMOVE MARKER</button>
             </div>
         </div>
 
@@ -586,27 +587,15 @@
 
         <!-- ===== MAP SECTION ===== -->
         <div id="mapSection" style="display: none;">
-            <div class="map-legend-row" style="margin-bottom: 14px;">
-                <div class="map-legend-item"><span class="map-legend-dot" style="background:#2563eb;"></span> Faction F</div>
-                <div class="map-legend-item"><span class="map-legend-dot" style="background:#9333ea;"></span> Faction S</div>
-                <div class="map-legend-item"><span class="map-legend-dot" style="background:#ea580c;"></span> Faction R</div>
-                <div class="map-legend-item"><span class="map-legend-dot icon-star" style="width:16px;height:16px;"></span> Star Point</div>
-                <div class="map-legend-item"><span class="map-legend-dot icon-cross" style="width:16px;height:16px;"></span> Cross Point</div>
-                <div class="map-legend-item"><span class="map-legend-dot icon-shield-blue" style="width:16px;height:16px;"></span> Shield (B)</div>
-                <div class="map-legend-item"><span class="map-legend-dot icon-shield-red" style="width:16px;height:16px;"></span> Shield (R)</div>
-            </div>
-
             <div class="map-card" id="mapCard">
                 <div class="map-toolbar">
                     <span class="map-toolbar__label">FORMATION MAP · TEAMS &amp; RALLY ORDER</span>
                 </div>
-                <div class="map-toolbar__hint" id="mapAdminHint" style="display:none;">Click a team number to reassign rally order · click an arrow to rotate its heading · use the select boxes to assign members (auto-pulls Faction &amp; F1 Power from Members).</div>
+                <div class="map-toolbar__hint" id="mapAdminHint" style="display:none;">Click a numbered marker on the map to change its number · use the select boxes on the left to assign members (auto-pulls Faction &amp; F1 Power from Members).</div>
                 <div class="map-body">
                     <div class="map-table-wrapper" id="mapTableWrapper"></div>
                     <div class="map-diagram-wrap">
-                        <div class="map-diagram" id="mapDiagram">
-                            <div class="map-house"><i class="fa-solid fa-house"></i></div>
-                        </div>
+                        <div class="map-diagram" id="mapDiagram"></div>
                     </div>
                 </div>
             </div>
@@ -681,13 +670,22 @@
     let bgDates = [];
     // assignments[memberId][dateId] = { slot: 'A' | 'B' | null, attended: true | false, playerRole: 'main' | 'sub' | null }
     let assignments = {};
-    // mapTeams[i] = { id, number, color, icon, arrowOffset, roles: { ballCapture, territoryCapture, ballSupport, substitute } (member ids) }
+    // mapTeams[i] = { id, slot (0-5, fixed physical position on the map), number (1-6, the ONLY editable/interchangeable value), roles: { ballCapture, territoryCapture, ballSupport, substitute } (member ids) }
     let mapTeams = [];
     let activeTab = 'ab'; // 'ab' | 'map'
 
-    const TEAM_PALETTE = ['#c0392b', '#e08a3e', '#e3b93f', '#5a9e5c', '#5f8c94', '#7d67b8', '#c2588a', '#4c7a3d'];
-    const NODE_ICONS = ['icon-star', 'icon-cross', 'icon-shield-blue', 'icon-cross', 'icon-star', 'icon-shield-red', 'icon-cross', 'icon-star'];
-    const NODE_ICON_GLYPH = { 'icon-star': 'fa-star', 'icon-cross': 'fa-plus', 'icon-shield-blue': 'fa-shield-halved', 'icon-shield-red': 'fa-shield-halved' };
+    // Fixed physical positions on the map (percent left/top), matching the reference formation map 1:1.
+    // Slot index 0-5 never moves — only the number displayed on that marker can change.
+    const SLOT_POSITIONS = [
+        { left: 68.2, top: 67.8 }, // slot 0 (default marker "1")
+        { left: 81.2, top: 54.3 }, // slot 1 (default marker "2")
+        { left: 62.5, top: 36.5 }, // slot 2 (default marker "3")
+        { left: 30.8, top: 67.8 }, // slot 3 (default marker "4")
+        { left: 17.8, top: 54.3 }, // slot 4 (default marker "5")
+        { left: 36.2, top: 36.5 }  // slot 5 (default marker "6")
+    ];
+    const MAX_SLOTS = SLOT_POSITIONS.length;
+
     const ROLE_DEFS = [
         { key: 'ballCapture', label: 'Ball Capture' },
         { key: 'territoryCapture', label: 'Territory Capture' },
@@ -726,13 +724,11 @@
 
     function defaultMapTeams() {
         const teams = [];
-        for (let i = 0; i < 6; i++) {
+        for (let i = 0; i < MAX_SLOTS; i++) {
             teams.push({
                 id: 'team' + (i + 1) + '_' + Date.now(),
+                slot: i,
                 number: i + 1,
-                color: TEAM_PALETTE[i % TEAM_PALETTE.length],
-                icon: NODE_ICONS[i % NODE_ICONS.length],
-                arrowOffset: 0,
                 roles: { ballCapture: null, territoryCapture: null, ballSupport: null, substitute: null }
             });
         }
@@ -758,7 +754,19 @@
             // Ensure dates are sorted chronologically
             bgDates.sort((a, b) => parseDateString(a.date) - parseDateString(b.date));
 
-            if (!mapTeams) {
+            // Migrate any legacy team records (missing slot/number fields) onto the fixed slot system
+            if (mapTeams) {
+                mapTeams = mapTeams.filter(t => t && t.roles).slice(0, MAX_SLOTS);
+                mapTeams.forEach((t, i) => {
+                    if (typeof t.slot !== 'number') t.slot = i;
+                    if (typeof t.number !== 'number') t.number = i + 1;
+                    delete t.color;
+                    delete t.icon;
+                    delete t.arrowOffset;
+                });
+            }
+
+            if (!mapTeams || mapTeams.length === 0) {
                 mapTeams = defaultMapTeams();
                 await saveMapTeams();
             }
@@ -1122,7 +1130,7 @@
     function renderMap() {
         if (!canViewMap) {
             document.getElementById('mapTableWrapper').innerHTML = `<div class="map-locked-state">This section is available to alliance members, management, and admins only.</div>`;
-            document.getElementById('mapDiagram').querySelectorAll('.map-node, .map-arrow-group').forEach(el => el.remove());
+            document.getElementById('mapDiagram').innerHTML = '';
             return;
         }
         renderMapTable();
@@ -1132,17 +1140,20 @@
     function renderMapTable() {
         const wrap = document.getElementById('mapTableWrapper');
         if (mapTeams.length === 0) {
-            wrap.innerHTML = `<div class="map-locked-state">No teams yet. ${isManagementOrAdmin ? 'Click + ADD TEAM to create one.' : ''}</div>`;
+            wrap.innerHTML = `<div class="map-locked-state">No markers yet. ${isManagementOrAdmin ? 'Click + ADD MARKER to create one.' : ''}</div>`;
             return;
         }
 
+        // Sort roster blocks by displayed number for readability
+        const sortedTeams = [...mapTeams].sort((a, b) => a.number - b.number);
+
         let html = '';
-        mapTeams.forEach(team => {
-            const numberClickable = isManagementOrAdmin ? `onclick="cycleTeamNumber('${team.id}')" title="Click to reassign rally order"` : '';
+        sortedTeams.forEach(team => {
+            const numberClickable = isManagementOrAdmin ? `onclick="cycleTeamNumber('${team.id}')" title="Click to change this marker's number"` : '';
             html += `
                 <div class="map-team-block">
-                    <div class="map-team-header" style="background:${team.color};">
-                        <div class="map-team-header__title">GROUP ${team.number}</div>
+                    <div class="map-team-header">
+                        <div class="map-team-header__title">GROUP</div>
                         <div class="map-team-header__number ${isManagementOrAdmin ? 'map-team-header__number--clickable' : ''}" ${numberClickable}>${team.number}</div>
                     </div>
                     <table class="map-role-table">
@@ -1171,52 +1182,65 @@
         wrap.innerHTML = html;
     }
 
+    // Fixed decorative background (house, stars, hospital crosses, shields, dotted roads, connector arrows)
+    // matching the reference formation map 1:1 — never changes when markers are added/removed/renumbered.
+    function staticMapBackgroundHtml() {
+        return `
+            <svg class="map-dotted-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
+                <line x1="85.1" y1="11.5" x2="100" y2="0" stroke="#8a5a2f" stroke-width="0.6" stroke-dasharray="1.6,1.6"/>
+                <line x1="11.8" y1="81" x2="0" y2="100" stroke="#8a5a2f" stroke-width="0.6" stroke-dasharray="1.6,1.6"/>
+            </svg>
+
+            <!-- Gray connector arrows (marker → star / hospital cross) -->
+            <i class="fa-solid fa-arrow-right map-arrow-static" style="left:18%; top:35%; font-size:22px; color:#7a828f; transform: translate(-50%,-50%) rotate(-90deg);"></i>
+            <i class="fa-solid fa-arrow-right map-arrow-static" style="left:27%; top:27%; font-size:20px; color:#7a828f; transform: translate(-50%,-50%) rotate(-135deg);"></i>
+            <i class="fa-solid fa-arrow-right map-arrow-static" style="left:43%; top:29%; font-size:20px; color:#7a828f; transform: translate(-50%,-50%) rotate(-45deg);"></i>
+            <i class="fa-solid fa-arrow-right map-arrow-static" style="left:56%; top:29%; font-size:20px; color:#7a828f; transform: translate(-50%,-50%) rotate(-135deg);"></i>
+            <i class="fa-solid fa-arrow-right map-arrow-static" style="left:81%; top:68%; font-size:22px; color:#7a828f; transform: translate(-50%,-50%) rotate(90deg);"></i>
+            <i class="fa-solid fa-arrow-right map-arrow-static" style="left:58%; top:74%; font-size:20px; color:#7a828f; transform: translate(-50%,-50%) rotate(135deg);"></i>
+            <i class="fa-solid fa-arrow-right map-arrow-static" style="left:41%; top:74%; font-size:20px; color:#7a828f; transform: translate(-50%,-50%) rotate(45deg);"></i>
+
+            <!-- Orange connector arrows (marker → house) -->
+            <i class="fa-solid fa-arrow-right map-arrow-static" style="left:68%; top:49%; font-size:22px; color:#c07830; transform: translate(-50%,-50%) rotate(180deg);"></i>
+            <i class="fa-solid fa-arrow-right map-arrow-static" style="left:26%; top:49%; font-size:22px; color:#c07830; transform: translate(-50%,-50%) rotate(20deg);"></i>
+            <i class="fa-solid fa-arrow-right map-arrow-static" style="left:41%; top:60%; font-size:20px; color:#c07830; transform: translate(-50%,-50%) rotate(-45deg);"></i>
+
+            <!-- Small blue arrows into the house -->
+            <i class="fa-solid fa-arrow-right map-arrow-static" style="left:57%; top:45%; font-size:16px; color:#2f5fad; transform: translate(-50%,-50%) rotate(135deg);"></i>
+            <i class="fa-solid fa-arrow-right map-arrow-static" style="left:43%; top:55%; font-size:16px; color:#2f5fad; transform: translate(-50%,-50%) rotate(-45deg);"></i>
+
+            <!-- House (center) -->
+            <i class="fa-solid fa-house map-icon-static" style="left:49.5%; top:51.3%; font-size:15%; color:#8a6031;"></i>
+
+            <!-- Hospital crosses -->
+            <i class="fa-solid fa-plus map-icon-static" style="left:49.5%; top:23.4%; font-size:11%; color:#3f9142;"></i>
+            <i class="fa-solid fa-plus map-icon-static" style="left:49.5%; top:81%; font-size:11%; color:#3f9142;"></i>
+
+            <!-- Stars -->
+            <i class="fa-solid fa-star map-icon-static" style="left:18.4%; top:17.1%; font-size:13%; color:#f0c419;"></i>
+            <i class="fa-solid fa-star map-icon-static" style="left:81.2%; top:81%; font-size:13%; color:#f0c419;"></i>
+
+            <!-- Shields -->
+            <i class="fa-solid fa-shield-halved map-icon-static" style="left:85.1%; top:11.5%; font-size:13%; color:#3b52a4;"></i>
+            <i class="fa-solid fa-shield-halved map-icon-static" style="left:11.8%; top:81%; font-size:13%; color:#c0392b;"></i>
+        `;
+    }
+
     function renderMapDiagram() {
         const diagram = document.getElementById('mapDiagram');
-        diagram.querySelectorAll('.map-node, .map-arrow-group').forEach(el => el.remove());
+        let html = staticMapBackgroundHtml();
 
-        const n = mapTeams.length;
-        if (n === 0) return;
-
-        const nodeRadius = 40; // % from center
-        const arrowRadius = 22; // % from center
-
-        mapTeams.forEach((team, idx) => {
-            const angleDeg = -90 + (360 / n) * idx;
-            const angleRad = angleDeg * Math.PI / 180;
-
-            const nodeLeft = 50 + nodeRadius * Math.cos(angleRad);
-            const nodeTop = 50 + nodeRadius * Math.sin(angleRad);
-            const arrowLeft = 50 + arrowRadius * Math.cos(angleRad);
-            const arrowTop = 50 + arrowRadius * Math.sin(angleRad);
-            const arrowRotation = angleDeg + 180 + (team.arrowOffset || 0);
-
-            const glyph = NODE_ICON_GLYPH[team.icon] || 'fa-star';
-            const assignedNames = ROLE_DEFS.map(r => findMemberById(team.roles[r.key])).filter(Boolean).map(m => m.name);
-            const label = assignedNames.length > 0 ? assignedNames[0] + (assignedNames.length > 1 ? ` +${assignedNames.length - 1}` : '') : `Group ${team.number}`;
-
-            const nodeEl = document.createElement('div');
-            nodeEl.className = 'map-node';
-            nodeEl.style.left = nodeLeft + '%';
-            nodeEl.style.top = nodeTop + '%';
-            nodeEl.innerHTML = `
-                <div class="map-node__icon ${team.icon}"><i class="fa-solid ${glyph}"></i></div>
-                <div class="map-node__team-name">${label}</div>
+        mapTeams.forEach(team => {
+            const pos = SLOT_POSITIONS[team.slot] || SLOT_POSITIONS[0];
+            const clickAttr = isManagementOrAdmin ? `onclick="cycleTeamNumber('${team.id}')" title="Click to change this marker's number"` : '';
+            html += `
+                <div class="map-pin ${isManagementOrAdmin ? '' : 'map-pin--readonly'}" style="left:${pos.left}%; top:${pos.top}%;" ${clickAttr}>
+                    <span class="map-pin__num">${team.number}</span>
+                </div>
             `;
-            diagram.appendChild(nodeEl);
-
-            const arrowEl = document.createElement('div');
-            arrowEl.className = 'map-arrow-group';
-            arrowEl.style.left = arrowLeft + '%';
-            arrowEl.style.top = arrowTop + '%';
-            const arrowClickAttr = isManagementOrAdmin ? `onclick="rotateArrow('${team.id}')" title="Click to rotate this arrow"` : '';
-            const numberClickAttr = isManagementOrAdmin ? `onclick="cycleTeamNumber('${team.id}')" title="Click to reassign rally order"` : '';
-            arrowEl.innerHTML = `
-                <i class="fa-solid fa-arrow-right map-arrow-icon ${isManagementOrAdmin ? 'map-arrow-icon--rotatable' : ''}" style="transform: rotate(${arrowRotation}deg);" ${arrowClickAttr}></i>
-                <div class="map-arrow-number ${isManagementOrAdmin ? 'map-arrow-number--clickable' : ''}" style="background:${team.color};" ${numberClickAttr}>${team.number}</div>
-            `;
-            diagram.appendChild(arrowEl);
         });
+
+        diagram.innerHTML = html;
     }
 
     window.assignMapRole = function(teamId, roleKey, memberId) {
@@ -1228,40 +1252,30 @@
         render();
     };
 
+    // The ONLY interchangeable value on the map: clicking a marker cycles its displayed number 1-6.
+    // The marker's physical position (slot) and the background art never move.
     window.cycleTeamNumber = function(teamId) {
-        if (!isManagementOrAdmin) return;
-        const idx = mapTeams.findIndex(t => t.id === teamId);
-        if (idx === -1) return;
-        const targetIdx = (idx + 1) % mapTeams.length;
-        const thisNumber = mapTeams[idx].number;
-        mapTeams[idx].number = mapTeams[targetIdx].number;
-        mapTeams[targetIdx].number = thisNumber;
-        saveMapTeams();
-        render();
-    };
-
-    window.rotateArrow = function(teamId) {
         if (!isManagementOrAdmin) return;
         const team = mapTeams.find(t => t.id === teamId);
         if (!team) return;
-        team.arrowOffset = ((team.arrowOffset || 0) + 45) % 360;
+        team.number = (team.number % MAX_SLOTS) + 1;
         saveMapTeams();
         render();
     };
 
     document.getElementById('btnAddTeam').addEventListener('click', () => {
         if (!isManagementOrAdmin) return;
-        if (mapTeams.length >= 10) {
-            alert('Maximum of 10 teams reached.');
+        if (mapTeams.length >= MAX_SLOTS) {
+            alert(`Maximum of ${MAX_SLOTS} markers reached.`);
             return;
         }
-        const nextNumber = mapTeams.length + 1;
+        const usedSlots = new Set(mapTeams.map(t => t.slot));
+        let nextSlot = 0;
+        while (usedSlots.has(nextSlot)) nextSlot++;
         mapTeams.push({
             id: 'team' + Date.now(),
-            number: nextNumber,
-            color: TEAM_PALETTE[(nextNumber - 1) % TEAM_PALETTE.length],
-            icon: NODE_ICONS[(nextNumber - 1) % NODE_ICONS.length],
-            arrowOffset: 0,
+            slot: nextSlot,
+            number: nextSlot + 1,
             roles: { ballCapture: null, territoryCapture: null, ballSupport: null, substitute: null }
         });
         saveMapTeams();
@@ -1271,11 +1285,11 @@
     document.getElementById('btnRemoveTeam').addEventListener('click', () => {
         if (!isManagementOrAdmin) return;
         if (mapTeams.length <= 1) {
-            alert('At least one team is required.');
+            alert('At least one marker is required.');
             return;
         }
         const last = mapTeams[mapTeams.length - 1];
-        if (!confirm(`Remove Group ${last.number} from the map? This clears its role assignments.`)) return;
+        if (!confirm(`Remove marker ${last.number} from the map? This clears its role assignments.`)) return;
         mapTeams.pop();
         saveMapTeams();
         render();
