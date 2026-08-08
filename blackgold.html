@@ -375,6 +375,24 @@
     .map-toolbar__controls { display: flex; gap: 8px; }
     .map-toolbar__hint { font-family: var(--font-family-base); font-weight: 600; font-size: 11px; color: var(--color-text-muted); width: 100%; }
 
+    /* Team A / Team B sub-tabs within the Map tab */
+    .map-subtabs { display: flex; gap: 8px; }
+    .map-subtab-btn {
+        font-family: var(--font-family-base);
+        font-weight: 800;
+        font-size: 11px;
+        letter-spacing: 0.5px;
+        color: var(--color-primary);
+        background: white;
+        border: 2px solid var(--color-primary);
+        padding: 8px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.15s;
+    }
+    .map-subtab-btn:hover { background: #eef2f9; }
+    .map-subtab-btn--active { background: var(--color-primary); color: white; }
+
     /* Members roster fixed on the LEFT, map diagram on the RIGHT */
     .map-body { display: flex; gap: 24px; align-items: flex-start; }
     .map-table-wrapper { flex: 0 0 380px; width: 380px; min-width: 280px; display: flex; flex-direction: column; gap: 14px; }
@@ -387,6 +405,10 @@
         background: #5c4127;
     }
     .map-team-header__title { display: flex; align-items: center; gap: 8px; }
+    .map-team-header__color {
+        width: 20px; height: 20px; padding: 0; border: 2px solid rgba(255,255,255,0.65);
+        border-radius: 4px; cursor: pointer; background: none;
+    }
     .map-team-header__number {
         width: 24px; height: 24px; border-radius: 50%; background: rgba(255,255,255,0.28);
         display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800;
@@ -398,6 +420,8 @@
     .map-role-table td { padding: 7px 12px; border-bottom: 1px solid var(--color-border-light); font-size: 11px; vertical-align: middle; }
     .map-role-table tr:last-child td { border-bottom: none; }
     .map-role-label { font-weight: 800; color: var(--color-text-dark); width: 118px; white-space: nowrap; }
+    .map-role-label-edit { cursor: pointer; }
+    .map-role-label-edit:hover { text-decoration: underline; color: var(--color-primary); }
     .map-role-faction-cell { width: 30px; text-align: center; }
     .map-role-select {
         width: 100%; padding: 5px 8px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 11px;
@@ -406,6 +430,15 @@
     .map-role-select:focus { border-color: var(--color-primary); background: white; }
     .map-role-select:disabled { cursor: default; background: #f0f1f5; color: #8c93a6; }
     .map-role-power { font-weight: 800; color: var(--color-primary-dark); font-size: 11px; white-space: nowrap; width: 62px; text-align: right; }
+    .map-role-delete-btn { color: #d9381e; font-weight: 800; font-size: 13px; cursor: pointer; padding: 2px 6px; }
+    .map-role-delete-btn:hover { text-decoration: underline; }
+    .map-role-add-row { padding: 10px 12px; text-align: center; }
+    .map-role-add-btn {
+        font-family: var(--font-family-base); font-weight: 800; font-size: 10px; letter-spacing: 0.3px;
+        color: var(--color-primary); background: var(--color-primary-light); border: 1px solid var(--color-primary);
+        border-radius: 4px; padding: 7px 12px; cursor: pointer;
+    }
+    .map-role-add-btn:hover { background: var(--color-primary); color: white; }
 
     .map-diagram-wrap { flex: 1 1 auto; min-width: 300px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
     .map-diagram {
@@ -459,6 +492,25 @@
         text-align: center; padding: 40px 20px; color: var(--color-text-muted);
         font-family: var(--font-family-base); font-weight: 700; font-size: 13px;
     }
+
+    /* Map directory / legend of terrain & building colors */
+    .map-legend-card {
+        background: white;
+        border: 2px solid var(--color-primary);
+        border-radius: 6px;
+        padding: 16px 20px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 18px;
+        align-items: center;
+        font-family: var(--font-family-base);
+    }
+    .map-legend-card__label {
+        font-weight: 800; font-size: 11px; letter-spacing: 0.5px; color: var(--color-primary-dark);
+        text-transform: uppercase; margin-right: 4px;
+    }
+    .map-legend-item { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 11px; color: var(--color-text-dark); }
+    .map-legend-swatch { width: 16px; height: 16px; border-radius: 3px; border: 1px solid rgba(0,0,0,0.15); flex-shrink: 0; }
 
     .page-footer {
         display: flex;
@@ -555,8 +607,8 @@
                 <button class="btn-gold" id="btnAddDate" style="display: none;">+ ADD DATE</button>
             </div>
             <div class="toolbar-spacer" id="mapToolbarControls" style="display: none;">
-                <button class="btn-gold" id="btnAddTeam" style="display: none;">+ ADD MARKER</button>
-                <button class="btn-danger-outline" id="btnRemoveTeam" style="display: none;">− REMOVE MARKER</button>
+                <button class="btn-gold" id="btnAddTeam" style="display: none;">+ ADD GROUP</button>
+                <button class="btn-danger-outline" id="btnRemoveTeam" style="display: none;">− REMOVE GROUP</button>
             </div>
         </div>
 
@@ -588,15 +640,27 @@
         <div id="mapSection" style="display: none;">
             <div class="map-card" id="mapCard">
                 <div class="map-toolbar">
-                    <span class="map-toolbar__label">FORMATION MAP · TEAMS &amp; RALLY ORDER</span>
+                    <span class="map-toolbar__label">FORMATION MAP · GROUPS &amp; RALLY ORDER</span>
                 </div>
-                <div class="map-toolbar__hint" id="mapAdminHint" style="display:none;">Click a numbered marker on the map to change its number · use the select boxes on the left to assign members (auto-pulls Faction &amp; F1 Power from Members).</div>
+                <div class="map-subtabs">
+                    <button class="map-subtab-btn map-subtab-btn--active" id="mapSubtabA">TEAM A</button>
+                    <button class="map-subtab-btn" id="mapSubtabB">TEAM B</button>
+                </div>
+                <div class="map-toolbar__hint" id="mapAdminHint" style="display:none;">Click a numbered marker on the map to change its number · use the select boxes on the left to assign members (auto-pulls Faction &amp; F1 Power from Members) · click a group's color swatch to recolor it · click a role name to rename it. Assigning a member here automatically sets their Slot (A or B, matching this tab) and Main/Substitute status on the most recent A/B Slots session.</div>
                 <div class="map-body">
                     <div class="map-table-wrapper" id="mapTableWrapper"></div>
                     <div class="map-diagram-wrap">
                         <div class="map-diagram" id="mapDiagram"></div>
                     </div>
                 </div>
+            </div>
+            <div class="map-legend-card" id="mapLegendCard">
+                <span class="map-legend-card__label">Directory</span>
+                <div class="map-legend-item"><span class="map-legend-swatch" style="background:#f4c94c;"></span> Military Base</div>
+                <div class="map-legend-item"><span class="map-legend-swatch" style="background:#3d8b4c;"></span> Hospital</div>
+                <div class="map-legend-item"><span class="map-legend-swatch" style="background:#8a5a2b;"></span> Oil</div>
+                <div class="map-legend-item"><span class="map-legend-swatch" style="background:#e07b1f;"></span> Rare Earth Factory</div>
+                <div class="map-legend-item"><span class="map-legend-swatch" style="background:linear-gradient(90deg,#3b52a4 50%,#c0392b 50%);"></span> Base</div>
             </div>
         </div>
 
@@ -669,23 +733,34 @@
     let bgDates = [];
     // assignments[memberId][dateId] = { slot: 'A' | 'B' | null, attended: true | false, playerRole: 'main' | 'sub' | null }
     let assignments = {};
-    // mapTeams[i] = { id, slot (0-5, fixed physical position on the map), number (1-6, the ONLY editable/interchangeable value), roles: { ballCapture, territoryCapture, ballSupport, substitute } (member ids) }
-    let mapTeams = [];
+    // mapBoards.A / mapBoards.B each hold an array of groups (formerly "teams"/"markers"):
+    // { id, slot (0-7, fixed physical position on the map), number (1-8, the editable value shown on the pin),
+    //   color (hex string), roles: { [roleKey]: memberId } }
+    let mapBoards = { A: [], B: [] };
+    let activeBoard = 'A'; // 'A' | 'B' — which Team sub-tab of the Map tab is showing
+    // roleDefs = [{ key, label }] — shared role taxonomy used by every group on both boards.
+    let roleDefs = [];
     let activeTab = 'ab'; // 'ab' | 'map'
 
-    // Fixed physical positions on the map (percent left/top), matching the reference formation map 1:1.
-    // Slot index 0-5 never moves — only the number displayed on that marker can change.
+    // Fixed physical positions on the map (percent left/top), matching the reference formation map 1:1,
+    // plus two additional positions to support up to 8 groups.
+    // Slot index never moves — only the number displayed on that marker can change.
     const SLOT_POSITIONS = [
         { left: 70.91, top: 63.69 }, // slot 0 (default marker "1")
         { left: 83.26, top: 49.54 }, // slot 1 (default marker "2")
         { left: 67.52, top: 32.48 }, // slot 2 (default marker "3")
         { left: 30.65, top: 63.69 }, // slot 3 (default marker "4")
         { left: 18.30, top: 49.54 }, // slot 4 (default marker "5")
-        { left: 34.03, top: 32.48 }  // slot 5 (default marker "6")
+        { left: 34.03, top: 32.48 }, // slot 5 (default marker "6")
+        { left: 50.00, top: 18.50 }, // slot 6 (default marker "7")
+        { left: 50.00, top: 80.50 }  // slot 7 (default marker "8")
     ];
-    const MAX_SLOTS = SLOT_POSITIONS.length;
+    const MAX_SLOTS = SLOT_POSITIONS.length; // 8
+    const DEFAULT_GROUP_COUNT = 6; // matches the original default look; more can be added up to MAX_SLOTS
 
-    const ROLE_DEFS = [
+    const DEFAULT_GROUP_COLORS = ['#966426', '#3b52a4', '#c0392b', '#1f9d55', '#9333ea', '#ea580c', '#0e7490', '#a16207'];
+
+    const DEFAULT_ROLE_DEFS = [
         { key: 'ballCapture', label: 'Ball Capture' },
         { key: 'territoryCapture', label: 'Territory Capture' },
         { key: 'ballSupport', label: 'Ball Support' },
@@ -723,18 +798,24 @@
 
     function defaultMapTeams() {
         const teams = [];
-        for (let i = 0; i < MAX_SLOTS; i++) {
+        for (let i = 0; i < DEFAULT_GROUP_COUNT; i++) {
             teams.push({
-                id: 'team' + (i + 1) + '_' + Date.now(),
+                id: 'team' + (i + 1) + '_' + Date.now() + '_' + i,
                 slot: i,
                 number: i + 1,
-                roles: { ballCapture: null, territoryCapture: null, ballSupport: null, substitute: null }
+                color: DEFAULT_GROUP_COLORS[i % DEFAULT_GROUP_COLORS.length],
+                roles: {}
             });
         }
         return teams;
     }
 
+    function currentTeams() {
+        return mapBoards[activeBoard];
+    }
+
     async function loadData() {
+        let legacyMap = null, mapA = null, mapB = null, rolesLoaded = null;
         try {
             const { data, error } = await db.from('app_data').select('*');
             if (error) throw error;
@@ -746,33 +827,60 @@
                         assignments = (row.value && !Array.isArray(row.value)) ? row.value : {};
                     }
                     if (row.key === 'blackGoldMap') {
-                        mapTeams = (row.value && Array.isArray(row.value) && row.value.length > 0) ? row.value : null;
+                        legacyMap = (row.value && Array.isArray(row.value) && row.value.length > 0) ? row.value : null;
+                    }
+                    if (row.key === 'blackGoldMapA') {
+                        mapA = (row.value && Array.isArray(row.value) && row.value.length > 0) ? row.value : null;
+                    }
+                    if (row.key === 'blackGoldMapB') {
+                        mapB = (row.value && Array.isArray(row.value) && row.value.length > 0) ? row.value : null;
+                    }
+                    if (row.key === 'blackGoldRoles') {
+                        rolesLoaded = (row.value && Array.isArray(row.value) && row.value.length > 0) ? row.value : null;
                     }
                 });
             }
             // Ensure dates are sorted chronologically
             bgDates.sort((a, b) => parseDateString(a.date) - parseDateString(b.date));
-
-            // Migrate any legacy team records (missing slot/number fields) onto the fixed slot system
-            if (mapTeams) {
-                mapTeams = mapTeams.filter(t => t && t.roles).slice(0, MAX_SLOTS);
-                mapTeams.forEach((t, i) => {
-                    if (typeof t.slot !== 'number') t.slot = i;
-                    if (typeof t.number !== 'number') t.number = i + 1;
-                    delete t.color;
-                    delete t.icon;
-                    delete t.arrowOffset;
-                });
-            }
-
-            if (!mapTeams || mapTeams.length === 0) {
-                mapTeams = defaultMapTeams();
-                await saveMapTeams();
-            }
         } catch (err) {
             console.error('Error loading Black Gold data:', err.message || err);
             alert('Could not load data from the cloud: ' + (err.message || err));
         }
+
+        mapBoards.A = mapA || legacyMap || null;
+        mapBoards.B = mapB || null;
+        roleDefs = rolesLoaded || null;
+
+        let needResaveA = false, needResaveB = false, needResaveRoles = false;
+
+        ['A', 'B'].forEach(board => {
+            let teams = mapBoards[board];
+            if (teams) {
+                teams = teams.filter(t => t && t.roles).slice(0, MAX_SLOTS);
+                teams.forEach((t, i) => {
+                    if (typeof t.slot !== 'number') t.slot = i;
+                    if (typeof t.number !== 'number') t.number = i + 1;
+                    if (!t.color) t.color = DEFAULT_GROUP_COLORS[i % DEFAULT_GROUP_COLORS.length];
+                    delete t.icon;
+                    delete t.arrowOffset;
+                });
+                mapBoards[board] = teams;
+            }
+            if (!mapBoards[board] || mapBoards[board].length === 0) {
+                mapBoards[board] = defaultMapTeams();
+                if (board === 'A') needResaveA = true; else needResaveB = true;
+            }
+        });
+
+        if (!roleDefs || roleDefs.length === 0) {
+            roleDefs = DEFAULT_ROLE_DEFS.map(r => ({ ...r }));
+            needResaveRoles = true;
+        }
+
+        if (needResaveA) await saveMapBoard('A');
+        if (needResaveB) await saveMapBoard('B');
+        if (needResaveRoles) await saveRoleDefs();
+
         render();
     }
 
@@ -814,19 +922,38 @@
         }
     }
 
-    async function saveMapTeams() {
+    async function saveMapBoard(board) {
         showSaveStatus('saving', 'Saving…');
+        const key = board === 'A' ? 'blackGoldMapA' : 'blackGoldMapB';
+        const id = board === 'A' ? 7 : 8;
         try {
             const { error } = await db.from('app_data')
-                .upsert({ id: 7, key: 'blackGoldMap', value: mapTeams }, { onConflict: 'id' });
+                .upsert({ id, key, value: mapBoards[board] }, { onConflict: 'id' });
             if (error) {
-                console.error('Save Error (Black Gold Map):', error.message, error);
+                console.error('Save Error (Black Gold Map ' + board + '):', error.message, error);
                 showSaveStatus('error', 'Save failed: ' + error.message);
                 return;
             }
             showSaveStatus('ok', 'Saved');
         } catch (err) {
-            console.error('CRITICAL ERROR saving Black Gold map:', err.message || err);
+            console.error('CRITICAL ERROR saving Black Gold map ' + board + ':', err.message || err);
+            showSaveStatus('error', 'Save failed');
+        }
+    }
+
+    async function saveRoleDefs() {
+        showSaveStatus('saving', 'Saving…');
+        try {
+            const { error } = await db.from('app_data')
+                .upsert({ id: 9, key: 'blackGoldRoles', value: roleDefs }, { onConflict: 'id' });
+            if (error) {
+                console.error('Save Error (Black Gold Roles):', error.message, error);
+                showSaveStatus('error', 'Save failed: ' + error.message);
+                return;
+            }
+            showSaveStatus('ok', 'Saved');
+        } catch (err) {
+            console.error('CRITICAL ERROR saving Black Gold roles:', err.message || err);
             showSaveStatus('error', 'Save failed');
         }
     }
@@ -850,6 +977,17 @@
     }
     document.getElementById('tabAB').addEventListener('click', () => switchTab('ab'));
     document.getElementById('tabMap').addEventListener('click', () => switchTab('map'));
+
+    // --- MAP SUB-TAB SWITCHING (Team A / Team B) ---
+    function switchMapSubtab(board) {
+        if (!canViewMap) return;
+        activeBoard = board;
+        document.getElementById('mapSubtabA').classList.toggle('map-subtab-btn--active', board === 'A');
+        document.getElementById('mapSubtabB').classList.toggle('map-subtab-btn--active', board === 'B');
+        render();
+    }
+    document.getElementById('mapSubtabA').addEventListener('click', () => switchMapSubtab('A'));
+    document.getElementById('mapSubtabB').addEventListener('click', () => switchMapSubtab('B'));
 
     // --- RENDER ---
     function render() {
@@ -1126,7 +1264,29 @@
         return html;
     }
 
+    // Finds the most recently added / latest chronological Black Gold session, used as the
+    // target date when a Map-tab role assignment auto-syncs into the A/B Slots tab.
+    function getLatestDateId() {
+        if (bgDates.length === 0) return null;
+        return bgDates[bgDates.length - 1].id;
+    }
+
+    // Assigning a member to a role on the Team A / Team B map automatically sets their Slot
+    // (matching the active board) and Main/Substitute status (matching the role) on the most
+    // recent A/B Slots session. This is one-directional: clearing a map assignment does not
+    // undo the A/B Slots entry.
+    function syncMapAssignmentToAB(memberId, board, roleKey) {
+        if (!memberId) return;
+        const dateId = getLatestDateId();
+        if (!dateId) return;
+        const entry = getEntry(memberId, dateId);
+        entry.slot = board === 'A' ? 'A' : 'B';
+        entry.playerRole = (roleKey === 'substitute') ? 'sub' : 'main';
+        saveAssignments();
+    }
+
     function renderMap() {
+        document.getElementById('mapLegendCard').style.display = canViewMap ? 'flex' : 'none';
         if (!canViewMap) {
             document.getElementById('mapTableWrapper').innerHTML = `<div class="map-locked-state">This section is available to alliance members, management, and admins only.</div>`;
             document.getElementById('mapDiagram').innerHTML = '';
@@ -1138,31 +1298,41 @@
 
     function renderMapTable() {
         const wrap = document.getElementById('mapTableWrapper');
-        if (mapTeams.length === 0) {
-            wrap.innerHTML = `<div class="map-locked-state">No markers yet. ${isManagementOrAdmin ? 'Click + ADD MARKER to create one.' : ''}</div>`;
+        const teams = currentTeams();
+        if (teams.length === 0) {
+            wrap.innerHTML = `<div class="map-locked-state">No groups yet. ${isManagementOrAdmin ? 'Click + ADD GROUP to create one.' : ''}</div>`;
             return;
         }
 
         // Sort roster blocks by displayed number for readability
-        const sortedTeams = [...mapTeams].sort((a, b) => a.number - b.number);
+        const sortedTeams = [...teams].sort((a, b) => a.number - b.number);
 
         let html = '';
         sortedTeams.forEach(team => {
-            const numberClickable = isManagementOrAdmin ? `onclick="cycleTeamNumber('${team.id}')" title="Click to change this marker's number"` : '';
+            const numberClickable = isManagementOrAdmin ? `onclick="cycleTeamNumber('${team.id}')" title="Click to change this group's number"` : '';
+            const colorSwatch = isManagementOrAdmin
+                ? `<input type="color" class="map-team-header__color" value="${team.color || '#966426'}" onchange="setTeamColor('${team.id}', this.value)" title="Group color">`
+                : '';
             html += `
                 <div class="map-team-block">
-                    <div class="map-team-header">
-                        <div class="map-team-header__title">GROUP</div>
+                    <div class="map-team-header" style="background:${team.color || '#5c4127'};">
+                        <div class="map-team-header__title">
+                            ${colorSwatch}
+                            <span>GROUP</span>
+                        </div>
                         <div class="map-team-header__number ${isManagementOrAdmin ? 'map-team-header__number--clickable' : ''}" ${numberClickable}>${team.number}</div>
                     </div>
                     <table class="map-role-table">
                         <tbody>
-                            ${ROLE_DEFS.map(role => {
+                            ${roleDefs.map(role => {
                                 const assignedMember = findMemberById(team.roles[role.key]);
                                 const power = assignedMember ? (assignedMember.f1Cp || '0G') : '—';
+                                const labelAttrs = isManagementOrAdmin
+                                    ? `class="map-role-label map-role-label-edit" onclick="renameRole('${role.key}')" title="Click to rename this role"`
+                                    : `class="map-role-label"`;
                                 return `
                                     <tr>
-                                        <td class="map-role-label">${role.label}</td>
+                                        <td ${labelAttrs}>${role.label}</td>
                                         <td class="map-role-faction-cell">${factionCircleHtml(assignedMember)}</td>
                                         <td>
                                             <select class="map-role-select" ${isManagementOrAdmin ? `onchange="assignMapRole('${team.id}','${role.key}', this.value)"` : 'disabled'}>
@@ -1170,9 +1340,11 @@
                                             </select>
                                         </td>
                                         <td class="map-role-power">${power}</td>
+                                        <td>${isManagementOrAdmin ? `<span class="map-role-delete-btn" onclick="deleteRoleRow('${role.key}')" title="Remove this role row">×</span>` : ''}</td>
                                     </tr>
                                 `;
                             }).join('')}
+                            ${isAdmin ? `<tr><td colspan="5" class="map-role-add-row"><button class="map-role-add-btn" onclick="addCustomRole()">+ ADD CUSTOM ROLE</button></td></tr>` : ''}
                         </tbody>
                     </table>
                 </div>
@@ -1182,7 +1354,7 @@
     }
 
     // Fixed decorative background (house, stars, hospital crosses, resource pouches) — no arrows —
-    // matching the new reference formation map 1:1. Never changes when markers are added/removed/renumbered.
+    // matching the reference formation map 1:1. Never changes when groups are added/removed/renumbered.
     function staticMapBackgroundHtml() {
         return `
             <svg class="map-dotted-svg" viewBox="0 0 1093 1096" preserveAspectRatio="xMidYMid slice">
@@ -1239,11 +1411,11 @@
         `;
     }
 
-    // Teardrop marker artwork used for each numbered pin.
-    function mapPinSvg() {
+    // Teardrop marker artwork used for each numbered pin, tinted with the group's assigned color.
+    function mapPinSvg(color) {
         return `
             <svg viewBox="0 0 100 130" xmlns="http://www.w3.org/2000/svg">
-                <path d="M50,4 L83,43 A44,44 0 1 1 17,43 Z" fill="#966426"/>
+                <path d="M50,4 L83,43 A44,44 0 1 1 17,43 Z" fill="${color || '#966426'}"/>
             </svg>
         `;
     }
@@ -1252,12 +1424,12 @@
         const diagram = document.getElementById('mapDiagram');
         let html = staticMapBackgroundHtml();
 
-        mapTeams.forEach(team => {
+        currentTeams().forEach(team => {
             const pos = SLOT_POSITIONS[team.slot] || SLOT_POSITIONS[0];
-            const clickAttr = isManagementOrAdmin ? `onclick="cycleTeamNumber('${team.id}')" title="Click to change this marker's number"` : '';
+            const clickAttr = isManagementOrAdmin ? `onclick="cycleTeamNumber('${team.id}')" title="Click to change this group's number"` : '';
             html += `
                 <div class="map-pin ${isManagementOrAdmin ? '' : 'map-pin--readonly'}" style="left:${pos.left}%; top:${pos.top}%;" ${clickAttr}>
-                    ${mapPinSvg()}
+                    ${mapPinSvg(team.color)}
                     <span class="map-pin__num">${team.number}</span>
                 </div>
             `;
@@ -1268,53 +1440,118 @@
 
     window.assignMapRole = function(teamId, roleKey, memberId) {
         if (!isManagementOrAdmin) return;
-        const team = mapTeams.find(t => t.id === teamId);
+        const team = currentTeams().find(t => t.id === teamId);
         if (!team) return;
         team.roles[roleKey] = memberId || null;
-        saveMapTeams();
+        saveMapBoard(activeBoard);
+        if (memberId) syncMapAssignmentToAB(memberId, activeBoard, roleKey);
         render();
     };
 
-    // The ONLY interchangeable value on the map: clicking a marker cycles its displayed number 1-6.
+    window.setTeamColor = function(teamId, color) {
+        if (!isManagementOrAdmin) return;
+        const team = currentTeams().find(t => t.id === teamId);
+        if (!team) return;
+        team.color = color;
+        saveMapBoard(activeBoard);
+        render();
+    };
+
+    // The ONLY interchangeable value on the pin: clicking it cycles its displayed number.
     // The marker's physical position (slot) and the background art never move.
     window.cycleTeamNumber = function(teamId) {
         if (!isManagementOrAdmin) return;
-        const team = mapTeams.find(t => t.id === teamId);
+        const team = currentTeams().find(t => t.id === teamId);
         if (!team) return;
         team.number = (team.number % MAX_SLOTS) + 1;
-        saveMapTeams();
+        saveMapBoard(activeBoard);
+        render();
+    };
+
+    // Rename an existing role (admin & management)
+    window.renameRole = function(key) {
+        if (!isManagementOrAdmin) return;
+        const role = roleDefs.find(r => r.key === key);
+        if (!role) return;
+        const newLabel = prompt('Edit role name:', role.label);
+        if (newLabel === null) return;
+        const trimmed = newLabel.trim();
+        if (!trimmed) {
+            alert('Role name cannot be empty.');
+            return;
+        }
+        role.label = trimmed;
+        saveRoleDefs();
+        render();
+    };
+
+    // Delete a role row — applies to every group on both Team A and Team B (admin & management)
+    window.deleteRoleRow = function(key) {
+        if (!isManagementOrAdmin) return;
+        if (roleDefs.length <= 1) {
+            alert('At least one role is required.');
+            return;
+        }
+        const role = roleDefs.find(r => r.key === key);
+        if (!confirm(`Remove role "${role ? role.label : ''}"? This clears this role's assignments on every group, on both Team A and Team B.`)) return;
+        roleDefs = roleDefs.filter(r => r.key !== key);
+        ['A', 'B'].forEach(b => {
+            mapBoards[b].forEach(t => { delete t.roles[key]; });
+        });
+        saveRoleDefs();
+        saveMapBoard('A');
+        saveMapBoard('B');
+        render();
+    };
+
+    // Add a brand-new custom role — admin only
+    window.addCustomRole = function() {
+        if (!isAdmin) return;
+        const label = prompt('Enter a name for the new custom role:');
+        if (label === null) return;
+        const trimmed = label.trim();
+        if (!trimmed) {
+            alert('Role name cannot be empty.');
+            return;
+        }
+        const key = 'custom_' + Date.now();
+        roleDefs.push({ key, label: trimmed });
+        saveRoleDefs();
         render();
     };
 
     document.getElementById('btnAddTeam').addEventListener('click', () => {
         if (!isManagementOrAdmin) return;
-        if (mapTeams.length >= MAX_SLOTS) {
-            alert(`Maximum of ${MAX_SLOTS} markers reached.`);
+        const teams = currentTeams();
+        if (teams.length >= MAX_SLOTS) {
+            alert(`Maximum of ${MAX_SLOTS} groups reached.`);
             return;
         }
-        const usedSlots = new Set(mapTeams.map(t => t.slot));
+        const usedSlots = new Set(teams.map(t => t.slot));
         let nextSlot = 0;
         while (usedSlots.has(nextSlot)) nextSlot++;
-        mapTeams.push({
+        teams.push({
             id: 'team' + Date.now(),
             slot: nextSlot,
             number: nextSlot + 1,
-            roles: { ballCapture: null, territoryCapture: null, ballSupport: null, substitute: null }
+            color: DEFAULT_GROUP_COLORS[teams.length % DEFAULT_GROUP_COLORS.length],
+            roles: {}
         });
-        saveMapTeams();
+        saveMapBoard(activeBoard);
         render();
     });
 
     document.getElementById('btnRemoveTeam').addEventListener('click', () => {
         if (!isManagementOrAdmin) return;
-        if (mapTeams.length <= 1) {
-            alert('At least one marker is required.');
+        const teams = currentTeams();
+        if (teams.length <= 1) {
+            alert('At least one group is required.');
             return;
         }
-        const last = mapTeams[mapTeams.length - 1];
-        if (!confirm(`Remove marker ${last.number} from the map? This clears its role assignments.`)) return;
-        mapTeams.pop();
-        saveMapTeams();
+        const last = teams[teams.length - 1];
+        if (!confirm(`Remove group ${last.number} from the Team ${activeBoard} map? This clears its role assignments.`)) return;
+        teams.pop();
+        saveMapBoard(activeBoard);
         render();
     });
 
