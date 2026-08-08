@@ -6,6 +6,7 @@
 <title>Black Gold - Loopy's Playground</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Fredoka+One&family=Montserrat:wght@600;700;800&family=Noto+Sans+SC:wght@900&family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
     :root {
         --color-bg-main: #f5f4ef;
@@ -137,6 +138,27 @@
         border-radius: 4px;
         letter-spacing: 0.5px;
     }
+
+    /* Tab switch (A/B SLOTS vs MAP) */
+    .tab-switch { display: flex; border-radius: 4px; overflow: hidden; border: 2px solid var(--color-primary); }
+    .tab-switch__btn {
+        font-family: var(--font-family-base);
+        font-weight: 800;
+        font-size: 12px;
+        letter-spacing: 0.5px;
+        color: var(--color-primary);
+        background: white;
+        border: none;
+        padding: 10px 18px;
+        cursor: pointer;
+        transition: all 0.15s;
+    }
+    .tab-switch__btn + .tab-switch__btn { border-left: 2px solid var(--color-primary); }
+    .tab-switch__btn:hover { background: #eef2f9; }
+    .tab-switch__btn--active { background: var(--color-primary); color: white; }
+    .tab-switch__btn--active:hover { background: var(--color-primary); }
+    .tab-switch__btn--locked { cursor: not-allowed; opacity: 0.45; }
+
     .search-box { flex-grow: 1; max-width: 320px; position: relative; }
     .search-box input {
         width: 100%;
@@ -153,7 +175,6 @@
         color: #9ca3af; font-size: 13px;
     }
     .btn-gold {
-        margin-left: auto;
         background-color: var(--color-gold-bg);
         border: 2px solid var(--color-gold);
         color: var(--color-gold);
@@ -167,6 +188,21 @@
         transition: all 0.15s;
     }
     .btn-gold:hover { background-color: var(--color-gold); color: white; }
+    .btn-danger-outline {
+        background-color: #fce8e6;
+        border: 2px solid #d9381e;
+        color: #d9381e;
+        font-family: var(--font-family-base);
+        font-weight: 800;
+        font-size: 12px;
+        letter-spacing: 0.5px;
+        padding: 10px 18px;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.15s;
+    }
+    .btn-danger-outline:hover { background-color: #d9381e; color: white; }
+    .toolbar-spacer { margin-left: auto; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 
     /* Legend */
     .legend-row {
@@ -314,6 +350,120 @@
     tfoot .ab-count-a { color: var(--color-a); }
     tfoot .ab-count-b { color: var(--color-b); }
 
+    /* ===== FACTION CIRCLE — 1:1 copy of members.html ===== */
+    .faction-circle { width: 26px; height: 26px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-weight: 800; font-size: 10px; color: white; box-shadow: 0 1px 3px rgba(0,0,0,0.15); flex-shrink: 0; font-family: var(--font-family-base); }
+    .faction-f { background-color: #2563eb; }
+    .faction-s { background-color: #9333ea; }
+    .faction-r { background-color: #ea580c; }
+    .faction-circle--empty { background-color: #d1d5db; color: #6b7280; }
+
+    /* ===== MAP TAB ===== */
+    .map-card {
+        background: white;
+        border: 2px solid var(--color-primary);
+        border-radius: 6px;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+    }
+    .map-toolbar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+    .map-toolbar__label {
+        font-family: var(--font-family-base); font-weight: 800; font-size: 12px; color: white;
+        background: var(--color-primary); padding: 8px 16px; border-radius: 4px; letter-spacing: 0.5px;
+    }
+    .map-toolbar__controls { display: flex; gap: 8px; }
+    .map-toolbar__hint { font-family: var(--font-family-base); font-weight: 600; font-size: 11px; color: var(--color-text-muted); width: 100%; }
+
+    .map-body { display: flex; gap: 24px; flex-wrap: wrap; align-items: flex-start; }
+    .map-table-wrapper { flex: 1 1 380px; min-width: 320px; display: flex; flex-direction: column; gap: 14px; }
+
+    .map-team-block { border: 2px solid var(--color-border-light); border-radius: 6px; overflow: hidden; }
+    .map-team-header {
+        padding: 10px 14px; font-family: var(--font-family-base); font-weight: 800; font-size: 12px;
+        color: white; display: flex; align-items: center; justify-content: space-between;
+        text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .map-team-header__title { display: flex; align-items: center; gap: 8px; }
+    .map-team-header__number {
+        width: 24px; height: 24px; border-radius: 50%; background: rgba(255,255,255,0.28);
+        display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800;
+    }
+    .map-team-header__number--clickable { cursor: pointer; }
+    .map-team-header__number--clickable:hover { background: rgba(255,255,255,0.5); }
+
+    table.map-role-table { width: 100%; border-collapse: collapse; font-family: var(--font-family-base); }
+    .map-role-table td { padding: 7px 12px; border-bottom: 1px solid var(--color-border-light); font-size: 11px; vertical-align: middle; }
+    .map-role-table tr:last-child td { border-bottom: none; }
+    .map-role-label { font-weight: 800; color: var(--color-text-dark); width: 118px; white-space: nowrap; }
+    .map-role-faction-cell { width: 30px; text-align: center; }
+    .map-role-select {
+        width: 100%; padding: 5px 8px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 11px;
+        font-family: var(--font-family-base); font-weight: 600; background: #f7f6f0; outline: none; cursor: pointer;
+    }
+    .map-role-select:focus { border-color: var(--color-primary); background: white; }
+    .map-role-select:disabled { cursor: default; background: #f0f1f5; color: #8c93a6; }
+    .map-role-power { font-weight: 800; color: var(--color-primary-dark); font-size: 11px; white-space: nowrap; width: 62px; text-align: right; }
+
+    .map-diagram-wrap { flex: 1 1 420px; min-width: 340px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+    .map-diagram {
+        position: relative; width: 100%; max-width: 460px; aspect-ratio: 1 / 1;
+        background: radial-gradient(circle at 50% 50%, #dcb287, #b98a55 78%);
+        border-radius: 14px; border: 3px solid #93672f; box-shadow: inset 0 0 30px rgba(0,0,0,0.15);
+    }
+    .map-house {
+        position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+        width: 15%; height: 15%; min-width: 46px; min-height: 46px; border-radius: 10px;
+        background: #8a6031; display: flex; align-items: center; justify-content: center;
+        font-size: 22px; color: #ffe9c2; box-shadow: 0 3px 8px rgba(0,0,0,0.35);
+    }
+    .map-node {
+        position: absolute; transform: translate(-50%, -50%);
+        display: flex; flex-direction: column; align-items: center; gap: 4px;
+    }
+    .map-node__icon {
+        width: 15%; height: 15%; min-width: 38px; min-height: 38px; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center; font-size: 16px; color: white;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.3); border: 2px solid rgba(255,255,255,0.5);
+    }
+    .icon-star { background: #f0c419; color: #6b4e00; }
+    .icon-cross { background: #3f9142; }
+    .icon-shield-blue { background: #3b52a4; }
+    .icon-shield-red { background: #c0392b; }
+    .map-node__team-name {
+        font-family: var(--font-family-base); font-weight: 800; font-size: 9px; color: #3d2c14;
+        background: rgba(255,255,255,0.75); padding: 1px 6px; border-radius: 8px; white-space: nowrap;
+        max-width: 90px; overflow: hidden; text-overflow: ellipsis;
+    }
+    .map-arrow-group {
+        position: absolute; transform: translate(-50%, -50%);
+        display: flex; flex-direction: column; align-items: center; gap: 2px;
+    }
+    .map-arrow-icon {
+        font-size: 20px; color: #4a3316; transition: transform 0.15s; display: inline-block;
+    }
+    .map-arrow-icon--rotatable { cursor: pointer; }
+    .map-arrow-icon--rotatable:hover { color: var(--color-primary); }
+    .map-arrow-number {
+        width: 24px; height: 24px; border-radius: 50%; background: #4a3316; color: white;
+        font-family: var(--font-family-base); font-weight: 800; font-size: 11px;
+        display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    }
+    .map-arrow-number--clickable { cursor: pointer; }
+    .map-arrow-number--clickable:hover { background: var(--color-primary); }
+
+    .map-legend-row {
+        display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
+        font-family: var(--font-family-base); font-weight: 700; font-size: 11px; color: var(--color-text-dark);
+    }
+    .map-legend-item { display: flex; align-items: center; gap: 6px; }
+    .map-legend-dot { width: 16px; height: 16px; border-radius: 50%; display: inline-block; box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+
+    .map-locked-state {
+        text-align: center; padding: 40px 20px; color: var(--color-text-muted);
+        font-family: var(--font-family-base); font-weight: 700; font-size: 13px;
+    }
+
     .page-footer {
         display: flex;
         justify-content: space-between;
@@ -340,8 +490,9 @@
     @media (max-width: 640px) {
         .page-header__title { font-size: 26px; }
         .toolbar-card { flex-direction: column; align-items: stretch; }
-        .btn-gold { margin-left: 0; }
+        .toolbar-spacer { margin-left: 0; }
         .search-box { max-width: none; }
+        .map-body { flex-direction: column; }
     }
 </style>
 </head>
@@ -391,33 +542,73 @@
         </div>
 
         <div class="toolbar-card">
-            <span class="toolbar-card__label">A / B SLOTS</span>
-            <div class="search-box">
+            <div class="tab-switch">
+                <button class="tab-switch__btn tab-switch__btn--active" id="tabAB" title="A / B Slots">A / B SLOTS</button>
+                <button class="tab-switch__btn" id="tabMap" title="Formation Map">MAP</button>
+            </div>
+            <div class="search-box" id="abSearchBox">
                 <span class="search-box__icon">🔍</span>
                 <input type="text" id="searchInput" placeholder="Search member...">
             </div>
-            <input type="date" id="calendarPicker" style="display: none; padding: 8px; border: 2px solid var(--color-gold); background: var(--color-gold-bg); border-radius: 4px; font-family: var(--font-family-base); font-weight: 800; font-size: 12px; cursor: pointer;">
-            <button class="btn-gold" id="btnAddDate" style="display: none;">+ ADD DATE</button>
+            <div class="toolbar-spacer" id="abToolbarControls">
+                <input type="date" id="calendarPicker" style="display: none; padding: 8px; border: 2px solid var(--color-gold); background: var(--color-gold-bg); border-radius: 4px; font-family: var(--font-family-base); font-weight: 800; font-size: 12px; cursor: pointer;">
+                <button class="btn-gold" id="btnAddDate" style="display: none;">+ ADD DATE</button>
+            </div>
+            <div class="toolbar-spacer" id="mapToolbarControls" style="display: none;">
+                <button class="btn-gold" id="btnAddTeam" style="display: none;">+ ADD TEAM</button>
+                <button class="btn-danger-outline" id="btnRemoveTeam" style="display: none;">− REMOVE TEAM</button>
+            </div>
         </div>
 
-        <div class="legend-row">
-            <div class="legend-item"><span class="slot-badge slot-badge--a">A</span> Slot A</div>
-            <div class="legend-item"><span class="slot-badge slot-badge--b">B</span> Slot B</div>
-            <div class="legend-item"><span class="slot-badge slot-badge--unassigned"></span> Unassigned</div>
-            <div class="legend-item"><span class="status-badge-legend" style="background:#fce8e6; color:#d9381e; border:1px solid #d9381e;">Not Attended</span></div>
-            <div class="legend-item"><span class="status-badge-legend" style="background:#e6f4ea; color:#1f9d55; border:1px solid #1f9d55;">Attended</span></div>
-            <div class="legend-item"><span class="status-badge-legend" style="background:#ffb000; color:#3d2c00; border:1px solid #c98c00;">Main Player</span></div>
-            <div class="legend-item"><span class="status-badge-legend" style="background:#c8e0dd; color:#1e3a38; border:1px solid #95b8b5;">Substitute</span></div>
-            <span class="legend-hint" id="legendHint">· Unassigned slots count as 0 penalty. Penalties count only for passed weeks where a member was assigned to Slot A or B and did not attend. Dates are strictly ordered chronologically. Click any date header to edit it.</span>
+        <!-- ===== A/B SLOTS SECTION ===== -->
+        <div id="abSlotsSection">
+            <div class="legend-row">
+                <div class="legend-item"><span class="slot-badge slot-badge--a">A</span> Slot A</div>
+                <div class="legend-item"><span class="slot-badge slot-badge--b">B</span> Slot B</div>
+                <div class="legend-item"><span class="slot-badge slot-badge--unassigned"></span> Unassigned</div>
+                <div class="legend-item"><span class="status-badge-legend" style="background:#fce8e6; color:#d9381e; border:1px solid #d9381e;">Not Attended</span></div>
+                <div class="legend-item"><span class="status-badge-legend" style="background:#e6f4ea; color:#1f9d55; border:1px solid #1f9d55;">Attended</span></div>
+                <div class="legend-item"><span class="status-badge-legend" style="background:#ffb000; color:#3d2c00; border:1px solid #c98c00;">Main Player</span></div>
+                <div class="legend-item"><span class="status-badge-legend" style="background:#c8e0dd; color:#1e3a38; border:1px solid #95b8b5;">Substitute</span></div>
+                <span class="legend-hint" id="legendHint">· Unassigned slots count as 0 penalty. Penalties count only for passed weeks where a member was assigned to Slot A or B and did not attend. Dates are strictly ordered chronologically. Click any date header to edit it.</span>
+            </div>
+
+            <div class="table-card">
+                <div class="table-wrapper">
+                    <table>
+                        <thead><tr id="tableHeaderRow"></tr></thead>
+                        <tbody id="tableBody"></tbody>
+                        <tfoot id="tableFooter"></tfoot>
+                    </table>
+                </div>
+            </div>
         </div>
 
-        <div class="table-card">
-            <div class="table-wrapper">
-                <table>
-                    <thead><tr id="tableHeaderRow"></tr></thead>
-                    <tbody id="tableBody"></tbody>
-                    <tfoot id="tableFooter"></tfoot>
-                </table>
+        <!-- ===== MAP SECTION ===== -->
+        <div id="mapSection" style="display: none;">
+            <div class="map-legend-row" style="margin-bottom: 14px;">
+                <div class="map-legend-item"><span class="map-legend-dot" style="background:#2563eb;"></span> Faction F</div>
+                <div class="map-legend-item"><span class="map-legend-dot" style="background:#9333ea;"></span> Faction S</div>
+                <div class="map-legend-item"><span class="map-legend-dot" style="background:#ea580c;"></span> Faction R</div>
+                <div class="map-legend-item"><span class="map-legend-dot icon-star" style="width:16px;height:16px;"></span> Star Point</div>
+                <div class="map-legend-item"><span class="map-legend-dot icon-cross" style="width:16px;height:16px;"></span> Cross Point</div>
+                <div class="map-legend-item"><span class="map-legend-dot icon-shield-blue" style="width:16px;height:16px;"></span> Shield (B)</div>
+                <div class="map-legend-item"><span class="map-legend-dot icon-shield-red" style="width:16px;height:16px;"></span> Shield (R)</div>
+            </div>
+
+            <div class="map-card" id="mapCard">
+                <div class="map-toolbar">
+                    <span class="map-toolbar__label">FORMATION MAP · TEAMS &amp; RALLY ORDER</span>
+                </div>
+                <div class="map-toolbar__hint" id="mapAdminHint" style="display:none;">Click a team number to reassign rally order · click an arrow to rotate its heading · use the select boxes to assign members (auto-pulls Faction &amp; F1 Power from Members).</div>
+                <div class="map-body">
+                    <div class="map-table-wrapper" id="mapTableWrapper"></div>
+                    <div class="map-diagram-wrap">
+                        <div class="map-diagram" id="mapDiagram">
+                            <div class="map-house"><i class="fa-solid fa-house"></i></div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -446,6 +637,8 @@
 
     const isManagementOrAdmin = currentUser.role === 'admin' || currentUser.role === 'management';
     const isAdmin = currentUser.role === 'admin';
+    // Map tab: visible/clickable to admin, management, and regular alliance members — not guests / roleless visitors.
+    const canViewMap = isManagementOrAdmin || currentUser.role === 'member' || currentUser.role === 'alliance';
 
     // --- SIDEBAR (mobile toggle, same behavior as index.html) ---
     document.getElementById('hamburgerBtn').addEventListener('click', () => {
@@ -484,10 +677,23 @@
     }
 
     // --- STATE ---
-    let members = [];       
-    let bgDates = [];        
+    let members = [];
+    let bgDates = [];
     // assignments[memberId][dateId] = { slot: 'A' | 'B' | null, attended: true | false, playerRole: 'main' | 'sub' | null }
     let assignments = {};
+    // mapTeams[i] = { id, number, color, icon, arrowOffset, roles: { ballCapture, territoryCapture, ballSupport, substitute } (member ids) }
+    let mapTeams = [];
+    let activeTab = 'ab'; // 'ab' | 'map'
+
+    const TEAM_PALETTE = ['#c0392b', '#e08a3e', '#e3b93f', '#5a9e5c', '#5f8c94', '#7d67b8', '#c2588a', '#4c7a3d'];
+    const NODE_ICONS = ['icon-star', 'icon-cross', 'icon-shield-blue', 'icon-cross', 'icon-star', 'icon-shield-red', 'icon-cross', 'icon-star'];
+    const NODE_ICON_GLYPH = { 'icon-star': 'fa-star', 'icon-cross': 'fa-plus', 'icon-shield-blue': 'fa-shield-halved', 'icon-shield-red': 'fa-shield-halved' };
+    const ROLE_DEFS = [
+        { key: 'ballCapture', label: 'Ball Capture' },
+        { key: 'territoryCapture', label: 'Territory Capture' },
+        { key: 'ballSupport', label: 'Ball Support' },
+        { key: 'substitute', label: 'Substitute' }
+    ];
 
     function getActiveMembers() {
         return members.filter(m => m.status !== 'removed');
@@ -518,6 +724,21 @@
         return new Date(dateStr);
     }
 
+    function defaultMapTeams() {
+        const teams = [];
+        for (let i = 0; i < 6; i++) {
+            teams.push({
+                id: 'team' + (i + 1) + '_' + Date.now(),
+                number: i + 1,
+                color: TEAM_PALETTE[i % TEAM_PALETTE.length],
+                icon: NODE_ICONS[i % NODE_ICONS.length],
+                arrowOffset: 0,
+                roles: { ballCapture: null, territoryCapture: null, ballSupport: null, substitute: null }
+            });
+        }
+        return teams;
+    }
+
     async function loadData() {
         try {
             const { data, error } = await db.from('app_data').select('*');
@@ -529,10 +750,18 @@
                     if (row.key === 'blackGoldAssignments') {
                         assignments = (row.value && !Array.isArray(row.value)) ? row.value : {};
                     }
+                    if (row.key === 'blackGoldMap') {
+                        mapTeams = (row.value && Array.isArray(row.value) && row.value.length > 0) ? row.value : null;
+                    }
                 });
             }
             // Ensure dates are sorted chronologically
             bgDates.sort((a, b) => parseDateString(a.date) - parseDateString(b.date));
+
+            if (!mapTeams) {
+                mapTeams = defaultMapTeams();
+                await saveMapTeams();
+            }
         } catch (err) {
             console.error('Error loading Black Gold data:', err.message || err);
             alert('Could not load data from the cloud: ' + (err.message || err));
@@ -578,6 +807,43 @@
         }
     }
 
+    async function saveMapTeams() {
+        showSaveStatus('saving', 'Saving…');
+        try {
+            const { error } = await db.from('app_data')
+                .upsert({ id: 7, key: 'blackGoldMap', value: mapTeams }, { onConflict: 'id' });
+            if (error) {
+                console.error('Save Error (Black Gold Map):', error.message, error);
+                showSaveStatus('error', 'Save failed: ' + error.message);
+                return;
+            }
+            showSaveStatus('ok', 'Saved');
+        } catch (err) {
+            console.error('CRITICAL ERROR saving Black Gold map:', err.message || err);
+            showSaveStatus('error', 'Save failed');
+        }
+    }
+
+    // --- TAB SWITCHING ---
+    function switchTab(tab) {
+        if (tab === 'map' && !canViewMap) return;
+        activeTab = tab;
+
+        document.getElementById('tabAB').classList.toggle('tab-switch__btn--active', tab === 'ab');
+        document.getElementById('tabMap').classList.toggle('tab-switch__btn--active', tab === 'map');
+
+        document.getElementById('abSlotsSection').style.display = tab === 'ab' ? 'block' : 'none';
+        document.getElementById('mapSection').style.display = tab === 'map' ? 'block' : 'none';
+
+        document.getElementById('abSearchBox').style.display = tab === 'ab' ? 'block' : 'none';
+        document.getElementById('abToolbarControls').style.display = tab === 'ab' ? 'flex' : 'none';
+        document.getElementById('mapToolbarControls').style.display = tab === 'map' ? 'flex' : 'none';
+
+        render();
+    }
+    document.getElementById('tabAB').addEventListener('click', () => switchTab('ab'));
+    document.getElementById('tabMap').addEventListener('click', () => switchTab('map'));
+
     // --- RENDER ---
     function render() {
         const activeMembers = getActiveMembers();
@@ -586,9 +852,18 @@
 
         document.getElementById('pageSubtitle').innerText = `${activeMembers.length} members · ${bgDates.length} sessions`;
         document.getElementById('shownCount').innerText = `${filtered.length}/${activeMembers.length} members shown`;
+
+        if (!canViewMap) {
+            document.getElementById('tabMap').classList.add('tab-switch__btn--locked');
+            document.getElementById('tabMap').title = 'Not available for your role';
+        }
+
         document.getElementById('btnAddDate').style.display = isManagementOrAdmin ? 'inline-block' : 'none';
         document.getElementById('calendarPicker').style.display = isManagementOrAdmin ? 'inline-block' : 'none';
-        
+        document.getElementById('btnAddTeam').style.display = isManagementOrAdmin ? 'inline-block' : 'none';
+        document.getElementById('btnRemoveTeam').style.display = isManagementOrAdmin ? 'inline-block' : 'none';
+        document.getElementById('mapAdminHint').style.display = isManagementOrAdmin ? 'block' : 'none';
+
         const legendHint = document.getElementById('legendHint');
         if (isManagementOrAdmin) {
             legendHint.style.setProperty('display', 'inline', 'important');
@@ -596,9 +871,13 @@
             legendHint.style.setProperty('display', 'none', 'important');
         }
 
-        renderHeader();
-        renderBody(filtered);
-        renderFooter();
+        if (activeTab === 'ab') {
+            renderHeader();
+            renderBody(filtered);
+            renderFooter();
+        } else {
+            renderMap();
+        }
     }
 
     function renderHeader() {
@@ -642,10 +921,10 @@
 
             bgDates.forEach(d => {
                 const entry = getEntry(member.id, d.id);
-                
+
                 const sessionDate = parseDateString(d.date);
                 sessionDate.setHours(0,0,0,0);
-                
+
                 // Penalty only applies if session has passed and is within the last 14 days
                 const isWithinPenaltyWindow = sessionDate <= today && sessionDate >= twoWeeksAgo;
 
@@ -713,7 +992,7 @@
         footer.innerHTML = html;
     }
 
-    // --- ACTIONS ---
+    // --- A/B ACTIONS ---
     window.cycleSlot = function(memberId, dateId) {
         const entry = getEntry(memberId, dateId);
         entry.slot = entry.slot === null ? 'A' : entry.slot === 'A' ? 'B' : null;
@@ -810,12 +1089,197 @@
         bgDates.push({ id: 'd' + Date.now(), date: formattedDate });
         bgDates.sort((a, b) => parseDateString(a.date) - parseDateString(b.date));
         picker.value = '';
-        
+
         await saveDates();
         render();
     });
 
     document.getElementById('searchInput').addEventListener('input', render);
+
+    // ================= MAP TAB =================
+
+    function findMemberById(id) {
+        if (!id) return null;
+        return members.find(m => String(m.id) === String(id)) || null;
+    }
+
+    function factionCircleHtml(member) {
+        if (!member) return `<div class="faction-circle faction-circle--empty">·</div>`;
+        let factionClass = 'faction-f';
+        if (member.faction === 'S') factionClass = 'faction-s';
+        if (member.faction === 'R') factionClass = 'faction-r';
+        return `<div class="faction-circle ${factionClass}">${member.faction || 'F'}</div>`;
+    }
+
+    function memberOptionsHtml(selectedId) {
+        let html = `<option value="">— Unassigned —</option>`;
+        getActiveMembers().forEach(m => {
+            html += `<option value="${m.id}" ${String(m.id) === String(selectedId) ? 'selected' : ''}>${m.name}</option>`;
+        });
+        return html;
+    }
+
+    function renderMap() {
+        if (!canViewMap) {
+            document.getElementById('mapTableWrapper').innerHTML = `<div class="map-locked-state">This section is available to alliance members, management, and admins only.</div>`;
+            document.getElementById('mapDiagram').querySelectorAll('.map-node, .map-arrow-group').forEach(el => el.remove());
+            return;
+        }
+        renderMapTable();
+        renderMapDiagram();
+    }
+
+    function renderMapTable() {
+        const wrap = document.getElementById('mapTableWrapper');
+        if (mapTeams.length === 0) {
+            wrap.innerHTML = `<div class="map-locked-state">No teams yet. ${isManagementOrAdmin ? 'Click + ADD TEAM to create one.' : ''}</div>`;
+            return;
+        }
+
+        let html = '';
+        mapTeams.forEach(team => {
+            const numberClickable = isManagementOrAdmin ? `onclick="cycleTeamNumber('${team.id}')" title="Click to reassign rally order"` : '';
+            html += `
+                <div class="map-team-block">
+                    <div class="map-team-header" style="background:${team.color};">
+                        <div class="map-team-header__title">GROUP ${team.number}</div>
+                        <div class="map-team-header__number ${isManagementOrAdmin ? 'map-team-header__number--clickable' : ''}" ${numberClickable}>${team.number}</div>
+                    </div>
+                    <table class="map-role-table">
+                        <tbody>
+                            ${ROLE_DEFS.map(role => {
+                                const assignedMember = findMemberById(team.roles[role.key]);
+                                const power = assignedMember ? (assignedMember.f1Cp || '0G') : '—';
+                                return `
+                                    <tr>
+                                        <td class="map-role-label">${role.label}</td>
+                                        <td class="map-role-faction-cell">${factionCircleHtml(assignedMember)}</td>
+                                        <td>
+                                            <select class="map-role-select" ${isManagementOrAdmin ? `onchange="assignMapRole('${team.id}','${role.key}', this.value)"` : 'disabled'}>
+                                                ${memberOptionsHtml(team.roles[role.key])}
+                                            </select>
+                                        </td>
+                                        <td class="map-role-power">${power}</td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        });
+        wrap.innerHTML = html;
+    }
+
+    function renderMapDiagram() {
+        const diagram = document.getElementById('mapDiagram');
+        diagram.querySelectorAll('.map-node, .map-arrow-group').forEach(el => el.remove());
+
+        const n = mapTeams.length;
+        if (n === 0) return;
+
+        const nodeRadius = 40; // % from center
+        const arrowRadius = 22; // % from center
+
+        mapTeams.forEach((team, idx) => {
+            const angleDeg = -90 + (360 / n) * idx;
+            const angleRad = angleDeg * Math.PI / 180;
+
+            const nodeLeft = 50 + nodeRadius * Math.cos(angleRad);
+            const nodeTop = 50 + nodeRadius * Math.sin(angleRad);
+            const arrowLeft = 50 + arrowRadius * Math.cos(angleRad);
+            const arrowTop = 50 + arrowRadius * Math.sin(angleRad);
+            const arrowRotation = angleDeg + 180 + (team.arrowOffset || 0);
+
+            const glyph = NODE_ICON_GLYPH[team.icon] || 'fa-star';
+            const assignedNames = ROLE_DEFS.map(r => findMemberById(team.roles[r.key])).filter(Boolean).map(m => m.name);
+            const label = assignedNames.length > 0 ? assignedNames[0] + (assignedNames.length > 1 ? ` +${assignedNames.length - 1}` : '') : `Group ${team.number}`;
+
+            const nodeEl = document.createElement('div');
+            nodeEl.className = 'map-node';
+            nodeEl.style.left = nodeLeft + '%';
+            nodeEl.style.top = nodeTop + '%';
+            nodeEl.innerHTML = `
+                <div class="map-node__icon ${team.icon}"><i class="fa-solid ${glyph}"></i></div>
+                <div class="map-node__team-name">${label}</div>
+            `;
+            diagram.appendChild(nodeEl);
+
+            const arrowEl = document.createElement('div');
+            arrowEl.className = 'map-arrow-group';
+            arrowEl.style.left = arrowLeft + '%';
+            arrowEl.style.top = arrowTop + '%';
+            const arrowClickAttr = isManagementOrAdmin ? `onclick="rotateArrow('${team.id}')" title="Click to rotate this arrow"` : '';
+            const numberClickAttr = isManagementOrAdmin ? `onclick="cycleTeamNumber('${team.id}')" title="Click to reassign rally order"` : '';
+            arrowEl.innerHTML = `
+                <i class="fa-solid fa-arrow-right map-arrow-icon ${isManagementOrAdmin ? 'map-arrow-icon--rotatable' : ''}" style="transform: rotate(${arrowRotation}deg);" ${arrowClickAttr}></i>
+                <div class="map-arrow-number ${isManagementOrAdmin ? 'map-arrow-number--clickable' : ''}" style="background:${team.color};" ${numberClickAttr}>${team.number}</div>
+            `;
+            diagram.appendChild(arrowEl);
+        });
+    }
+
+    window.assignMapRole = function(teamId, roleKey, memberId) {
+        if (!isManagementOrAdmin) return;
+        const team = mapTeams.find(t => t.id === teamId);
+        if (!team) return;
+        team.roles[roleKey] = memberId || null;
+        saveMapTeams();
+        render();
+    };
+
+    window.cycleTeamNumber = function(teamId) {
+        if (!isManagementOrAdmin) return;
+        const idx = mapTeams.findIndex(t => t.id === teamId);
+        if (idx === -1) return;
+        const targetIdx = (idx + 1) % mapTeams.length;
+        const thisNumber = mapTeams[idx].number;
+        mapTeams[idx].number = mapTeams[targetIdx].number;
+        mapTeams[targetIdx].number = thisNumber;
+        saveMapTeams();
+        render();
+    };
+
+    window.rotateArrow = function(teamId) {
+        if (!isManagementOrAdmin) return;
+        const team = mapTeams.find(t => t.id === teamId);
+        if (!team) return;
+        team.arrowOffset = ((team.arrowOffset || 0) + 45) % 360;
+        saveMapTeams();
+        render();
+    };
+
+    document.getElementById('btnAddTeam').addEventListener('click', () => {
+        if (!isManagementOrAdmin) return;
+        if (mapTeams.length >= 10) {
+            alert('Maximum of 10 teams reached.');
+            return;
+        }
+        const nextNumber = mapTeams.length + 1;
+        mapTeams.push({
+            id: 'team' + Date.now(),
+            number: nextNumber,
+            color: TEAM_PALETTE[(nextNumber - 1) % TEAM_PALETTE.length],
+            icon: NODE_ICONS[(nextNumber - 1) % NODE_ICONS.length],
+            arrowOffset: 0,
+            roles: { ballCapture: null, territoryCapture: null, ballSupport: null, substitute: null }
+        });
+        saveMapTeams();
+        render();
+    });
+
+    document.getElementById('btnRemoveTeam').addEventListener('click', () => {
+        if (!isManagementOrAdmin) return;
+        if (mapTeams.length <= 1) {
+            alert('At least one team is required.');
+            return;
+        }
+        const last = mapTeams[mapTeams.length - 1];
+        if (!confirm(`Remove Group ${last.number} from the map? This clears its role assignments.`)) return;
+        mapTeams.pop();
+        saveMapTeams();
+        render();
+    });
 
     loadData();
 </script>
