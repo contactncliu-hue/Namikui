@@ -648,7 +648,7 @@
                     <button class="map-subtab-btn map-subtab-btn--active" id="mapSubtabA">TEAM A</button>
                     <button class="map-subtab-btn" id="mapSubtabB">TEAM B</button>
                 </div>
-                <div class="map-toolbar__hint" id="mapAdminHint" style="display:none;">Click a numbered marker on the map to change its number · use the select boxes on the left to assign members (auto-pulls Faction &amp; F1 Power from Members) · click a group's color swatch to recolor it · use each role's name dropdown to rename it, add a new role row, or delete it — these only affect that one group, on the team you're currently viewing. Assigning a member here automatically sets their Slot (A or B, matching this tab) and Main/Substitute status on the most recent A/B Slots session. A member can only be assigned to one team (A or B) per session.</div>
+                <div class="map-toolbar__hint" id="mapAdminHint" style="display:none;">Click a numbered marker on the map to change its number · use the select boxes on the left to assign members (auto-pulls Faction &amp; F1 Power from Members) · click a group's color swatch to recolor it · use a role's name dropdown to rename it, the × to delete that row, and + ADD ROLE ROW to add a new one — all scoped to that one group, on the team you're currently viewing. Assigning a member here automatically sets their Slot (A or B, matching this tab) and Main/Substitute status on the most recent A/B Slots session. A member can only be assigned to one team (A or B) per session.</div>
                 <div class="map-body">
                     <div class="map-table-wrapper" id="mapTableWrapper"></div>
                     <div class="map-diagram-wrap">
@@ -1334,16 +1334,14 @@
         return html;
     }
 
-    // Dropdown options for a role's name field: preset role names plus the role's current label
-    // (if it's not already one of the presets), then three special admin actions —
-    // rename (custom name prompt), add a brand-new role, and delete this role entirely.
+    // Dropdown options for a role's name field: preset role names plus the row's current label
+    // (if it's not already one of the presets), plus a custom-name option. Renaming only —
+    // adding and removing rows are separate, dedicated controls (see the +/× buttons).
     function roleLabelOptionsHtml(currentLabel) {
         let opts = PRESET_ROLES.slice();
         if (!opts.includes(currentLabel)) opts.unshift(currentLabel);
         let html = opts.map(o => `<option value="${o}" ${o === currentLabel ? 'selected' : ''}>${o}</option>`).join('');
-        html += `<option value="__custom__">✎ Rename / Custom Name...</option>`;
-        html += `<option value="__addnew__">+ Add New Role...</option>`;
-        html += `<option value="__delete__">✕ Delete This Role...</option>`;
+        html += `<option value="__custom__">✎ Custom Name...</option>`;
         return html;
     }
 
@@ -1434,7 +1432,7 @@
                                     <tr>
                                         <td class="map-role-label">
                                             ${isManagementOrAdmin
-                                                ? `<select class="map-role-select" title="Rename, add, or delete this role row (this group only)" onchange="changeRoleLabel('${team.id}','${row.key}', this.value)">${roleLabelOptionsHtml(row.label)}</select>`
+                                                ? `<select class="map-role-select" title="Rename this role row (this group only)" onchange="changeRoleLabel('${team.id}','${row.key}', this.value)">${roleLabelOptionsHtml(row.label)}</select>`
                                                 : row.label}
                                         </td>
                                         <td class="map-role-faction-cell">${factionCircleHtml(assignedMember)}</td>
@@ -1444,12 +1442,18 @@
                                             </select>
                                         </td>
                                         <td class="map-role-power">${power}</td>
+                                        <td>${isManagementOrAdmin ? `<span class="map-role-delete-btn" onclick="deleteGroupRoleRow('${team.id}','${row.key}')" title="Delete this role row (this group only)">×</span>` : ''}</td>
                                     </tr>
                                 `;
                             }).join('')}
+                            ${isManagementOrAdmin ? `
+                            <tr><td colspan="5" class="map-role-add-row">
+                                <button class="map-role-add-btn" onclick="addGroupRoleRow('${team.id}')">+ ADD ROLE ROW</button>
+                            </td></tr>` : ''}
                         </tbody>
                     </table>
                 </div>
+
             `;
         });
         wrap.innerHTML = html;
@@ -1594,9 +1598,7 @@
         render();
     };
 
-    // Handles every action from a role row's name dropdown (admin & management): renaming this
-    // row, adding a brand-new row, or deleting this row — ALL scoped to this ONE group, on the
-    // team currently being viewed. Nothing here ever touches another group or the other team.
+    // Renames one role row, on this ONE group, on the team currently being viewed.
     window.changeRoleLabel = function(teamId, key, value) {
         if (!isManagementOrAdmin) return;
         const team = currentTeams().find(t => t.id === teamId);
@@ -1619,46 +1621,53 @@
             return;
         }
 
-        if (value === '__addnew__') {
-            const usedLabels = team.roleRows.map(r => r.label);
-            const suggestion = PRESET_ROLES.find(p => !usedLabels.includes(p)) || 'New Role';
-            const newLabel = prompt('Enter a name for the new role row (added to this group only):', suggestion);
-            if (newLabel === null) { render(); return; }
-            const trimmed = newLabel.trim();
-            if (!trimmed) {
-                alert('Role name cannot be empty.');
-                render();
-                return;
-            }
-            team.roleRows.push({ key: 'custom_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), label: trimmed, memberId: null });
-            saveMapBoard(activeBoard);
-            render();
-            return;
-        }
-
-        if (value === '__delete__') {
-            if (team.roleRows.length <= 1) {
-                alert('This group needs at least one role row.');
-                render();
-                return;
-            }
-            if (!confirm(`Remove the "${row.label}" row from this group (Team ${activeBoard} only)? This clears its assignment.`)) {
-                render();
-                return;
-            }
-            const removedMemberId = row.memberId;
-            team.roleRows = team.roleRows.filter(r => r.key !== key);
-            saveMapBoard(activeBoard);
-            if (removedMemberId && !isMemberAssignedOnBoard(removedMemberId, activeBoard)) {
-                clearMemberSlotForBoard(removedMemberId, activeBoard);
-            }
-            render();
-            return;
-        }
-
         // Plain rename to a preset value
         row.label = value;
         saveMapBoard(activeBoard);
+        render();
+    };
+
+    // Adds a brand-new role row to ONE group, on the team currently being viewed. A separate,
+    // dedicated action from renaming/deleting — never affects any other group or the other team.
+    window.addGroupRoleRow = function(teamId) {
+        if (!isManagementOrAdmin) return;
+        const team = currentTeams().find(t => t.id === teamId);
+        if (!team) return;
+        const usedLabels = team.roleRows.map(r => r.label);
+        const suggestion = PRESET_ROLES.find(p => !usedLabels.includes(p)) || 'New Role';
+        const newLabel = prompt('Enter a name for the new role row (added to this group only):', suggestion);
+        if (newLabel === null) return;
+        const trimmed = newLabel.trim();
+        if (!trimmed) {
+            alert('Role name cannot be empty.');
+            return;
+        }
+        team.roleRows.push({ key: 'custom_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), label: trimmed, memberId: null });
+        saveMapBoard(activeBoard);
+        render();
+    };
+
+    // Deletes ONE role row from ONE group, on the team currently being viewed. A separate,
+    // dedicated action from renaming/adding — never affects any other group or the other team.
+    window.deleteGroupRoleRow = function(teamId, key) {
+        if (!isManagementOrAdmin) return;
+        const team = currentTeams().find(t => t.id === teamId);
+        if (!team) return;
+        const row = team.roleRows.find(r => r.key === key);
+        if (!row) return;
+
+        if (team.roleRows.length <= 1) {
+            alert('This group needs at least one role row.');
+            return;
+        }
+        if (!confirm(`Remove the "${row.label}" row from this group (Team ${activeBoard} only)? This clears its assignment.`)) return;
+
+        const removedMemberId = row.memberId;
+        team.roleRows = team.roleRows.filter(r => r.key !== key);
+        saveMapBoard(activeBoard);
+        if (removedMemberId && !isMemberAssignedOnBoard(removedMemberId, activeBoard)) {
+            clearMemberSlotForBoard(removedMemberId, activeBoard);
+        }
         render();
     };
 
