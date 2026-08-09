@@ -68,10 +68,31 @@
         .save-status--error { display: block; background: #fce8e6; color: #d9381e; border: 1px solid #d9381e; }
         .save-status--ok { display: block; background: #e6f4ea; color: #1f9d55; border: 1px solid #1f9d55; }
 
-        /* ===== APP SHELL / SIDEBAR — 1:1 copy of blackgold.html / index.html ===== */
-        .app { display: flex; width: 100%; min-height: 100vh; padding-top: 6px; }
+        /* ===== APP SHELL / SIDEBAR =====
+           Sidebar is ALWAYS an off-canvas fixed panel, hidden by default, and only
+           opens via the .sidebar--open class from the hamburger button. This is
+           intentionally NOT gated behind a @media breakpoint anymore — the previous
+           version only applied this fixed/hidden behavior below 1024px, so rotating
+           a tablet/phone into landscape (crossing that width) made the sidebar pop
+           open and sit in-flow permanently, ignoring the toggle. Keeping the rule
+           unconditional matches vspoint.html and fixes that. */
+        .app { display: flex; width: 100%; min-height: 100vh; padding-top: 6px; flex-direction: column; }
 
-        .sidebar { width: 300px; background-color: var(--color-bg-sidebar); border-right: 2px solid var(--color-border); display: flex; flex-direction: column; flex-shrink: 0; transition: transform 0.3s ease; z-index: 100; }
+        .sidebar {
+            width: 300px;
+            background-color: var(--color-bg-sidebar);
+            border-right: 2px solid var(--color-border);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            transition: transform 0.3s ease;
+            z-index: 150;
+            position: fixed;
+            top: 0; left: 0;
+            height: 100vh;
+            transform: translateX(-100%);
+        }
+        .sidebar--open { transform: translateX(0); }
         .sidebar__header { padding: 24px; display: flex; justify-content: center; align-items: center; border-bottom: 2px solid var(--color-border); }
         .sidebar__logo { width: 85px; height: 85px; border-radius: 50%; background: linear-gradient(135deg, #a5c7f9, #2d55b8); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 30px; font-family: var(--font-family-logo); }
         .sidebar__user { padding: 18px 24px; display: flex; align-items: center; gap: 14px; font-weight: 700; font-size: var(--font-sm); color: #62697b; border-bottom: 1px solid var(--color-border-light); }
@@ -87,17 +108,20 @@
         .sidebar__item--logout:hover { background-color: #fce8e6; }
         .sidebar__icon { width: 18px; text-align: center; }
 
-        .main { flex-grow: 1; padding: 28px; display: flex; flex-direction: column; gap: 18px; max-width: 1450px; }
-        .mobile-header { display: none; justify-content: flex-end; align-items: center; padding: 10px 14px; background: transparent; border: none; margin-bottom: 8px; }
+        /* Backdrop shown behind the sidebar while open; click it to close (matches vspoint.html) */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.35);
+            z-index: 140;
+        }
+        .sidebar-overlay--visible { display: block; }
+
+        .main { flex-grow: 1; padding: 28px; display: flex; flex-direction: column; gap: 18px; max-width: 1450px; width: 100%; margin: 0 auto; box-sizing: border-box; }
+        .mobile-header { display: flex; justify-content: flex-end; align-items: center; padding: 10px 14px; background: transparent; border: none; margin-bottom: 8px; }
         .hamburger { background: none; border: none; cursor: pointer; display: flex; flex-direction: column; gap: 5px; padding: 5px; }
         .hamburger__line { width: 26px; height: 3px; background-color: var(--color-primary); border-radius: 2px; }
-
-        @media (max-width: 1024px) {
-            .app { flex-direction: column; }
-            .mobile-header { display: flex; }
-            .sidebar { position: fixed; top: 0; left: 0; height: 100vh; transform: translateX(-100%); }
-            .sidebar--open { transform: translateX(0); }
-        }
 
         /* ===== PAGE CONTENT ===== */
         .page-header { margin-bottom: 20px; }
@@ -264,6 +288,8 @@
         </div>
     </aside>
 
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
     <main class="main">
         <div class="mobile-header">
             <button class="hamburger" id="hamburgerBtn"><span class="hamburger__line"></span><span class="hamburger__line"></span><span class="hamburger__line"></span></button>
@@ -384,10 +410,30 @@
     const isManagementOrAdmin = currentUser.role === 'admin' || currentUser.role === 'management';
     const isAdmin = currentUser.role === 'admin';
 
-    // --- SIDEBAR (mobile toggle, same behavior as index.html / blackgold.html) ---
+    // --- SIDEBAR (always off-canvas; only opens via hamburger, closes via X-tap on overlay) ---
+    const sidebarEl = document.getElementById('sidebar');
+    const sidebarOverlayEl = document.getElementById('sidebarOverlay');
+
+    function openSidebar() {
+        sidebarEl.classList.add('sidebar--open');
+        sidebarOverlayEl.classList.add('sidebar-overlay--visible');
+    }
+    function closeSidebar() {
+        sidebarEl.classList.remove('sidebar--open');
+        sidebarOverlayEl.classList.remove('sidebar-overlay--visible');
+    }
+
     document.getElementById('hamburgerBtn').addEventListener('click', () => {
-        document.getElementById('sidebar').classList.toggle('sidebar--open');
+        if (sidebarEl.classList.contains('sidebar--open')) {
+            closeSidebar();
+        } else {
+            openSidebar();
+        }
     });
+
+    if (sidebarOverlayEl) {
+        sidebarOverlayEl.addEventListener('click', closeSidebar);
+    }
 
     document.getElementById('sidebarLogoutBtn').addEventListener('click', () => {
         localStorage.removeItem('amt_userRole');
