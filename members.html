@@ -284,6 +284,9 @@
             </ul>
         </nav>
         <div class="sidebar__footer">
+            <div id="google_translate_element" style="margin-bottom: 10px;"></div>
+    <a class="sidebar__item sidebar__item--logout" id="sidebarLogoutBtn">...</a>
+</div>
             <a class="sidebar__item sidebar__item--logout" id="sidebarLogoutBtn"><span class="sidebar__icon">|</span> LOG OUT</a>
         </div>
     </aside>
@@ -976,5 +979,15 @@
 
     window.addEventListener('DOMContentLoaded', loadDataFromCloud);
 </script>
+    function googleTranslateElementInit() {
+        new google.translate.TranslateElement({
+            pageLanguage: 'en',
+            includedLanguages: 'en,ko,vi,pt',
+            layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
+            autoDisplay: false
+        }, 'google_translate_element');
+    }
+</script>
+<script src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
 </body>
 </html>
