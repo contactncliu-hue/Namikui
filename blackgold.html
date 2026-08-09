@@ -654,8 +654,17 @@
     .lang-dropdown__option:hover { background: var(--color-primary-light); }
     .lang-dropdown__option--active { background: var(--color-primary-light); font-weight: 800; color: var(--color-primary-dark); }
 
-    /* The real Google Translate widget stays functional but fully hidden — our dropdown drives it */
-    #google_translate_element { display: none !important; }
+    /* The real Google Translate widget stays functional but tucked off-screen — our dropdown
+       drives it. IMPORTANT: this must NOT be display:none — Google's script needs the container
+       actually rendered to build its internal <select>, or the dropdown has nothing to control. */
+    #google_translate_element {
+        position: absolute !important;
+        left: -9999px !important;
+        top: 0 !important;
+        width: 1px !important;
+        height: 1px !important;
+        overflow: hidden !important;
+    }
 </style>
 </head>
 <body>
