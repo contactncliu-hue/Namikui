@@ -1675,10 +1675,14 @@
         return `<div class="faction-circle ${factionClass}">${member.faction || 'F'}</div>`;
     }
 
-    function memberOptionsHtml(selectedId) {
+    function memberOptionsHtml(selectedId, disabledIds) {
+        disabledIds = disabledIds || new Set();
         let html = `<option value="">— Unassigned —</option>`;
         getActiveMembers().forEach(m => {
-            html += `<option value="${m.id}" ${String(m.id) === String(selectedId) ? 'selected' : ''}>${m.name}</option>`;
+            const idStr = String(m.id);
+            const isSelected = idStr === String(selectedId);
+            const isDisabled = !isSelected && disabledIds.has(idStr);
+            html += `<option value="${m.id}" ${isSelected ? 'selected' : ''} ${isDisabled ? 'disabled' : ''}>${m.name}${isDisabled ? ' (on other team)' : ''}</option>`;
         });
         return html;
     }
@@ -1744,6 +1748,12 @@
 
         const sortedTeams = [...teams].sort((a, b) => a.number - b.number);
 
+        const otherBoard = activeBoard === 'A' ? 'B' : 'A';
+        const otherBoardMemberIds = new Set();
+        mapBoards[otherBoard].forEach(t => {
+            t.roleRows.forEach(r => { if (r.memberId) otherBoardMemberIds.add(String(r.memberId)); });
+        });
+
         let html = '';
         sortedTeams.forEach(team => {
             const numberClickable = isManagementOrAdmin ? `onclick="cycleTeamNumber('${team.id}')" title="Click to change this group's number (cycles 1–6)"` : '';
@@ -1774,7 +1784,7 @@
                                         <td class="map-role-faction-cell">${factionCircleHtml(assignedMember)}</td>
                                         <td>
                                             <select class="map-role-select" ${isManagementOrAdmin ? `onchange="assignMapRole('${team.id}','${row.key}', this.value)"` : 'disabled'}>
-                                                ${memberOptionsHtml(row.memberId)}
+                                                ${memberOptionsHtml(row.memberId, otherBoardMemberIds)}
                                             </select>
                                         </td>
                                         <td class="map-role-power">${power}</td>
@@ -1953,7 +1963,22 @@
         const row = team.roleRows.find(r => r.key === roleKey);
         if (!row) return;
 
-        row.memberId = memberId ? String(memberId) : null;
+        const newMemberId = memberId ? String(memberId) : null;
+
+        if (newMemberId) {
+            const otherBoard = activeBoard === 'A' ? 'B' : 'A';
+            const conflictTeam = mapBoards[otherBoard].find(t =>
+                t.roleRows.some(r => r.memberId === newMemberId)
+            );
+            if (conflictTeam) {
+                const conflictMember = findMemberById(newMemberId);
+                alert(`${conflictMember ? conflictMember.name : 'This member'} is already assigned to Team ${otherBoard} for this session. A member can only be on Team A or Team B, not both.`);
+                renderMapTable();
+                return;
+            }
+        }
+
+        row.memberId = newMemberId;
         saveMapBoard(activeBoard);
         syncMapAssignmentToAB(row.memberId, activeBoard, roleKey);
         renderMapTable();
