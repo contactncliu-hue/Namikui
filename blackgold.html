@@ -648,7 +648,7 @@
                     <button class="map-subtab-btn map-subtab-btn--active" id="mapSubtabA">TEAM A</button>
                     <button class="map-subtab-btn" id="mapSubtabB">TEAM B</button>
                 </div>
-                <div class="map-toolbar__hint" id="mapAdminHint" style="display:none;">Click a numbered marker on the map to change its number · use the select boxes on the left to assign members (auto-pulls Faction &amp; F1 Power from Members) · click a group's color swatch to recolor it · use the role dropdown to change a role's name, or pick from the dropdown at the bottom of a group's table and click + ADD ROLE to create a new one. Assigning a member here automatically sets their Slot (A or B, matching this tab) and Main/Substitute status on the most recent A/B Slots session. A member can only be assigned to one team (A or B) per session.</div>
+                <div class="map-toolbar__hint" id="mapAdminHint" style="display:none;">Click a numbered marker on the map to change its number · use the select boxes on the left to assign members (auto-pulls Faction &amp; F1 Power from Members) · click a group's color swatch to recolor it · use the role name dropdown on each row to rename that role, add a new role row, or delete it (adding/deleting a role applies to every group, on both Team A and Team B) · click the × next to a role to clear just that group's assignment. Assigning a member here automatically sets their Slot (A or B, matching this tab) and Main/Substitute status on the most recent A/B Slots session. A member can only be assigned to one team (A or B) per session.</div>
                 <div class="map-body">
                     <div class="map-table-wrapper" id="mapTableWrapper"></div>
                     <div class="map-diagram-wrap">
@@ -1342,12 +1342,16 @@
     }
 
     // Dropdown options for a role's name field: preset role names plus the role's current label
-    // (if it's not already one of the presets) plus a "+ Custom..." option to type a new name.
+    // (if it's not already one of the presets), then three special admin actions —
+    // rename (custom name prompt), add a brand-new role, and delete this role entirely.
     function roleLabelOptionsHtml(currentLabel) {
         let opts = PRESET_ROLES.slice();
         if (!opts.includes(currentLabel)) opts.unshift(currentLabel);
-        opts.push('__custom__');
-        return opts.map(o => `<option value="${o}" ${o === currentLabel ? 'selected' : ''}>${o === '__custom__' ? '+ Custom...' : o}</option>`).join('');
+        let html = opts.map(o => `<option value="${o}" ${o === currentLabel ? 'selected' : ''}>${o}</option>`).join('');
+        html += `<option value="__custom__">✎ Rename / Custom Name...</option>`;
+        html += `<option value="__addnew__">+ Add New Role...</option>`;
+        html += `<option value="__delete__">✕ Delete This Role...</option>`;
+        return html;
     }
 
     // Finds the most recently added / latest chronological Black Gold session, used as the
@@ -1451,14 +1455,6 @@
                                     </tr>
                                 `;
                             }).join('')}
-                            ${isManagementOrAdmin ? `
-                            <tr><td colspan="5" class="map-role-add-row">
-                                <select class="map-role-select" id="newRoleSelect_${team.id}" style="width:auto; display:inline-block; margin-right:8px; margin-bottom:6px;">
-                                    ${PRESET_ROLES.map(r => `<option value="${r}">${r}</option>`).join('')}
-                                    <option value="__custom__">+ Custom Role...</option>
-                                </select>
-                                <button class="map-role-add-btn" onclick="addRoleFromDropdown('newRoleSelect_${team.id}')">+ ADD ROLE</button>
-                            </td></tr>` : ''}
                         </tbody>
                     </table>
                 </div>
@@ -1604,12 +1600,17 @@
         render();
     };
 
-    // Change an existing role's name via its dropdown (admin & management). Picking "+ Custom..."
-    // falls back to a text prompt so any name is still possible.
+    // Handles every action from a role row's name dropdown (admin & management):
+    // renaming this role, adding a brand-new role, or deleting this role entirely.
+    // Adding/deleting a role always affects the shared role template — it appears/disappears
+    // as a row on EVERY group, on both Team A and Team B — since role types are a shared
+    // roster taxonomy, not something scoped to a single group. (Assignments of MEMBERS to a
+    // role are what stay scoped per group/board — see clearGroupRoleAssignment and assignMapRole.)
     window.changeRoleLabel = function(key, value) {
         if (!isManagementOrAdmin) return;
         const role = roleDefs.find(r => r.key === key);
         if (!role) return;
+
         if (value === '__custom__') {
             const newLabel = prompt('Enter custom role name:', role.label);
             if (newLabel === null) { render(); return; }
@@ -1620,9 +1621,48 @@
                 return;
             }
             role.label = trimmed;
-        } else {
-            role.label = value;
+            saveRoleDefs();
+            render();
+            return;
         }
+
+        if (value === '__addnew__') {
+            const newLabel = prompt('Enter a name for the new role (added as a row to every group, on both Team A and Team B):');
+            if (newLabel === null) { render(); return; }
+            const trimmed = newLabel.trim();
+            if (!trimmed) {
+                alert('Role name cannot be empty.');
+                render();
+                return;
+            }
+            roleDefs.push({ key: 'custom_' + Date.now(), label: trimmed });
+            saveRoleDefs();
+            render();
+            return;
+        }
+
+        if (value === '__delete__') {
+            if (roleDefs.length <= 1) {
+                alert('At least one role is required.');
+                render();
+                return;
+            }
+            if (!confirm(`Remove role "${role.label}"? This removes this row from every group, on both Team A and Team B, and clears anyone currently assigned to it.`)) {
+                render();
+                return;
+            }
+            roleDefs = roleDefs.filter(r => r.key !== key);
+            ['A', 'B'].forEach(b => {
+                mapBoards[b].forEach(t => { delete t.roles[key]; });
+            });
+            saveRoleDefs();
+            saveMapBoard('A');
+            saveMapBoard('B');
+            render();
+            return;
+        }
+
+        role.label = value;
         saveRoleDefs();
         render();
     };
@@ -1634,30 +1674,6 @@
     window.clearGroupRoleAssignment = function(teamId, roleKey) {
         if (!isManagementOrAdmin) return;
         assignMapRole(teamId, roleKey, '');
-    };
-
-    // Add a brand-new role from the dropdown (admin & management). Picking "+ Custom Role..."
-    // falls back to a text prompt so any name is still possible.
-    window.addRoleFromDropdown = function(selectId) {
-        if (!isManagementOrAdmin) return;
-        const select = document.getElementById(selectId);
-        if (!select) return;
-        const value = select.value;
-        let label = value;
-        if (value === '__custom__') {
-            const newLabel = prompt('Enter a name for the new custom role:');
-            if (newLabel === null) return;
-            const trimmed = newLabel.trim();
-            if (!trimmed) {
-                alert('Role name cannot be empty.');
-                return;
-            }
-            label = trimmed;
-        }
-        const key = 'custom_' + Date.now();
-        roleDefs.push({ key, label });
-        saveRoleDefs();
-        render();
     };
 
     document.getElementById('btnAddTeam').addEventListener('click', () => {
