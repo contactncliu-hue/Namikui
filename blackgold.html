@@ -375,6 +375,33 @@
     .map-toolbar__controls { display: flex; gap: 8px; }
     .map-toolbar__hint { font-family: var(--font-family-base); font-weight: 600; font-size: 11px; color: var(--color-text-muted); width: 100%; }
 
+    /* Rally path (connector dot/arrow) color picker — admin/management only */
+    .map-dot-color-picker { display: flex; align-items: center; gap: 10px; }
+    .map-dot-color-picker__label {
+        font-family: var(--font-family-base); font-weight: 800; font-size: 11px; letter-spacing: 0.3px;
+        color: var(--color-text-muted); text-transform: uppercase;
+    }
+    .map-dot-color-picker__swatches { display: flex; gap: 6px; }
+    .map-dot-color-swatch {
+        width: 22px; height: 22px; border-radius: 50%; cursor: pointer;
+        border: 2px solid rgba(0,0,0,0.15); box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+        transition: transform 0.1s;
+    }
+    .map-dot-color-swatch:hover { transform: scale(1.12); }
+    .map-dot-color-swatch--active { border-color: var(--color-primary-dark); box-shadow: 0 0 0 2px white, 0 0 0 4px var(--color-primary-dark); }
+
+    /* Rally path connector markers — small circles that toggle into rotating directional arrows */
+    .map-connector-dot {
+        position: absolute;
+        width: 22px; height: 22px;
+        transform: translate(-50%, -50%);
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer;
+    }
+    .map-connector-dot--readonly { cursor: default; }
+    .map-connector-dot svg { width: 100%; height: 100%; overflow: visible; }
+    .map-connector-arrow-inner { transition: transform 0.15s ease; transform-origin: 50% 50%; }
+
     /* Team A / Team B sub-tabs within the Map tab */
     .map-subtabs { display: flex; gap: 8px; }
     .map-subtab-btn {
@@ -643,12 +670,16 @@
             <div class="map-card" id="mapCard">
                 <div class="map-toolbar">
                     <span class="map-toolbar__label">FORMATION MAP · GROUPS &amp; RALLY ORDER</span>
+                    <div class="map-dot-color-picker" id="mapDotColorPicker" style="display:none;">
+                        <span class="map-dot-color-picker__label">Rally path color</span>
+                        <div class="map-dot-color-picker__swatches" id="mapDotColorSwatches"></div>
+                    </div>
                 </div>
                 <div class="map-subtabs">
                     <button class="map-subtab-btn map-subtab-btn--active" id="mapSubtabA">TEAM A</button>
                     <button class="map-subtab-btn" id="mapSubtabB">TEAM B</button>
                 </div>
-                <div class="map-toolbar__hint" id="mapAdminHint" style="display:none;">Click a numbered marker on the map to change its number · use the select boxes on the left to assign members (auto-pulls Faction &amp; F1 Power from Members) · click a group's color swatch to recolor it · use a role's name dropdown to rename it, the × to delete that row, and + ADD ROLE ROW to add a new one — all scoped to that one group, on the team you're currently viewing. Assigning a member here automatically sets their Slot (A or B, matching this tab) and Main/Substitute status on the most recent A/B Slots session. A member can only be assigned to one team (A or B) per session.</div>
+                <div class="map-toolbar__hint" id="mapAdminHint" style="display:none;">Click a numbered marker on the map to change its number · use the select boxes on the left to assign members (auto-pulls Faction &amp; F1 Power from Members) · click a group's color swatch to recolor it · use a role's name dropdown to rename it, the × to delete that row, and + ADD ROLE ROW to add a new one — all scoped to that one group, on the team you're currently viewing · click any small circle on the map to turn it into a directional arrow (each click rotates it 25°; a full rotation returns it to a plain circle) — use the swatches above to set the arrow color. Assigning a member here automatically sets their Slot (A or B, matching this tab) and Main/Substitute status on the most recent A/B Slots session. A member can only be assigned to one team (A or B) per session.</div>
                 <div class="map-body">
                     <div class="map-table-wrapper" id="mapTableWrapper"></div>
                     <div class="map-diagram-wrap">
@@ -781,6 +812,41 @@
     const MAX_SLOTS = SLOT_POSITIONS.length; // 8
     const DEFAULT_GROUP_COUNT = 6; // matches the original default look; more can be added up to MAX_SLOTS
 
+    // Fixed physical positions of the 16 small "rally path" connector dots on the map (percent
+    // left/top), digitized directly from the reference formation map so placement is exact.
+    // Each dot is admin/management-clickable: it toggles into a directional arrow that rotates
+    // 25° per click and returns to a plain dot once a full rotation completes.
+    const DOT_POSITIONS = [
+        { left: 40.34, top: 24.64 },
+        { left: 61.11, top: 24.64 },
+        { left: 26.19, top: 25.49 },
+        { left: 18.08, top: 34.19 },
+        { left: 40.39, top: 38.47 },
+        { left: 61.09, top: 38.47 },
+        { left: 76.09, top: 39.58 },
+        { left: 25.41, top: 39.64 },
+        { left: 78.89, top: 56.78 },
+        { left: 22.61, top: 56.85 },
+        { left: 36.54, top: 58.73 },
+        { left: 64.99, top: 58.73 },
+        { left: 83.12, top: 63.02 },
+        { left: 77.71, top: 70.81 },
+        { left: 63.52, top: 72.11 },
+        { left: 37.98, top: 72.17 }
+    ];
+    // Degrees added to a connector arrow's rotation per click. 360 / 25 = 14.4, so after the
+    // 15th click (350° + 25° = 375°, past a full turn) it resets to a plain dot.
+    const DOT_ROTATION_STEP = 25;
+    const DOT_STEPS_PER_CYCLE = Math.ceil(360 / DOT_ROTATION_STEP); // 15 — step 0 = dot, steps 1-14 = arrow
+
+    // The only 5 colors admin/management can choose for the rally path dots/arrows.
+    const DOT_COLORS = ['#8a5a2b', '#c0392b', '#3b52a4', '#1f9d55', '#f4c94c'];
+    const DEFAULT_DOT_COLOR = DOT_COLORS[0];
+
+    // Shared rally-path state (same on both Team A and Team B — it's a background overlay, not
+    // per-team data). steps[i] is DOT_POSITIONS[i]'s rotation step (0 = dot, 1-14 = arrow).
+    let mapDots = { color: DEFAULT_DOT_COLOR, steps: new Array(DOT_POSITIONS.length).fill(0) };
+
     const DEFAULT_GROUP_COLORS = ['#966426', '#3b52a4', '#c0392b', '#1f9d55', '#9333ea', '#ea580c', '#0e7490', '#a16207'];
 
     // Template used to seed a brand-new group's own role rows (each group then owns an independent copy).
@@ -843,7 +909,7 @@
     }
 
     async function loadData() {
-        let legacyMap = null, mapA = null, mapB = null, legacyRoleDefs = null;
+        let legacyMap = null, mapA = null, mapB = null, legacyRoleDefs = null, dotsLoaded = null;
         try {
             const { data, error } = await db.from('app_data').select('*');
             if (error) throw error;
@@ -867,6 +933,9 @@
                         // Old shared role taxonomy — only used now to label rows during migration.
                         legacyRoleDefs = (row.value && Array.isArray(row.value) && row.value.length > 0) ? row.value : null;
                     }
+                    if (row.key === 'blackGoldMapDots') {
+                        dotsLoaded = (row.value && typeof row.value === 'object') ? row.value : null;
+                    }
                 });
             }
             // Ensure dates are sorted chronologically
@@ -881,7 +950,7 @@
 
         const fallbackRoleDefs = legacyRoleDefs || DEFAULT_ROLE_DEFS;
 
-        let needResaveA = false, needResaveB = false;
+        let needResaveA = false, needResaveB = false, needResaveDots = false;
 
         ['A', 'B'].forEach(board => {
             let teams = mapBoards[board];
@@ -917,8 +986,21 @@
             }
         });
 
+        // Validate/repair the rally-path dot state: right color set, right number of steps.
+        if (dotsLoaded && Array.isArray(dotsLoaded.steps)) {
+            const steps = dotsLoaded.steps.slice(0, DOT_POSITIONS.length).map(s => (typeof s === 'number' && s >= 0 && s < DOT_STEPS_PER_CYCLE) ? s : 0);
+            while (steps.length < DOT_POSITIONS.length) steps.push(0);
+            const color = DOT_COLORS.includes(dotsLoaded.color) ? dotsLoaded.color : DEFAULT_DOT_COLOR;
+            mapDots = { color, steps };
+            if (steps.length !== dotsLoaded.steps.length || color !== dotsLoaded.color) needResaveDots = true;
+        } else {
+            mapDots = { color: DEFAULT_DOT_COLOR, steps: new Array(DOT_POSITIONS.length).fill(0) };
+            needResaveDots = true;
+        }
+
         if (needResaveA) await saveMapBoard('A');
         if (needResaveB) await saveMapBoard('B');
+        if (needResaveDots) await saveMapDots();
 
         render();
     }
@@ -980,6 +1062,24 @@
         }
     }
 
+    // Saves the shared rally-path dot/arrow state (color + each dot's rotation step).
+    async function saveMapDots() {
+        showSaveStatus('saving', 'Saving…');
+        try {
+            const { error } = await db.from('app_data')
+                .upsert({ id: 10, key: 'blackGoldMapDots', value: mapDots }, { onConflict: 'id' });
+            if (error) {
+                console.error('Save Error (Black Gold Map Dots):', error.message, error);
+                showSaveStatus('error', 'Save failed: ' + error.message);
+                return;
+            }
+            showSaveStatus('ok', 'Saved');
+        } catch (err) {
+            console.error('CRITICAL ERROR saving Black Gold map dots:', err.message || err);
+            showSaveStatus('error', 'Save failed');
+        }
+    }
+
     // --- TAB SWITCHING ---
     function switchTab(tab) {
         if (tab === 'map' && !canViewMap) return;
@@ -1035,6 +1135,7 @@
         document.getElementById('mapAdminHint').style.display = isManagementOrAdmin ? 'block' : 'none';
         document.getElementById('calBtnAddDate').style.display = isManagementOrAdmin ? 'inline-block' : 'none';
         document.getElementById('calCalendarPicker').style.display = isManagementOrAdmin ? 'inline-block' : 'none';
+        document.getElementById('mapDotColorPicker').style.display = isManagementOrAdmin ? 'flex' : 'none';
 
         const legendHint = document.getElementById('legendHint');
         if (isManagementOrAdmin) {
@@ -1408,6 +1509,7 @@
 
     function renderMap() {
         document.getElementById('mapLegendCard').style.display = canViewMap ? 'flex' : 'none';
+        renderDotColorSwatches();
         if (!canViewMap) {
             document.getElementById('mapTableWrapper').innerHTML = `<div class="map-locked-state">This section is available to alliance members, management, and admins only.</div>`;
             document.getElementById('mapDiagram').innerHTML = '';
@@ -1415,6 +1517,16 @@
         }
         renderMapTable();
         renderMapDiagram();
+    }
+
+    // Renders the 5 preset color swatches for the rally-path dots/arrows (admin/management only).
+    function renderDotColorSwatches() {
+        if (!isManagementOrAdmin) return;
+        const wrap = document.getElementById('mapDotColorSwatches');
+        wrap.innerHTML = DOT_COLORS.map(c => `
+            <span class="map-dot-color-swatch ${c === mapDots.color ? 'map-dot-color-swatch--active' : ''}"
+                  style="background:${c};" title="${c}" onclick="setDotColor('${c}')"></span>
+        `).join('');
     }
 
     function renderMapTable() {
@@ -1549,6 +1661,7 @@
     function renderMapDiagram() {
         const diagram = document.getElementById('mapDiagram');
         let html = staticMapBackgroundHtml();
+        html += renderConnectorDotsHtml();
 
         currentTeams().forEach(team => {
             const pos = SLOT_POSITIONS[team.slot] || SLOT_POSITIONS[0];
@@ -1563,6 +1676,60 @@
 
         diagram.innerHTML = html;
     }
+
+    // A dot rendered as a hollow circle (step 0) — matches the original static reference markers.
+    function connectorDotSvg(color) {
+        return `<svg viewBox="0 0 22 22"><circle cx="11" cy="11" r="8" fill="none" stroke="${color}" stroke-width="2.5"/></svg>`;
+    }
+
+    // The same marker toggled into a directional arrow, rotated by its current step.
+    function connectorArrowSvg(color, degrees) {
+        return `
+            <svg viewBox="0 0 22 22">
+                <g class="map-connector-arrow-inner" style="transform: rotate(${degrees}deg);">
+                    <path d="M4,11 L16,11 M16,11 L11,6 M16,11 L11,16" stroke="${color}" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                </g>
+            </svg>
+        `;
+    }
+
+    // Renders all 16 rally-path connector markers. Read-only (non-clickable) for anyone who
+    // isn't admin/management, but still visible to every role that can see the map at all.
+    function renderConnectorDotsHtml() {
+        let html = '';
+        DOT_POSITIONS.forEach((pos, i) => {
+            const step = mapDots.steps[i] || 0;
+            const inner = step === 0 ? connectorDotSvg(mapDots.color) : connectorArrowSvg(mapDots.color, step * DOT_ROTATION_STEP);
+            const clickAttr = isManagementOrAdmin ? `onclick="cycleConnectorDot(${i})" title="Click to rotate (${step === 0 ? 'currently a dot' : step * DOT_ROTATION_STEP + '°'})"` : '';
+            html += `
+                <div class="map-connector-dot ${isManagementOrAdmin ? '' : 'map-connector-dot--readonly'}" style="left:${pos.left}%; top:${pos.top}%;" ${clickAttr}>
+                    ${inner}
+                </div>
+            `;
+        });
+        return html;
+    }
+
+    // Cycles one connector dot's rotation step (admin/management only). Step 0 = plain dot;
+    // steps 1-14 = arrow rotated step*25°; the 15th click passes a full 360° turn and resets to 0.
+    window.cycleConnectorDot = function(index) {
+        if (!isManagementOrAdmin) return;
+        if (index < 0 || index >= mapDots.steps.length) return;
+        mapDots.steps[index] = (mapDots.steps[index] + 1) % DOT_STEPS_PER_CYCLE;
+        saveMapDots();
+        renderMapDiagram();
+    };
+
+    // Sets the shared color for every rally-path dot/arrow (admin/management only) — one of
+    // exactly 5 presets, no free-form color picker.
+    window.setDotColor = function(color) {
+        if (!isManagementOrAdmin) return;
+        if (!DOT_COLORS.includes(color)) return;
+        mapDots.color = color;
+        saveMapDots();
+        renderDotColorSwatches();
+        renderMapDiagram();
+    };
 
     window.assignMapRole = function(teamId, roleKey, memberId) {
         if (!isManagementOrAdmin) return;
