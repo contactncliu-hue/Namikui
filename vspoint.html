@@ -470,6 +470,16 @@
     const { createClient } = supabase;
     const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+    // NOTE ON THE `id` USED BELOW:
+    // The app_data table's rows are upserted by `id` (onConflict: 'id'), and every page that stores
+    // data has to use an id nobody else uses, or two features silently overwrite each other's row.
+    // blackgold.html already owns ids 5-9 (blackGoldDates=5, blackGoldAssignments=6, blackGoldMapA=7,
+    // blackGoldMapB=8, blackGoldRoles=9). This page previously also saved 'vsData' under id 7, which
+    // collided with blackGoldMapA — whichever page saved last overwrote the other's row entirely,
+    // silently wiping VS Points sessions whenever the Black Gold map was edited afterward. Fixed by
+    // moving this page to its own id.
+    const VS_DATA_ROW_ID = 10;
+
     const currentUser = {
         username: localStorage.getItem('amt_username') || null,
         role: localStorage.getItem('amt_userRole') || null
@@ -566,7 +576,7 @@
     async function saveData() {
         showSaveStatus('saving', 'Saving…');
         try {
-            const { error } = await db.from('app_data').upsert({ id: 7, key: 'vsData', value: vsData }, { onConflict: 'id' });
+            const { error } = await db.from('app_data').upsert({ id: VS_DATA_ROW_ID, key: 'vsData', value: vsData }, { onConflict: 'id' });
             if (error) {
                 console.error('Save Error (VS Data):', error.message, error);
                 showSaveStatus('error', 'Save failed: ' + error.message);
@@ -617,7 +627,7 @@
         const hintEl = document.getElementById('roleHint');
         if (hintEl) {
             hintEl.innerText = isManagementOrAdmin 
-                ? '· Admin/Mgmt: Click any table cell to edit points. Use ✕ under date columns to delete session.' 
+                ? '· Admin/Mgmt: Click any table cell (or ranking score) to edit points. Use ✕ under date columns to delete session.' 
                 : '· Viewing mode (Read-only)';
         }
 
@@ -728,7 +738,7 @@
             return { ...m, total };
         }).sort((a, b) => b.total - a.total);
 
-        const maxTotal = Math.max(...rankedList.map(m => total = m.total), 1);
+        const maxTotal = Math.max(...rankedList.map(m => m.total), 1);
 
         const filtered = rankedList.filter(m => m.name.toLowerCase().includes(filter));
         document.getElementById('shownCount').innerText = `${filtered.length}/${activeMembers.length} members shown`;
@@ -769,10 +779,17 @@
             });
             barsHTML += `</div>`;
 
+            // Weekly breakdown — now clickable to edit for admin/management, matching the Weekly
+            // Table tab's behavior. Below-threshold scores are highlighted the same way too.
             let weeksBreakdownHTML = `<div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:4px; font-size:11px; color:var(--color-text-muted); font-weight:600;">`;
             vsData.weeks.forEach((wk, wIdx) => {
                 const sVal = m.scores[wIdx] || 0;
-                weeksBreakdownHTML += `<span>Wk ${wIdx + 1}: <strong style="color:var(--color-text-dark);">${sVal.toLocaleString()}</strong></span>`;
+                const isBelowThreshold = sVal < 12000000;
+                const valColor = isBelowThreshold ? 'var(--color-not-attended)' : 'var(--color-text-dark)';
+                const clickAttrs = isManagementOrAdmin
+                    ? `onclick="editVsScore('${m.id}', ${wIdx})" style="cursor:pointer;" title="Click to edit this score"`
+                    : '';
+                weeksBreakdownHTML += `<span ${clickAttrs}>Wk ${wIdx + 1}: <strong style="color:${valColor};">${sVal.toLocaleString()}</strong></span>`;
             });
             weeksBreakdownHTML += `</div>`;
 
