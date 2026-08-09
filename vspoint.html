@@ -62,7 +62,7 @@
     .page-wrap {
         max-width: 1200px;
         margin: 0 auto;
-        padding: 32px 24px 60px;
+        padding: 16px 24px 60px;
     }
 
     .back-link {
@@ -346,7 +346,18 @@
     .sidebar-overlay--visible { display: block; }
 
     .app-shell__main { flex-grow: 1; display: flex; flex-direction: column; min-width: 0; width: 100%; }
-    .mobile-header { display: flex; justify-content: flex-end; align-items: center; padding: 10px 14px; background: transparent; border: none; }
+    .mobile-header {
+        max-width: 1200px;
+        width: 100%;
+        margin: 0 auto;
+        box-sizing: border-box;
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        padding: 14px 24px 0;
+        background: transparent;
+        border: none;
+    }
     .hamburger { background: none; border: none; cursor: pointer; display: flex; flex-direction: column; gap: 5px; padding: 5px; }
     .hamburger__line { width: 26px; height: 3px; background-color: var(--color-primary); border-radius: 2px; }
 </style>
