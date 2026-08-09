@@ -632,11 +632,12 @@
 
     #google_translate_element {
         position: absolute !important;
-        left: -9999px !important;
-        top: 0 !important;
         width: 1px !important;
         height: 1px !important;
         overflow: hidden !important;
+        clip: rect(0 0 0 0) !important;
+        clip-path: inset(50%) !important;
+        white-space: nowrap !important;
     }
 </style>
 </head>
@@ -829,17 +830,11 @@
             autoDisplay: false
         }, 'google_translate_element');
 
+        window.__gtInitialized = true;
+
         const savedLang = localStorage.getItem('amt_lang');
         if (savedLang && savedLang !== 'en') {
-            let attempts = 0;
-            const restoreInterval = setInterval(() => {
-                attempts++;
-                if (window.setGoogleTranslateLanguage && window.setGoogleTranslateLanguage(savedLang)) {
-                    clearInterval(restoreInterval);
-                } else if (attempts > 20) {
-                    clearInterval(restoreInterval);
-                }
-            }, 250);
+            window.setGoogleTranslateLanguage(savedLang);
         }
     }
 </script>
@@ -866,12 +861,50 @@
             if (!dropdownEl.contains(e.target)) closeDropdown();
         });
 
-        window.setGoogleTranslateLanguage = function(lang) {
-            const select = document.querySelector('#google_translate_element select.goog-te-combo');
-            if (!select) return false;
-            select.value = lang;
-            select.dispatchEvent(new Event('change'));
-            return true;
+        // Robust setter: waits for Google's <select class="goog-te-combo"> to actually
+        // exist in the DOM (via MutationObserver) instead of guessing with a fixed
+        // number of retries. Also logs to the console so failures are diagnosable.
+        window.setGoogleTranslateLanguage = function(lang, cb) {
+            function fire(select) {
+                select.value = lang;
+                select.dispatchEvent(new Event('change'));
+                if (cb) cb(true);
+            }
+
+            const existing = document.querySelector('#google_translate_element select.goog-te-combo');
+            if (existing) {
+                fire(existing);
+                return true;
+            }
+
+            const container = document.getElementById('google_translate_element');
+            if (!container) {
+                console.warn('[translate] #google_translate_element not found in DOM');
+                if (cb) cb(false);
+                return false;
+            }
+
+            const observer = new MutationObserver(() => {
+                const select = document.querySelector('#google_translate_element select.goog-te-combo');
+                if (select) {
+                    observer.disconnect();
+                    fire(select);
+                }
+            });
+            observer.observe(container, { childList: true, subtree: true });
+
+            setTimeout(() => {
+                observer.disconnect();
+                const select = document.querySelector('#google_translate_element select.goog-te-combo');
+                if (select) {
+                    fire(select);
+                } else {
+                    console.warn('[translate] Google Translate widget never initialized (goog-te-combo select not found after waiting). This usually means translate.google.com/translate_a/element.js was blocked by an ad blocker/extension or the network, or Google changed their widget markup.');
+                    if (cb) cb(false);
+                }
+            }, 8000);
+
+            return false;
         };
 
         function selectLanguage(optionEl) {
@@ -885,13 +918,19 @@
             localStorage.setItem('amt_lang', lang);
             closeDropdown();
 
-            if (!window.setGoogleTranslateLanguage(lang)) {
-                let attempts = 0;
-                const interval = setInterval(() => {
-                    attempts++;
-                    if (window.setGoogleTranslateLanguage(lang) || attempts > 20) clearInterval(interval);
-                }, 250);
-            }
+            window.setGoogleTranslateLanguage(lang, function(success) {
+                if (!success) {
+                    showTranslateFailureNotice();
+                }
+            });
+        }
+
+        function showTranslateFailureNotice() {
+            const statusEl = document.getElementById('saveStatus');
+            if (!statusEl) return;
+            statusEl.className = 'save-status save-status--error';
+            statusEl.innerText = 'Translation unavailable (blocked or failed to load)';
+            setTimeout(() => { statusEl.className = 'save-status'; }, 4000);
         }
 
         optionEls.forEach(optionEl => {
