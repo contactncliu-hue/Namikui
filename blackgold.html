@@ -1130,7 +1130,7 @@
     async function saveMapDots(board) {
         showSaveStatus('saving', 'Saving…');
         const key = board === 'A' ? 'blackGoldMapDotsA' : 'blackGoldMapDotsB';
-        const id = board === 'A' ? 10 : 11;
+        const id = board === 'A' ? 14 : 15;
         try {
             const { error } = await db.from('app_data')
                 .upsert({ id, key, value: mapDotsByBoard[board] }, { onConflict: 'id' });
