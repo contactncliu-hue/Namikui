@@ -2313,7 +2313,7 @@
                                     <div style="font-weight: 800; font-size: 14px; color: var(--color-primary-dark); margin-bottom: 4px;">${poll.question}</div>
                                     ${isAdmin ? `
                                         <div style="display:flex; gap:8px; flex-shrink:0;">
-                                            <span style="color:var(--color-primary); cursor:pointer; font-weight:800; font-size:11px;" onclick="adminEditPoll(${poll.id})">Edit</span>
+                                            <span style="color:var(--color-primary); cursor:pointer; font-weight:800; font-size:11px;" onclick="openCreatePollModal(${poll.id})">Edit</span>
                                             <span style="color:#b89117; cursor:pointer; font-weight:800; font-size:11px;" onclick="adminArchivePoll(${poll.id})">Archive</span>
                                             <span style="color:#dc2626; cursor:pointer; font-weight:800; font-size:11px;" onclick="adminDeletePoll(${poll.id})">Delete</span>
                                         </div>
