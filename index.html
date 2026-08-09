@@ -79,6 +79,7 @@
         /* DASHBOARD */
         .app { display: none; width: 100%; min-height: 100vh; }
         .sidebar { width: 300px; background-color: var(--color-bg-sidebar); border-right: 2px solid var(--color-border); display: flex; flex-direction: column; flex-shrink: 0; transition: transform 0.3s ease; z-index: 100; }
+        .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(15, 17, 26, 0.45); z-index: 90; }
         .sidebar__header { padding: 24px; display: flex; justify-content: center; align-items: center; border-bottom: 2px solid var(--color-border); }
         .sidebar__logo { width: 85px; height: 85px; border-radius: 50%; background: linear-gradient(135deg, #a5c7f9, #2d55b8); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 30px; font-family: var(--font-family-logo); }
         .sidebar__user { padding: 18px 24px; display: flex; align-items: center; gap: 14px; font-weight: 700; font-size: var(--font-sm); color: #62697b; border-bottom: 1px solid var(--color-border-light); }
@@ -376,6 +377,7 @@
             .mobile-header { display: flex; }
             .sidebar { position: fixed; top: 0; left: 0; height: 100vh; transform: translateX(-100%); }
             .sidebar--open { transform: translateX(0); }
+            .sidebar-overlay--visible { display: block; }
         }
     </style>
 </head>
@@ -446,6 +448,7 @@
     </div>
 
     <div class="app" id="appDashboard">
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
         <aside class="sidebar" id="sidebar">
             <div class="sidebar__header"><div class="sidebar__logo">娜美</div></div>
             <div class="sidebar__user">
@@ -671,11 +674,6 @@
                     </div>
                 </div>
                 <section class="ranking-cards-list" id="subViewRanking" style="display: none;"></section>
-
-                <div class="footer-info-bar">
-                    <span>♦ Loopy's Playground · Alliance Management Tool</span>
-                    <span id="footerMembersShown">0 members shown</span>
-                </div>
             </section>
 
             <section id="viewVsPoints" class="app-view" style="display: none; flex-direction: column; gap: 20px;">
@@ -792,27 +790,34 @@
                     </div>
                 </div>
             </section>
+
+            <div class="footer-info-bar" style="margin-top: 4px;">
+                <span>♦ Loopy's Playground · Alliance Management Tool</span>
+                <span id="footerMembersShown">0 members shown</span>
+            </div>
         </main>
     </div>
 
     <!-- Modals for Polls and Notices -->
     <div class="modal-overlay" id="createPollModal">
         <div class="modal-card" style="max-width: 500px;">
-            <h3>Create New Poll</h3>
+            <h3 id="pollModalTitle">Create New Poll</h3>
             <input type="text" id="pollQuestionInput" placeholder="Poll Question (e.g. Next Guild Event Timing?)">
-            <div style="font-size: 11px; font-weight: 800; color: var(--color-text-muted); margin-bottom: 6px; text-transform: uppercase;">Poll Options (comma separated or multiple fields):</div>
-            <input type="text" id="pollOption1" placeholder="Option 1" style="margin-bottom: 8px;">
-            <input type="text" id="pollOption2" placeholder="Option 2" style="margin-bottom: 8px;">
-            <input type="text" id="pollOption3" placeholder="Option 3 (Optional)" style="margin-bottom: 16px;">
-            <div style="font-size: 11px; font-weight: 800; color: var(--color-text-muted); margin-bottom: 6px; text-transform: uppercase;">Timer Option:</div>
-            <select id="pollTimerSelect" style="margin-bottom: 16px;">
-                <option value="86400">24 Hours</option>
-                <option value="259200">3 Days</option>
-                <option value="604800">1 Week</option>
-            </select>
+            <div style="font-size: 11px; font-weight: 800; color: var(--color-text-muted); margin-bottom: 6px; text-transform: uppercase;">Poll Options:</div>
+            <div id="pollOptionsContainer"></div>
+            <button type="button" class="btn-action-custom" id="btnAddPollOption" onclick="addPollOptionDraft()" style="margin-bottom: 16px;">+ Add Option</button>
+            <div id="pollTimerGroup">
+                <div style="font-size: 11px; font-weight: 800; color: var(--color-text-muted); margin-bottom: 6px; text-transform: uppercase;">Timer Option:</div>
+                <select id="pollTimerSelect" style="margin-bottom: 16px;">
+                    <option value="86400">24 Hours</option>
+                    <option value="259200">3 Days</option>
+                    <option value="604800">1 Week</option>
+                </select>
+            </div>
             <div class="modal-card-btns">
+                <button class="btn-action-custom" id="btnDeletePollModal" style="display:none; color:#dc2626; border-color:#dc2626;" onclick="adminDeletePollFromModal()">Delete Poll</button>
                 <button class="btn-action-custom" onclick="document.getElementById('createPollModal').style.display='none'">Cancel</button>
-                <button class="btn-action-custom" onclick="submitCreatePoll()" style="background:#3b52a4; color:white;">Publish Poll</button>
+                <button class="btn-action-custom" onclick="submitPollModal()" style="background:#3b52a4; color:white;">Publish Poll</button>
             </div>
         </div>
     </div>
@@ -1020,6 +1025,9 @@
         // Notice Board announcements (separate from Discussion Room notices), with audience visibility
         let noticeAnnouncements = [];
         let editingNoticeAnnId = null;
+        // Poll create/edit modal state (dynamic option list)
+        let editingPollId = null;
+        let pollOptionsDraft = [];
         // Discussion Room official notices - tracks which one is being edited (null = creating new)
         let editingManagementNoticeId = null;
         // Home dashboard uploaded photos/videos
@@ -1082,19 +1090,28 @@
             }
 
             try {
-                await db.from('app_data').upsert({ id: 1, key: 'eventDates', value: eventDates }, { onConflict: 'id' });
-                await db.from('app_data').upsert({ id: 2, key: 'members', value: members }, { onConflict: 'id' });
-                await db.from('app_data').upsert({ id: 3, key: 'auditLogs', value: auditLogs }, { onConflict: 'id' });
-                await db.from('app_data').upsert({ id: 4, key: 'accounts', value: accounts }, { onConflict: 'id' });
-                await db.from('app_data').upsert({ id: 7, key: 'vsData', value: vsData }, { onConflict: 'id' });
-                await db.from('app_data').upsert({ id: 8, key: 'chatMessages', value: chatMessages }, { onConflict: 'id' });
-                await db.from('app_data').upsert({ id: 9, key: 'polls', value: polls }, { onConflict: 'id' });
-                await db.from('app_data').upsert({ id: 10, key: 'notices', value: notices }, { onConflict: 'id' });
-                await db.from('app_data').upsert({ id: 11, key: 'calendarEvents', value: calendarEvents }, { onConflict: 'id' });
-                await db.from('app_data').upsert({ id: 12, key: 'noticeAnnouncements', value: noticeAnnouncements }, { onConflict: 'id' });
-                await db.from('app_data').upsert({ id: 13, key: 'homePhotos', value: homePhotos }, { onConflict: 'id' });
+                const results = await Promise.all([
+                    db.from('app_data').upsert({ id: 1, key: 'eventDates', value: eventDates }, { onConflict: 'id' }),
+                    db.from('app_data').upsert({ id: 2, key: 'members', value: members }, { onConflict: 'id' }),
+                    db.from('app_data').upsert({ id: 3, key: 'auditLogs', value: auditLogs }, { onConflict: 'id' }),
+                    db.from('app_data').upsert({ id: 4, key: 'accounts', value: accounts }, { onConflict: 'id' }),
+                    db.from('app_data').upsert({ id: 7, key: 'vsData', value: vsData }, { onConflict: 'id' }),
+                    db.from('app_data').upsert({ id: 8, key: 'chatMessages', value: chatMessages }, { onConflict: 'id' }),
+                    db.from('app_data').upsert({ id: 9, key: 'polls', value: polls }, { onConflict: 'id' }),
+                    db.from('app_data').upsert({ id: 10, key: 'notices', value: notices }, { onConflict: 'id' }),
+                    db.from('app_data').upsert({ id: 11, key: 'calendarEvents', value: calendarEvents }, { onConflict: 'id' }),
+                    db.from('app_data').upsert({ id: 12, key: 'noticeAnnouncements', value: noticeAnnouncements }, { onConflict: 'id' }),
+                    db.from('app_data').upsert({ id: 13, key: 'homePhotos', value: homePhotos }, { onConflict: 'id' })
+                ]);
+                const failed = results.find(r => r && r.error);
+                if (failed) {
+                    console.error('Save error:', failed.error);
+                    return false;
+                }
+                return true;
             } catch (err) {
                 console.error('Save error:', err);
+                return false;
             }
         }
 
@@ -1159,6 +1176,7 @@
                 }
 
                 document.getElementById('sidebar').classList.remove('sidebar--open');
+                document.getElementById('sidebarOverlay').classList.remove('sidebar-overlay--visible');
             });
         });
 
@@ -1528,27 +1546,61 @@
             }
         };
 
+        // Resizes/compresses an image file before it is stored as a base64 data URL, so uploads
+        // stay small enough to reliably save to the cloud (large phone photos were silently
+        // failing to save because the raw base64 payload was too big).
+        function compressImageFile(file, maxDim = 1280, quality = 0.72) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    const img = new Image();
+                    img.onload = () => {
+                        let { width, height } = img;
+                        if (width > maxDim || height > maxDim) {
+                            if (width > height) { height = Math.round(height * (maxDim / width)); width = maxDim; }
+                            else { width = Math.round(width * (maxDim / height)); height = maxDim; }
+                        }
+                        const canvas = document.createElement('canvas');
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        resolve(canvas.toDataURL('image/jpeg', quality));
+                    };
+                    img.onerror = () => reject(new Error('Could not load image'));
+                    img.src = reader.result;
+                };
+                reader.onerror = () => reject(new Error('Could not read file'));
+                reader.readAsDataURL(file);
+            });
+        }
+
         // ===== Photo upload flow =====
         window.cancelPhotoUpload = function() {
             pendingPhotoUpload = null;
             document.getElementById('photoUploadVisibilityModal').style.display = 'none';
         };
 
-        window.confirmPhotoUpload = function() {
+        window.confirmPhotoUpload = async function() {
             if (!pendingPhotoUpload) return;
             const visibility = document.getElementById('photoUploadVisibilitySelect').value;
             if (!homePhotos) homePhotos = [];
-            homePhotos.unshift({
+            const newPhoto = {
                 id: Date.now(),
                 dataUrl: pendingPhotoUpload.dataUrl,
                 uploader: currentUser.username,
                 date: new Date().toLocaleDateString(),
                 visibility: visibility
-            });
+            };
+            homePhotos.unshift(newPhoto);
             logAction('UPLOAD_PHOTO', `Uploaded a photo/video to the Home dashboard (visible to: ${visibility === 'alliance' ? 'Alliance Members + Staff Only' : 'Everyone'}).`);
             pendingPhotoUpload = null;
             document.getElementById('photoUploadVisibilityModal').style.display = 'none';
-            saveData();
+            const ok = await saveData();
+            if (!ok) {
+                homePhotos = homePhotos.filter(p => p.id !== newPhoto.id);
+                alert('The upload could not be saved (it may still be too large). It has been removed — please try a smaller image.');
+            }
             renderHomePhotos();
         };
 
@@ -2047,44 +2099,107 @@
             renderDiscussionRoom();
         };
 
-        window.openCreatePollModal = function() {
-            document.getElementById('pollQuestionInput').value = '';
-            document.getElementById('pollOption1').value = '';
-            document.getElementById('pollOption2').value = '';
-            document.getElementById('pollOption3').value = '';
+        window.openCreatePollModal = function(existingId) {
+            if (currentUser.role !== 'admin' && currentUser.role !== 'management') return;
+            editingPollId = existingId || null;
+            const existing = existingId ? polls.find(p => p.id === existingId) : null;
+
+            document.getElementById('pollModalTitle').innerText = existing ? 'Edit Poll' : 'Create New Poll';
+            document.getElementById('pollQuestionInput').value = existing ? existing.question : '';
+            pollOptionsDraft = existing
+                ? existing.options.map(o => ({ text: o.text, votes: o.votes || [] }))
+                : [{ text: '', votes: [] }, { text: '', votes: [] }];
+
+            document.getElementById('pollTimerGroup').style.display = existing ? 'none' : 'block';
+            document.getElementById('btnDeletePollModal').style.display = (existing && currentUser.role === 'admin') ? 'inline-flex' : 'none';
+
+            renderPollOptionsDraft();
             document.getElementById('createPollModal').style.display = 'flex';
         };
 
-        window.submitCreatePoll = function() {
-            const question = document.getElementById('pollQuestionInput').value.trim();
-            const opt1 = document.getElementById('pollOption1').value.trim();
-            const opt2 = document.getElementById('pollOption2').value.trim();
-            const opt3 = document.getElementById('pollOption3').value.trim();
-            const timerSecs = parseInt(document.getElementById('pollTimerSelect').value, 10);
+        function renderPollOptionsDraft() {
+            const container = document.getElementById('pollOptionsContainer');
+            container.innerHTML = pollOptionsDraft.map((opt, idx) => `
+                <div style="display:flex; gap:8px; margin-bottom:8px; align-items:center;">
+                    <input type="text" class="poll-option-draft-input" data-idx="${idx}" value="${(opt.text || '').replace(/"/g, '&quot;')}" placeholder="Option ${idx + 1}" style="margin-bottom:0; flex-grow:1;">
+                    ${pollOptionsDraft.length > 2 ? `<button type="button" class="btn-icon-action" onclick="removePollOptionDraft(${idx})" title="Remove option">✕</button>` : ''}
+                </div>
+            `).join('');
+            container.querySelectorAll('.poll-option-draft-input').forEach(inp => {
+                inp.addEventListener('input', (e) => {
+                    const idx = parseInt(e.target.dataset.idx, 10);
+                    pollOptionsDraft[idx].text = e.target.value;
+                });
+            });
+        }
 
-            if (!question || !opt1 || !opt2) {
-                alert('Please enter a poll question and at least two options.');
+        window.addPollOptionDraft = function() {
+            if (pollOptionsDraft.length >= 8) {
+                alert('A poll can have a maximum of 8 options.');
+                return;
+            }
+            pollOptionsDraft.push({ text: '', votes: [] });
+            renderPollOptionsDraft();
+        };
+
+        window.removePollOptionDraft = function(idx) {
+            if (pollOptionsDraft.length <= 2) {
+                alert('A poll needs at least 2 options.');
+                return;
+            }
+            pollOptionsDraft.splice(idx, 1);
+            renderPollOptionsDraft();
+        };
+
+        window.submitPollModal = function() {
+            if (currentUser.role !== 'admin' && currentUser.role !== 'management') return;
+            const question = document.getElementById('pollQuestionInput').value.trim();
+            if (!question) {
+                alert('Please enter a poll question.');
                 return;
             }
 
-            const options = [opt1, opt2];
-            if (opt3) options.push(opt3);
+            const cleanOptions = pollOptionsDraft
+                .map(o => ({ text: (o.text || '').trim(), votes: o.votes || [] }))
+                .filter(o => o.text);
 
-            const optionsData = options.map(opt => ({ text: opt, votes: [] }));
+            if (cleanOptions.length < 2) {
+                alert('Please enter at least two options.');
+                return;
+            }
 
-            if (!polls) polls = [];
-            polls.unshift({
-                id: Date.now(),
-                question: question,
-                options: optionsData,
-                expiresAt: Date.now() + (timerSecs * 1000),
-                createdBy: currentUser.username
-            });
+            if (editingPollId) {
+                const poll = polls.find(p => p.id === editingPollId);
+                if (poll) {
+                    poll.question = question;
+                    poll.options = cleanOptions;
+                    logAction('ADMIN_EDIT_POLL', `Edited poll: "${question}"`);
+                }
+            } else {
+                const timerSecs = parseInt(document.getElementById('pollTimerSelect').value, 10);
+                if (!polls) polls = [];
+                polls.unshift({
+                    id: Date.now(),
+                    question: question,
+                    options: cleanOptions.map(o => ({ text: o.text, votes: [] })),
+                    expiresAt: Date.now() + (timerSecs * 1000),
+                    createdBy: currentUser.username
+                });
+                logAction('CREATE_POLL', `Created poll: "${question}"`);
+            }
 
-            logAction('CREATE_POLL', `Created poll: "${question}"`);
             saveData();
+            editingPollId = null;
             document.getElementById('createPollModal').style.display = 'none';
             renderDiscussionRoom();
+        };
+
+        window.adminDeletePollFromModal = function() {
+            if (!editingPollId) return;
+            const pollId = editingPollId;
+            document.getElementById('createPollModal').style.display = 'none';
+            adminDeletePoll(pollId);
+            editingPollId = null;
         };
 
         window.votePoll = function(pollId, optionIndex) {
@@ -2123,38 +2238,6 @@
                 saveData();
                 renderDiscussionRoom();
             }
-        };
-
-        // Admin: edit an active poll's question/options via prompts
-        window.adminEditPoll = function(pollId) {
-            if (currentUser.role !== 'admin') {
-                alert('Only Admin can edit polls.');
-                return;
-            }
-            const poll = polls.find(p => p.id === pollId);
-            if (!poll) return;
-
-            const newQuestion = prompt('Edit poll question:', poll.question);
-            if (newQuestion === null) return;
-            const trimmedQ = newQuestion.trim();
-            if (!trimmedQ) { alert('Poll question cannot be empty.'); return; }
-
-            const updatedOptionTexts = [];
-            for (let i = 0; i < poll.options.length; i++) {
-                const newOptText = prompt(`Edit option ${i + 1}:`, poll.options[i].text);
-                if (newOptText === null || !newOptText.trim()) {
-                    alert('Poll options cannot be empty. Edit cancelled.');
-                    return;
-                }
-                updatedOptionTexts.push(newOptText.trim());
-            }
-
-            poll.question = trimmedQ;
-            poll.options.forEach((opt, i) => { opt.text = updatedOptionTexts[i]; });
-
-            logAction('ADMIN_EDIT_POLL', `Admin edited poll: "${trimmedQ}"`);
-            saveData();
-            renderDiscussionRoom();
         };
 
         // Admin: archive (close) a poll immediately, before its timer expires
@@ -2269,6 +2352,7 @@
 
         function renderDiscussionRoom() {
             const isAdmin = currentUser.role === 'admin';
+            const isManagementOrAdmin = currentUser.role === 'admin' || currentUser.role === 'management';
 
             const chatContainer = document.getElementById('chatMessagesContainer');
             if (chatContainer) {
@@ -2311,11 +2395,11 @@
                             <div style="background: white; border: 1px solid var(--color-border); border-radius: 6px; padding: 16px;">
                                 <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">
                                     <div style="font-weight: 800; font-size: 14px; color: var(--color-primary-dark); margin-bottom: 4px;">${poll.question}</div>
-                                    ${isAdmin ? `
+                                    ${isManagementOrAdmin ? `
                                         <div style="display:flex; gap:8px; flex-shrink:0;">
                                             <span style="color:var(--color-primary); cursor:pointer; font-weight:800; font-size:11px;" onclick="openCreatePollModal(${poll.id})">Edit</span>
-                                            <span style="color:#b89117; cursor:pointer; font-weight:800; font-size:11px;" onclick="adminArchivePoll(${poll.id})">Archive</span>
-                                            <span style="color:#dc2626; cursor:pointer; font-weight:800; font-size:11px;" onclick="adminDeletePoll(${poll.id})">Delete</span>
+                                            ${isAdmin ? `<span style="color:#b89117; cursor:pointer; font-weight:800; font-size:11px;" onclick="adminArchivePoll(${poll.id})">Archive</span>
+                                            <span style="color:#dc2626; cursor:pointer; font-weight:800; font-size:11px;" onclick="adminDeletePoll(${poll.id})">Delete</span>` : ''}
                                         </div>
                                     ` : ''}
                                 </div>
@@ -2919,7 +3003,16 @@
         });
 
         document.getElementById('hamburgerBtn').addEventListener('click', () => {
-            document.getElementById('sidebar').classList.toggle('sidebar--open');
+            const sidebarEl = document.getElementById('sidebar');
+            const overlayEl = document.getElementById('sidebarOverlay');
+            const isOpening = !sidebarEl.classList.contains('sidebar--open');
+            sidebarEl.classList.toggle('sidebar--open', isOpening);
+            overlayEl.classList.toggle('sidebar-overlay--visible', isOpening);
+        });
+
+        document.getElementById('sidebarOverlay').addEventListener('click', () => {
+            document.getElementById('sidebar').classList.remove('sidebar--open');
+            document.getElementById('sidebarOverlay').classList.remove('sidebar-overlay--visible');
         });
 
         // Notice tab: Gantt timeline nav + add event + add announcement controls
@@ -2963,36 +3056,47 @@
             document.getElementById('homePhotoInput').click();
         });
 
-        document.getElementById('homePhotoInput').addEventListener('change', (e) => {
+        document.getElementById('homePhotoInput').addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (!file) return;
             const canUpload = currentUser.role === 'admin' || currentUser.role === 'management' || currentUser.role === 'alliance';
-            if (!canUpload) return;
+            if (!canUpload) { e.target.value = ''; return; }
             const isManagementOrAdmin = currentUser.role === 'admin' || currentUser.role === 'management';
-            const reader = new FileReader();
-            reader.onload = () => {
-                if (isManagementOrAdmin) {
-                    // Admin/Management choose visibility before the upload is saved
-                    pendingPhotoUpload = { dataUrl: reader.result };
-                    document.getElementById('photoUploadPreviewImg').src = reader.result;
-                    document.getElementById('photoUploadVisibilitySelect').value = 'everyone';
-                    document.getElementById('photoUploadVisibilityModal').style.display = 'flex';
-                } else {
-                    // Alliance members upload directly, visible to alliance + staff only
-                    if (!homePhotos) homePhotos = [];
-                    homePhotos.unshift({
-                        id: Date.now(),
-                        dataUrl: reader.result,
-                        uploader: currentUser.username,
-                        date: new Date().toLocaleDateString(),
-                        visibility: 'alliance'
-                    });
-                    logAction('UPLOAD_PHOTO', `Uploaded a photo/video to the Home dashboard.`);
-                    saveData();
-                    renderHomePhotos();
+
+            let dataUrl;
+            try {
+                dataUrl = await compressImageFile(file);
+            } catch (err) {
+                alert('This image could not be processed. Please try a different file.');
+                e.target.value = '';
+                return;
+            }
+
+            if (isManagementOrAdmin) {
+                // Admin/Management choose visibility before the upload is saved
+                pendingPhotoUpload = { dataUrl };
+                document.getElementById('photoUploadPreviewImg').src = dataUrl;
+                document.getElementById('photoUploadVisibilitySelect').value = 'everyone';
+                document.getElementById('photoUploadVisibilityModal').style.display = 'flex';
+            } else {
+                // Alliance members upload directly, visible to alliance + staff only
+                if (!homePhotos) homePhotos = [];
+                const newPhoto = {
+                    id: Date.now(),
+                    dataUrl,
+                    uploader: currentUser.username,
+                    date: new Date().toLocaleDateString(),
+                    visibility: 'alliance'
+                };
+                homePhotos.unshift(newPhoto);
+                logAction('UPLOAD_PHOTO', `Uploaded a photo/video to the Home dashboard.`);
+                const ok = await saveData();
+                if (!ok) {
+                    homePhotos = homePhotos.filter(p => p.id !== newPhoto.id);
+                    alert('The upload could not be saved (it may still be too large). It has been removed — please try a smaller image.');
                 }
-            };
-            reader.readAsDataURL(file);
+                renderHomePhotos();
+            }
             e.target.value = '';
         });
     </script>
