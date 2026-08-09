@@ -1447,7 +1447,7 @@
                                             </select>
                                         </td>
                                         <td class="map-role-power">${power}</td>
-                                        <td>${isManagementOrAdmin ? `<span class="map-role-delete-btn" onclick="deleteRoleRow('${role.key}')" title="Remove this role row">×</span>` : ''}</td>
+                                        <td>${isManagementOrAdmin ? `<span class="map-role-delete-btn" onclick="clearGroupRoleAssignment('${team.id}','${role.key}')" title="Clear this group's assignment for this role (Team ${activeBoard} only)">×</span>` : ''}</td>
                                     </tr>
                                 `;
                             }).join('')}
@@ -1627,23 +1627,13 @@
         render();
     };
 
-    // Delete a role row — applies to every group on both Team A and Team B (admin & management)
-    window.deleteRoleRow = function(key) {
+    // Clears the member assigned to ONE role on ONE group, on the board currently being viewed only.
+    // This does NOT touch the shared role label/definition (still shown as an empty row for every
+    // other group), and does NOT touch the other team's board — identical scoping to picking
+    // "— Unassigned —" from that role's dropdown.
+    window.clearGroupRoleAssignment = function(teamId, roleKey) {
         if (!isManagementOrAdmin) return;
-        if (roleDefs.length <= 1) {
-            alert('At least one role is required.');
-            return;
-        }
-        const role = roleDefs.find(r => r.key === key);
-        if (!confirm(`Remove role "${role ? role.label : ''}"? This clears this role's assignments on every group, on both Team A and Team B.`)) return;
-        roleDefs = roleDefs.filter(r => r.key !== key);
-        ['A', 'B'].forEach(b => {
-            mapBoards[b].forEach(t => { delete t.roles[key]; });
-        });
-        saveRoleDefs();
-        saveMapBoard('A');
-        saveMapBoard('B');
-        render();
+        assignMapRole(teamId, roleKey, '');
     };
 
     // Add a brand-new role from the dropdown (admin & management). Picking "+ Custom Role..."
