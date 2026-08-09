@@ -1262,12 +1262,32 @@
             return;
         }
 
+        if (!confirm(`Add session ${formattedDate}? This starts a fresh Map (Team A & Team B group assignments clear to blank for the new session). Your saved A/B Slots history for every existing date is not touched.`)) {
+            return;
+        }
+
         bgDates.push({ id: 'd' + Date.now(), date: formattedDate });
         bgDates.sort((a, b) => parseDateString(a.date) - parseDateString(b.date));
         picker.value = '';
 
         await saveDates();
+        await clearAllMapAssignments();
         render();
+    }
+
+    // Resets every group's member assignments on BOTH Team A and Team B to blank — used when a
+    // brand-new session date is added so admins start each session's formation fresh. This ONLY
+    // touches the live Map (mapBoards); it never deletes or modifies any A/B Slots tab data —
+    // every past date's slot/attendance/role entry in `assignments` is keyed by its own date id
+    // and is left completely untouched.
+    async function clearAllMapAssignments() {
+        ['A', 'B'].forEach(board => {
+            mapBoards[board].forEach(team => {
+                team.roleRows.forEach(row => { row.memberId = null; });
+            });
+        });
+        await saveMapBoard('A');
+        await saveMapBoard('B');
     }
 
     document.getElementById('mapBtnAddDate').addEventListener('click', () => addDateFromPicker('mapCalendarPicker'));
