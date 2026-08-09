@@ -648,7 +648,7 @@
                     <button class="map-subtab-btn map-subtab-btn--active" id="mapSubtabA">TEAM A</button>
                     <button class="map-subtab-btn" id="mapSubtabB">TEAM B</button>
                 </div>
-                <div class="map-toolbar__hint" id="mapAdminHint" style="display:none;">Click a numbered marker on the map to change its number · use the select boxes on the left to assign members (auto-pulls Faction &amp; F1 Power from Members) · click a group's color swatch to recolor it · use the role name dropdown on each row to rename that role, add a new role row, or delete it (adding/deleting a role applies to every group, on both Team A and Team B) · click the × next to a role to clear just that group's assignment. Assigning a member here automatically sets their Slot (A or B, matching this tab) and Main/Substitute status on the most recent A/B Slots session. A member can only be assigned to one team (A or B) per session.</div>
+                <div class="map-toolbar__hint" id="mapAdminHint" style="display:none;">Click a numbered marker on the map to change its number · use the select boxes on the left to assign members (auto-pulls Faction &amp; F1 Power from Members) · click a group's color swatch to recolor it · use each role's name dropdown to rename it, add a new role row, or delete it — these only affect that one group, on the team you're currently viewing. Assigning a member here automatically sets their Slot (A or B, matching this tab) and Main/Substitute status on the most recent A/B Slots session. A member can only be assigned to one team (A or B) per session.</div>
                 <div class="map-body">
                     <div class="map-table-wrapper" id="mapTableWrapper"></div>
                     <div class="map-diagram-wrap">
@@ -760,11 +760,9 @@
     let assignments = {};
     // mapBoards.A / mapBoards.B each hold an array of groups (formerly "teams"/"markers"):
     // { id, slot (0-7, fixed physical position on the map), number (1-8, the editable value shown on the pin),
-    //   color (hex string), roles: { [roleKey]: memberId } }
+    //   color (hex string), roleRows: [{ key, label, memberId }] — this group's OWN independent role rows.
     let mapBoards = { A: [], B: [] };
     let activeBoard = 'A'; // 'A' | 'B' — which Team sub-tab of the Map tab is showing
-    // roleDefs = [{ key, label }] — shared role taxonomy used by every group on both boards.
-    let roleDefs = [];
     let activeTab = 'ab'; // 'ab' | 'map' | 'calendar'
 
     // Fixed physical positions on the map (percent left/top), matching the reference formation map 1:1,
@@ -785,6 +783,7 @@
 
     const DEFAULT_GROUP_COLORS = ['#966426', '#3b52a4', '#c0392b', '#1f9d55', '#9333ea', '#ea580c', '#0e7490', '#a16207'];
 
+    // Template used to seed a brand-new group's own role rows (each group then owns an independent copy).
     const DEFAULT_ROLE_DEFS = [
         { key: 'ballCapture', label: 'Ball Capture' },
         { key: 'territoryCapture', label: 'Territory Capture' },
@@ -793,7 +792,7 @@
     ];
 
     // Preset role names offered in the customization dropdowns (admin/management can still type a
-    // fully custom name via the "+ Custom..." option in either dropdown).
+    // fully custom name via the "+ Custom..." option).
     const PRESET_ROLES = ['Ball Capture', 'Territory Capture', 'Ball Support', 'Substitute', 'Scout', 'Reserve', 'Defense', 'Attack'];
 
     function getActiveMembers() {
@@ -833,7 +832,7 @@
                 slot: i,
                 number: i + 1,
                 color: DEFAULT_GROUP_COLORS[i % DEFAULT_GROUP_COLORS.length],
-                roles: {}
+                roleRows: DEFAULT_ROLE_DEFS.map(r => ({ key: r.key, label: r.label, memberId: null }))
             });
         }
         return teams;
@@ -844,7 +843,7 @@
     }
 
     async function loadData() {
-        let legacyMap = null, mapA = null, mapB = null, rolesLoaded = null;
+        let legacyMap = null, mapA = null, mapB = null, legacyRoleDefs = null;
         try {
             const { data, error } = await db.from('app_data').select('*');
             if (error) throw error;
@@ -865,7 +864,8 @@
                         mapB = (row.value && Array.isArray(row.value) && row.value.length > 0) ? row.value : null;
                     }
                     if (row.key === 'blackGoldRoles') {
-                        rolesLoaded = (row.value && Array.isArray(row.value) && row.value.length > 0) ? row.value : null;
+                        // Old shared role taxonomy — only used now to label rows during migration.
+                        legacyRoleDefs = (row.value && Array.isArray(row.value) && row.value.length > 0) ? row.value : null;
                     }
                 });
             }
@@ -878,20 +878,36 @@
 
         mapBoards.A = mapA || legacyMap || null;
         mapBoards.B = mapB || null;
-        roleDefs = rolesLoaded || null;
 
-        let needResaveA = false, needResaveB = false, needResaveRoles = false;
+        const fallbackRoleDefs = legacyRoleDefs || DEFAULT_ROLE_DEFS;
+
+        let needResaveA = false, needResaveB = false;
 
         ['A', 'B'].forEach(board => {
             let teams = mapBoards[board];
             if (teams) {
-                teams = teams.filter(t => t && t.roles).slice(0, MAX_SLOTS);
+                teams = teams.filter(t => t).slice(0, MAX_SLOTS);
                 teams.forEach((t, i) => {
                     if (typeof t.slot !== 'number') t.slot = i;
                     if (typeof t.number !== 'number') t.number = i + 1;
                     if (!t.color) t.color = DEFAULT_GROUP_COLORS[i % DEFAULT_GROUP_COLORS.length];
                     delete t.icon;
                     delete t.arrowOffset;
+                    // Migrate old format (a shared roleDefs list + team.roles = {key: memberId})
+                    // into this group's OWN independent roleRows array.
+                    if (!Array.isArray(t.roleRows)) {
+                        if (t.roles && typeof t.roles === 'object') {
+                            t.roleRows = fallbackRoleDefs.map(rd => ({
+                                key: rd.key,
+                                label: rd.label,
+                                memberId: t.roles[rd.key] || null
+                            }));
+                        } else {
+                            t.roleRows = fallbackRoleDefs.map(rd => ({ key: rd.key, label: rd.label, memberId: null }));
+                        }
+                        delete t.roles;
+                        if (board === 'A') needResaveA = true; else needResaveB = true;
+                    }
                 });
                 mapBoards[board] = teams;
             }
@@ -901,14 +917,8 @@
             }
         });
 
-        if (!roleDefs || roleDefs.length === 0) {
-            roleDefs = DEFAULT_ROLE_DEFS.map(r => ({ ...r }));
-            needResaveRoles = true;
-        }
-
         if (needResaveA) await saveMapBoard('A');
         if (needResaveB) await saveMapBoard('B');
-        if (needResaveRoles) await saveRoleDefs();
 
         render();
     }
@@ -966,23 +976,6 @@
             showSaveStatus('ok', 'Saved');
         } catch (err) {
             console.error('CRITICAL ERROR saving Black Gold map ' + board + ':', err.message || err);
-            showSaveStatus('error', 'Save failed');
-        }
-    }
-
-    async function saveRoleDefs() {
-        showSaveStatus('saving', 'Saving…');
-        try {
-            const { error } = await db.from('app_data')
-                .upsert({ id: 9, key: 'blackGoldRoles', value: roleDefs }, { onConflict: 'id' });
-            if (error) {
-                console.error('Save Error (Black Gold Roles):', error.message, error);
-                showSaveStatus('error', 'Save failed: ' + error.message);
-                return;
-            }
-            showSaveStatus('ok', 'Saved');
-        } catch (err) {
-            console.error('CRITICAL ERROR saving Black Gold roles:', err.message || err);
             showSaveStatus('error', 'Save failed');
         }
     }
@@ -1364,7 +1357,7 @@
     // Whether memberId currently holds ANY role, on ANY group, on the given board.
     function isMemberAssignedOnBoard(memberId, board) {
         if (!memberId) return false;
-        return mapBoards[board].some(t => Object.values(t.roles).some(v => v && String(v) === String(memberId)));
+        return mapBoards[board].some(t => t.roleRows.some(r => r.memberId && String(r.memberId) === String(memberId)));
     }
 
     // Assigning a member to a role on the Team A / Team B map automatically sets their Slot
@@ -1434,24 +1427,23 @@
                     </div>
                     <table class="map-role-table">
                         <tbody>
-                            ${roleDefs.map(role => {
-                                const assignedMember = findMemberById(team.roles[role.key]);
+                            ${team.roleRows.map(row => {
+                                const assignedMember = findMemberById(row.memberId);
                                 const power = assignedMember ? (assignedMember.f1Cp || '0G') : '—';
                                 return `
                                     <tr>
                                         <td class="map-role-label">
                                             ${isManagementOrAdmin
-                                                ? `<select class="map-role-select" title="Change this role's name" onchange="changeRoleLabel('${role.key}', this.value)">${roleLabelOptionsHtml(role.label)}</select>`
-                                                : role.label}
+                                                ? `<select class="map-role-select" title="Rename, add, or delete this role row (this group only)" onchange="changeRoleLabel('${team.id}','${row.key}', this.value)">${roleLabelOptionsHtml(row.label)}</select>`
+                                                : row.label}
                                         </td>
                                         <td class="map-role-faction-cell">${factionCircleHtml(assignedMember)}</td>
                                         <td>
-                                            <select class="map-role-select" ${isManagementOrAdmin ? `onchange="assignMapRole('${team.id}','${role.key}', this.value)"` : 'disabled'}>
-                                                ${memberOptionsHtml(team.roles[role.key])}
+                                            <select class="map-role-select" ${isManagementOrAdmin ? `onchange="assignMapRole('${team.id}','${row.key}', this.value)"` : 'disabled'}>
+                                                ${memberOptionsHtml(row.memberId)}
                                             </select>
                                         </td>
                                         <td class="map-role-power">${power}</td>
-                                        <td>${isManagementOrAdmin ? `<span class="map-role-delete-btn" onclick="clearGroupRoleAssignment('${team.id}','${role.key}')" title="Clear this group's assignment for this role (Team ${activeBoard} only)">×</span>` : ''}</td>
                                     </tr>
                                 `;
                             }).join('')}
@@ -1552,6 +1544,8 @@
         if (!isManagementOrAdmin) return;
         const team = currentTeams().find(t => t.id === teamId);
         if (!team) return;
+        const row = team.roleRows.find(r => r.key === roleKey);
+        if (!row) return;
 
         const otherBoard = activeBoard === 'A' ? 'B' : 'A';
 
@@ -1563,13 +1557,13 @@
                 render();
                 return;
             }
-            team.roles[roleKey] = memberId;
+            row.memberId = memberId;
             saveMapBoard(activeBoard);
             syncMapAssignmentToAB(memberId, activeBoard, roleKey);
         } else {
-            // Unassigning: only touch THIS group's role slot on THIS board — never the other team.
-            const previousMemberId = team.roles[roleKey];
-            team.roles[roleKey] = null;
+            // Unassigning: only touch THIS group's role row on THIS board — never the other team.
+            const previousMemberId = row.memberId;
+            row.memberId = null;
             saveMapBoard(activeBoard);
             // Only clear their A/B slot if they no longer hold any role on this same board
             // (they might still be assigned to a different group's role on this board).
@@ -1600,19 +1594,18 @@
         render();
     };
 
-    // Handles every action from a role row's name dropdown (admin & management):
-    // renaming this role, adding a brand-new role, or deleting this role entirely.
-    // Adding/deleting a role always affects the shared role template — it appears/disappears
-    // as a row on EVERY group, on both Team A and Team B — since role types are a shared
-    // roster taxonomy, not something scoped to a single group. (Assignments of MEMBERS to a
-    // role are what stay scoped per group/board — see clearGroupRoleAssignment and assignMapRole.)
-    window.changeRoleLabel = function(key, value) {
+    // Handles every action from a role row's name dropdown (admin & management): renaming this
+    // row, adding a brand-new row, or deleting this row — ALL scoped to this ONE group, on the
+    // team currently being viewed. Nothing here ever touches another group or the other team.
+    window.changeRoleLabel = function(teamId, key, value) {
         if (!isManagementOrAdmin) return;
-        const role = roleDefs.find(r => r.key === key);
-        if (!role) return;
+        const team = currentTeams().find(t => t.id === teamId);
+        if (!team) return;
+        const row = team.roleRows.find(r => r.key === key);
+        if (!row) return;
 
         if (value === '__custom__') {
-            const newLabel = prompt('Enter custom role name:', role.label);
+            const newLabel = prompt('Enter custom role name (this group only):', row.label);
             if (newLabel === null) { render(); return; }
             const trimmed = newLabel.trim();
             if (!trimmed) {
@@ -1620,14 +1613,16 @@
                 render();
                 return;
             }
-            role.label = trimmed;
-            saveRoleDefs();
+            row.label = trimmed;
+            saveMapBoard(activeBoard);
             render();
             return;
         }
 
         if (value === '__addnew__') {
-            const newLabel = prompt('Enter a name for the new role (added as a row to every group, on both Team A and Team B):');
+            const usedLabels = team.roleRows.map(r => r.label);
+            const suggestion = PRESET_ROLES.find(p => !usedLabels.includes(p)) || 'New Role';
+            const newLabel = prompt('Enter a name for the new role row (added to this group only):', suggestion);
             if (newLabel === null) { render(); return; }
             const trimmed = newLabel.trim();
             if (!trimmed) {
@@ -1635,45 +1630,36 @@
                 render();
                 return;
             }
-            roleDefs.push({ key: 'custom_' + Date.now(), label: trimmed });
-            saveRoleDefs();
+            team.roleRows.push({ key: 'custom_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), label: trimmed, memberId: null });
+            saveMapBoard(activeBoard);
             render();
             return;
         }
 
         if (value === '__delete__') {
-            if (roleDefs.length <= 1) {
-                alert('At least one role is required.');
+            if (team.roleRows.length <= 1) {
+                alert('This group needs at least one role row.');
                 render();
                 return;
             }
-            if (!confirm(`Remove role "${role.label}"? This removes this row from every group, on both Team A and Team B, and clears anyone currently assigned to it.`)) {
+            if (!confirm(`Remove the "${row.label}" row from this group (Team ${activeBoard} only)? This clears its assignment.`)) {
                 render();
                 return;
             }
-            roleDefs = roleDefs.filter(r => r.key !== key);
-            ['A', 'B'].forEach(b => {
-                mapBoards[b].forEach(t => { delete t.roles[key]; });
-            });
-            saveRoleDefs();
-            saveMapBoard('A');
-            saveMapBoard('B');
+            const removedMemberId = row.memberId;
+            team.roleRows = team.roleRows.filter(r => r.key !== key);
+            saveMapBoard(activeBoard);
+            if (removedMemberId && !isMemberAssignedOnBoard(removedMemberId, activeBoard)) {
+                clearMemberSlotForBoard(removedMemberId, activeBoard);
+            }
             render();
             return;
         }
 
-        role.label = value;
-        saveRoleDefs();
+        // Plain rename to a preset value
+        row.label = value;
+        saveMapBoard(activeBoard);
         render();
-    };
-
-    // Clears the member assigned to ONE role on ONE group, on the board currently being viewed only.
-    // This does NOT touch the shared role label/definition (still shown as an empty row for every
-    // other group), and does NOT touch the other team's board — identical scoping to picking
-    // "— Unassigned —" from that role's dropdown.
-    window.clearGroupRoleAssignment = function(teamId, roleKey) {
-        if (!isManagementOrAdmin) return;
-        assignMapRole(teamId, roleKey, '');
     };
 
     document.getElementById('btnAddTeam').addEventListener('click', () => {
@@ -1691,7 +1677,7 @@
             slot: nextSlot,
             number: nextSlot + 1,
             color: DEFAULT_GROUP_COLORS[teams.length % DEFAULT_GROUP_COLORS.length],
-            roles: {}
+            roleRows: DEFAULT_ROLE_DEFS.map(r => ({ key: r.key, label: r.label, memberId: null }))
         });
         saveMapBoard(activeBoard);
         render();
