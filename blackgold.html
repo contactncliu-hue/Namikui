@@ -86,7 +86,7 @@
     .sidebar__item--logout:hover { background-color: #fce8e6; }
     .sidebar__icon { width: 18px; text-align: center; }
 
-    .main { flex-grow: 1; padding: 28px; display: flex; flex-direction: column; gap: 18px; max-width: 1560px; }
+    .main { flex-grow: 1; padding: 28px; display: flex; flex-direction: column; gap: 18px; max-width: 1600px; }
     .mobile-header { display: none; justify-content: flex-end; align-items: center; padding: 10px 14px; background: transparent; border: none; margin-bottom: 8px; }
     .hamburger { background: none; border: none; cursor: pointer; display: flex; flex-direction: column; gap: 5px; padding: 5px; }
     .hamburger__line { width: 26px; height: 3px; background-color: var(--color-primary); border-radius: 2px; }
@@ -438,9 +438,9 @@
     }
     .map-role-add-btn:hover { background: var(--color-primary); color: white; }
 
-    .map-diagram-wrap { flex: 1 1 auto; min-width: 340px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+    .map-diagram-wrap { flex: 1 1 auto; min-width: 420px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
     .map-diagram {
-        position: relative; width: 100%; max-width: 1040px; aspect-ratio: 1093 / 1096;
+        position: relative; width: 100%; max-width: 1180px; aspect-ratio: 1093 / 1096;
         background: #c58f5f;
         border-radius: 14px; border: 3px solid #93672f; box-shadow: inset 0 0 30px rgba(0,0,0,0.15);
         overflow: hidden;
@@ -533,12 +533,12 @@
         font-size: 13px;
     }
 
-    @media (max-width: 1440px) {
-        .map-diagram { max-width: 780px; }
+    @media (max-width: 1500px) {
+        .map-diagram { max-width: 900px; }
     }
 
-    @media (max-width: 1200px) {
-        .map-diagram { max-width: 620px; }
+    @media (max-width: 1100px) {
+        .map-diagram { max-width: 700px; }
     }
 
     @media (max-width: 900px) {
@@ -610,11 +610,9 @@
                 <span class="search-box__icon">🔍</span>
                 <input type="text" id="searchInput" placeholder="Search member...">
             </div>
-            <div class="toolbar-spacer" id="abToolbarControls">
-                <input type="date" id="calendarPicker" style="display: none; padding: 8px; border: 2px solid var(--color-gold); background: var(--color-gold-bg); border-radius: 4px; font-family: var(--font-family-base); font-weight: 800; font-size: 12px; cursor: pointer;">
-                <button class="btn-gold" id="btnAddDate" style="display: none;">+ ADD DATE</button>
-            </div>
             <div class="toolbar-spacer" id="mapToolbarControls" style="display: none;">
+                <input type="date" id="mapCalendarPicker" style="display: none; padding: 8px; border: 2px solid var(--color-gold); background: var(--color-gold-bg); border-radius: 4px; font-family: var(--font-family-base); font-weight: 800; font-size: 12px; cursor: pointer;">
+                <button class="btn-gold" id="mapBtnAddDate" style="display: none;">+ ADD DATE</button>
                 <button class="btn-gold" id="btnAddTeam" style="display: none;">+ ADD GROUP</button>
                 <button class="btn-danger-outline" id="btnRemoveTeam" style="display: none;">− REMOVE GROUP</button>
             </div>
@@ -658,7 +656,7 @@
                     <button class="map-subtab-btn map-subtab-btn--active" id="mapSubtabA">TEAM A</button>
                     <button class="map-subtab-btn" id="mapSubtabB">TEAM B</button>
                 </div>
-                <div class="map-toolbar__hint" id="mapAdminHint" style="display:none;">The map always shows 6 fixed markers, colored to match whichever group in the table below currently holds that number · click a group's number badge in its header to change its number (only numbers 1-6 appear on the map — groups 7 &amp; 8 are roster-only) · use the select boxes on the left to assign members (auto-pulls Faction &amp; F1 Power from Members) · click a group's color swatch to recolor it · use the role dropdown to change a role's name, or pick from the dropdown at the bottom of a group's table and click + ADD ROLE to create a new one. Assigning a member here automatically sets their Slot (A or B, matching this tab) and Main/Substitute status on the most recent A/B Slots session.</div>
+                <div class="map-toolbar__hint" id="mapAdminHint" style="display:none;">Click a numbered marker on the map to change its number · use the select boxes on the left to assign members (auto-pulls Faction &amp; F1 Power from Members) · click a group's color swatch to recolor it · use the role dropdown to change a role's name, or pick from the dropdown at the bottom of a group's table and click + ADD ROLE to create a new one. Assigning a member here automatically sets their Slot (A or B, matching this tab) and Main/Substitute status on the most recent A/B Slots session. A member can only be assigned to one team (A or B) per session.</div>
                 <div class="map-body">
                     <div class="map-table-wrapper" id="mapTableWrapper"></div>
                     <div class="map-diagram-wrap">
@@ -777,23 +775,21 @@
     let roleDefs = [];
     let activeTab = 'ab'; // 'ab' | 'map' | 'calendar'
 
-    // Fixed physical positions on the map, matching the reference formation map 1:1. The map ALWAYS
-    // shows exactly these 6 markers — adding/removing groups in the roster never adds, removes, or
-    // repositions a marker. Each marker simply mirrors the color of whichever group (if any) in the
-    // roster currently holds that same number (1-6); groups numbered 7 or 8 have no marker at all —
-    // they exist only in the group/roster section.
+    // Fixed physical positions on the map (percent left/top), matching the reference formation map 1:1,
+    // plus two additional positions to support up to 8 groups.
+    // Slot index never moves — only the number displayed on that marker can change.
     const SLOT_POSITIONS = [
-        { left: 70.91, top: 63.69 }, // marker "1"
-        { left: 83.26, top: 49.54 }, // marker "2"
-        { left: 67.52, top: 32.48 }, // marker "3"
-        { left: 30.65, top: 63.69 }, // marker "4"
-        { left: 18.30, top: 49.54 }, // marker "5"
-        { left: 34.03, top: 32.48 }  // marker "6"
+        { left: 70.91, top: 63.69 }, // slot 0 (default marker "1")
+        { left: 83.26, top: 49.54 }, // slot 1 (default marker "2")
+        { left: 67.52, top: 32.48 }, // slot 2 (default marker "3")
+        { left: 30.65, top: 63.69 }, // slot 3 (default marker "4")
+        { left: 18.30, top: 49.54 }, // slot 4 (default marker "5")
+        { left: 34.03, top: 32.48 }, // slot 5 (default marker "6")
+        { left: 50.00, top: 18.50 }, // slot 6 (default marker "7")
+        { left: 50.00, top: 80.50 }  // slot 7 (default marker "8")
     ];
-    const MAP_PIN_COUNT = SLOT_POSITIONS.length; // 6 — fixed, never changes
-    const MAP_PIN_DEFAULT_COLOR = '#c9ccd6'; // shown when no group currently holds that marker's number
-    const MAX_GROUPS = 8; // total roster groups allowed (1-6 map to markers, 7-8 are roster-only)
-    const DEFAULT_GROUP_COUNT = 6; // matches the original default look
+    const MAX_SLOTS = SLOT_POSITIONS.length; // 8
+    const DEFAULT_GROUP_COUNT = 6; // matches the original default look; more can be added up to MAX_SLOTS
 
     const DEFAULT_GROUP_COLORS = ['#966426', '#3b52a4', '#c0392b', '#1f9d55', '#9333ea', '#ea580c', '#0e7490', '#a16207'];
 
@@ -842,6 +838,7 @@
         for (let i = 0; i < DEFAULT_GROUP_COUNT; i++) {
             teams.push({
                 id: 'team' + (i + 1) + '_' + Date.now() + '_' + i,
+                slot: i,
                 number: i + 1,
                 color: DEFAULT_GROUP_COLORS[i % DEFAULT_GROUP_COLORS.length],
                 roles: {}
@@ -896,11 +893,11 @@
         ['A', 'B'].forEach(board => {
             let teams = mapBoards[board];
             if (teams) {
-                teams = teams.filter(t => t && t.roles).slice(0, MAX_GROUPS);
+                teams = teams.filter(t => t && t.roles).slice(0, MAX_SLOTS);
                 teams.forEach((t, i) => {
+                    if (typeof t.slot !== 'number') t.slot = i;
                     if (typeof t.number !== 'number') t.number = i + 1;
                     if (!t.color) t.color = DEFAULT_GROUP_COLORS[i % DEFAULT_GROUP_COLORS.length];
-                    delete t.slot; // deprecated — the map no longer tracks a per-group physical slot
                     delete t.icon;
                     delete t.arrowOffset;
                 });
@@ -1012,7 +1009,6 @@
         document.getElementById('calendarSection').style.display = tab === 'calendar' ? 'block' : 'none';
 
         document.getElementById('abSearchBox').style.display = tab === 'ab' ? 'block' : 'none';
-        document.getElementById('abToolbarControls').style.display = tab === 'ab' ? 'flex' : 'none';
         document.getElementById('mapToolbarControls').style.display = tab === 'map' ? 'flex' : 'none';
         document.getElementById('calendarToolbarControls').style.display = tab === 'calendar' ? 'flex' : 'none';
 
@@ -1047,8 +1043,8 @@
             document.getElementById('tabMap').title = 'Not available for your role';
         }
 
-        document.getElementById('btnAddDate').style.display = isManagementOrAdmin ? 'inline-block' : 'none';
-        document.getElementById('calendarPicker').style.display = isManagementOrAdmin ? 'inline-block' : 'none';
+        document.getElementById('mapBtnAddDate').style.display = isManagementOrAdmin ? 'inline-block' : 'none';
+        document.getElementById('mapCalendarPicker').style.display = isManagementOrAdmin ? 'inline-block' : 'none';
         document.getElementById('btnAddTeam').style.display = isManagementOrAdmin ? 'inline-block' : 'none';
         document.getElementById('btnRemoveTeam').style.display = isManagementOrAdmin ? 'inline-block' : 'none';
         document.getElementById('mapAdminHint').style.display = isManagementOrAdmin ? 'block' : 'none';
@@ -1264,7 +1260,7 @@
         render();
     };
 
-    // Shared "add date" flow used by both the A/B Slots toolbar and the Calendar tab — they write
+    // Shared "add date" flow used by the Map tab and the Calendar tab — they write
     // to the exact same bgDates array/table, so a date added from either place shows up in both.
     async function addDateFromPicker(pickerId) {
         const picker = document.getElementById(pickerId);
@@ -1289,7 +1285,7 @@
         render();
     }
 
-    document.getElementById('btnAddDate').addEventListener('click', () => addDateFromPicker('calendarPicker'));
+    document.getElementById('mapBtnAddDate').addEventListener('click', () => addDateFromPicker('mapCalendarPicker'));
     document.getElementById('calBtnAddDate').addEventListener('click', () => addDateFromPicker('calCalendarPicker'));
 
     document.getElementById('searchInput').addEventListener('input', render);
@@ -1369,10 +1365,15 @@
         return bgDates[bgDates.length - 1].id;
     }
 
+    // Whether memberId currently holds ANY role, on ANY group, on the given board.
+    function isMemberAssignedOnBoard(memberId, board) {
+        if (!memberId) return false;
+        return mapBoards[board].some(t => Object.values(t.roles).some(v => v && String(v) === String(memberId)));
+    }
+
     // Assigning a member to a role on the Team A / Team B map automatically sets their Slot
     // (matching the active board) and Main/Substitute status (matching the role) on the most
-    // recent A/B Slots session. This is one-directional: clearing a map assignment does not
-    // undo the A/B Slots entry.
+    // recent A/B Slots session.
     function syncMapAssignmentToAB(memberId, board, roleKey) {
         if (!memberId) return;
         const dateId = getLatestDateId();
@@ -1381,6 +1382,21 @@
         entry.slot = board === 'A' ? 'A' : 'B';
         entry.playerRole = (roleKey === 'substitute') ? 'sub' : 'main';
         saveAssignments();
+    }
+
+    // Clears a member's A/B Slots entry for the latest session, but ONLY if that entry's slot
+    // still matches the board being cleared from — so unassigning a member on Team A never
+    // touches an assignment that actually belongs to Team B, and vice versa.
+    function clearMemberSlotForBoard(memberId, board) {
+        if (!memberId) return;
+        const dateId = getLatestDateId();
+        if (!dateId) return;
+        const entry = getEntry(memberId, dateId);
+        if (entry.slot === board) {
+            entry.slot = null;
+            entry.playerRole = null;
+            saveAssignments();
+        }
     }
 
     function renderMap() {
@@ -1526,31 +1542,20 @@
         `;
     }
 
-    // The map always renders exactly MAP_PIN_COUNT (6) fixed markers, in fixed positions — adding or
-    // removing groups in the roster (including groups 7/8, which are roster-only) never adds, removes,
-    // or repositions a marker. Each marker's color always mirrors whichever roster group currently
-    // holds its number (1-6); if no group holds that number, it shows a neutral color and isn't
-    // clickable. Clicking a marker that IS matched to a group cycles that group's number (same action
-    // as clicking its number badge in the roster table) — the color updates immediately to stay in sync.
     function renderMapDiagram() {
         const diagram = document.getElementById('mapDiagram');
         let html = staticMapBackgroundHtml();
-        const teams = currentTeams();
 
-        for (let i = 0; i < MAP_PIN_COUNT; i++) {
-            const pinNumber = i + 1;
-            const pos = SLOT_POSITIONS[i];
-            const matchingTeam = teams.find(t => t.number === pinNumber);
-            const color = matchingTeam ? matchingTeam.color : MAP_PIN_DEFAULT_COLOR;
-            const clickable = isManagementOrAdmin && matchingTeam;
-            const clickAttr = clickable ? `onclick="cycleTeamNumber('${matchingTeam.id}')" title="Click to change this group's number"` : '';
+        currentTeams().forEach(team => {
+            const pos = SLOT_POSITIONS[team.slot] || SLOT_POSITIONS[0];
+            const clickAttr = isManagementOrAdmin ? `onclick="cycleTeamNumber('${team.id}')" title="Click to change this group's number"` : '';
             html += `
-                <div class="map-pin ${clickable ? '' : 'map-pin--readonly'}" style="left:${pos.left}%; top:${pos.top}%;" ${clickAttr}>
-                    ${mapPinSvg(color)}
-                    <span class="map-pin__num">${pinNumber}</span>
+                <div class="map-pin ${isManagementOrAdmin ? '' : 'map-pin--readonly'}" style="left:${pos.left}%; top:${pos.top}%;" ${clickAttr}>
+                    ${mapPinSvg(team.color)}
+                    <span class="map-pin__num">${team.number}</span>
                 </div>
             `;
-        }
+        });
 
         diagram.innerHTML = html;
     }
@@ -1559,9 +1564,31 @@
         if (!isManagementOrAdmin) return;
         const team = currentTeams().find(t => t.id === teamId);
         if (!team) return;
-        team.roles[roleKey] = memberId || null;
-        saveMapBoard(activeBoard);
-        if (memberId) syncMapAssignmentToAB(memberId, activeBoard, roleKey);
+
+        const otherBoard = activeBoard === 'A' ? 'B' : 'A';
+
+        if (memberId) {
+            // A member can only be on one team (A or B) for a given session — block cross-team assignment.
+            if (isMemberAssignedOnBoard(memberId, otherBoard)) {
+                const m = findMemberById(memberId);
+                alert(`${m ? m.name : 'This member'} is already assigned on Team ${otherBoard} and can't be assigned to both teams for the same session. Remove them from Team ${otherBoard} first.`);
+                render();
+                return;
+            }
+            team.roles[roleKey] = memberId;
+            saveMapBoard(activeBoard);
+            syncMapAssignmentToAB(memberId, activeBoard, roleKey);
+        } else {
+            // Unassigning: only touch THIS group's role slot on THIS board — never the other team.
+            const previousMemberId = team.roles[roleKey];
+            team.roles[roleKey] = null;
+            saveMapBoard(activeBoard);
+            // Only clear their A/B slot if they no longer hold any role on this same board
+            // (they might still be assigned to a different group's role on this board).
+            if (previousMemberId && !isMemberAssignedOnBoard(previousMemberId, activeBoard)) {
+                clearMemberSlotForBoard(previousMemberId, activeBoard);
+            }
+        }
         render();
     };
 
@@ -1574,14 +1601,13 @@
         render();
     };
 
-    // Clicking a group's number badge in the roster table cycles its number (1-8). This is the only
-    // way to change a group's number now — the map markers themselves are fixed and non-interactive.
-    // A group only shows up on the map while its number is 1-6; numbers 7-8 are roster-only.
+    // The ONLY interchangeable value on the pin: clicking it cycles its displayed number.
+    // The marker's physical position (slot) and the background art never move.
     window.cycleTeamNumber = function(teamId) {
         if (!isManagementOrAdmin) return;
         const team = currentTeams().find(t => t.id === teamId);
         if (!team) return;
-        team.number = (team.number % MAX_GROUPS) + 1;
+        team.number = (team.number % MAX_SLOTS) + 1;
         saveMapBoard(activeBoard);
         render();
     };
@@ -1652,31 +1678,27 @@
         render();
     };
 
-    // Adding a group ONLY adds a row to the roster/table — groups numbered 7 or 8 never get a marker
-    // on the map (the map is fixed at 6 markers, see renderMapDiagram).
     document.getElementById('btnAddTeam').addEventListener('click', () => {
         if (!isManagementOrAdmin) return;
         const teams = currentTeams();
-        if (teams.length >= MAX_GROUPS) {
-            alert(`Maximum of ${MAX_GROUPS} groups reached.`);
+        if (teams.length >= MAX_SLOTS) {
+            alert(`Maximum of ${MAX_SLOTS} groups reached.`);
             return;
         }
-        const usedNumbers = new Set(teams.map(t => t.number));
-        let nextNumber = 1;
-        while (usedNumbers.has(nextNumber) && nextNumber <= MAX_GROUPS) nextNumber++;
+        const usedSlots = new Set(teams.map(t => t.slot));
+        let nextSlot = 0;
+        while (usedSlots.has(nextSlot)) nextSlot++;
         teams.push({
             id: 'team' + Date.now(),
-            number: nextNumber,
-            color: DEFAULT_GROUP_COLORS[(nextNumber - 1) % DEFAULT_GROUP_COLORS.length],
+            slot: nextSlot,
+            number: nextSlot + 1,
+            color: DEFAULT_GROUP_COLORS[teams.length % DEFAULT_GROUP_COLORS.length],
             roles: {}
         });
         saveMapBoard(activeBoard);
         render();
     });
 
-    // Removing a group ONLY removes it from the roster/table — the map's 6 markers are never added,
-    // removed, or repositioned by this action. If the removed group held a number 1-6, that marker
-    // just falls back to its neutral color on next render, since no group holds that number anymore.
     document.getElementById('btnRemoveTeam').addEventListener('click', () => {
         if (!isManagementOrAdmin) return;
         const teams = currentTeams();
@@ -1685,7 +1707,7 @@
             return;
         }
         const last = teams[teams.length - 1];
-        if (!confirm(`Remove group ${last.number}? This clears its role assignments. The map markers are unaffected.`)) return;
+        if (!confirm(`Remove group ${last.number} from the Team ${activeBoard} map? This clears its role assignments.`)) return;
         teams.pop();
         saveMapBoard(activeBoard);
         render();
