@@ -774,7 +774,7 @@
                     <button class="map-subtab-btn map-subtab-btn--active" id="mapSubtabA">TEAM A</button>
                     <button class="map-subtab-btn" id="mapSubtabB">TEAM B</button>
                 </div>
-                <div class="map-toolbar__hint" id="mapAdminHint" style="display:none;">Click a numbered marker on the map to change its number (cycles 1–6) · use the select boxes on the left to assign members (auto-pulls Faction &amp; F1 Power from Members) · click a group's color swatch to recolor it · use a role's name dropdown to rename it, the × to delete that row, and + ADD ROLE ROW to add a new one — all scoped to that one group, on the team you're currently viewing · click any small circle or arrow on the map to select it and rotate it (each click rotates it 25°; a full rotation returns it to a plain circle) — once selected, use the swatches above to set that one arrow's own color, chosen from this team's current group colors (each team's rally path and its color options are separate). Assigning a member here automatically sets their Slot (A or B, matching this tab) and Main/Substitute status on the most recent A/B Slots session. A member can only be assigned to one team (A or B) per session.</div>
+                <div class="map-toolbar__hint" id="mapAdminHint" style="display:none;">The map always shows a fixed set of 6 markers — adding or removing a group never adds or removes a marker; it only fills or empties one of the 6 slots (up to 8 groups total, the 7th &amp; 8th are "extra" and don't get their own marker, but their colors are still available for the arrow swatches below). Click a numbered marker on the map to change its number (cycles 1–6) · use the select boxes on the left to assign members (auto-pulls Faction &amp; F1 Power from Members) · click a group's color swatch to recolor it · use a role's name dropdown to rename it, the × to delete that row, and + ADD ROLE ROW to add a new one — all scoped to that one group, on the team you're currently viewing · click any small circle or arrow on the map to select it and rotate it (each click rotates it 25°; a full rotation returns it to a plain circle) — once selected, use the swatches above to set that one arrow's own color, chosen from this team's current group colors, including groups 7 &amp; 8 (each team's rally path and its color options are separate). Assigning a member here automatically sets their Slot (A or B, matching this tab) and Main/Substitute status on the most recent A/B Slots session. A member can only be assigned to one team (A or B) per session.</div>
                 <div class="map-body">
                     <div class="map-table-wrapper notranslate" id="mapTableWrapper" translate="no"></div>
                     <div class="map-diagram-wrap">
@@ -1038,9 +1038,16 @@
         { left: 50.00, top: 18.50 },
         { left: 50.00, top: 80.50 }
     ];
-    const MAX_SLOTS = SLOT_POSITIONS.length;
     const MAX_PIN_NUMBER = 6;
     const DEFAULT_GROUP_COUNT = 6;
+    // The map always shows exactly 6 fixed pin markers, regardless of how many
+    // groups exist. Groups are matched to a marker by their position in the
+    // team array (index 0-5). Groups beyond the 6th (7th/8th, "extra" groups)
+    // never get a marker of their own — they just contribute their color to
+    // the arrow/dot color swatches.
+    const MAP_PIN_POSITIONS = SLOT_POSITIONS.slice(0, 6);
+    // Total number of groups a board can hold (1-8). Independent of marker count.
+    const MAX_GROUPS = 8;
 
     const DOT_POSITIONS = [
         { left: 40.34, top: 24.64 },
@@ -1189,7 +1196,7 @@
         ['A', 'B'].forEach(board => {
             let teams = mapBoards[board];
             if (teams) {
-                teams = teams.filter(t => t).slice(0, MAX_SLOTS);
+                teams = teams.filter(t => t).slice(0, MAX_GROUPS);
                 teams.forEach((t, i) => {
                     if (typeof t.slot !== 'number') t.slot = i;
                     if (typeof t.number !== 'number' || t.number < 1 || t.number > MAX_PIN_NUMBER) t.number = (i % MAX_PIN_NUMBER) + 1;
@@ -1869,15 +1876,30 @@
         let html = staticMapBackgroundHtml();
         html += renderConnectorDotsHtml();
 
-        currentTeams().forEach(team => {
-            const pos = SLOT_POSITIONS[team.slot] || SLOT_POSITIONS[0];
-            const clickAttr = isManagementOrAdmin ? `onclick="cycleTeamNumber('${team.id}')" title="Click to change this group's number (cycles 1–6)"` : '';
-            html += `
-                <div class="map-pin ${isManagementOrAdmin ? '' : 'map-pin--readonly'}" style="left:${pos.left}%; top:${pos.top}%;" ${clickAttr}>
-                    ${mapPinSvg(team.color)}
-                    <span class="map-pin__num">${team.number}</span>
-                </div>
-            `;
+        // Always render exactly 6 fixed markers. Marker i is filled by
+        // whichever group currently sits at index i in the team array (if
+        // any) — adding or removing groups never adds or removes a marker,
+        // it only fills/empties one of these 6 fixed slots. The 7th/8th
+        // group (if present) never gets a marker of its own.
+        const teams = currentTeams();
+        MAP_PIN_POSITIONS.forEach((pos, i) => {
+            const team = teams[i];
+            if (team) {
+                const clickAttr = isManagementOrAdmin ? `onclick="cycleTeamNumber('${team.id}')" title="Click to change this group's number (cycles 1–6)"` : '';
+                html += `
+                    <div class="map-pin ${isManagementOrAdmin ? '' : 'map-pin--readonly'}" style="left:${pos.left}%; top:${pos.top}%;" ${clickAttr}>
+                        ${mapPinSvg(team.color)}
+                        <span class="map-pin__num">${team.number}</span>
+                    </div>
+                `;
+            } else {
+                html += `
+                    <div class="map-pin map-pin--readonly" style="left:${pos.left}%; top:${pos.top}%; opacity:0.35;" title="No group assigned to this marker">
+                        ${mapPinSvg('#c9ccd6')}
+                        <span class="map-pin__num">·</span>
+                    </div>
+                `;
+            }
         });
 
         diagram.innerHTML = html;
@@ -2030,16 +2052,16 @@
     document.getElementById('btnAddTeam').addEventListener('click', async () => {
         if (!isManagementOrAdmin) return;
         const teams = currentTeams();
-        if (teams.length >= MAX_SLOTS) {
+        if (teams.length >= MAX_GROUPS) {
             alert('Maximum number of groups reached.');
             return;
         }
-        const nextSlot = teams.length;
+        const nextIndex = teams.length;
         const newTeam = {
             id: 'team_' + Date.now(),
-            slot: nextSlot,
-            number: (nextSlot % MAX_PIN_NUMBER) + 1,
-            color: DEFAULT_GROUP_COLORS[nextSlot % DEFAULT_GROUP_COLORS.length],
+            slot: nextIndex,
+            number: (nextIndex % MAX_PIN_NUMBER) + 1,
+            color: DEFAULT_GROUP_COLORS[nextIndex % DEFAULT_GROUP_COLORS.length],
             roleRows: DEFAULT_ROLE_DEFS.map(r => ({ key: r.key, label: r.label, memberId: null }))
         };
         teams.push(newTeam);
