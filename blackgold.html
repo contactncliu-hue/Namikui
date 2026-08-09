@@ -2030,8 +2030,8 @@
     document.getElementById('btnAddTeam').addEventListener('click', async () => {
         if (!isManagementOrAdmin) return;
         const teams = currentTeams();
-        if (teams.length >= DEFAULT_GROUP_COUNT) {
-            alert('The map is fixed to 6 markers/groups — you cannot add more.');
+        if (teams.length >= MAX_SLOTS) {
+            alert('Maximum number of groups reached.');
             return;
         }
         const nextSlot = teams.length;
