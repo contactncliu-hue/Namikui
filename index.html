@@ -78,8 +78,10 @@
 
         /* DASHBOARD */
         .app { display: none; width: 100%; min-height: 100vh; }
-        .sidebar { width: 300px; background-color: var(--color-bg-sidebar); border-right: 2px solid var(--color-border); display: flex; flex-direction: column; flex-shrink: 0; transition: transform 0.3s ease; z-index: 100; }
-        .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(15, 17, 26, 0.45); z-index: 90; }
+        .sidebar { width: 300px; background-color: var(--color-bg-sidebar); border-right: 2px solid var(--color-border); display: flex; flex-direction: column; flex-shrink: 0; transition: transform 0.3s ease; z-index: 150; position: fixed; top: 0; left: 0; height: 100vh; transform: translateX(-100%); }
+        .sidebar--open { transform: translateX(0); }
+        .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(15, 17, 26, 0.45); z-index: 140; }
+        .sidebar-overlay--visible { display: block; }
         .sidebar__header { padding: 24px; display: flex; justify-content: center; align-items: center; border-bottom: 2px solid var(--color-border); }
         .sidebar__logo { width: 85px; height: 85px; border-radius: 50%; background: linear-gradient(135deg, #a5c7f9, #2d55b8); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 30px; font-family: var(--font-family-logo); }
         .sidebar__user { padding: 18px 24px; display: flex; align-items: center; gap: 14px; font-weight: 700; font-size: var(--font-sm); color: #62697b; border-bottom: 1px solid var(--color-border-light); }
@@ -95,8 +97,8 @@
         .sidebar__item--logout:hover { background-color: #fce8e6; }
         .sidebar__icon { width: 18px; text-align: center; }
 
-        .main { flex-grow: 1; padding: 28px; display: flex; flex-direction: column; gap: 18px; max-width: 1320px; }
-        .mobile-header { display: none; justify-content: flex-end; align-items: center; padding: 10px 14px; background: transparent; border: none; margin-bottom: 8px; }
+        .main { flex-grow: 1; padding: 28px; display: flex; flex-direction: column; gap: 18px; max-width: 1320px; width: 100%; margin: 0 auto; }
+        .mobile-header { display: flex; justify-content: flex-end; align-items: center; padding: 10px 14px; background: transparent; border: none; margin-bottom: 8px; }
         .hamburger { background: none; border: none; cursor: pointer; display: flex; flex-direction: column; gap: 5px; padding: 5px; }
         .hamburger__line { width: 26px; height: 3px; background-color: var(--color-primary); border-radius: 2px; }
 
@@ -374,10 +376,6 @@
 
         @media (max-width: 1024px) {
             .app { flex-direction: column; }
-            .mobile-header { display: flex; }
-            .sidebar { position: fixed; top: 0; left: 0; height: 100vh; transform: translateX(-100%); }
-            .sidebar--open { transform: translateX(0); }
-            .sidebar-overlay--visible { display: block; }
         }
     </style>
 </head>
