@@ -251,6 +251,71 @@
             .controls-card { flex-direction: column; align-items: stretch; }
             .search-box { max-width: none; }
         }
+
+        #google_translate_element .goog-te-gadget { font-family: var(--font-family-base) !important; font-size: 11px !important; }
+        #google_translate_element select { padding: 6px 8px; border-radius: 4px; border: 1px solid #d1d5db; font-family: var(--font-family-base); font-weight: 700; font-size: 11px; }
+        .goog-te-banner-frame { display: none !important; }
+        body { top: 0 !important; }
+
+        .lang-dropdown { position: relative; margin-bottom: 14px; font-family: var(--font-family-base); }
+        .lang-dropdown__label { font-size: 10px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; color: var(--color-text-muted); margin-bottom: 6px; }
+        .lang-dropdown__trigger {
+            width: 100%;
+            display: flex; align-items: center; justify-content: space-between;
+            background: #ffffff;
+            border: 1px solid var(--color-border-light);
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-family: var(--font-family-base);
+            font-weight: 700;
+            font-size: 13px;
+            color: var(--color-text-dark);
+            cursor: pointer;
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+        .lang-dropdown__trigger:hover { border-color: var(--color-primary); }
+        .lang-dropdown--open .lang-dropdown__trigger { border-color: var(--color-primary); box-shadow: 0 0 0 3px var(--color-primary-light); }
+        .lang-dropdown__trigger-content { display: flex; align-items: center; gap: 10px; }
+        .lang-dropdown__flag { font-size: 16px; line-height: 1; }
+        .lang-dropdown__chevron { font-size: 11px; color: var(--color-text-muted); transition: transform 0.15s; }
+        .lang-dropdown--open .lang-dropdown__chevron { transform: rotate(180deg); }
+
+        .lang-dropdown__menu {
+            display: none;
+            position: absolute;
+            bottom: calc(100% + 6px);
+            left: 0; right: 0;
+            background: #ffffff;
+            border: 1px solid var(--color-border-light);
+            border-radius: 8px;
+            box-shadow: 0 8px 24px rgba(43, 48, 68, 0.14);
+            padding: 6px;
+            z-index: 400;
+            max-height: 260px;
+            overflow-y: auto;
+        }
+        .lang-dropdown--open .lang-dropdown__menu { display: block; }
+        .lang-dropdown__option {
+            display: flex; align-items: center; gap: 10px;
+            padding: 9px 10px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 13px;
+            color: var(--color-text-dark);
+            cursor: pointer;
+        }
+        .lang-dropdown__option:hover { background: var(--color-primary-light); }
+        .lang-dropdown__option--active { background: var(--color-primary-light); font-weight: 800; color: var(--color-primary-dark); }
+
+        #google_translate_element {
+            position: absolute !important;
+            width: 1px !important;
+            height: 1px !important;
+            overflow: hidden !important;
+            clip: rect(0 0 0 0) !important;
+            clip-path: inset(50%) !important;
+            white-space: nowrap !important;
+        }
     </style>
 </head>
 <body>
@@ -284,6 +349,34 @@
             </ul>
         </nav>
         <div class="sidebar__footer">
+            <div class="lang-dropdown" id="langDropdown">
+                <div class="lang-dropdown__label">Language</div>
+                <button class="lang-dropdown__trigger" id="langTrigger" type="button">
+                    <span class="lang-dropdown__trigger-content">
+                        <span class="lang-dropdown__flag" id="langTriggerFlag">🇺🇸</span>
+                        <span id="langTriggerName">English</span>
+                    </span>
+                    <span class="lang-dropdown__chevron">▾</span>
+                </button>
+                <div class="lang-dropdown__menu" id="langMenu">
+                    <div class="lang-dropdown__option" data-lang="zh-CN" data-flag="🇨🇳" data-name="简体中文">
+                        <span class="lang-dropdown__flag">🇨🇳</span> 简体中文
+                    </div>
+                    <div class="lang-dropdown__option" data-lang="en" data-flag="🇺🇸" data-name="English">
+                        <span class="lang-dropdown__flag">🇺🇸</span> English
+                    </div>
+                    <div class="lang-dropdown__option" data-lang="vi" data-flag="🇻🇳" data-name="Tiếng Việt">
+                        <span class="lang-dropdown__flag">🇻🇳</span> Tiếng Việt
+                    </div>
+                    <div class="lang-dropdown__option" data-lang="pt" data-flag="🇧🇷" data-name="Português">
+                        <span class="lang-dropdown__flag">🇧🇷</span> Português
+                    </div>
+                    <div class="lang-dropdown__option" data-lang="ko" data-flag="🇰🇷" data-name="한국어">
+                        <span class="lang-dropdown__flag">🇰🇷</span> 한국어
+                    </div>
+                </div>
+            </div>
+            <div id="google_translate_element"></div>
             <a class="sidebar__item sidebar__item--logout" id="sidebarLogoutBtn"><span class="sidebar__icon">|</span> LOG OUT</a>
         </div>
     </aside>
@@ -357,6 +450,129 @@
         </div>
     </main>
 </div>
+
+<script type="text/javascript">
+    function googleTranslateElementInit() {
+        new google.translate.TranslateElement({
+            pageLanguage: 'en',
+            includedLanguages: 'zh-CN,en,vi,pt,ko',
+            layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
+            autoDisplay: false
+        }, 'google_translate_element');
+
+        window.__gtInitialized = true;
+
+        const savedLang = localStorage.getItem('amt_lang');
+        if (savedLang && savedLang !== 'en') {
+            window.setGoogleTranslateLanguage(savedLang);
+        }
+    }
+</script>
+<script type="text/javascript" src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+
+<script>
+    (function() {
+        const dropdownEl = document.getElementById('langDropdown');
+        const triggerEl = document.getElementById('langTrigger');
+        const menuEl = document.getElementById('langMenu');
+        const triggerFlagEl = document.getElementById('langTriggerFlag');
+        const triggerNameEl = document.getElementById('langTriggerName');
+        const optionEls = menuEl.querySelectorAll('.lang-dropdown__option');
+
+        function closeDropdown() { dropdownEl.classList.remove('lang-dropdown--open'); }
+        function toggleDropdown() { dropdownEl.classList.toggle('lang-dropdown--open'); }
+
+        triggerEl.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleDropdown();
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!dropdownEl.contains(e.target)) closeDropdown();
+        });
+
+        window.setGoogleTranslateLanguage = function(lang, cb) {
+            function fire(select) {
+                select.value = lang;
+                select.dispatchEvent(new Event('change'));
+                if (cb) cb(true);
+            }
+
+            const existing = document.querySelector('#google_translate_element select.goog-te-combo');
+            if (existing) {
+                fire(existing);
+                return true;
+            }
+
+            const container = document.getElementById('google_translate_element');
+            if (!container) {
+                if (cb) cb(false);
+                return false;
+            }
+
+            const observer = new MutationObserver(() => {
+                const select = document.querySelector('#google_translate_element select.goog-te-combo');
+                if (select) {
+                    observer.disconnect();
+                    fire(select);
+                }
+            });
+            observer.observe(container, { childList: true, subtree: true });
+
+            setTimeout(() => {
+                observer.disconnect();
+                const select = document.querySelector('#google_translate_element select.goog-te-combo');
+                if (select) {
+                    fire(select);
+                } else if (cb) {
+                    cb(false);
+                }
+            }, 8000);
+
+            return false;
+        };
+
+        function selectLanguage(optionEl) {
+            const lang = optionEl.getAttribute('data-lang');
+            const flag = optionEl.getAttribute('data-flag');
+            const name = optionEl.getAttribute('data-name');
+
+            triggerFlagEl.textContent = flag;
+            triggerNameEl.textContent = name;
+            optionEls.forEach(o => o.classList.toggle('lang-dropdown__option--active', o === optionEl));
+            localStorage.setItem('amt_lang', lang);
+            closeDropdown();
+
+            window.setGoogleTranslateLanguage(lang, function(success) {
+                if (!success) {
+                    showTranslateFailureNotice();
+                }
+            });
+        }
+
+        function showTranslateFailureNotice() {
+            const statusEl = document.getElementById('saveStatus');
+            if (!statusEl) return;
+            statusEl.className = 'save-status save-status--error';
+            statusEl.innerText = 'Translation unavailable (blocked or failed to load)';
+            setTimeout(() => { statusEl.className = 'save-status'; }, 4000);
+        }
+
+        optionEls.forEach(optionEl => {
+            optionEl.addEventListener('click', () => selectLanguage(optionEl));
+        });
+
+        const savedLang = localStorage.getItem('amt_lang');
+        if (savedLang) {
+            const match = Array.from(optionEls).find(o => o.getAttribute('data-lang') === savedLang);
+            if (match) {
+                triggerFlagEl.textContent = match.getAttribute('data-flag');
+                triggerNameEl.textContent = match.getAttribute('data-name');
+                optionEls.forEach(o => o.classList.toggle('lang-dropdown__option--active', o === match));
+            }
+        }
+    })();
+</script>
 
 <div class="modal-overlay" id="addMemberModal">
     <div class="modal-card">
