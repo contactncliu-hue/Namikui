@@ -754,8 +754,8 @@
                 <div class="table-wrapper">
                     <table>
                         <thead><tr id="tableHeaderRow"></tr></thead>
-                        <tbody id="tableBody" class="notranslate" translate="no"></tbody>
-                        <tfoot id="tableFooter" class="notranslate" translate="no"></tfoot>
+                        <tbody id="tableBody"></tbody>
+                        <tfoot id="tableFooter"></tfoot>
                     </table>
                 </div>
             </div>
@@ -776,7 +776,7 @@
                 </div>
                 <div class="map-toolbar__hint" id="mapAdminHint" style="display:none;">The map always shows a fixed set of 6 markers — adding or removing a group never adds or removes a marker; it only fills or empties one of the 6 slots (up to 8 groups total, the 7th &amp; 8th are "extra" and don't get their own marker, but their colors are still available for the arrow swatches below). The number badge on each group's tab (top-right of its block) cycles 1–8 and is just a label for that group — it does not change the map. Click a numbered marker directly on the map itself to change that marker's own number (cycles 1–6). Use the select boxes on the left to assign members (auto-pulls Faction &amp; F1 Power from Members) · click a group's color swatch to recolor it · use a role's name dropdown to rename it, the × to delete that row, and + ADD ROLE ROW to add a new one — all scoped to that one group, on the team you're currently viewing · click any small circle or arrow on the map to select it and rotate it (each click rotates it 25°; a full rotation returns it to a plain circle) — once selected, use the swatches above to set that one arrow's own color, chosen from this team's current group colors, including groups 7 &amp; 8 (each team's rally path and its color options are separate). Assigning a member here automatically sets their Slot (A or B, matching this tab) and Main/Substitute status on the most recent A/B Slots session. A member can only be assigned to one team (A or B) per session.</div>
                 <div class="map-body">
-                    <div class="map-table-wrapper notranslate" id="mapTableWrapper" translate="no"></div>
+                    <div class="map-table-wrapper" id="mapTableWrapper"></div>
                     <div class="map-diagram-wrap">
                         <div class="map-diagram" id="mapDiagram"></div>
                     </div>
@@ -808,7 +808,7 @@
                                 <th>Action</th>
                             </tr>
                         </thead>
-                        <tbody id="calendarBody" class="notranslate" translate="no"></tbody>
+                        <tbody id="calendarBody"></tbody>
                     </table>
                 </div>
             </div>
@@ -861,9 +861,6 @@
             if (!dropdownEl.contains(e.target)) closeDropdown();
         });
 
-        // Robust setter: waits for Google's <select class="goog-te-combo"> to actually
-        // exist in the DOM (via MutationObserver) instead of guessing with a fixed
-        // number of retries. Also logs to the console so failures are diagnosable.
         window.setGoogleTranslateLanguage = function(lang, cb) {
             function fire(select) {
                 select.value = lang;
@@ -879,7 +876,6 @@
 
             const container = document.getElementById('google_translate_element');
             if (!container) {
-                console.warn('[translate] #google_translate_element not found in DOM');
                 if (cb) cb(false);
                 return false;
             }
@@ -898,9 +894,8 @@
                 const select = document.querySelector('#google_translate_element select.goog-te-combo');
                 if (select) {
                     fire(select);
-                } else {
-                    console.warn('[translate] Google Translate widget never initialized (goog-te-combo select not found after waiting). This usually means translate.google.com/translate_a/element.js was blocked by an ad blocker/extension or the network, or Google changed their widget markup.');
-                    if (cb) cb(false);
+                } else if (cb) {
+                    cb(false);
                 }
             }, 8000);
 
@@ -1040,13 +1035,7 @@
     ];
     const MAX_PIN_NUMBER = 6;
     const DEFAULT_GROUP_COUNT = 6;
-    // The map always shows exactly 6 fixed pin markers, regardless of how many
-    // groups exist. Groups are matched to a marker by their position in the
-    // team array (index 0-5). Groups beyond the 6th (7th/8th, "extra" groups)
-    // never get a marker of their own — they just contribute their color to
-    // the arrow/dot color swatches.
     const MAP_PIN_POSITIONS = SLOT_POSITIONS.slice(0, 6);
-    // Total number of groups a board can hold (1-8). Independent of marker count.
     const MAX_GROUPS = 8;
 
     const DOT_POSITIONS = [
@@ -1184,7 +1173,6 @@
             bgDates.sort((a, b) => parseDateString(a.date) - parseDateString(b.date));
         } catch (err) {
             console.error('Error loading Black Gold data:', err.message || err);
-            alert('Could not load data from the cloud: ' + (err.message || err));
         }
 
         mapBoards.A = mapA || legacyMap || null;
@@ -1881,11 +1869,6 @@
         let html = staticMapBackgroundHtml();
         html += renderConnectorDotsHtml();
 
-        // Always render exactly 6 fixed markers. Marker i is filled by
-        // whichever group currently sits at index i in the team array (if
-        // any) — adding or removing groups never adds or removes a marker,
-        // it only fills/empties one of these 6 fixed slots. The 7th/8th
-        // group (if present) never gets a marker of its own.
         const teams = currentTeams();
         MAP_PIN_POSITIONS.forEach((pos, i) => {
             const team = teams[i];
@@ -1973,10 +1956,6 @@
         renderMapDiagram();
     };
 
-    // Cycles the group-tab badge number (1-8). This is purely a label on the
-    // group's table row and intentionally does NOT touch the map marker or
-    // call renderMapDiagram — the map's own pin number is controlled
-    // separately by clicking directly on the marker (cycleTeamNumber, 1-6).
     window.cycleGroupNumber = function(teamId) {
         if (!isManagementOrAdmin) return;
         const team = currentTeams().find(t => t.id === teamId);
