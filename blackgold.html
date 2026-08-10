@@ -577,8 +577,14 @@
 
     #google_translate_element .goog-te-gadget { font-family: var(--font-family-base) !important; font-size: 11px !important; }
     #google_translate_element select { padding: 6px 8px; border-radius: 4px; border: 1px solid #d1d5db; font-family: var(--font-family-base); font-weight: 700; font-size: 11px; }
-    .goog-te-banner-frame { display: none !important; }
-    body { top: 0 !important; }
+    .goog-te-banner-frame,
+    iframe.goog-te-banner-frame,
+    .skiptranslate iframe {
+        display: none !important;
+        visibility: hidden !important;
+        height: 0 !important;
+    }
+    body, html { top: 0px !important; position: static !important; }
 
     .lang-dropdown { position: relative; margin-bottom: 14px; font-family: var(--font-family-base); }
     .lang-dropdown__label { font-size: 10px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; color: var(--color-text-muted); margin-bottom: 6px; }
@@ -829,13 +835,6 @@
             layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
             autoDisplay: false
         }, 'google_translate_element');
-
-        window.__gtInitialized = true;
-
-        const savedLang = localStorage.getItem('amt_lang');
-        if (savedLang && savedLang !== 'en') {
-            window.setGoogleTranslateLanguage(savedLang);
-        }
     }
 </script>
 <script type="text/javascript" src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
@@ -847,99 +846,57 @@
         const menuEl = document.getElementById('langMenu');
         const triggerFlagEl = document.getElementById('langTriggerFlag');
         const triggerNameEl = document.getElementById('langTriggerName');
+        if (!dropdownEl || !triggerEl || !menuEl) return;
         const optionEls = menuEl.querySelectorAll('.lang-dropdown__option');
-
         function closeDropdown() { dropdownEl.classList.remove('lang-dropdown--open'); }
         function toggleDropdown() { dropdownEl.classList.toggle('lang-dropdown--open'); }
-
         triggerEl.addEventListener('click', (e) => {
             e.stopPropagation();
             toggleDropdown();
         });
-
         document.addEventListener('click', (e) => {
             if (!dropdownEl.contains(e.target)) closeDropdown();
         });
-
-        window.setGoogleTranslateLanguage = function(lang, cb) {
-            function fire(select) {
+        function setGoogleCookie(lang) {
+            document.cookie = `googtrans=/en/${lang}; path=/; domain=${window.location.hostname}`;
+            document.cookie = `googtrans=/en/${lang}; path=/`;
+        }
+        window.setGoogleTranslateLanguage = function(lang) {
+            setGoogleCookie(lang);
+            const select = document.querySelector('#google_translate_element select.goog-te-combo');
+            if (select) {
                 select.value = lang;
                 select.dispatchEvent(new Event('change'));
-                if (cb) cb(true);
-            }
-
-            const existing = document.querySelector('#google_translate_element select.goog-te-combo');
-            if (existing) {
-                fire(existing);
                 return true;
             }
-
-            const container = document.getElementById('google_translate_element');
-            if (!container) {
-                if (cb) cb(false);
-                return false;
-            }
-
-            const observer = new MutationObserver(() => {
-                const select = document.querySelector('#google_translate_element select.goog-te-combo');
-                if (select) {
-                    observer.disconnect();
-                    fire(select);
-                }
-            });
-            observer.observe(container, { childList: true, subtree: true });
-
-            setTimeout(() => {
-                observer.disconnect();
-                const select = document.querySelector('#google_translate_element select.goog-te-combo');
-                if (select) {
-                    fire(select);
-                } else if (cb) {
-                    cb(false);
-                }
-            }, 8000);
-
             return false;
         };
-
         function selectLanguage(optionEl) {
             const lang = optionEl.getAttribute('data-lang');
             const flag = optionEl.getAttribute('data-flag');
             const name = optionEl.getAttribute('data-name');
-
             triggerFlagEl.textContent = flag;
             triggerNameEl.textContent = name;
             optionEls.forEach(o => o.classList.toggle('lang-dropdown__option--active', o === optionEl));
             localStorage.setItem('amt_lang', lang);
             closeDropdown();
-
-            window.setGoogleTranslateLanguage(lang, function(success) {
-                if (!success) {
-                    showTranslateFailureNotice();
-                }
-            });
+            setGoogleCookie(lang);
+            if (!window.setGoogleTranslateLanguage(lang)) {
+                window.location.reload();
+            }
         }
-
-        function showTranslateFailureNotice() {
-            const statusEl = document.getElementById('saveStatus');
-            if (!statusEl) return;
-            statusEl.className = 'save-status save-status--error';
-            statusEl.innerText = 'Translation unavailable (blocked or failed to load)';
-            setTimeout(() => { statusEl.className = 'save-status'; }, 4000);
-        }
-
         optionEls.forEach(optionEl => {
             optionEl.addEventListener('click', () => selectLanguage(optionEl));
         });
-
         const savedLang = localStorage.getItem('amt_lang');
-        if (savedLang) {
+        if (savedLang && savedLang !== 'en') {
             const match = Array.from(optionEls).find(o => o.getAttribute('data-lang') === savedLang);
             if (match) {
                 triggerFlagEl.textContent = match.getAttribute('data-flag');
                 triggerNameEl.textContent = match.getAttribute('data-name');
                 optionEls.forEach(o => o.classList.toggle('lang-dropdown__option--active', o === match));
             }
+            setGoogleCookie(savedLang);
         }
     })();
 </script>
@@ -2081,6 +2038,23 @@
     });
 
     loadData();
+</script>
+
+<script>
+    (function () {
+        function killGoogleBar() {
+            document.body.style.top = '0px';
+            document.documentElement.style.top = '0px';
+            document.querySelectorAll('.goog-te-banner-frame, iframe.goog-te-banner-frame').forEach(f => {
+                f.style.display = 'none';
+                f.style.visibility = 'hidden';
+                f.style.height = '0';
+            });
+        }
+        killGoogleBar();
+        new MutationObserver(killGoogleBar).observe(document.documentElement, { attributes: true, attributeFilter: ['style', 'class'], subtree: true });
+        setInterval(killGoogleBar, 500);
+    })();
 </script>
 </body>
 </html>
