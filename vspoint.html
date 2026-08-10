@@ -176,6 +176,37 @@
     }
     .btn-gold:hover { background-color: var(--color-gold); color: white; }
 
+    .btn-action {
+        background: white;
+        border: 2px solid var(--color-primary);
+        color: var(--color-primary);
+        font-weight: 800;
+        font-size: 12px;
+        padding: 10px 18px;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-family: var(--font-family-base);
+    }
+    .btn-action:hover { background: #eef2f9; }
+
+    /* Cycle card (4-week counting cycle controls) */
+    .cycle-card__label {
+        font-family: var(--font-family-base);
+        font-weight: 800;
+        font-size: 11px;
+        color: var(--color-text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .cycle-card__value {
+        font-family: var(--font-family-base);
+        font-weight: 800;
+        font-size: 13px;
+        color: var(--color-primary-dark);
+        margin-top: 2px;
+    }
+
     /* Legend Row */
     .legend-row {
         display: flex;
@@ -303,6 +334,57 @@
         letter-spacing: 0.5px;
         padding: 0 4px;
     }
+
+    /* ===== Modal (Archives) ===== */
+    .modal-overlay {
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0, 0, 0, 0.4);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+    }
+    .modal-card {
+        background: white;
+        padding: 24px;
+        border-radius: 6px;
+        width: 100%;
+        max-width: 520px;
+        max-height: 80vh;
+        overflow-y: auto;
+        border: 2px solid var(--color-primary);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        font-family: var(--font-family-base);
+    }
+    .modal-card h3 {
+        margin-bottom: 16px;
+        color: var(--color-primary-dark);
+        font-size: 18px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-weight: 800;
+        text-transform: uppercase;
+    }
+    .modal-card h3 .modal-close-x { cursor: pointer; color: var(--color-not-attended); font-size: 16px; }
+    .archive-entry {
+        border: 1px solid var(--color-border-light);
+        border-radius: 6px;
+        padding: 12px 14px;
+        margin-bottom: 10px;
+    }
+    .archive-entry__title { font-weight: 800; font-size: 13px; color: var(--color-primary-dark); margin-bottom: 4px; }
+    .archive-entry__meta { font-size: 11px; color: var(--color-text-muted); font-weight: 700; margin-bottom: 8px; }
+    .archive-entry__row {
+        display: flex;
+        justify-content: space-between;
+        font-size: 12px;
+        font-weight: 700;
+        padding: 4px 0;
+        border-bottom: 1px solid #f0f2f8;
+    }
+    .archive-entry__row:last-child { border-bottom: none; }
 
     /* ===== Sidebar / App Shell (copied from index.html for uniformity) ===== */
     .app-shell { display: flex; width: 100%; min-height: 100vh; }
@@ -533,6 +615,20 @@
         </div>
     </div>
 
+    <!-- 4-Week Counting Cycle Card -->
+    <div class="toolbar-card" id="cycleCard">
+        <div>
+            <div class="cycle-card__label">Overall Ranking Cycle</div>
+            <div class="cycle-card__value" id="cycleInfoText">No cycle start set</div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px; margin-left: auto; flex-wrap: wrap;">
+            <input type="date" id="cycleStartDateInput" class="date-picker-input admin-only" style="display:none;">
+            <button class="btn-action admin-only" style="display:none;" onclick="setCycleStartDate()">SET START DATE</button>
+            <button class="btn-gold admin-only" id="btnArchiveCycle" style="display:none;" onclick="archiveCurrentCycle()">📦 ARCHIVE & RESET CYCLE</button>
+            <button class="btn-action" onclick="openArchivesModal()">🗂 VIEW ARCHIVES (<span id="archiveCount">0</span>)</button>
+        </div>
+    </div>
+
     <div class="legend-row">
         <div style="display: flex; align-items: center; gap: 6px;">TOP 5:</div>
         <div style="display: flex; align-items: center; gap: 4px;"><span class="badge-rank r1">1</span> 1st</div>
@@ -563,6 +659,17 @@
         <span id="shownCount">0 members shown</span>
     </div>
 </div>
+    </div>
+</div>
+
+<!-- Archives Modal -->
+<div class="modal-overlay" id="archivesModal">
+    <div class="modal-card">
+        <h3>Past Cycles <span class="modal-close-x" onclick="closeArchivesModal()">✕</span></h3>
+        <div id="archivesListContainer"></div>
+        <div style="display:flex; justify-content:flex-end; margin-top:8px;">
+            <button class="btn-action" onclick="closeArchivesModal()">Close</button>
+        </div>
     </div>
 </div>
 
@@ -674,6 +781,11 @@
         return (wk && typeof wk === 'object' && wk.type) ? wk.type : 'weekly';
     }
 
+    // Length of one overall-ranking counting cycle, in days. Admin/management pick
+    // the start date (see setCycleStartDate); once this many days have elapsed the
+    // "Archive & Reset Cycle" action becomes available.
+    const CYCLE_LENGTH_DAYS = 28;
+
     const currentUser = {
         username: localStorage.getItem('amt_username') || null,
         role: localStorage.getItem('amt_userRole') || null
@@ -700,7 +812,9 @@
     let members = [];
     let vsData = {
         weeks: [], 
-        membersScores: []
+        membersScores: [],
+        cycleStartDate: null, // ISO yyyy-mm-dd date management/admin set as the start of the current 4-week counting cycle
+        archives: []          // past cycles that were archived & reset, kept for historical viewing
     };
     let currentVsSubTab = 'weekly';
 
@@ -724,6 +838,20 @@
         return new Date(dateStr);
     }
 
+    // --- Cycle helpers ---
+    function getCycleDaysElapsed() {
+        if (!vsData.cycleStartDate) return null;
+        const start = new Date(vsData.cycleStartDate + 'T00:00:00');
+        if (isNaN(start.getTime())) return null;
+        const now = new Date();
+        const diffMs = now.setHours(0,0,0,0) - start.setHours(0,0,0,0);
+        return Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    }
+    function isCycleReadyToArchive() {
+        const days = getCycleDaysElapsed();
+        return days !== null && days >= CYCLE_LENGTH_DAYS;
+    }
+
     async function loadData() {
         try {
             const { data, error } = await db.from('app_data').select('*');
@@ -742,6 +870,8 @@
 
             if (!vsData.weeks || !Array.isArray(vsData.weeks)) vsData.weeks = [];
             if (!vsData.membersScores || !Array.isArray(vsData.membersScores)) vsData.membersScores = [];
+            if (!vsData.archives || !Array.isArray(vsData.archives)) vsData.archives = [];
+            if (vsData.cycleStartDate === undefined) vsData.cycleStartDate = null;
 
             // Older saved data stored weeks as plain date strings — upgrade them
             // in place to { date, type: 'weekly' } so everything downstream can
@@ -836,6 +966,33 @@
             subtitleEl.innerText = `${activeMembers.length} members · ${vsData.weeks.length} sessions`;
         }
 
+        // Cycle info + archive controls
+        const cycleInfoEl = document.getElementById('cycleInfoText');
+        if (cycleInfoEl) {
+            if (!vsData.cycleStartDate) {
+                cycleInfoEl.innerText = 'No cycle start set';
+            } else {
+                const days = getCycleDaysElapsed();
+                if (days === null) {
+                    cycleInfoEl.innerText = 'No cycle start set';
+                } else if (days >= CYCLE_LENGTH_DAYS) {
+                    cycleInfoEl.innerText = `Started ${vsData.cycleStartDate} · Day ${days} — cycle complete, ready to archive`;
+                } else {
+                    const remaining = CYCLE_LENGTH_DAYS - days;
+                    cycleInfoEl.innerText = `Started ${vsData.cycleStartDate} · Day ${Math.max(days, 0)} of ${CYCLE_LENGTH_DAYS} (${remaining} left)`;
+                }
+            }
+        }
+        const archiveBtn = document.getElementById('btnArchiveCycle');
+        if (archiveBtn) {
+            const ready = isCycleReadyToArchive();
+            archiveBtn.disabled = !ready;
+            archiveBtn.style.opacity = ready ? '1' : '0.5';
+            archiveBtn.style.cursor = ready ? 'pointer' : 'not-allowed';
+        }
+        const archiveCountEl = document.getElementById('archiveCount');
+        if (archiveCountEl) archiveCountEl.innerText = (vsData.archives || []).length;
+
         const searchVal = document.getElementById('vsSearchInput')?.value.toLowerCase() || '';
 
         if (currentVsSubTab === 'weekly') {
@@ -867,17 +1024,46 @@
         });
         headersTr.innerHTML = headerHTML;
 
-        const latestWeekIdx = vsData.weeks.length > 0 ? vsData.weeks.length - 1 : 0;
+        // The most recent (last) session column decides the Top 5 medal spots
+        // shown on this tab — separate from the Ranking tab, which ranks by
+        // all-time total instead.
+        const latestWeekIdx = vsData.weeks.length > 0 ? vsData.weeks.length - 1 : -1;
 
         const activeMembers = getActiveMembers();
         const activeMemberIds = new Set(activeMembers.map(m => String(m.id)));
         const activeScores = vsData.membersScores.filter(m => activeMemberIds.has(String(m.id)));
 
-        const sortedMembers = [...activeScores].sort((a, b) => {
-            const scoreA = vsData.weeks.length > 0 ? (a.scores[latestWeekIdx] || 0) : 0;
-            const scoreB = vsData.weeks.length > 0 ? (b.scores[latestWeekIdx] || 0) : 0;
-            return scoreB - scoreA;
-        });
+        // Members-tab rank-group order (top to bottom): R5, R4, R3, R2, R1.
+        const RANK_GROUP_ORDER = { R5: 0, R4: 1, R3: 2, R2: 3, R1: 4 };
+        const memberOrderIndex = new Map(activeMembers.map((m, idx) => [String(m.id), idx]));
+        const memberRankById = new Map(activeMembers.map(m => [String(m.id), m.rank || 'R1']));
+
+        // Top 5 by the most recent session's score.
+        let top5 = [];
+        let top5Ids = new Set();
+        if (latestWeekIdx >= 0) {
+            top5 = [...activeScores]
+                .sort((a, b) => (b.scores[latestWeekIdx] || 0) - (a.scores[latestWeekIdx] || 0))
+                .slice(0, 5);
+            top5Ids = new Set(top5.map(m => String(m.id)));
+        }
+
+        // Everyone outside the recent Top 5 falls back to their normal spot,
+        // sorted the same way the Members tab groups people: by rank (R5→R1),
+        // with the Members-page order as a tiebreaker within each rank group.
+        // Nothing about this placement is stored — it's recalculated on every
+        // render straight from `members` and the latest session, so a member
+        // who drops out of the recent Top 5 automatically lands back here.
+        const rest = activeScores
+            .filter(m => !top5Ids.has(String(m.id)))
+            .sort((a, b) => {
+                const rankA = RANK_GROUP_ORDER[memberRankById.get(String(a.id))] ?? 99;
+                const rankB = RANK_GROUP_ORDER[memberRankById.get(String(b.id))] ?? 99;
+                if (rankA !== rankB) return rankA - rankB;
+                return (memberOrderIndex.get(String(a.id)) ?? 0) - (memberOrderIndex.get(String(b.id)) ?? 0);
+            });
+
+        const sortedMembers = [...top5, ...rest];
 
         const filtered = sortedMembers.filter(m => m.name.toLowerCase().includes(filter));
         document.getElementById('shownCount').innerText = `${filtered.length}/${activeMembers.length} members shown`;
@@ -888,22 +1074,26 @@
         }
 
         let bodyHTML = '';
-        filtered.forEach((m, index) => {
-            const rankNum = index + 1;
+        filtered.forEach((m) => {
+            // Only the recent Top 5 get a medal badge/number now — everyone else
+            // shows no rank number (no more #6...#100 listing).
+            const medalRank = top5Ids.has(String(m.id)) ? (top5.findIndex(t => String(t.id) === String(m.id)) + 1) : null;
+
             let rankBadgeHTML = '';
-            if (rankNum <= 5) {
+            let rankCellContent = '—';
+            if (medalRank) {
                 let badgeClass = 'r5';
-                if (rankNum === 1) badgeClass = 'r1';
-                else if (rankNum === 2) badgeClass = 'r2';
-                else if (rankNum === 3) badgeClass = 'r3';
-                else if (rankNum === 4) badgeClass = 'r4';
-                rankBadgeHTML = `<span class="badge-rank ${badgeClass}" style="width:20px; height:20px; font-size:10px; margin-right:8px; display:inline-flex;">${rankNum}</span>`;
-            } else {
-                rankBadgeHTML = `<span style="font-weight:800; color:var(--color-text-muted); margin-right:8px;">#${rankNum}</span>`;
+                if (medalRank === 1) badgeClass = 'r1';
+                else if (medalRank === 2) badgeClass = 'r2';
+                else if (medalRank === 3) badgeClass = 'r3';
+                else if (medalRank === 4) badgeClass = 'r4';
+                else if (medalRank === 5) badgeClass = 'r5';
+                rankBadgeHTML = `<span class="badge-rank ${badgeClass}" style="width:20px; height:20px; font-size:10px; margin-right:8px; display:inline-flex;">${medalRank}</span>`;
+                rankCellContent = medalRank;
             }
 
             bodyHTML += `<tr>`;
-            bodyHTML += `<td class="col-rank">${rankNum}</td>`;
+            bodyHTML += `<td class="col-rank">${rankCellContent}</td>`;
             bodyHTML += `<td class="col-member"><div style="display:flex; align-items:center;">${rankBadgeHTML}<span>${m.name}</span></div></td>`;
             
             vsData.weeks.forEach((wk, wIdx) => {
@@ -1114,6 +1304,92 @@
             alert('Screenshot successfully parsed and synced to the latest date column tally!');
         }, 800);
     };
+
+    // --- 4-week counting cycle: set start date, archive & reset, view archives ---
+    window.setCycleStartDate = async function() {
+        if (!isManagementOrAdmin) return;
+        const input = document.getElementById('cycleStartDateInput');
+        if (!input || !input.value) {
+            alert('Please pick a date first.');
+            return;
+        }
+        vsData.cycleStartDate = input.value;
+        await saveData();
+        renderVsPoints();
+    };
+
+    window.archiveCurrentCycle = async function() {
+        if (!isManagementOrAdmin) return;
+        if (!isCycleReadyToArchive()) {
+            alert('The current cycle has not reached 4 weeks yet.');
+            return;
+        }
+        if (vsData.weeks.length === 0) {
+            alert('There is no session data to archive yet.');
+            return;
+        }
+        if (!confirm('Archive the current cycle? This resets the overall ranking totals and clears the session columns for a fresh cycle. Individual session data is saved to the archive first.')) return;
+
+        const activeMembers = getActiveMembers();
+        const activeMemberIds = new Set(activeMembers.map(m => String(m.id)));
+        const membersTotals = vsData.membersScores
+            .filter(m => activeMemberIds.has(String(m.id)))
+            .map(m => ({
+                id: m.id,
+                name: m.name,
+                total: m.scores.reduce((a, b) => a + b, 0)
+            }));
+
+        vsData.archives.push({
+            cycleStartDate: vsData.cycleStartDate,
+            cycleEndDate: new Date().toISOString().split('T')[0],
+            weeks: vsData.weeks.map(w => ({ ...w })),
+            membersTotals
+        });
+
+        vsData.weeks = [];
+        vsData.membersScores.forEach(m => { m.scores = []; });
+        vsData.cycleStartDate = new Date().toISOString().split('T')[0];
+
+        await saveData();
+        renderVsPoints();
+        alert('Cycle archived. Overall totals have been reset for the new cycle.');
+    };
+
+    window.openArchivesModal = function() {
+        const container = document.getElementById('archivesListContainer');
+        if (!container) return;
+        if (!vsData.archives || vsData.archives.length === 0) {
+            container.innerHTML = `<div style="text-align:center; padding:24px; color:var(--color-text-muted); font-weight:700; font-size:12px;">No archived cycles yet.</div>`;
+        } else {
+            let html = '';
+            const total = vsData.archives.length;
+            [...vsData.archives].reverse().forEach((arc, revIdx) => {
+                const cycleNumber = total - revIdx;
+                const sortedTotals = [...(arc.membersTotals || [])].sort((a, b) => b.total - a.total);
+                html += `<div class="archive-entry">
+                    <div class="archive-entry__title">Cycle ${cycleNumber}</div>
+                    <div class="archive-entry__meta">${arc.cycleStartDate || '—'} to ${arc.cycleEndDate || '—'} · ${arc.weeks ? arc.weeks.length : 0} sessions</div>`;
+                sortedTotals.slice(0, 10).forEach((m, i) => {
+                    html += `<div class="archive-entry__row"><span>#${i + 1} ${m.name}</span><span>${m.total.toLocaleString()}</span></div>`;
+                });
+                if (sortedTotals.length === 0) {
+                    html += `<div class="archive-entry__row"><span style="color:var(--color-text-muted);">No member data recorded.</span><span></span></div>`;
+                }
+                html += `</div>`;
+            });
+            container.innerHTML = html;
+        }
+        document.getElementById('archivesModal').style.display = 'flex';
+    };
+
+    window.closeArchivesModal = function() {
+        document.getElementById('archivesModal').style.display = 'none';
+    };
+
+    document.getElementById('archivesModal').addEventListener('click', (e) => {
+        if (e.target === document.getElementById('archivesModal')) closeArchivesModal();
+    });
 
     document.getElementById('vsSearchInput').addEventListener('input', renderVsPoints);
 
