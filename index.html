@@ -1201,11 +1201,7 @@
         let homePhotos = [];
         let pendingPhotoUpload = null; // holds { dataUrl } while admin/mgmt picks visibility
         let currentLightboxPhotoId = null;
-        let accounts = [
-            { username: 'loopy', pass: '2851849', role: 'admin' },
-            { username: 'manager1', pass: 'manager123', role: 'management' },
-            { username: 'member1', pass: 'member123', role: 'member' }
-        ];
+        let accounts = [];
 
         window.getActiveMembers = function(memberList) {
             return memberList.filter(m => m.status !== 'removed');
@@ -1220,7 +1216,6 @@
                         if (row.key === 'eventDates') eventDates = row.value || [];
                         if (row.key === 'members') members = row.value || [];
                         if (row.key === 'auditLogs') auditLogs = row.value || [];
-                        if (row.key === 'accounts') accounts = row.value || accounts;
                         if (row.key === 'vsData') vsData = row.value || { weeks: [], membersScores: [] };
                         if (row.key === 'chatMessages') chatMessages = row.value || [];
                         if (row.key === 'polls') polls = row.value || [];
@@ -1234,11 +1229,10 @@
                 console.error('Error loading from cloud:', err);
             }
 
-            pruneExpiredCalendarEvents();
+                        pruneExpiredCalendarEvents();
 
-            if (!accounts.some(a => a.username === 'loopy')) {
-                accounts.push({ username: 'loopy', pass: '2851849', role: 'admin' });
-            }
+            const { data: accountsData, error: accountsErr } = await db.from('accounts').select('*');
+            if (!accountsErr && accountsData) accounts = accountsData;
 
             if (currentUser.role && currentUser.username) {
                 enterDashboard();
@@ -1261,7 +1255,6 @@
                     db.from('app_data').upsert({ id: 1, key: 'eventDates', value: eventDates }, { onConflict: 'id' }),
                     db.from('app_data').upsert({ id: 2, key: 'members', value: members }, { onConflict: 'id' }),
                     db.from('app_data').upsert({ id: 3, key: 'auditLogs', value: auditLogs }, { onConflict: 'id' }),
-                    db.from('app_data').upsert({ id: 4, key: 'accounts', value: accounts }, { onConflict: 'id' }),
                     db.from('app_data').upsert({ id: 10, key: 'vsData', value: vsData }, { onConflict: 'id' }),
                     db.from('app_data').upsert({ id: 8, key: 'chatMessages', value: chatMessages }, { onConflict: 'id' }),
                     db.from('app_data').upsert({ id: 9, key: 'polls', value: polls }, { onConflict: 'id' }),
@@ -1364,7 +1357,7 @@
 
         document.getElementById('btnCancelModal').addEventListener('click', () => loginModal.style.display = 'none');
 
-        document.getElementById('btnSubmitLogin').addEventListener('click', () => {
+                document.getElementById('btnSubmitLogin').addEventListener('click', async () => {
             const uInput = document.getElementById('loginUsername').value.trim();
             const pInput = document.getElementById('loginPassword').value;
 
@@ -1374,12 +1367,13 @@
                 return;
             }
 
-            if (!accounts.some(a => a.username === 'loopy')) {
-                accounts.push({ username: 'loopy', pass: '2851849', role: 'admin' });
-            }
+            const { data: foundAcc, error } = await db.from('accounts')
+                .select('*')
+                .ilike('username', uInput)
+                .eq('pass', pInput)
+                .maybeSingle();
 
-            const foundAcc = accounts.find(a => a.username.toLowerCase() === uInput.toLowerCase() && a.pass === pInput);
-            if (foundAcc) {
+            if (foundAcc && !error) {
                 currentUser.username = foundAcc.username;
                 currentUser.role = foundAcc.role;
                 saveData();
@@ -1435,18 +1429,26 @@
             alert(`Account ${newU} successfully created! You can now log in using these details.`);
         });
 
-        window.openRoleAssignModal = function() {
-            const selectEl = document.getElementById('targetAccountSelect');
-            selectEl.innerHTML = '';
-            accounts.forEach(acc => {
-                const opt = document.createElement('option');
-                opt.value = acc.username;
-                opt.textContent = `${acc.username} (Current: ${acc.role})`;
-                selectEl.appendChild(opt);
-            });
-            onTargetAccountChange();
-            document.getElementById('roleAssignModal').style.display = 'flex';
-        };
+                document.getElementById('btnSubmitRoleAssign').addEventListener('click', async () => {
+            const targetUser = document.getElementById('targetAccountSelect').value;
+            const newRole = document.getElementById('targetRoleSelect').value;
+            const acc = accounts.find(a => a.username === targetUser);
+            if (!acc) return;
+
+            const oldRole = acc.role;
+            const { error } = await db.from('accounts').update({ role: newRole }).eq('username', targetUser);
+
+            if (error) {
+                alert('Could not update role. Please try again.');
+                return;
+            }
+
+            acc.role = newRole;
+            logAction('ASSIGN_ROLE', `Admin changed role for user [${targetUser}] from ${oldRole} to ${newRole}`);
+            document.getElementById('roleAssignModal').style.display = 'none';
+            alert(`Role for ${targetUser} updated successfully to ${newRole}!`);
+            render();
+        });
 
         window.onTargetAccountChange = function() {
             const targetUser = document.getElementById('targetAccountSelect').value;
