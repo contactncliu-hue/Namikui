@@ -1405,29 +1405,39 @@
 
         document.getElementById('sidebarLogoutBtn').addEventListener('click', handleLogout);
 
-        document.getElementById('btnSubmitCreateAccount').addEventListener('click', () => {
-            const newU = document.getElementById('newAccUser').value.trim();
-            const newP = document.getElementById('newAccPass').value;
-            const newR = 'member';
+        document.getElementById('btnSubmitCreateAccount').addEventListener('click', async () => {
+    const newU = document.getElementById('newAccUser').value.trim();
+    const newP = document.getElementById('newAccPass').value;
+    const newR = 'member';
 
-            if(!newU || !newP) {
-                alert('Please enter a username and password.');
-                return;
-            }
+    if(!newU || !newP) {
+        alert('Please enter a username and password.');
+        return;
+    }
 
-            if(accounts.some(a => a.username.toLowerCase() === newU.toLowerCase())) {
-                alert('Username already exists!');
-                return;
-            }
+    if(accounts.some(a => a.username.toLowerCase() === newU.toLowerCase())) {
+        alert('Username already exists!');
+        return;
+    }
 
-            accounts.push({ username: newU, pass: newP, role: newR });
-            logAction('CREATE_ACCOUNT', `Created user account: ${newU} with default role [member]`);
-            saveData();
-            createAccountModal.style.display = 'none';
-            document.getElementById('newAccUser').value = '';
-            document.getElementById('newAccPass').value = '';
-            alert(`Account ${newU} successfully created! You can now log in using these details.`);
-        });
+    const { data: inserted, error } = await db.from('accounts')
+        .insert({ username: newU, pass: newP, role: newR })
+        .select()
+        .single();
+
+    if (error) {
+        console.error('Create account error:', error);
+        alert('Could not create account. Please try again.');
+        return;
+    }
+
+    accounts.push(inserted);
+    logAction('CREATE_ACCOUNT', `Created user account: ${newU} with default role [member]`);
+    createAccountModal.style.display = 'none';
+    document.getElementById('newAccUser').value = '';
+    document.getElementById('newAccPass').value = '';
+    alert(`Account ${newU} successfully created! You can now log in using these details.`);
+});
 
                 document.getElementById('btnSubmitRoleAssign').addEventListener('click', async () => {
             const targetUser = document.getElementById('targetAccountSelect').value;
