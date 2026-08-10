@@ -622,8 +622,9 @@
             <div class="cycle-card__value" id="cycleInfoText">No cycle start set</div>
         </div>
         <div style="display: flex; align-items: center; gap: 8px; margin-left: auto; flex-wrap: wrap;">
-            <input type="date" id="cycleStartDateInput" class="date-picker-input admin-only" style="display:none;">
-            <button class="btn-action admin-only" style="display:none;" onclick="setCycleStartDate()">SET START DATE</button>
+            <input type="date" id="cycleStartDateInput" class="date-picker-input admin-only" style="display:none;" title="Cycle start date">
+            <input type="date" id="cycleEndDateInput" class="date-picker-input admin-only" style="display:none;" title="Cycle end date">
+            <button class="btn-action admin-only" style="display:none;" onclick="setCycleDates()">SET DATES</button>
             <button class="btn-gold admin-only" id="btnArchiveCycle" style="display:none;" onclick="archiveCurrentCycle()">📦 ARCHIVE & RESET CYCLE</button>
             <button class="btn-action" onclick="openArchivesModal()">🗂 VIEW ARCHIVES (<span id="archiveCount">0</span>)</button>
         </div>
@@ -781,11 +782,6 @@
         return (wk && typeof wk === 'object' && wk.type) ? wk.type : 'weekly';
     }
 
-    // Length of one overall-ranking counting cycle, in days. Admin/management pick
-    // the start date (see setCycleStartDate); once this many days have elapsed the
-    // "Archive & Reset Cycle" action becomes available.
-    const CYCLE_LENGTH_DAYS = 28;
-
     const currentUser = {
         username: localStorage.getItem('amt_username') || null,
         role: localStorage.getItem('amt_userRole') || null
@@ -813,7 +809,8 @@
     let vsData = {
         weeks: [], 
         membersScores: [],
-        cycleStartDate: null, // ISO yyyy-mm-dd date management/admin set as the start of the current 4-week counting cycle
+        cycleStartDate: null, // ISO yyyy-mm-dd date management/admin set as the start of the current counting cycle
+        cycleEndDate: null,   // ISO yyyy-mm-dd date management/admin set as the planned end of the current counting cycle
         archives: []          // past cycles that were archived & reset, kept for historical viewing
     };
     let currentVsSubTab = 'weekly';
@@ -839,17 +836,25 @@
     }
 
     // --- Cycle helpers ---
-    function getCycleDaysElapsed() {
-        if (!vsData.cycleStartDate) return null;
-        const start = new Date(vsData.cycleStartDate + 'T00:00:00');
-        if (isNaN(start.getTime())) return null;
-        const now = new Date();
-        const diffMs = now.setHours(0,0,0,0) - start.setHours(0,0,0,0);
+    // Purely informational (how many days since the start date, and how many
+    // until the planned end date, if one is set) — archiving itself is never
+    // gated by these; admin/management can archive & reset whenever they want.
+    function daysBetween(fromDateStr, toDateStr) {
+        const from = new Date(fromDateStr + 'T00:00:00');
+        const to = new Date(toDateStr + 'T00:00:00');
+        if (isNaN(from.getTime()) || isNaN(to.getTime())) return null;
+        const diffMs = to.setHours(0,0,0,0) - from.setHours(0,0,0,0);
         return Math.floor(diffMs / (1000 * 60 * 60 * 24));
     }
-    function isCycleReadyToArchive() {
-        const days = getCycleDaysElapsed();
-        return days !== null && days >= CYCLE_LENGTH_DAYS;
+    function getCycleDaysElapsed() {
+        if (!vsData.cycleStartDate) return null;
+        const todayStr = new Date().toISOString().split('T')[0];
+        return daysBetween(vsData.cycleStartDate, todayStr);
+    }
+    function getCycleDaysRemaining() {
+        if (!vsData.cycleEndDate) return null;
+        const todayStr = new Date().toISOString().split('T')[0];
+        return daysBetween(todayStr, vsData.cycleEndDate);
     }
 
     async function loadData() {
@@ -966,29 +971,42 @@
             subtitleEl.innerText = `${activeMembers.length} members · ${vsData.weeks.length} sessions`;
         }
 
-        // Cycle info + archive controls
+        // Cycle info (purely informational) + archive controls. Admin/management
+        // can archive & reset the cycle at any time — nothing here disables that.
         const cycleInfoEl = document.getElementById('cycleInfoText');
         if (cycleInfoEl) {
-            if (!vsData.cycleStartDate) {
-                cycleInfoEl.innerText = 'No cycle start set';
+            if (!vsData.cycleStartDate && !vsData.cycleEndDate) {
+                cycleInfoEl.innerText = 'No cycle dates set';
             } else {
-                const days = getCycleDaysElapsed();
-                if (days === null) {
-                    cycleInfoEl.innerText = 'No cycle start set';
-                } else if (days >= CYCLE_LENGTH_DAYS) {
-                    cycleInfoEl.innerText = `Started ${vsData.cycleStartDate} · Day ${days} — cycle complete, ready to archive`;
+                let parts = [];
+                if (vsData.cycleStartDate) {
+                    const days = getCycleDaysElapsed();
+                    parts.push(`Started ${vsData.cycleStartDate}${days !== null ? ` (Day ${Math.max(days, 0)})` : ''}`);
                 } else {
-                    const remaining = CYCLE_LENGTH_DAYS - days;
-                    cycleInfoEl.innerText = `Started ${vsData.cycleStartDate} · Day ${Math.max(days, 0)} of ${CYCLE_LENGTH_DAYS} (${remaining} left)`;
+                    parts.push('Start date not set');
                 }
+                if (vsData.cycleEndDate) {
+                    const remaining = getCycleDaysRemaining();
+                    if (remaining === null) {
+                        parts.push(`Ends ${vsData.cycleEndDate}`);
+                    } else if (remaining > 0) {
+                        parts.push(`Ends ${vsData.cycleEndDate} (${remaining} day${remaining === 1 ? '' : 's'} left)`);
+                    } else if (remaining === 0) {
+                        parts.push(`Ends ${vsData.cycleEndDate} (today)`);
+                    } else {
+                        parts.push(`Ended ${vsData.cycleEndDate} (${Math.abs(remaining)} day${Math.abs(remaining) === 1 ? '' : 's'} ago)`);
+                    }
+                } else {
+                    parts.push('End date not set');
+                }
+                cycleInfoEl.innerText = parts.join(' · ');
             }
         }
         const archiveBtn = document.getElementById('btnArchiveCycle');
         if (archiveBtn) {
-            const ready = isCycleReadyToArchive();
-            archiveBtn.disabled = !ready;
-            archiveBtn.style.opacity = ready ? '1' : '0.5';
-            archiveBtn.style.cursor = ready ? 'pointer' : 'not-allowed';
+            archiveBtn.disabled = false;
+            archiveBtn.style.opacity = '1';
+            archiveBtn.style.cursor = 'pointer';
         }
         const archiveCountEl = document.getElementById('archiveCount');
         if (archiveCountEl) archiveCountEl.innerText = (vsData.archives || []).length;
