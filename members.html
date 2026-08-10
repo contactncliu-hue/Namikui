@@ -1020,9 +1020,10 @@ if (!currentUser.role) {
             faction,
             level,
             rank: 'R1',
-            frozenRank: 'R1',
             status: 'active',
-            note: ''
+            note: '',
+            attended: 0,
+            events: []
         });
         saveData().then(() => {
             document.getElementById('addMemberModal').style.display = 'none';
@@ -1061,7 +1062,7 @@ if (!currentUser.role) {
                     if (existing) {
                         existing.cp = parsedCp.formatted;
                         existing.rawCp = parsedCp.raw;
-                    } else {
+                  } else {
                         const defaultF1 = parseCpToRaw('0G');
                         members.push({ 
                             id: Date.now() + Math.random(), 
@@ -1074,9 +1075,10 @@ if (!currentUser.role) {
                             faction: 'F', 
                             level: '1', 
                             rank: 'R1', 
-                            frozenRank: 'R1',
                             status: 'active', 
-                            note: '' 
+                            note: '',
+                            attended: 0,
+                            events: []
                         });
                     }
                     addedCount++;
