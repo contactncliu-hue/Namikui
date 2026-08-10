@@ -529,9 +529,13 @@
     const { createClient } = supabase;
     const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     let currentUser = {
-        username: localStorage.getItem('amt_username') || 'loopy',
-        role: localStorage.getItem('amt_userRole') || 'admin'
-    };
+    username: localStorage.getItem('amt_username') || null,
+    role: localStorage.getItem('amt_userRole') || null
+};
+
+if (!currentUser.role) {
+    window.location.href = 'index.html';
+}
     const isManagementOrAdmin = currentUser.role === 'admin' || currentUser.role === 'management';
     const isAdmin = currentUser.role === 'admin';
     // --- SIDEBAR (always off-canvas; only opens via hamburger, closes via X-tap on overlay) ---
