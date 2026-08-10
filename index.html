@@ -1225,11 +1225,20 @@
                         if (row.key === 'homePhotos') homePhotos = row.value || [];
                     });
                 }
-            } catch (err) {
-                console.error('Error loading from cloud:', err);
-            }
+           } catch (err) {
+            console.error('Error loading from cloud:', err);
+        }
 
-                        pruneExpiredCalendarEvents();
+        // Members created via members.html don't include `attended`/`events` —
+        // normalize any member missing these so attendance math never hits NaN.
+        members.forEach(m => {
+            if (typeof m.attended !== 'number' || isNaN(m.attended)) m.attended = 0;
+            if (!Array.isArray(m.events)) m.events = [];
+            while (m.events.length < eventDates.length) m.events.push(false);
+        });
+        saveData();
+
+        pruneExpiredCalendarEvents();
 
             const { data: accountsData, error: accountsErr } = await db.from('accounts').select('*');
             if (!accountsErr && accountsData) accounts = accountsData;
