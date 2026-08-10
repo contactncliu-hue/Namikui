@@ -1471,21 +1471,22 @@
         window.onTargetRoleChange = function() {
             // Reserved for future role-specific field toggling
         };
-
-        document.getElementById('btnSubmitRoleAssign').addEventListener('click', () => {
-            const targetUser = document.getElementById('targetAccountSelect').value;
-            const newRole = document.getElementById('targetRoleSelect').value;
-            const acc = accounts.find(a => a.username === targetUser);
-            if (acc) {
-                const oldRole = acc.role;
-                acc.role = newRole;
-                logAction('ASSIGN_ROLE', `Admin changed role for user [${targetUser}] from ${oldRole} to ${newRole}`);
-                saveData();
-                document.getElementById('roleAssignModal').style.display = 'none';
-                alert(`Role for ${targetUser} updated successfully to ${newRole}!`);
-                render();
-            }
-        });
+window.openRoleAssignModal = function() {
+    if (currentUser.role !== 'admin') {
+        alert('Only Admin can assign roles.');
+        return;
+    }
+    if (!accounts || accounts.length === 0) {
+        alert('No registered accounts found yet.');
+        return;
+    }
+    const select = document.getElementById('targetAccountSelect');
+    select.innerHTML = accounts
+        .map(a => `<option value="${a.username}">${a.username} (${a.role})</option>`)
+        .join('');
+    onTargetAccountChange();
+    document.getElementById('roleAssignModal').style.display = 'flex';
+};
 
         function showLoginScreen() {
             appDashboard.style.display = 'none';
