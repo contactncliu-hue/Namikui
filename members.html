@@ -393,11 +393,11 @@
                             <th class="col-rank">#</th>
                             <th class="col-name">In-Game Name</th>
                             <th class="col-cp">Combat Power (CP)</th>
-                            <th class="col-f1">F1 Power</th>
+                            <th class="col-f1" id="thF1Power">F1 Power</th>
                             <th style="text-align: center;">Faction</th>
                             <th class="col-level-cell" style="text-align: center;">Level</th>
                             <th style="text-align: center;">Rank</th>
-                            <th style="text-align: center;">Diff</th>
+                            <th style="text-align: center;" id="thDiff">Diff</th>
                             <th class="col-note-cell">Note</th>
                             <th style="text-align: center;" id="thActionHeader" style="display: none;">Action</th>
                         </tr>
@@ -677,6 +677,9 @@ if (!currentUser.role) {
         document.getElementById('importBtn').style.display = isManagementOrAdmin ? 'flex' : 'none';
         document.getElementById('btnAddMemberModal').style.display = isManagementOrAdmin ? 'flex' : 'none';
         document.getElementById('thActionHeader').style.display = isManagementOrAdmin ? 'table-cell' : 'none';
+        document.getElementById('thF1Power').style.display = isManagementOrAdmin ? 'table-cell' : 'none';
+        document.getElementById('thDiff').style.display = isManagementOrAdmin ? 'table-cell' : 'none';
+        document.getElementById('btnToggleDiff').style.display = isManagementOrAdmin ? 'inline-flex' : 'none';
         const filterQuery = document.getElementById('searchInput').value.toLowerCase();
         // Count total active/inactive members (strictly excluding removed ones from general totals)
         const activeOrInactiveMembers = members.filter(m => m.status !== 'removed');
@@ -741,6 +744,15 @@ if (!currentUser.role) {
                 </td>
             ` : '';
             const historyCount = member.f1History ? member.f1History.length : 0;
+            const f1Cell = isManagementOrAdmin ? `
+                <td>
+                    <div style="display: flex; flex-direction: column;">
+                        <input type="text" value="${member.f1Cp || '0G'}" onchange="updateF1Power(${member.id}, this.value)" onkeydown="if(event.key==='Enter') { this.blur(); }" class="editable-input" placeholder="0G">
+                        <button class="f1-history-badge" onclick="openF1History(${member.id})"><i class="fa-solid fa-clock-rotate-left"></i> History (${historyCount})</button>
+                    </div>
+                </td>
+            ` : '';
+            const diffCell = isManagementOrAdmin ? `<td style="text-align: center;">${diffHtml}</td>` : '';
             const statusTabsContent = isManagementOrAdmin ? `
                 <div class="status-tabs">
                     <button onclick="setPlayerStatus(${member.id}, 'active')" class="status-tab ${isAct ? 'active-active' : ''}" title="Active">A</button>
@@ -776,12 +788,7 @@ if (!currentUser.role) {
                     <td>
                         <input type="text" value="${member.cp || '0'}" ${isManagementOrAdmin ? `onchange="updateCombatPower(${member.id}, this.value)" onkeydown="if(event.key==='Enter') { this.blur(); }"` : 'readonly'} class="editable-input" style="font-family: monospace; font-weight: 800; color: #16a34a;" placeholder="e.g. 5,390,000,000">
                     </td>
-                    <td>
-                        <div style="display: flex; flex-direction: column;">
-                            <input type="text" value="${member.f1Cp || '0G'}" ${isManagementOrAdmin ? `onchange="updateF1Power(${member.id}, this.value)" onkeydown="if(event.key==='Enter') { this.blur(); }"` : 'readonly'} class="editable-input" placeholder="0G">
-                            <button class="f1-history-badge" onclick="openF1History(${member.id})"><i class="fa-solid fa-clock-rotate-left"></i> History (${historyCount})</button>
-                        </div>
-                    </td>
+                    ${f1Cell}
                     <td style="text-align: center;">
                         ${factionCircleContent}
                     </td>
@@ -791,7 +798,7 @@ if (!currentUser.role) {
                         </select>
                     </td>
                     <td style="text-align: center; font-weight: 800; color: var(--color-primary-dark);">#${rank}</td>
-                    <td style="text-align: center;">${diffHtml}</td>
+                    ${diffCell}
                     <td class="col-note-cell">
                         <input type="text" value="${member.note || ''}" ${isManagementOrAdmin ? `onchange="updateMemberMeta(${member.id}, 'note', this.value)" onkeydown="if(event.key==='Enter') { this.blur(); }"` : 'readonly'} class="editable-input" placeholder="Add note...">
                     </td>
@@ -800,7 +807,7 @@ if (!currentUser.role) {
             `;
         });
         tbody.innerHTML = html;
-        const colSpanVal = isManagementOrAdmin ? 10 : 9;
+        const colSpanVal = isManagementOrAdmin ? 10 : 7;
         tableFooterRow.innerHTML = `<tr><td colspan="${colSpanVal}">Showing ${filtered.length} of ${activeOrInactiveMembers.length} active/inactive members</td></tr>`;
     }
     function generateLevelOptions(currentVal) {
