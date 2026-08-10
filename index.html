@@ -3284,6 +3284,22 @@
             new MutationObserver(killGoogleBar).observe(document.documentElement, { attributes: true, attributeFilter: ['style', 'class'], subtree: true });
             setInterval(killGoogleBar, 500);
         })();
+            <!-- Your existing HTML dashboard structure and modals go here -->
+
+    <!-- Supabase CDN Script (Must be placed before your custom script) -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <!-- Paste your custom Supabase script right here -->
+    <script>
+        const SUPABASE_URL = 'https://sqrrfslqwcgpsmzdovru.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_rb70-VY2GstWzdoXmoUkwg_Iw3EiqFO';
+        const { createClient } = supabase;
+        const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let currentUser = {
+            username: localStorage.getItem('amt_username') || null,
+            role: localStorage.getItem('amt_userRole') || null
+        };
     </script>
 </body>
 </html>
