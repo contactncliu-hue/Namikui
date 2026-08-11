@@ -823,6 +823,44 @@
         });
         return { member: best, score: bestScore };
     }
+        function extractScoreFromLine(line) {
+        // Abbreviated e.g. 23.2M, 800K
+        let m = line.match(/(\d+(?:\.\d+)?)\s*([MK])\b/i);
+        if (m) {
+            const num = parseFloat(m[1]);
+            const mult = m[2].toUpperCase() === 'M' ? 1000000 : 1000;
+            return { value: Math.round(num * mult), matchIndex: m.index };
+        }
+        // Full comma-grouped number, e.g. 13,467,514
+        m = line.match(/\b\d{1,3}(?:,\d{3})+\b/);
+        if (m) {
+            return { value: parseInt(m[0].replace(/,/g, ''), 10), matchIndex: m.index };
+        }
+        // Plain 4+ digit number with no comma
+        m = line.match(/\b\d{4,}\b/);
+        if (m) {
+            return { value: parseInt(m[0], 10), matchIndex: m.index };
+        }
+        return null;
+    }
+
+    function isChromeLine(line) {
+        const chromeKeywords = ['ranking', 'daily duel', 'duel week', 'league rank', 'view rewards', 'event ends', 'view', 'my alliance', 'alliance duel'];
+        const lower = line.toLowerCase();
+        return chromeKeywords.some(k => lower.includes(k));
+    }
+
+    function isTagOnlyLine(line) {
+        return /^\[.*\]$/.test(line.trim());
+    }
+
+    function isPureNumberLine(line) {
+        return /^\d+$/.test(line.trim());
+    }
+
+    function looksLikeNameLine(line) {
+        return /[a-zA-Z\u00C0-\u024F\u4e00-\u9fff\uac00-\ud7af]/.test(line);
+    }
 
     const currentUser = {
         username: localStorage.getItem('amt_username') || null,
@@ -1344,7 +1382,7 @@
         }
     };
 
-        window.handleVsScreenshotImport = async function(event) {
+            window.handleVsScreenshotImport = async function(event) {
         if (!isManagementOrAdmin) return;
         const file = event.target.files[0];
         if (!file) return;
@@ -1354,6 +1392,100 @@
             event.target.value = '';
             return;
         }
+
+        const targetWeekIdx = vsData.weeks.length - 1;
+        const targetWeekLabel = getWeekDate(vsData.weeks[targetWeekIdx]);
+
+        const importBtn = document.getElementById('btnImportVs');
+        const originalBtnText = importBtn ? importBtn.innerText : '📥 IMPORT';
+        if (importBtn) { importBtn.innerText = 'READING…'; importBtn.disabled = true; }
+
+        try {
+            const { data: { text } } = await Tesseract.recognize(file, 'eng+chi_sim+kor+vie');
+
+            const activeMembers = getActiveMembers();
+            const rawPairs = [];
+            let pendingNameLine = null;
+
+            text.split('\n').forEach(rawLine => {
+                const trimmed = rawLine.trim();
+                if (!trimmed) return;
+
+                if (isChromeLine(trimmed)) { pendingNameLine = null; return; }
+                if (isTagOnlyLine(trimmed)) return;
+                if (isPureNumberLine(trimmed)) return;
+
+                const scoreInfo = extractScoreFromLine(trimmed);
+                if (scoreInfo) {
+                    const inlineNamePart = trimmed.slice(0, scoreInfo.matchIndex)
+                        .replace(/[•|:>#\-–\[\]]+$/, '').trim();
+                    const nameGuess = inlineNamePart.length >= 2 ? inlineNamePart : pendingNameLine;
+                    if (nameGuess) {
+                        rawPairs.push({ nameGuess, value: scoreInfo.value });
+                    }
+                    pendingNameLine = null;
+                    return;
+                }
+
+                if (looksLikeNameLine(trimmed)) {
+                    pendingNameLine = trimmed;
+                }
+            });
+
+            const matches = [];
+            const unmatched = [];
+
+            rawPairs.forEach(pair => {
+                const { member, score } = findBestMemberMatch(pair.nameGuess, activeMembers);
+                if (member && score >= 0.55) {
+                    const existingIdx = matches.findIndex(m => String(m.member.id) === String(member.id));
+                    if (existingIdx === -1 || matches[existingIdx].score < score) {
+                        if (existingIdx > -1) matches.splice(existingIdx, 1);
+                        matches.push({ member, score, extractedValue: pair.value });
+                    }
+                } else {
+                    unmatched.push(`${pair.nameGuess}: ${pair.value.toLocaleString()}`);
+                }
+            });
+
+            if (matches.length === 0) {
+                alert('No member names could be matched from this screenshot. The image was read, but none of the extracted names matched your roster closely enough — check that these players exist in Members.');
+                return;
+            }
+
+            let summary = `Matched ${matches.length} member(s) for "${targetWeekLabel}":\n\n`;
+            matches
+                .sort((a, b) => b.extractedValue - a.extractedValue)
+                .forEach(m => {
+                    summary += `${m.member.name}: ${m.extractedValue.toLocaleString()}${m.score < 0.85 ? '  (fuzzy match — please double-check)' : ''}\n`;
+                });
+            if (unmatched.length > 0) {
+                summary += `\n${unmatched.length} line(s) had a score but no matching member and were skipped:\n${unmatched.join('\n')}`;
+            }
+            summary += `\n\nApply these scores to the "${targetWeekLabel}" column?`;
+
+            if (!confirm(summary)) return;
+
+            matches.forEach(m => {
+                const scoreEntry = vsData.membersScores.find(s => String(s.id) === String(m.member.id));
+                if (scoreEntry) {
+                    if (!Array.isArray(scoreEntry.scores)) scoreEntry.scores = [];
+                    while (scoreEntry.scores.length <= targetWeekIdx) scoreEntry.scores.push(0);
+                    scoreEntry.scores[targetWeekIdx] = m.extractedValue;
+                }
+            });
+
+            await saveData();
+            renderVsPoints();
+            alert(`Applied ${matches.length} score(s) to "${targetWeekLabel}".`);
+        } catch (err) {
+            console.error('OCR import error:', err);
+            alert('Could not read the screenshot. Please try again with a clearer image.');
+        } finally {
+            if (importBtn) { importBtn.innerText = originalBtnText; importBtn.disabled = false; }
+            event.target.value = '';
+        }
+    };
 
         const targetWeekIdx = vsData.weeks.length - 1; // most recently added (rightmost) date column
         const targetWeekLabel = getWeekDate(vsData.weeks[targetWeekIdx]);
