@@ -387,6 +387,62 @@
     }
     .archive-entry__row:last-child { border-bottom: none; }
 
+    /* ===== Import Review Modal ===== */
+    .import-review-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 8px;
+        border-bottom: 1px solid var(--color-border-light);
+        font-family: var(--font-family-base);
+    }
+    .import-review-row:last-child { border-bottom: none; }
+    .import-review-row__raw {
+        flex: 1.3;
+        font-size: 11px;
+        color: var(--color-text-muted);
+        font-weight: 700;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .import-review-row select {
+        flex: 1.4;
+        padding: 6px 8px;
+        border: 1px solid #d1d5db;
+        border-radius: 4px;
+        font-size: 12px;
+        font-family: var(--font-family-base);
+        font-weight: 700;
+    }
+    .import-review-row input[type="number"] {
+        width: 100px;
+        padding: 6px 8px;
+        border: 1px solid #d1d5db;
+        border-radius: 4px;
+        font-size: 12px;
+        font-family: var(--font-family-base);
+        font-weight: 700;
+        text-align: right;
+    }
+    .import-review-row__conf {
+        font-size: 10px;
+        font-weight: 800;
+        padding: 2px 6px;
+        border-radius: 3px;
+        white-space: nowrap;
+    }
+    .conf-high { background: #e6f4ea; color: #1f9d55; }
+    .conf-low { background: #fce8e6; color: #d9381e; }
+    .import-review-section-label {
+        font-size: 11px;
+        font-weight: 800;
+        color: var(--color-text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin: 14px 0 6px;
+    }
+
     /* ===== Sidebar / App Shell (copied from index.html for uniformity) ===== */
     .app-shell { display: flex; width: 100%; min-height: 100vh; }
     .sidebar {
@@ -675,6 +731,33 @@
     </div>
 </div>
 
+<!-- VS Import Review Modal -->
+<div class="modal-overlay" id="vsImportReviewModal">
+    <div class="modal-card" style="max-width: 640px;">
+        <h3>Review Import — <span id="vsImportTargetLabel"></span> <span class="modal-close-x" onclick="closeVsImportReviewModal()">✕</span></h3>
+        <div style="font-size:11px; color:var(--color-text-muted); font-weight:700; margin-bottom:12px;">
+            This shows exactly what OCR read from the screenshot. Check the member and score on each row, uncheck anything wrong, then apply — nothing is saved until you click Apply.
+        </div>
+        <div class="import-review-section-label">Matched Rows</div>
+        <div id="vsImportReviewRows"></div>
+        <div id="vsImportUnmatchedWrap" style="display:none;">
+            <div class="import-review-section-label">Unmatched Rows (pick a member or leave as Skip)</div>
+            <div id="vsImportUnmatchedRows"></div>
+        </div>
+        <div id="vsImportAddRowWrap" style="display:none; margin-top:10px;">
+            <button class="btn-action" style="font-size:11px; padding:8px 14px;" onclick="addManualVsImportRow()">+ ADD ROW MANUALLY</button>
+        </div>
+        <details id="vsImportRawTextWrap" style="display:none; margin-top:14px;">
+            <summary style="cursor:pointer; font-size:11px; font-weight:800; color:var(--color-text-muted); text-transform:uppercase; letter-spacing:0.5px;">Raw OCR Text (what Tesseract actually read)</summary>
+            <pre id="vsImportRawText" style="white-space:pre-wrap; font-size:11px; background:#f7f6f0; border:1px solid var(--color-border-light); border-radius:4px; padding:10px; margin-top:8px; max-height:180px; overflow-y:auto; font-family:monospace;"></pre>
+        </details>
+        <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:16px;">
+            <button class="btn-action" onclick="closeVsImportReviewModal()">Cancel</button>
+            <button class="btn-gold" onclick="applyVsImportReview()">✔ APPLY CHECKED ROWS</button>
+        </div>
+    </div>
+</div>
+
 <script type="text/javascript">
     function googleTranslateElementInit() {
         new google.translate.TranslateElement({
@@ -802,9 +885,22 @@
         return matrix[a.length][b.length];
     }
 
+    // Strips accents/diacritics and decorative symbols so OCR noise on names
+    // like "Hơng Śi" or "Lyffy • Hedgie° •" doesn't tank the similarity score
+    // against a clean roster name like "Hong Si".
+    function normalizeForMatch(str) {
+        if (!str) return '';
+        return str
+            .normalize('NFKD')
+            .replace(/[\u0300-\u036f]/g, '')   // strip combining accent marks
+            .replace(/[•°´˙‧·|›»«"'`]/g, '')   // strip decorative symbols
+            .replace(/\s+/g, ' ')
+            .trim();
+    }
+
     function nameSimilarity(a, b) {
-        const normA = (a || '').toLowerCase().trim();
-        const normB = (b || '').toLowerCase().trim();
+        const normA = normalizeForMatch(a).toLowerCase();
+        const normB = normalizeForMatch(b).toLowerCase();
         if (!normA || !normB) return 0;
         if (normA === normB) return 1;
         const dist = levenshteinDistance(normA, normB);
@@ -825,25 +921,84 @@
         return { member: best, score: bestScore };
     }
 
+    // Stylized game fonts commonly get OCR'd with digits swapped for
+    // lookalike letters (O/o->0, I/l/i->1, S->5, B->8, Z->2, G->6). This is
+    // only applied to a substring that has already matched a number-shaped
+    // pattern (so it never touches actual name text) before parsing it.
+    function fixOcrDigitLookalikes(numStr) {
+        return numStr
+            .replace(/[Oo]/g, '0')
+            .replace(/[IilL]/g, '1')
+            .replace(/[Ss]/g, '5')
+            .replace(/[Bb]/g, '8')
+            .replace(/[Zz]/g, '2')
+            .replace(/[Gg]/g, '6');
+    }
+
+    // Sanity ceiling for a parsed VS-points score. Nothing in this game's VS
+    // events realistically clears ~100M (the app's own Weekly threshold is
+    // 12.168M, Daily is 2.028M, and the highest score ever seen on a
+    // screenshot so far is ~23M). A parsed value above this is far more
+    // likely to be OCR fusing two lines/columns together (e.g. a name
+    // fragment's digits glued onto a score) than a real score, so it's
+    // rejected here rather than silently accepted and shown as a
+    // "confident" match. This never rejects a *smaller* number derived from
+    // an M/K-suffixed short form (23.2M -> 23,200,000 stays comfortably
+    // under the ceiling).
+    const MAX_PLAUSIBLE_SCORE = 100000000;
+
     function extractScoreFromLine(line) {
+        let result = null;
+
         // Abbreviated e.g. 23.2M, 800K
         let m = line.match(/(\d+(?:\.\d+)?)\s*([MK])\b/i);
         if (m) {
             const num = parseFloat(m[1]);
             const mult = m[2].toUpperCase() === 'M' ? 1000000 : 1000;
-            return { value: Math.round(num * mult), matchIndex: m.index };
+            result = { value: Math.round(num * mult), matchIndex: m.index };
         }
+
         // Full comma-grouped number, e.g. 13,467,514
-        m = line.match(/\b\d{1,3}(?:,\d{3})+\b/);
-        if (m) {
-            return { value: parseInt(m[0].replace(/,/g, ''), 10), matchIndex: m.index };
+        if (!result) {
+            m = line.match(/\b\d{1,3}(?:,\d{3})+\b/);
+            if (m) {
+                result = { value: parseInt(m[0].replace(/,/g, ''), 10), matchIndex: m.index };
+            }
         }
+
         // Plain 4+ digit number with no comma
-        m = line.match(/\b\d{4,}\b/);
-        if (m) {
-            return { value: parseInt(m[0], 10), matchIndex: m.index };
+        if (!result) {
+            m = line.match(/\b\d{4,}\b/);
+            if (m) {
+                result = { value: parseInt(m[0], 10), matchIndex: m.index };
+            }
         }
-        return null;
+
+        // Noisy abbreviated fallback: allow common digit/letter OCR mixups
+        // right before an M/K suffix, e.g. "23.ZM" (should be 23.2M) or
+        // "8OOK" (should be 800K). Only kicks in when the clean patterns
+        // above find nothing, and only the matched numeric-shaped chunk is
+        // touched — never the rest of the line.
+        if (!result) {
+            m = line.match(/\b([0-9OoIilLSsBbZzGg]{1,3}(?:\.[0-9OoIilLSsBbZzGg]{1,3})?)\s*([MK])\b/);
+            if (m) {
+                const fixed = fixOcrDigitLookalikes(m[1]);
+                const num = parseFloat(fixed);
+                if (!isNaN(num)) {
+                    const mult = m[2].toUpperCase() === 'M' ? 1000000 : 1000;
+                    result = { value: Math.round(num * mult), matchIndex: m.index };
+                }
+            }
+        }
+
+        if (!result) return null;
+
+        // Reject implausibly large values instead of trusting them — these are
+        // almost always OCR fusing two separate lines/columns into one number
+        // rather than a real in-game score.
+        if (result.value > MAX_PLAUSIBLE_SCORE) return null;
+
+        return result;
     }
 
     function isChromeLine(line) {
@@ -858,6 +1013,20 @@
 
     function isPureNumberLine(line) {
         return /^\d+$/.test(line.trim());
+    }
+
+    // Catches a mangled alliance tag (e.g. "z0.0]", "[zO.O", "lzO.OJ") that
+    // slipped past isTagOnlyLine because OCR dropped or garbled a bracket.
+    // Unlike the old version, this no longer depends on "the line right
+    // before this one was a captured name" — row pairing is now done by
+    // bounding-box position, not stream order, so that sequential state
+    // isn't reliably available. Instead this only fires when the fragment
+    // itself contains a bracket character, which real member names never
+    // do (so short ASCII names like "BOM" or "Six" are never caught here).
+    function looksLikeTagFragment(line) {
+        const trimmed = line.trim();
+        if (trimmed.length > 12) return false;
+        return /[\[\]]/.test(trimmed) && /^[\[\]a-zA-Z0-9.\-_]{1,12}$/.test(trimmed);
     }
 
     function looksLikeNameLine(line) {
@@ -1384,6 +1553,268 @@
         }
     };
 
+    // Upscales and binarizes the screenshot before OCR — tuned specifically
+    // for the SCORE numbers (bold, thick-outlined game-UI digits).
+    //
+    // Calibrated against actual pixel samples pulled from this app's real
+    // screenshots (checked across the gold/blue/peach/beige/brown row
+    // backgrounds): the in-game score text is drawn as a white fill with a
+    // dark outline stroke — text-fill luminance measured ~250-255, the dark
+    // outline stroke measured ~0-55 even on the darkest (brown) row
+    // background, while every row *background* color measured in the
+    // ~140-202 range. That's a clean, well-separated gap, so hard
+    // binarizing on it (pixel -> pure black "text" or pure white
+    // "background") makes the bold score digits crisp regardless of which
+    // row background they sit on.
+    const BRIGHT_THRESHOLD = 225; // white text fill; safely above every sampled background (~140-202)
+    const DARK_THRESHOLD = 80;    // dark outline stroke; safely below every sampled background
+
+    function preprocessImageForOcrScores(file) {
+        return preprocessImageForOcr(file, (data) => {
+            for (let i = 0; i < data.length; i += 4) {
+                const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+                const isText = gray >= BRIGHT_THRESHOLD || gray <= DARK_THRESHOLD;
+                const out = isText ? 0 : 255; // black text on white background, which OCR engines read best
+                data[i] = data[i + 1] = data[i + 2] = out;
+            }
+        });
+    }
+
+    // Upscales and mildly contrast-stretches the screenshot before OCR —
+    // tuned for the MEMBER NAME text, which is a much smaller, regular
+    // (non-outlined, antialiased) UI font compared to the bold score
+    // digits. Hard binarizing that font (as the score pass does) erodes its
+    // thinner strokes into disconnected fragments — that's what was
+    // producing garbage single/double-letter reads ("a", "rr", "ul") in
+    // place of actual names. This pass keeps the grayscale mid-tones
+    // (percentile-based contrast stretch, no hard black/white clipping) so
+    // the antialiased edges Tesseract relies on for smaller text survive.
+    function preprocessImageForOcrNames(file) {
+        return preprocessImageForOcr(file, (data) => {
+            for (let i = 0; i < data.length; i += 4) {
+                const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+                data[i] = data[i + 1] = data[i + 2] = gray;
+            }
+            const hist = new Array(256).fill(0);
+            for (let i = 0; i < data.length; i += 4) hist[Math.round(data[i])]++;
+            const totalPixels = data.length / 4;
+            let cum = 0, lo = 0, hi = 255;
+            for (let v = 0; v < 256; v++) {
+                cum += hist[v];
+                if (cum >= totalPixels * 0.01) { lo = v; break; }
+            }
+            cum = 0;
+            for (let v = 255; v >= 0; v--) {
+                cum += hist[v];
+                if (cum >= totalPixels * 0.01) { hi = v; break; }
+            }
+            const range = Math.max(hi - lo, 1);
+            for (let i = 0; i < data.length; i += 4) {
+                let v = ((data[i] - lo) / range) * 255;
+                data[i] = data[i + 1] = data[i + 2] = Math.max(0, Math.min(255, v));
+            }
+        });
+    }
+
+    // Shared upscale + canvas setup. `applyFilter(data)` mutates the raw
+    // RGBA pixel array in place with whichever tone-mapping the caller
+    // needs. Both preprocessing variants above use the SAME scale factor on
+    // the SAME source image, which matters: it keeps their output images
+    // pixel-dimension-identical, so bounding boxes from OCR runs on either
+    // one land in the same coordinate space and can be compared directly
+    // when pairing names to scores by row position later.
+    function preprocessImageForOcr(file, applyFilter) {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => {
+                const scale = 3;
+                const canvas = document.createElement('canvas');
+                canvas.width = img.width * scale;
+                canvas.height = img.height * scale;
+                const ctx = canvas.getContext('2d');
+                ctx.imageSmoothingEnabled = true;
+                ctx.imageSmoothingQuality = 'high';
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                applyFilter(imageData.data);
+
+                ctx.putImageData(imageData, 0, 0);
+                canvas.toBlob(blob => {
+                    if (blob) resolve(blob);
+                    else reject(new Error('Canvas toBlob failed'));
+                }, 'image/png');
+            };
+            img.onerror = reject;
+            img.src = URL.createObjectURL(file);
+        });
+    }
+
+    // Runs Tesseract on the preprocessed image using SPARSE_TEXT page
+    // segmentation mode instead of the library default (Auto/PSM 3).
+    //
+    // Why this matters: this app's screenshots are lists of short, spatially
+    // separate blocks (icon + name + tag on the left, a big score on the
+    // right, close together but NOT a real multi-column document). PSM 3
+    // tries to detect columns/paragraphs and stitch fragments into "reading
+    // order" lines, and on this layout it was fusing pieces from different
+    // rows/columns into single garbled lines — e.g. a stray tag fragment
+    // glued onto a name, or the wrong digits glued onto a score. That's how
+    // a screenshot with 7 clearly separate rows was collapsing down to a
+    // single corrupted row.
+    //
+    // SPARSE_TEXT tells Tesseract to find text blocks independently,
+    // without trying to force them into a column/paragraph structure, which
+    // matches this list-of-rows layout much better and stops it from
+    // merging adjacent rows together.
+    //
+    // A persistent worker is reused across calls instead of recreated every
+    // import, since createWorker() has real startup cost (loading the
+    // language data) and repeated imports are the common case here.
+    let ocrWorkerPromise = null;
+    async function getOcrWorker() {
+        if (!ocrWorkerPromise) {
+            ocrWorkerPromise = (async () => {
+                const worker = await Tesseract.createWorker('eng+chi_sim+kor+vie');
+                await worker.setParameters({
+                    tessedit_pageseg_mode: Tesseract.PSM.SPARSE_TEXT
+                });
+                return worker;
+            })();
+        }
+        return ocrWorkerPromise;
+    }
+
+    // Flattens Tesseract's block -> paragraph -> line structure into a flat
+    // array of { text, bbox } lines. Falls back to splitting data.text by
+    // newline (with no bbox) if the structured shape isn't present, so a
+    // Tesseract.js version/API mismatch degrades gracefully instead of
+    // throwing.
+    function flattenOcrLines(data) {
+        const lines = [];
+        if (data && Array.isArray(data.blocks)) {
+            data.blocks.forEach(block => {
+                (block.paragraphs || []).forEach(para => {
+                    (para.lines || []).forEach(line => {
+                        if (line && line.text && line.text.trim()) {
+                            lines.push({ text: line.text, bbox: line.bbox || null });
+                        }
+                    });
+                });
+            });
+        }
+        if (lines.length === 0 && data && typeof data.text === 'string') {
+            data.text.split('\n').forEach(t => {
+                if (t.trim()) lines.push({ text: t, bbox: null });
+            });
+        }
+        return lines;
+    }
+
+    function bboxYCenter(bbox) {
+        if (!bbox) return null;
+        return (bbox.y0 + bbox.y1) / 2;
+    }
+
+    // Builds { nameGuess, value } pairs from two SEPARATE OCR runs — one on
+    // the image preprocessed for score digits, one on the image
+    // preprocessed for name text (see preprocessImageForOcrScores /
+    // preprocessImageForOcrNames above). Each font needs different tone
+    // mapping to read reliably, so they're OCR'd independently rather than
+    // classifying name-vs-score lines out of one pass.
+    //
+    // Because both passes upscale the SAME source image by the SAME factor,
+    // their bounding boxes land in the same coordinate space. So instead of
+    // assuming a name and its score come out next to each other in
+    // whichever order either OCR run reports them (which isn't reliable),
+    // every score block is paired with whichever name block sits at the
+    // closest vertical (Y) position — i.e. whichever row it's actually on
+    // in the screenshot. When bbox data isn't available at all (older
+    // Tesseract.js response shape), this falls back to pairing scores with
+    // names in the order each list was collected, as a best-effort degrade.
+    function buildRawPairsFromOcrLines(nameLines, scoreLines) {
+        const rawPairs = [];
+        const pendingNames = []; // { text, bbox, claimed }
+        const pendingScores = []; // { value, bbox, claimed }
+
+        nameLines.forEach(line => {
+            const trimmed = (line.text || '').trim();
+            if (!trimmed) return;
+            if (isChromeLine(trimmed)) return;
+            if (isTagOnlyLine(trimmed)) return;
+            if (isPureNumberLine(trimmed)) return;
+            if (looksLikeTagFragment(trimmed)) return;
+            // Ignore anything that's actually a score digit leaking through
+            // the name pass — that belongs to the score pass instead.
+            if (extractScoreFromLine(trimmed)) return;
+            if (trimmed.length < 2) return; // single-character reads are almost always OCR noise
+            if (looksLikeNameLine(trimmed)) {
+                pendingNames.push({ text: trimmed, bbox: line.bbox, claimed: false });
+            }
+        });
+
+        scoreLines.forEach(line => {
+            const trimmed = (line.text || '').trim();
+            if (!trimmed) return;
+            if (isChromeLine(trimmed)) return;
+            const scoreInfo = extractScoreFromLine(trimmed);
+            if (scoreInfo) {
+                pendingScores.push({ value: scoreInfo.value, bbox: line.bbox, claimed: false });
+            }
+        });
+
+        const haveBboxes = pendingScores.some(s => s.bbox) && pendingNames.some(n => n.bbox);
+
+        if (haveBboxes) {
+            // Row-height-scale tolerance: use the median box height (roughly
+            // one row's height) as the matching window, with a sane floor so
+            // it isn't thrown off by a single stray box.
+            const heights = [...pendingScores, ...pendingNames]
+                .map(e => e.bbox ? (e.bbox.y1 - e.bbox.y0) : null)
+                .filter(h => h);
+            const medianHeight = heights.length
+                ? heights.sort((a, b) => a - b)[Math.floor(heights.length / 2)]
+                : 40;
+            const maxYDist = Math.max(medianHeight * 3, 50);
+
+            pendingScores.forEach(score => {
+                const scoreY = bboxYCenter(score.bbox);
+                if (scoreY == null) return;
+                let best = null;
+                let bestDist = Infinity;
+                pendingNames.forEach(name => {
+                    if (name.claimed) return;
+                    const nameY = bboxYCenter(name.bbox);
+                    if (nameY == null) return;
+                    const dist = Math.abs(nameY - scoreY);
+                    if (dist < bestDist) {
+                        bestDist = dist;
+                        best = name;
+                    }
+                });
+                if (best && bestDist <= maxYDist) {
+                    best.claimed = true;
+                    rawPairs.push({ nameGuess: best.text, value: score.value });
+                }
+            });
+        } else {
+            // No usable bbox data (older Tesseract.js response shape) — fall
+            // back to pairing scores with names in collection order.
+            let nameIdx = 0;
+            pendingScores.forEach(score => {
+                while (nameIdx < pendingNames.length && pendingNames[nameIdx].claimed) nameIdx++;
+                if (nameIdx < pendingNames.length) {
+                    pendingNames[nameIdx].claimed = true;
+                    rawPairs.push({ nameGuess: pendingNames[nameIdx].text, value: score.value });
+                }
+            });
+        }
+
+        return rawPairs;
+    }
+
+    // --- Screenshot import: OCR extraction, then hand off to the review modal
+    // for admin/management to double-check before anything is saved. ---
     window.handleVsScreenshotImport = async function(event) {
         if (!isManagementOrAdmin) return;
         const file = event.target.files[0];
@@ -1403,83 +1834,82 @@
         if (importBtn) { importBtn.innerText = 'READING…'; importBtn.disabled = true; }
 
         try {
-            const { data: { text } } = await Tesseract.recognize(file, 'eng+chi_sim+kor+vie');
+            // Two separate preprocessing passes on the same source image —
+            // one tuned for the bold outlined score digits, one gentler pass
+            // tuned for the smaller antialiased name text. See the comments
+            // on preprocessImageForOcrScores / preprocessImageForOcrNames
+            // for why a single shared preprocessing step can't serve both.
+            const [scoreBlob, nameBlob] = await Promise.all([
+                preprocessImageForOcrScores(file),
+                preprocessImageForOcrNames(file)
+            ]);
+
+            const worker = await getOcrWorker();
+            // Request block/line-level data (not just the flat text string) so
+            // each recognized line comes with its bounding box. That's what
+            // lets row-pairing below use vertical position instead of stream
+            // order — see the comment on buildRawPairsFromOcrLines. The two
+            // recognize calls run sequentially on the shared worker (a
+            // Tesseract worker processes one job at a time).
+            const scoreResult = await worker.recognize(scoreBlob, {}, { blocks: true });
+            const nameResult = await worker.recognize(nameBlob, {}, { blocks: true });
+
+            const scoreLines = flattenOcrLines(scoreResult.data);
+            const nameLines = flattenOcrLines(nameResult.data);
+            const rawText =
+                '--- score pass ---\n' + (scoreResult.data.text || scoreLines.map(l => l.text).join('\n')) +
+                '\n\n--- name pass ---\n' + (nameResult.data.text || nameLines.map(l => l.text).join('\n'));
 
             const activeMembers = getActiveMembers();
-            const rawPairs = [];
-            let pendingNameLine = null;
+            const rawPairs = buildRawPairsFromOcrLines(nameLines, scoreLines);
 
-            text.split('\n').forEach(rawLine => {
-                const trimmed = rawLine.trim();
-                if (!trimmed) return;
-
-                if (isChromeLine(trimmed)) { pendingNameLine = null; return; }
-                if (isTagOnlyLine(trimmed)) return;
-                if (isPureNumberLine(trimmed)) return;
-
-                const scoreInfo = extractScoreFromLine(trimmed);
-                if (scoreInfo) {
-                    const inlineNamePart = trimmed.slice(0, scoreInfo.matchIndex)
-                        .replace(/[•|:>#\-–\[\]]+$/, '').trim();
-                    const nameGuess = inlineNamePart.length >= 2 ? inlineNamePart : pendingNameLine;
-                    if (nameGuess) {
-                        rawPairs.push({ nameGuess, value: scoreInfo.value });
-                    }
-                    pendingNameLine = null;
-                    return;
-                }
-
-                if (looksLikeNameLine(trimmed)) {
-                    pendingNameLine = trimmed;
-                }
-            });
-
-            const matches = [];
-            const unmatched = [];
-
-            rawPairs.forEach(pair => {
-                const { member, score } = findBestMemberMatch(pair.nameGuess, activeMembers);
-                if (member && score >= 0.55) {
-                    const existingIdx = matches.findIndex(m => String(m.member.id) === String(member.id));
-                    if (existingIdx === -1 || matches[existingIdx].score < score) {
-                        if (existingIdx > -1) matches.splice(existingIdx, 1);
-                        matches.push({ member, score, extractedValue: pair.value });
-                    }
-                } else {
-                    unmatched.push(`${pair.nameGuess}: ${pair.value.toLocaleString()}`);
-                }
-            });
-
-            if (matches.length === 0) {
-                alert('No member names could be matched from this screenshot. The image was read, but none of the extracted names matched your roster closely enough — check that these players exist in Members.');
+            // Even on a total miss, open the review modal instead of dead-ending
+            // with an alert: it shows the raw text Tesseract actually produced
+            // (so you can see whether it read the image at all) and lets
+            // admin/management manually add rows by hand from the screenshot.
+            if (rawPairs.length === 0) {
+                openVsImportReviewModal([], [], targetWeekIdx, targetWeekLabel, activeMembers, rawText);
                 return;
             }
 
-            let summary = `Matched ${matches.length} member(s) for "${targetWeekLabel}":\n\n`;
-            matches
-                .sort((a, b) => b.extractedValue - a.extractedValue)
-                .forEach(m => {
-                    summary += `${m.member.name}: ${m.extractedValue.toLocaleString()}${m.score < 0.85 ? '  (fuzzy match — please double-check)' : ''}\n`;
-                });
-            if (unmatched.length > 0) {
-                summary += `\n${unmatched.length} line(s) had a score but no matching member and were skipped:\n${unmatched.join('\n')}`;
-            }
-            summary += `\n\nApply these scores to the "${targetWeekLabel}" column?`;
+            // Build matched/unmatched rows, keeping the raw OCR text on every
+            // row (not just the matched member name) so the review modal can
+            // show admin/management exactly what was read, for double-checking
+            // before anything gets applied.
+            const matchedRows = [];
+            const unmatchedRows = [];
+            const claimedMemberIds = new Set();
 
-            if (!confirm(summary)) return;
+            // Sort by score descending first so, if two OCR lines fuzzy-match
+            // the same member, the higher-confidence/higher-value one wins
+            // the slot and the other falls through to unmatched for manual review.
+            const scoredPairs = rawPairs.map(pair => {
+                const { member, score } = findBestMemberMatch(pair.nameGuess, activeMembers);
+                return { ...pair, member, matchScore: score };
+            });
 
-            matches.forEach(m => {
-                const scoreEntry = vsData.membersScores.find(s => String(s.id) === String(m.member.id));
-                if (scoreEntry) {
-                    if (!Array.isArray(scoreEntry.scores)) scoreEntry.scores = [];
-                    while (scoreEntry.scores.length <= targetWeekIdx) scoreEntry.scores.push(0);
-                    scoreEntry.scores[targetWeekIdx] = m.extractedValue;
+            scoredPairs.forEach(p => {
+                if (p.member && p.matchScore >= 0.55 && !claimedMemberIds.has(String(p.member.id))) {
+                    claimedMemberIds.add(String(p.member.id));
+                    matchedRows.push({
+                        rawText: p.nameGuess,
+                        memberId: String(p.member.id),
+                        value: p.value,
+                        confidence: p.matchScore,
+                        include: true
+                    });
+                } else {
+                    unmatchedRows.push({
+                        rawText: p.nameGuess,
+                        memberId: '',
+                        value: p.value,
+                        confidence: p.member ? p.matchScore : null,
+                        include: false
+                    });
                 }
             });
 
-            await saveData();
-            renderVsPoints();
-            alert(`Applied ${matches.length} score(s) to "${targetWeekLabel}".`);
+            openVsImportReviewModal(matchedRows, unmatchedRows, targetWeekIdx, targetWeekLabel, activeMembers, rawText);
         } catch (err) {
             console.error('OCR import error:', err);
             alert('Could not read the screenshot. Please try again with a clearer image.');
@@ -1488,6 +1918,147 @@
             event.target.value = '';
         }
     };
+
+    // --- Import Review Modal: shows every OCR-read row (matched + unmatched)
+    // with an editable member dropdown and score field for admin/management
+    // to double-check before anything is written to vsData / saved. ---
+    let pendingVsImport = null; // { targetWeekIdx, targetWeekLabel, rows, matchedCount, activeMembers, rawOcrText }
+
+    window.openVsImportReviewModal = function(matchedRows, unmatchedRows, targetWeekIdx, targetWeekLabel, activeMembers, rawOcrText) {
+        pendingVsImport = {
+            targetWeekIdx,
+            targetWeekLabel,
+            rows: [...matchedRows, ...unmatchedRows],
+            matchedCount: matchedRows.length,
+            activeMembers,
+            rawOcrText: rawOcrText || ''
+        };
+        document.getElementById('vsImportTargetLabel').innerText = targetWeekLabel;
+        renderVsImportReviewModal();
+        document.getElementById('vsImportReviewModal').style.display = 'flex';
+    };
+
+    function renderVsImportReviewModal() {
+        if (!pendingVsImport) return;
+        const { rows, activeMembers, matchedCount, rawOcrText } = pendingVsImport;
+
+        const memberOptions = (selectedId) => {
+            let opts = `<option value="">— Skip —</option>`;
+            activeMembers.forEach(m => {
+                opts += `<option value="${m.id}" ${String(m.id) === String(selectedId) ? 'selected' : ''}>${m.name}</option>`;
+            });
+            return opts;
+        };
+
+        const rowHTML = (r, idx) => {
+            const confClass = (r.confidence != null && r.confidence >= 0.85) ? 'conf-high' : 'conf-low';
+            const confLabel = r.confidence != null ? `${Math.round(r.confidence * 100)}%` : (r.rawText ? 'no match' : 'manual');
+            return `
+                <div class="import-review-row">
+                    <input type="checkbox" ${r.include ? 'checked' : ''} onchange="updateVsImportRow(${idx}, 'include', this.checked)">
+                    <span class="import-review-row__raw" title="${r.rawText}">${r.rawText || '(manually added)'}</span>
+                    <select onchange="updateVsImportRow(${idx}, 'memberId', this.value)">${memberOptions(r.memberId)}</select>
+                    <input type="number" value="${r.value}" onchange="updateVsImportRow(${idx}, 'value', this.value)">
+                    <span class="import-review-row__conf ${confClass}">${confLabel}</span>
+                </div>`;
+        };
+
+        const matchedContainer = document.getElementById('vsImportReviewRows');
+        matchedContainer.innerHTML = rows.slice(0, matchedCount).map((r, i) => rowHTML(r, i)).join('')
+            || `<div style="font-size:12px; color:var(--color-text-muted); padding:8px;">No confidently matched rows.</div>`;
+
+        const unmatchedWrap = document.getElementById('vsImportUnmatchedWrap');
+        const unmatchedContainer = document.getElementById('vsImportUnmatchedRows');
+        const unmatchedRows = rows.slice(matchedCount);
+        if (unmatchedRows.length > 0) {
+            unmatchedWrap.style.display = 'block';
+            unmatchedContainer.innerHTML = unmatchedRows.map((r, i) => rowHTML(r, matchedCount + i)).join('');
+        } else {
+            unmatchedWrap.style.display = 'none';
+            unmatchedContainer.innerHTML = '';
+        }
+
+        // Manual add-row control — always available, so a total OCR miss is
+        // recoverable by hand instead of a dead end.
+        const addRowWrap = document.getElementById('vsImportAddRowWrap');
+        if (addRowWrap) addRowWrap.style.display = 'block';
+
+        // Raw OCR debug text — always shown collapsed, so you can see exactly
+        // what Tesseract read off the screenshot (useful when nothing parsed,
+        // or when a name/score looks wrong and you want to check the source).
+        const debugWrap = document.getElementById('vsImportRawTextWrap');
+        const debugPre = document.getElementById('vsImportRawText');
+        if (debugWrap && debugPre) {
+            if (rawOcrText && rawOcrText.trim()) {
+                debugPre.textContent = rawOcrText;
+                debugWrap.style.display = 'block';
+            } else {
+                debugPre.textContent = '(Tesseract returned no text at all for this image.)';
+                debugWrap.style.display = 'block';
+            }
+        }
+    }
+
+    window.updateVsImportRow = function(idx, field, value) {
+        if (!pendingVsImport) return;
+        const row = pendingVsImport.rows[idx];
+        if (!row) return;
+        if (field === 'include') row.include = value;
+        else if (field === 'memberId') row.memberId = value;
+        else if (field === 'value') row.value = parseFloat(value) || 0;
+    };
+
+    // Lets admin/management hand-add a row (member + score) straight from
+    // looking at the screenshot, for cases OCR missed entirely or got wrong.
+    // New rows are appended to the "unmatched" section so they get the same
+    // dropdown + score editing as everything else before Apply.
+    window.addManualVsImportRow = function() {
+        if (!pendingVsImport) return;
+        pendingVsImport.rows.push({
+            rawText: '',
+            memberId: '',
+            value: 0,
+            confidence: null,
+            include: true
+        });
+        renderVsImportReviewModal();
+    };
+
+    window.applyVsImportReview = async function() {
+        if (!pendingVsImport) return;
+        const { targetWeekIdx, rows, targetWeekLabel } = pendingVsImport;
+
+        let appliedCount = 0;
+        rows.forEach(r => {
+            if (!r.include || !r.memberId) return;
+            const scoreEntry = vsData.membersScores.find(s => String(s.id) === String(r.memberId));
+            if (scoreEntry) {
+                if (!Array.isArray(scoreEntry.scores)) scoreEntry.scores = [];
+                while (scoreEntry.scores.length <= targetWeekIdx) scoreEntry.scores.push(0);
+                scoreEntry.scores[targetWeekIdx] = r.value;
+                appliedCount++;
+            }
+        });
+
+        if (appliedCount === 0) {
+            alert('No rows were checked with a member selected — nothing was applied.');
+            return;
+        }
+
+        await saveData();
+        renderVsPoints();
+        closeVsImportReviewModal();
+        alert(`Applied ${appliedCount} score(s) to "${targetWeekLabel}".`);
+    };
+
+    window.closeVsImportReviewModal = function() {
+        document.getElementById('vsImportReviewModal').style.display = 'none';
+        pendingVsImport = null;
+    };
+
+    document.getElementById('vsImportReviewModal').addEventListener('click', (e) => {
+        if (e.target === document.getElementById('vsImportReviewModal')) closeVsImportReviewModal();
+    });
 
     // --- 4-week counting cycle: set start date, archive & reset, view archives ---
     window.setCycleStartDate = async function() {
