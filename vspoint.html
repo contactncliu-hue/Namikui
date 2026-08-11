@@ -802,9 +802,22 @@
         return matrix[a.length][b.length];
     }
 
+    // Strips accents/diacritics and decorative symbols so OCR noise on names
+    // like "Hơng Śi" or "Lyffy • Hedgie° •" doesn't tank the similarity score
+    // against a clean roster name like "Hong Si".
+    function normalizeForMatch(str) {
+        if (!str) return '';
+        return str
+            .normalize('NFKD')
+            .replace(/[\u0300-\u036f]/g, '')   // strip combining accent marks
+            .replace(/[•°´˙‧·|›»«"'`]/g, '')   // strip decorative symbols
+            .replace(/\s+/g, ' ')
+            .trim();
+    }
+
     function nameSimilarity(a, b) {
-        const normA = (a || '').toLowerCase().trim();
-        const normB = (b || '').toLowerCase().trim();
+        const normA = normalizeForMatch(a).toLowerCase();
+        const normB = normalizeForMatch(b).toLowerCase();
         if (!normA || !normB) return 0;
         if (normA === normB) return 1;
         const dist = levenshteinDistance(normA, normB);
@@ -858,6 +871,18 @@
 
     function isPureNumberLine(line) {
         return /^\d+$/.test(line.trim());
+    }
+
+    // Catches a mangled alliance tag (e.g. "z0.0]", "[zO.O", "lzO.OJ") that
+    // slipped past isTagOnlyLine because OCR dropped or garbled a bracket. A
+    // short bracket/dot/letter-ish fragment arriving right after a real
+    // captured name is almost always tag noise, not a second member name —
+    // don't let it overwrite pendingNameLine.
+    function looksLikeTagFragment(line, previousPendingName) {
+        const trimmed = line.trim();
+        if (!previousPendingName) return false;
+        if (trimmed.length > 10) return false;
+        return /^[\[\]a-zA-Z0-9.\-_]{1,10}$/.test(trimmed);
     }
 
     function looksLikeNameLine(line) {
@@ -1416,10 +1441,12 @@
                 if (isChromeLine(trimmed)) { pendingNameLine = null; return; }
                 if (isTagOnlyLine(trimmed)) return;
                 if (isPureNumberLine(trimmed)) return;
+                if (looksLikeTagFragment(trimmed, pendingNameLine)) return;
 
                 const scoreInfo = extractScoreFromLine(trimmed);
                 if (scoreInfo) {
                     const inlineNamePart = trimmed.slice(0, scoreInfo.matchIndex)
+                        .replace(/\[.*?\]/g, '')
                         .replace(/[•|:>#\-–\[\]]+$/, '').trim();
                     const nameGuess = inlineNamePart.length >= 2 ? inlineNamePart : pendingNameLine;
                     if (nameGuess) {
