@@ -1243,7 +1243,17 @@
             const { data: accountsData, error: accountsErr } = await db.from('accounts').select('*');
             if (!accountsErr && accountsData) accounts = accountsData;
 
-            if (currentUser.role && currentUser.username) {
+                        if (currentUser.role && currentUser.username) {
+                const freshAcc = accounts.find(a => a.username.toLowerCase() === currentUser.username.toLowerCase());
+                if (freshAcc) {
+                    currentUser.role = freshAcc.role;
+                    localStorage.setItem('amt_userRole', freshAcc.role);
+                } else {
+                    currentUser.role = null;
+                    currentUser.username = null;
+                    localStorage.removeItem('amt_userRole');
+                    localStorage.removeItem('amt_username');
+                }
                 enterDashboard();
             } else {
                 showLoginScreen();
