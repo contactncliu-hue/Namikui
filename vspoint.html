@@ -1553,7 +1553,8 @@
         }
     };
 
-    // Upscales and binarizes the screenshot before OCR.
+    // Upscales and binarizes the screenshot before OCR — tuned specifically
+    // for the SCORE numbers (bold, thick-outlined game-UI digits).
     //
     // Calibrated against actual pixel samples pulled from this app's real
     // screenshots (checked across the gold/blue/peach/beige/brown row
@@ -1561,22 +1562,68 @@
     // dark outline stroke — text-fill luminance measured ~250-255, the dark
     // outline stroke measured ~0-55 even on the darkest (brown) row
     // background, while every row *background* color measured in the
-    // ~140-202 range. That's a clean, well-separated gap.
-    //
-    // A single global "grayscale + stretch the contrast a bit" pass (the
-    // previous approach) stretches contrast based on the *whole image's*
-    // histogram, so it still leaves the text only partially distinguished
-    // from whichever background color a given row happens to have — which
-    // is why some rows read fine and others didn't read at all. Instead,
-    // this binarizes per-pixel using the measured gap: any pixel at or
-    // above BRIGHT_THRESHOLD (the white fill) or at or below DARK_THRESHOLD
-    // (the dark outline) becomes pure black "text", everything else
-    // (any row background color) becomes pure white. That makes the text
-    // stand out the same way regardless of which row background it's on.
+    // ~140-202 range. That's a clean, well-separated gap, so hard
+    // binarizing on it (pixel -> pure black "text" or pure white
+    // "background") makes the bold score digits crisp regardless of which
+    // row background they sit on.
     const BRIGHT_THRESHOLD = 225; // white text fill; safely above every sampled background (~140-202)
     const DARK_THRESHOLD = 80;    // dark outline stroke; safely below every sampled background
 
-    function preprocessImageForOcr(file) {
+    function preprocessImageForOcrScores(file) {
+        return preprocessImageForOcr(file, (data) => {
+            for (let i = 0; i < data.length; i += 4) {
+                const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+                const isText = gray >= BRIGHT_THRESHOLD || gray <= DARK_THRESHOLD;
+                const out = isText ? 0 : 255; // black text on white background, which OCR engines read best
+                data[i] = data[i + 1] = data[i + 2] = out;
+            }
+        });
+    }
+
+    // Upscales and mildly contrast-stretches the screenshot before OCR —
+    // tuned for the MEMBER NAME text, which is a much smaller, regular
+    // (non-outlined, antialiased) UI font compared to the bold score
+    // digits. Hard binarizing that font (as the score pass does) erodes its
+    // thinner strokes into disconnected fragments — that's what was
+    // producing garbage single/double-letter reads ("a", "rr", "ul") in
+    // place of actual names. This pass keeps the grayscale mid-tones
+    // (percentile-based contrast stretch, no hard black/white clipping) so
+    // the antialiased edges Tesseract relies on for smaller text survive.
+    function preprocessImageForOcrNames(file) {
+        return preprocessImageForOcr(file, (data) => {
+            for (let i = 0; i < data.length; i += 4) {
+                const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+                data[i] = data[i + 1] = data[i + 2] = gray;
+            }
+            const hist = new Array(256).fill(0);
+            for (let i = 0; i < data.length; i += 4) hist[Math.round(data[i])]++;
+            const totalPixels = data.length / 4;
+            let cum = 0, lo = 0, hi = 255;
+            for (let v = 0; v < 256; v++) {
+                cum += hist[v];
+                if (cum >= totalPixels * 0.01) { lo = v; break; }
+            }
+            cum = 0;
+            for (let v = 255; v >= 0; v--) {
+                cum += hist[v];
+                if (cum >= totalPixels * 0.01) { hi = v; break; }
+            }
+            const range = Math.max(hi - lo, 1);
+            for (let i = 0; i < data.length; i += 4) {
+                let v = ((data[i] - lo) / range) * 255;
+                data[i] = data[i + 1] = data[i + 2] = Math.max(0, Math.min(255, v));
+            }
+        });
+    }
+
+    // Shared upscale + canvas setup. `applyFilter(data)` mutates the raw
+    // RGBA pixel array in place with whichever tone-mapping the caller
+    // needs. Both preprocessing variants above use the SAME scale factor on
+    // the SAME source image, which matters: it keeps their output images
+    // pixel-dimension-identical, so bounding boxes from OCR runs on either
+    // one land in the same coordinate space and can be compared directly
+    // when pairing names to scores by row position later.
+    function preprocessImageForOcr(file, applyFilter) {
         return new Promise((resolve, reject) => {
             const img = new Image();
             img.onload = () => {
@@ -1590,14 +1637,7 @@
                 ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
                 const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                const data = imageData.data;
-
-                for (let i = 0; i < data.length; i += 4) {
-                    const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
-                    const isText = gray >= BRIGHT_THRESHOLD || gray <= DARK_THRESHOLD;
-                    const out = isText ? 0 : 255; // black text on white background, which OCR engines read best
-                    data[i] = data[i + 1] = data[i + 2] = out;
-                }
+                applyFilter(imageData.data);
 
                 ctx.putImageData(imageData, 0, 0);
                 canvas.toBlob(blob => {
