@@ -935,39 +935,70 @@
             .replace(/[Gg]/g, '6');
     }
 
+    // Sanity ceiling for a parsed VS-points score. Nothing in this game's VS
+    // events realistically clears ~100M (the app's own Weekly threshold is
+    // 12.168M, Daily is 2.028M, and the highest score ever seen on a
+    // screenshot so far is ~23M). A parsed value above this is far more
+    // likely to be OCR fusing two lines/columns together (e.g. a name
+    // fragment's digits glued onto a score) than a real score, so it's
+    // rejected here rather than silently accepted and shown as a
+    // "confident" match. This never rejects a *smaller* number derived from
+    // an M/K-suffixed short form (23.2M -> 23,200,000 stays comfortably
+    // under the ceiling).
+    const MAX_PLAUSIBLE_SCORE = 100000000;
+
     function extractScoreFromLine(line) {
+        let result = null;
+
         // Abbreviated e.g. 23.2M, 800K
         let m = line.match(/(\d+(?:\.\d+)?)\s*([MK])\b/i);
         if (m) {
             const num = parseFloat(m[1]);
             const mult = m[2].toUpperCase() === 'M' ? 1000000 : 1000;
-            return { value: Math.round(num * mult), matchIndex: m.index };
+            result = { value: Math.round(num * mult), matchIndex: m.index };
         }
+
         // Full comma-grouped number, e.g. 13,467,514
-        m = line.match(/\b\d{1,3}(?:,\d{3})+\b/);
-        if (m) {
-            return { value: parseInt(m[0].replace(/,/g, ''), 10), matchIndex: m.index };
+        if (!result) {
+            m = line.match(/\b\d{1,3}(?:,\d{3})+\b/);
+            if (m) {
+                result = { value: parseInt(m[0].replace(/,/g, ''), 10), matchIndex: m.index };
+            }
         }
+
         // Plain 4+ digit number with no comma
-        m = line.match(/\b\d{4,}\b/);
-        if (m) {
-            return { value: parseInt(m[0], 10), matchIndex: m.index };
+        if (!result) {
+            m = line.match(/\b\d{4,}\b/);
+            if (m) {
+                result = { value: parseInt(m[0], 10), matchIndex: m.index };
+            }
         }
+
         // Noisy abbreviated fallback: allow common digit/letter OCR mixups
         // right before an M/K suffix, e.g. "23.ZM" (should be 23.2M) or
         // "8OOK" (should be 800K). Only kicks in when the clean patterns
         // above find nothing, and only the matched numeric-shaped chunk is
         // touched — never the rest of the line.
-        m = line.match(/\b([0-9OoIilLSsBbZzGg]{1,3}(?:\.[0-9OoIilLSsBbZzGg]{1,3})?)\s*([MK])\b/);
-        if (m) {
-            const fixed = fixOcrDigitLookalikes(m[1]);
-            const num = parseFloat(fixed);
-            if (!isNaN(num)) {
-                const mult = m[2].toUpperCase() === 'M' ? 1000000 : 1000;
-                return { value: Math.round(num * mult), matchIndex: m.index };
+        if (!result) {
+            m = line.match(/\b([0-9OoIilLSsBbZzGg]{1,3}(?:\.[0-9OoIilLSsBbZzGg]{1,3})?)\s*([MK])\b/);
+            if (m) {
+                const fixed = fixOcrDigitLookalikes(m[1]);
+                const num = parseFloat(fixed);
+                if (!isNaN(num)) {
+                    const mult = m[2].toUpperCase() === 'M' ? 1000000 : 1000;
+                    result = { value: Math.round(num * mult), matchIndex: m.index };
+                }
             }
         }
-        return null;
+
+        if (!result) return null;
+
+        // Reject implausibly large values instead of trusting them — these are
+        // almost always OCR fusing two separate lines/columns into one number
+        // rather than a real in-game score.
+        if (result.value > MAX_PLAUSIBLE_SCORE) return null;
+
+        return result;
     }
 
     function isChromeLine(line) {
@@ -1579,6 +1610,41 @@
         });
     }
 
+    // Runs Tesseract on the preprocessed image using SPARSE_TEXT page
+    // segmentation mode instead of the library default (Auto/PSM 3).
+    //
+    // Why this matters: this app's screenshots are lists of short, spatially
+    // separate blocks (icon + name + tag on the left, a big score on the
+    // right, close together but NOT a real multi-column document). PSM 3
+    // tries to detect columns/paragraphs and stitch fragments into "reading
+    // order" lines, and on this layout it was fusing pieces from different
+    // rows/columns into single garbled lines — e.g. a stray tag fragment
+    // glued onto a name, or the wrong digits glued onto a score. That's how
+    // a screenshot with 7 clearly separate rows was collapsing down to a
+    // single corrupted row.
+    //
+    // SPARSE_TEXT tells Tesseract to find text blocks independently,
+    // without trying to force them into a column/paragraph structure, which
+    // matches this list-of-rows layout much better and stops it from
+    // merging adjacent rows together.
+    //
+    // A persistent worker is reused across calls instead of recreated every
+    // import, since createWorker() has real startup cost (loading the
+    // language data) and repeated imports are the common case here.
+    let ocrWorkerPromise = null;
+    async function getOcrWorker() {
+        if (!ocrWorkerPromise) {
+            ocrWorkerPromise = (async () => {
+                const worker = await Tesseract.createWorker('eng+chi_sim+kor+vie');
+                await worker.setParameters({
+                    tessedit_pageseg_mode: Tesseract.PSM.SPARSE_TEXT
+                });
+                return worker;
+            })();
+        }
+        return ocrWorkerPromise;
+    }
+
     // --- Screenshot import: OCR extraction, then hand off to the review modal
     // for admin/management to double-check before anything is saved. ---
     window.handleVsScreenshotImport = async function(event) {
@@ -1601,7 +1667,8 @@
 
         try {
             const preprocessedBlob = await preprocessImageForOcr(file);
-            const { data: { text } } = await Tesseract.recognize(preprocessedBlob, 'eng+chi_sim+kor+vie');
+            const worker = await getOcrWorker();
+            const { data: { text } } = await worker.recognize(preprocessedBlob);
 
             const activeMembers = getActiveMembers();
             const rawPairs = [];
