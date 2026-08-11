@@ -885,15 +885,12 @@
         return matrix[a.length][b.length];
     }
 
-    // Strips accents/diacritics and decorative symbols so OCR noise on names
-    // like "Hơng Śi" or "Lyffy • Hedgie° •" doesn't tank the similarity score
-    // against a clean roster name like "Hong Si".
     function normalizeForMatch(str) {
         if (!str) return '';
         return str
             .normalize('NFKD')
-            .replace(/[\u0300-\u036f]/g, '')   // strip combining accent marks
-            .replace(/[•°´˙‧·|›»«"'`]/g, '')   // strip decorative symbols
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[•°´˙‧·|›»«"'`]/g, '')
             .replace(/\s+/g, ' ')
             .trim();
     }
@@ -921,10 +918,6 @@
         return { member: best, score: bestScore };
     }
 
-    // Stylized game fonts commonly get OCR'd with digits swapped for
-    // lookalike letters (O/o->0, I/l/i->1, S->5, B->8, Z->2, G->6). This is
-    // only applied to a substring that has already matched a number-shaped
-    // pattern (so it never touches actual name text) before parsing it.
     function fixOcrDigitLookalikes(numStr) {
         return numStr
             .replace(/[Oo]/g, '0')
@@ -935,22 +928,11 @@
             .replace(/[Gg]/g, '6');
     }
 
-    // Sanity ceiling for a parsed VS-points score. Nothing in this game's VS
-    // events realistically clears ~100M (the app's own Weekly threshold is
-    // 12.168M, Daily is 2.028M, and the highest score ever seen on a
-    // screenshot so far is ~23M). A parsed value above this is far more
-    // likely to be OCR fusing two lines/columns together (e.g. a name
-    // fragment's digits glued onto a score) than a real score, so it's
-    // rejected here rather than silently accepted and shown as a
-    // "confident" match. This never rejects a *smaller* number derived from
-    // an M/K-suffixed short form (23.2M -> 23,200,000 stays comfortably
-    // under the ceiling).
     const MAX_PLAUSIBLE_SCORE = 100000000;
 
     function extractScoreFromLine(line) {
         let result = null;
 
-        // Abbreviated e.g. 23.2M, 800K
         let m = line.match(/(\d+(?:\.\d+)?)\s*([MK])\b/i);
         if (m) {
             const num = parseFloat(m[1]);
@@ -958,7 +940,6 @@
             result = { value: Math.round(num * mult), matchIndex: m.index };
         }
 
-        // Full comma-grouped number, e.g. 13,467,514
         if (!result) {
             m = line.match(/\b\d{1,3}(?:,\d{3})+\b/);
             if (m) {
@@ -966,7 +947,6 @@
             }
         }
 
-        // Plain 4+ digit number with no comma
         if (!result) {
             m = line.match(/\b\d{4,}\b/);
             if (m) {
@@ -974,11 +954,6 @@
             }
         }
 
-        // Noisy abbreviated fallback: allow common digit/letter OCR mixups
-        // right before an M/K suffix, e.g. "23.ZM" (should be 23.2M) or
-        // "8OOK" (should be 800K). Only kicks in when the clean patterns
-        // above find nothing, and only the matched numeric-shaped chunk is
-        // touched — never the rest of the line.
         if (!result) {
             m = line.match(/\b([0-9OoIilLSsBbZzGg]{1,3}(?:\.[0-9OoIilLSsBbZzGg]{1,3})?)\s*([MK])\b/);
             if (m) {
@@ -993,9 +968,6 @@
 
         if (!result) return null;
 
-        // Reject implausibly large values instead of trusting them — these are
-        // almost always OCR fusing two separate lines/columns into one number
-        // rather than a real in-game score.
         if (result.value > MAX_PLAUSIBLE_SCORE) return null;
 
         return result;
@@ -1015,14 +987,6 @@
         return /^\d+$/.test(line.trim());
     }
 
-    // Catches a mangled alliance tag (e.g. "z0.0]", "[zO.O", "lzO.OJ") that
-    // slipped past isTagOnlyLine because OCR dropped or garbled a bracket.
-    // Unlike the old version, this no longer depends on "the line right
-    // before this one was a captured name" — row pairing is now done by
-    // bounding-box position, not stream order, so that sequential state
-    // isn't reliably available. Instead this only fires when the fragment
-    // itself contains a bracket character, which real member names never
-    // do (so short ASCII names like "BOM" or "Six" are never caught here).
     function looksLikeTagFragment(line) {
         const trimmed = line.trim();
         if (trimmed.length > 12) return false;
@@ -1033,11 +997,6 @@
         return /[a-zA-Z\u00C0-\u024F\u4e00-\u9fff\uac00-\ud7af]/.test(line);
     }
 
-    // A run of CJK / Hangul characters is information-dense — a single
-    // character is a real, common alliance name (e.g. "鬼", "他" as part of
-    // a longer name) unlike a single stray Latin letter, which is almost
-    // always OCR noise. So the "too short, discard" filter needs a lower
-    // floor for CJK/Hangul text than for Latin text.
     function isCjkOrHangul(ch) {
         return /[\u4e00-\u9fff\uac00-\ud7af]/.test(ch);
     }
@@ -1072,9 +1031,9 @@
     let vsData = {
         weeks: [], 
         membersScores: [],
-        cycleStartDate: null, // ISO yyyy-mm-dd date management/admin set as the start of the current counting cycle
-        cycleEndDate: null,   // ISO yyyy-mm-dd date management/admin set as the planned end of the current counting cycle
-        archives: []          // past cycles that were archived & reset, kept for historical viewing
+        cycleStartDate: null,
+        cycleEndDate: null,
+        archives: []
     };
     let currentVsSubTab = 'weekly';
 
@@ -1098,10 +1057,6 @@
         return new Date(dateStr);
     }
 
-    // --- Cycle helpers ---
-    // Purely informational (how many days since the start date, and how many
-    // until the planned end date, if one is set) — archiving itself is never
-    // gated by these; admin/management can archive & reset whenever they want.
     function daysBetween(fromDateStr, toDateStr) {
         const from = new Date(fromDateStr + 'T00:00:00');
         const to = new Date(toDateStr + 'T00:00:00');
@@ -1141,9 +1096,6 @@
             if (!vsData.archives || !Array.isArray(vsData.archives)) vsData.archives = [];
             if (vsData.cycleStartDate === undefined) vsData.cycleStartDate = null;
 
-            // Older saved data stored weeks as plain date strings — upgrade them
-            // in place to { date, type: 'weekly' } so everything downstream can
-            // rely on the object shape.
             vsData.weeks = vsData.weeks.map(w => (typeof w === 'string') ? { date: w, type: 'weekly' } : w);
 
             members.forEach(m => {
@@ -1159,7 +1111,6 @@
                 }
             });
 
-            // Automatically remove any members from VS points who have been deleted or marked as removed from the members tab
             const activeMemberIds = new Set(getActiveMembers().map(m => String(m.id)));
             vsData.membersScores = vsData.membersScores.filter(s => activeMemberIds.has(String(s.id)));
             
@@ -1234,8 +1185,6 @@
             subtitleEl.innerText = `${activeMembers.length} members · ${vsData.weeks.length} sessions`;
         }
 
-        // Cycle info (purely informational) + archive controls. Admin/management
-        // can archive & reset the cycle at any time — nothing here disables that.
         const cycleInfoEl = document.getElementById('cycleInfoText');
         if (cycleInfoEl) {
             if (!vsData.cycleStartDate && !vsData.cycleEndDate) {
@@ -1305,21 +1254,16 @@
         });
         headersTr.innerHTML = headerHTML;
 
-        // The most recent (last) session column decides the Top 5 medal spots
-        // shown on this tab — separate from the Ranking tab, which ranks by
-        // all-time total instead.
         const latestWeekIdx = vsData.weeks.length > 0 ? vsData.weeks.length - 1 : -1;
 
         const activeMembers = getActiveMembers();
         const activeMemberIds = new Set(activeMembers.map(m => String(m.id)));
         const activeScores = vsData.membersScores.filter(m => activeMemberIds.has(String(m.id)));
 
-        // Members-tab rank-group order (top to bottom): R5, R4, R3, R2, R1.
         const RANK_GROUP_ORDER = { R5: 0, R4: 1, R3: 2, R2: 3, R1: 4 };
         const memberOrderIndex = new Map(activeMembers.map((m, idx) => [String(m.id), idx]));
         const memberRankById = new Map(activeMembers.map(m => [String(m.id), m.rank || 'R1']));
 
-        // Top 5 by the most recent session's score.
         let top5 = [];
         let top5Ids = new Set();
         if (latestWeekIdx >= 0) {
@@ -1329,12 +1273,6 @@
             top5Ids = new Set(top5.map(m => String(m.id)));
         }
 
-        // Everyone outside the recent Top 5 falls back to their normal spot,
-        // sorted the same way the Members tab groups people: by rank (R5→R1),
-        // with the Members-page order as a tiebreaker within each rank group.
-        // Nothing about this placement is stored — it's recalculated on every
-        // render straight from `members` and the latest session, so a member
-        // who drops out of the recent Top 5 automatically lands back here.
         const rest = activeScores
             .filter(m => !top5Ids.has(String(m.id)))
             .sort((a, b) => {
@@ -1356,8 +1294,6 @@
 
         let bodyHTML = '';
         filtered.forEach((m) => {
-            // Only the recent Top 5 get a medal badge/number now — everyone else
-            // shows no rank number (no more #6...#100 listing).
             const medalRank = top5Ids.has(String(m.id)) ? (top5.findIndex(t => String(t.id) === String(m.id)) + 1) : null;
 
             let rankBadgeHTML = '';
@@ -1402,7 +1338,7 @@
         const container = document.getElementById('vsRankingCardsList');
         if (!container) return;
         
-        const activeMembers = getActiveMembers(); // preserves Members-page order
+        const activeMembers = getActiveMembers();
         const activeMemberIds = new Set(activeMembers.map(m => String(m.id)));
         const activeScores = vsData.membersScores.filter(m => activeMemberIds.has(String(m.id)));
 
@@ -1411,15 +1347,10 @@
             return { ...m, total };
         });
 
-        // The medal spots (1-5) are decided purely by total score.
         const top5 = [...withTotals].sort((a, b) => b.total - a.total).slice(0, 5);
         const top5Ids = new Set(top5.map(m => String(m.id)));
         const rankMap = new Map(top5.map((m, i) => [String(m.id), i + 1]));
 
-        // Everyone else is shown in Members-page order instead of score order.
-        // Nothing about this is stored — it's recalculated from `members` every
-        // render, so a member who drops out of the top 5 lands back in their
-        // Members-page spot automatically, with no extra bookkeeping needed.
         const memberOrderIndex = new Map(activeMembers.map((m, idx) => [String(m.id), idx]));
         const rest = withTotals
             .filter(m => !top5Ids.has(String(m.id)))
@@ -1439,7 +1370,7 @@
 
         let html = '';
         filtered.forEach((m) => {
-            const trueRank = rankMap.get(String(m.id)); // 1-5 for medal spots, undefined otherwise
+            const trueRank = rankMap.get(String(m.id));
             let rankBadgeClass = 'r5';
             let cardClass = '';
             if (trueRank === 1) { rankBadgeClass = 'r1'; cardClass = 'top-1'; }
@@ -1448,7 +1379,6 @@
             else if (trueRank === 4) { rankBadgeClass = 'r4'; cardClass = 'top-4'; }
             else if (trueRank === 5) { rankBadgeClass = 'r5'; cardClass = 'top-5'; }
 
-            // Only 1st-5th get a medal badge now — no more "#6"..."#100" labels.
             const rankDisplay = trueRank ? `<span class="badge-rank ${rankBadgeClass}">${trueRank}</span>` : '';
             
             let barsHTML = `<div class="ranking-bars-container">`;
@@ -1470,8 +1400,6 @@
             });
             barsHTML += `</div>`;
 
-            // Weekly breakdown — clickable to edit for admin/management, matching the Weekly
-            // Table tab's behavior. Below-threshold scores use that session's own Weekly/Daily threshold.
             let weeksBreakdownHTML = `<div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:4px; font-size:11px; color:var(--color-text-muted); font-weight:600;">`;
             vsData.weeks.forEach((wk, wIdx) => {
                 const sVal = m.scores[wIdx] || 0;
@@ -1565,314 +1493,9 @@
         }
     };
 
-    // Upscales and binarizes the screenshot before OCR — tuned specifically
-    // for the SCORE numbers (bold, thick-outlined game-UI digits).
-    //
-    // Calibrated against actual pixel samples pulled from this app's real
-    // screenshots (checked across the gold/blue/peach/beige/brown row
-    // backgrounds): the in-game score text is drawn as a white fill with a
-    // dark outline stroke — text-fill luminance measured ~250-255, the dark
-    // outline stroke measured ~0-55 even on the darkest (brown) row
-    // background, while every row *background* color measured in the
-    // ~140-202 range. That's a clean, well-separated gap, so hard
-    // binarizing on it (pixel -> pure black "text" or pure white
-    // "background") makes the bold score digits crisp regardless of which
-    // row background they sit on.
-    const BRIGHT_THRESHOLD = 225; // white text fill; safely above every sampled background (~140-202)
-    const DARK_THRESHOLD = 80;    // dark outline stroke; safely below every sampled background
-
-    function preprocessImageForOcrScores(file) {
-        return preprocessImageForOcr(file, (data) => {
-            for (let i = 0; i < data.length; i += 4) {
-                const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
-                const isText = gray >= BRIGHT_THRESHOLD || gray <= DARK_THRESHOLD;
-                const out = isText ? 0 : 255; // black text on white background, which OCR engines read best
-                data[i] = data[i + 1] = data[i + 2] = out;
-            }
-        }, 3);
-    }
-
-    // Upscales and mildly contrast-stretches the screenshot before OCR —
-    // tuned for the MEMBER NAME text, which is a much smaller, regular
-    // (non-outlined, antialiased) UI font compared to the bold score
-    // digits. Hard binarizing that font (as the score pass does) erodes its
-    // thinner strokes into disconnected fragments — that's what was
-    // producing garbage single/double-letter reads ("a", "rr", "ul") in
-    // place of actual names. This pass keeps the grayscale mid-tones
-    // (percentile-based contrast stretch, no hard black/white clipping) so
-    // the antialiased edges Tesseract relies on for smaller text survive.
-    //
-    // Uses a HIGHER upscale factor (4x vs the score pass's 3x) than the
-    // score pass. CJK/Hangul glyphs pack far more stroke detail per
-    // character than Latin letters or digits, so at the same pixel size
-    // their strokes were merging together under Tesseract's line
-    // detection — that's the single biggest cause of the "aw" / "sv" /
-    // single-character garbage reads on non-Latin names. The extra scale
-    // gives those strokes room to stay separated.
-    function preprocessImageForOcrNames(file) {
-        return preprocessImageForOcr(file, (data) => {
-            for (let i = 0; i < data.length; i += 4) {
-                const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
-                data[i] = data[i + 1] = data[i + 2] = gray;
-            }
-            const hist = new Array(256).fill(0);
-            for (let i = 0; i < data.length; i += 4) hist[Math.round(data[i])]++;
-            const totalPixels = data.length / 4;
-            let cum = 0, lo = 0, hi = 255;
-            for (let v = 0; v < 256; v++) {
-                cum += hist[v];
-                if (cum >= totalPixels * 0.01) { lo = v; break; }
-            }
-            cum = 0;
-            for (let v = 255; v >= 0; v--) {
-                cum += hist[v];
-                if (cum >= totalPixels * 0.01) { hi = v; break; }
-            }
-            const range = Math.max(hi - lo, 1);
-            for (let i = 0; i < data.length; i += 4) {
-                let v = ((data[i] - lo) / range) * 255;
-                data[i] = data[i + 1] = data[i + 2] = Math.max(0, Math.min(255, v));
-            }
-        }, 4);
-    }
-
-    // Shared upscale + canvas setup. `applyFilter(data)` mutates the raw
-    // RGBA pixel array in place with whichever tone-mapping the caller
-    // needs. `scale` is now a parameter (rather than a shared constant)
-    // because the name pass needs a higher upscale factor than the score
-    // pass to keep dense CJK/Hangul strokes legible — see the comment on
-    // preprocessImageForOcrNames. Because the two passes can use different
-    // scales now, their bounding boxes are NOT directly comparable in raw
-    // pixel coordinates any more; buildRawPairsFromOcrLines normalizes both
-    // sets of bboxes to 0-1 (fraction of image height) before comparing Y
-    // position, so pairing still works correctly across different scales.
-    function preprocessImageForOcr(file, applyFilter, scale) {
-        return new Promise((resolve, reject) => {
-            const img = new Image();
-            img.onload = () => {
-                const canvas = document.createElement('canvas');
-                canvas.width = img.width * scale;
-                canvas.height = img.height * scale;
-                const ctx = canvas.getContext('2d');
-                ctx.imageSmoothingEnabled = true;
-                ctx.imageSmoothingQuality = 'high';
-                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                applyFilter(imageData.data);
-
-                ctx.putImageData(imageData, 0, 0);
-                canvas.toBlob(blob => {
-                    if (blob) resolve({ blob, width: canvas.width, height: canvas.height });
-                    else reject(new Error('Canvas toBlob failed'));
-                }, 'image/png');
-            };
-            img.onerror = reject;
-            img.src = URL.createObjectURL(file);
-        });
-    }
-
-    // Runs Tesseract on the preprocessed image using SPARSE_TEXT page
-    // segmentation mode instead of the library default (Auto/PSM 3).
-    //
-    // Why this matters: this app's screenshots are lists of short, spatially
-    // separate blocks (icon + name + tag on the left, a big score on the
-    // right, close together but NOT a real multi-column document). PSM 3
-    // tries to detect columns/paragraphs and stitch fragments into "reading
-    // order" lines, and on this layout it was fusing pieces from different
-    // rows/columns into single garbled lines — e.g. a stray tag fragment
-    // glued onto a name, or the wrong digits glued onto a score. That's how
-    // a screenshot with 7 clearly separate rows was collapsing down to a
-    // single corrupted row.
-    //
-    // SPARSE_TEXT tells Tesseract to find text blocks independently,
-    // without trying to force them into a column/paragraph structure, which
-    // matches this list-of-rows layout much better and stops it from
-    // merging adjacent rows together.
-    //
-    // Two SEPARATE workers are kept (one per language set) instead of one
-    // shared worker. The name pass needs the full eng+chi_sim+kor+vie
-    // language bundle since names can be almost anything, but running the
-    // SCORE pass (which is always plain digits/M/K) through that same
-    // multi-script model was measurably making it slower and occasionally
-    // misreading a digit as a lookalike CJK/Hangul stroke. The score
-    // worker uses eng only, which is both faster and more accurate for
-    // pure numerals.
-    let ocrWorkerPromises = {};
-    async function getOcrWorker(kind) {
-        if (!ocrWorkerPromises[kind]) {
-            ocrWorkerPromises[kind] = (async () => {
-                const langs = kind === 'names' ? 'eng+chi_sim+kor+vie' : 'eng';
-                const worker = await Tesseract.createWorker(langs);
-                await worker.setParameters({
-                    tessedit_pageseg_mode: Tesseract.PSM.SPARSE_TEXT
-                });
-                return worker;
-            })();
-        }
-        return ocrWorkerPromises[kind];
-    }
-
-    // Flattens Tesseract's block -> paragraph -> line structure into a flat
-    // array of { text, bbox } lines. Falls back to splitting data.text by
-    // newline (with no bbox) if the structured shape isn't present, so a
-    // Tesseract.js version/API mismatch degrades gracefully instead of
-    // throwing.
-    function flattenOcrLines(data) {
-        const lines = [];
-        if (data && Array.isArray(data.blocks)) {
-            data.blocks.forEach(block => {
-                (block.paragraphs || []).forEach(para => {
-                    (para.lines || []).forEach(line => {
-                        if (line && line.text && line.text.trim()) {
-                            lines.push({ text: line.text, bbox: line.bbox || null });
-                        }
-                    });
-                });
-            });
-        }
-        if (lines.length === 0 && data && typeof data.text === 'string') {
-            data.text.split('\n').forEach(t => {
-                if (t.trim()) lines.push({ text: t, bbox: null });
-            });
-        }
-        return lines;
-    }
-
-    function bboxYCenter(bbox) {
-        if (!bbox) return null;
-        return (bbox.y0 + bbox.y1) / 2;
-    }
-
-    // Builds { nameGuess, value } pairs from two SEPARATE OCR runs — one on
-    // the image preprocessed for score digits, one on the image
-    // preprocessed for name text (see preprocessImageForOcrScores /
-    // preprocessImageForOcrNames above). Each font needs different tone
-    // mapping (and, now, a different upscale factor) to read reliably, so
-    // they're OCR'd independently rather than classifying name-vs-score
-    // lines out of one pass.
-    //
-    // Y positions are normalized to 0-1 (fraction of that pass's own image
-    // height) before comparing, since the two passes can now run at
-    // different scales (see preprocessImageForOcr) and their raw pixel
-    // coordinates are no longer directly comparable.
-    //
-    // IMPORTANT: every score that OCR successfully read is now kept, even
-    // if no name candidate is found nearby — it's pushed with an empty
-    // nameGuess ('(no name detected nearby)') instead of being silently
-    // dropped. Previously an unpaired score just vanished, which is why
-    // screenshots with 6+ visible scores were producing review-modal rows
-    // for only 2-3 of them: several correctly-read scores had no nearby
-    // name (because the name pass mis-segmented or completely missed that
-    // row's name, which happens often on CJK/Vietnamese/Korean text) and
-    // were thrown away instead of surfaced for manual entry.
-    function buildRawPairsFromOcrLines(nameLines, nameImgHeight, scoreLines, scoreImgHeight) {
-        const rawPairs = [];
-        const pendingNames = []; // { text, bbox, yFrac, claimed }
-        const pendingScores = []; // { value, bbox, yFrac, claimed }
-
-        nameLines.forEach(line => {
-            const trimmed = (line.text || '').trim();
-            if (!trimmed) return;
-            if (isChromeLine(trimmed)) return;
-            if (isTagOnlyLine(trimmed)) return;
-            if (isPureNumberLine(trimmed)) return;
-            if (looksLikeTagFragment(trimmed)) return;
-            // Ignore anything that's actually a score digit leaking through
-            // the name pass — that belongs to the score pass instead.
-            if (extractScoreFromLine(trimmed)) return;
-            if (trimmed.length < minPlausibleNameLength(trimmed)) return; // Latin: needs 2+ chars; CJK/Hangul: 1 char is plausible
-            if (looksLikeNameLine(trimmed)) {
-                const yC = bboxYCenter(line.bbox);
-                pendingNames.push({
-                    text: trimmed,
-                    bbox: line.bbox,
-                    yFrac: (yC != null && scoreImgHeight) ? yC / nameImgHeight : null,
-                    claimed: false
-                });
-            }
-        });
-
-        scoreLines.forEach(line => {
-            const trimmed = (line.text || '').trim();
-            if (!trimmed) return;
-            if (isChromeLine(trimmed)) return;
-            const scoreInfo = extractScoreFromLine(trimmed);
-            if (scoreInfo) {
-                const yC = bboxYCenter(line.bbox);
-                pendingScores.push({
-                    value: scoreInfo.value,
-                    bbox: line.bbox,
-                    yFrac: (yC != null && scoreImgHeight) ? yC / scoreImgHeight : null,
-                    claimed: false
-                });
-            }
-        });
-
-        const haveBboxes = pendingScores.some(s => s.yFrac != null) && pendingNames.some(n => n.yFrac != null);
-
-        if (haveBboxes) {
-            // Row-height-scale tolerance, expressed as a fraction of image
-            // height so it's meaningful across the normalized 0-1 space.
-            // Widened from the previous multiplier (3x median row height)
-            // to 4x, and given a slightly larger floor — mixed-script rows
-            // (Latin score digits vs. CJK/Hangul names) don't always land
-            // at exactly the same vertical center within a row, so being
-            // too strict here was also contributing to dropped/unpaired
-            // scores.
-            const heights = [...pendingScores, ...pendingNames]
-                .map(e => e.bbox && e.yFrac != null ? Math.abs((e.bbox.y1 - e.bbox.y0)) : null)
-                .filter(h => h);
-            // Approximate a "row height fraction" using the score image's
-            // own height for scores and name image's own height for names;
-            // since both are already normalized to fractions via yFrac, use
-            // a sane fixed fraction as the tolerance floor instead of mixing
-            // pixel heights from differently-scaled images.
-            const maxYFracDist = 0.05; // widened from 0.035 — dense lists were losing name/score pairs at the edge of the old tolerance
-
-            pendingScores.forEach(score => {
-                if (score.yFrac == null) return;
-                let best = null;
-                let bestDist = Infinity;
-                pendingNames.forEach(name => {
-                    if (name.claimed || name.yFrac == null) return;
-                    const dist = Math.abs(name.yFrac - score.yFrac);
-                    if (dist < bestDist) {
-                        bestDist = dist;
-                        best = name;
-                    }
-                });
-                if (best && bestDist <= maxYFracDist) {
-                    best.claimed = true;
-                    rawPairs.push({ nameGuess: best.text, value: score.value, nameMatched: true });
-                } else {
-                    // No nearby name candidate — keep the score anyway so it
-                    // shows up in the review modal instead of vanishing.
-                    rawPairs.push({ nameGuess: '', value: score.value, nameMatched: false });
-                }
-            });
-        } else {
-            // No usable bbox data (older Tesseract.js response shape) — fall
-            // back to pairing scores with names in collection order, but
-            // still keep any leftover scores once names run out instead of
-            // dropping them.
-            let nameIdx = 0;
-            pendingScores.forEach(score => {
-                while (nameIdx < pendingNames.length && pendingNames[nameIdx].claimed) nameIdx++;
-                if (nameIdx < pendingNames.length) {
-                    pendingNames[nameIdx].claimed = true;
-                    rawPairs.push({ nameGuess: pendingNames[nameIdx].text, value: score.value, nameMatched: true });
-                } else {
-                    rawPairs.push({ nameGuess: '', value: score.value, nameMatched: false });
-                }
-            });
-        }
-
-        return rawPairs;
-    }
-
-    // --- Screenshot import: OCR extraction, then hand off to the review modal
-    // for admin/management to double-check before anything is saved. ---
+    // --- Screenshot import: sends the screenshot to a serverless function that
+    // calls Gemini for OCR, then hands the parsed rows to the review modal for
+    // admin/management to double-check before anything is saved. ---
     window.handleVsScreenshotImport = async function(event) {
         if (!isManagementOrAdmin) return;
         const file = event.target.files[0];
@@ -1892,115 +1515,86 @@
         if (importBtn) { importBtn.innerText = 'READING…'; importBtn.disabled = true; }
 
         try {
-            // Two separate preprocessing passes on the same source image —
-            // one tuned for the bold outlined score digits (3x scale), one
-            // gentler pass tuned for the smaller antialiased/CJK-Hangul name
-            // text (4x scale). See the comments on preprocessImageForOcrScores
-            // / preprocessImageForOcrNames for why a single shared
-            // preprocessing step (and a single shared scale) can't serve both.
-            const [scorePrep, namePrep] = await Promise.all([
-                preprocessImageForOcrScores(file),
-                preprocessImageForOcrNames(file)
-            ]);
+            const imageBase64 = await fileToBase64(file);
 
-            // Two separate workers: an English-only one for the score pass,
-            // and the full multi-script bundle for the name pass. See the
-            // comment on getOcrWorker for why splitting these helps.
-            const [scoreWorker, nameWorker] = await Promise.all([
-                getOcrWorker('scores'),
-                getOcrWorker('names')
-            ]);
+            const resp = await fetch('/api/ocr-import', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ imageBase64, mimeType: file.type || 'image/png' })
+            });
 
-            // Request block/line-level data (not just the flat text string) so
-            // each recognized line comes with its bounding box. That's what
-            // lets row-pairing below use vertical position instead of stream
-            // order — see the comment on buildRawPairsFromOcrLines. The two
-            // recognize calls now run in parallel since they're on separate
-            // workers.
-            const [scoreResult, nameResult] = await Promise.all([
-                scoreWorker.recognize(scorePrep.blob, {}, { blocks: true }),
-                nameWorker.recognize(namePrep.blob, {}, { blocks: true })
-            ]);
+            if (!resp.ok) {
+                const errBody = await resp.json().catch(() => ({}));
+                throw new Error(errBody.error || `Server returned ${resp.status}`);
+            }
 
-            const scoreLines = flattenOcrLines(scoreResult.data);
-            const nameLines = flattenOcrLines(nameResult.data);
-            console.log('[VS OCR] score lines detected:', scoreLines.length, scoreLines.map(l => l.text));
-console.log('[VS OCR] name lines detected:', nameLines.length, nameLines.map(l => l.text));
-            const rawText =
-                '--- score pass ---\n' + (scoreResult.data.text || scoreLines.map(l => l.text).join('\n')) +
-                '\n\n--- name pass ---\n' + (nameResult.data.text || nameLines.map(l => l.text).join('\n'));
+            const { rows, raw } = await resp.json();
+            const rawText = raw || JSON.stringify(rows, null, 2);
 
             const activeMembers = getActiveMembers();
-            const rawPairs = buildRawPairsFromOcrLines(nameLines, namePrep.height, scoreLines, scorePrep.height);
 
-            // Even on a total miss, open the review modal instead of dead-ending
-            // with an alert: it shows the raw text Tesseract actually produced
-            // (so you can see whether it read the image at all) and lets
-            // admin/management manually add rows by hand from the screenshot.
-            if (rawPairs.length === 0) {
+            if (!rows || rows.length === 0) {
                 openVsImportReviewModal([], [], targetWeekIdx, targetWeekLabel, activeMembers, rawText);
                 return;
             }
 
-            // Build matched/unmatched rows, keeping the raw OCR text on every
-            // row (not just the matched member name) so the review modal can
-            // show admin/management exactly what was read, for double-checking
-            // before anything gets applied.
             const matchedRows = [];
             const unmatchedRows = [];
             const claimedMemberIds = new Set();
 
-            // Sort by score descending first so, if two OCR lines fuzzy-match
-            // the same member, the higher-confidence/higher-value one wins
-            // the slot and the other falls through to unmatched for manual review.
-            const scoredPairs = rawPairs.map(pair => {
-                if (!pair.nameMatched || !pair.nameGuess) {
-                    // No OCR name candidate at all for this score — still run
-                    // it through matching against '' (always fails), but keep
-                    // the raw label distinct so the reviewer can tell "score
-                    // read fine, name pass found nothing nearby" apart from
-                    // "name pass read something but it didn't match anyone".
-                    return { ...pair, member: null, matchScore: 0 };
-                }
-                const { member, score } = findBestMemberMatch(pair.nameGuess, activeMembers);
-                return { ...pair, member, matchScore: score };
-            });
+            rows
+                // Skip rows Gemini couldn't read a score for, and reject any
+                // implausibly large value the same way the old Tesseract path
+                // did — a hallucinated/misread digit run is still possible
+                // even with a much smarter OCR.
+                .filter(r => r.score !== null && r.score !== undefined && r.score <= MAX_PLAUSIBLE_SCORE)
+                .forEach(r => {
+                    const { member, score: matchScore } = findBestMemberMatch(r.name || '', activeMembers);
+                    const rawLabel = r.tag ? `${r.name} [${r.tag}]` : (r.name || '(no name read)');
 
-            scoredPairs.forEach(p => {
-                if (p.member && p.matchScore >= 0.55 && !claimedMemberIds.has(String(p.member.id))) {
-                    claimedMemberIds.add(String(p.member.id));
-                    matchedRows.push({
-                        rawText: p.nameGuess,
-                        memberId: String(p.member.id),
-                        value: p.value,
-                        confidence: p.matchScore,
-                        include: true
-                    });
-                } else {
-                    // Prefill the dropdown with the best guess (even below the
-                    // auto-apply threshold) so the reviewer can just confirm or
-                    // correct it, rather than hunting through the full roster.
-                    // include stays false — nothing here gets applied without
-                    // the reviewer explicitly checking it.
-                    unmatchedRows.push({
-                        rawText: p.nameGuess || '(no name detected near this score)',
-                        memberId: p.member ? String(p.member.id) : '',
-                        value: p.value,
-                        confidence: p.member ? p.matchScore : null,
-                        include: false
-                    });
-                }
-            });
+                    if (member && matchScore >= 0.55 && !claimedMemberIds.has(String(member.id))) {
+                        claimedMemberIds.add(String(member.id));
+                        matchedRows.push({
+                            rawText: rawLabel,
+                            memberId: String(member.id),
+                            value: r.score,
+                            confidence: matchScore,
+                            include: true
+                        });
+                    } else {
+                        unmatchedRows.push({
+                            rawText: rawLabel,
+                            memberId: member ? String(member.id) : '',
+                            value: r.score,
+                            confidence: member ? matchScore : null,
+                            include: false
+                        });
+                    }
+                });
 
             openVsImportReviewModal(matchedRows, unmatchedRows, targetWeekIdx, targetWeekLabel, activeMembers, rawText);
         } catch (err) {
             console.error('OCR import error:', err);
-            alert('Could not read the screenshot. Please try again with a clearer image.');
+            alert('Could not read the screenshot: ' + (err.message || 'unknown error') + '\n\nPlease try again.');
         } finally {
             if (importBtn) { importBtn.innerText = originalBtnText; importBtn.disabled = false; }
             event.target.value = '';
         }
     };
+
+    // Converts a File to a base64 string (no data: prefix) for sending to the API.
+    function fileToBase64(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => {
+                const result = reader.result; // "data:image/png;base64,AAAA..."
+                const base64 = result.split(',')[1];
+                resolve(base64);
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+    }
 
     // --- Import Review Modal: shows every OCR-read row (matched + unmatched)
     // with an editable member dropdown and score field for admin/management
@@ -2026,9 +1620,6 @@ console.log('[VS OCR] name lines detected:', nameLines.length, nameLines.map(l =
         const { rows, activeMembers, matchedCount, rawOcrText } = pendingVsImport;
 
         const memberOptions = (selectedId, confidence) => {
-    // Below ~50%, the "best guess" is often worse than no guess at all
-    // (e.g. matching "An" to "Häven" at 40%) — default to Skip instead
-    // of prefilling something misleading.
     const showSelected = confidence == null || confidence >= 0.5;
     let opts = `<option value="">— Skip —</option>`;
     activeMembers.forEach(m => {
@@ -2065,14 +1656,9 @@ console.log('[VS OCR] name lines detected:', nameLines.length, nameLines.map(l =
             unmatchedContainer.innerHTML = '';
         }
 
-        // Manual add-row control — always available, so a total OCR miss is
-        // recoverable by hand instead of a dead end.
         const addRowWrap = document.getElementById('vsImportAddRowWrap');
         if (addRowWrap) addRowWrap.style.display = 'block';
 
-        // Raw OCR debug text — always shown collapsed, so you can see exactly
-        // what Tesseract read off the screenshot (useful when nothing parsed,
-        // or when a name/score looks wrong and you want to check the source).
         const debugWrap = document.getElementById('vsImportRawTextWrap');
         const debugPre = document.getElementById('vsImportRawText');
         if (debugWrap && debugPre) {
@@ -2080,7 +1666,7 @@ console.log('[VS OCR] name lines detected:', nameLines.length, nameLines.map(l =
                 debugPre.textContent = rawOcrText;
                 debugWrap.style.display = 'block';
             } else {
-                debugPre.textContent = '(Tesseract returned no text at all for this image.)';
+                debugPre.textContent = '(Gemini returned no rows for this image.)';
                 debugWrap.style.display = 'block';
             }
         }
@@ -2095,10 +1681,6 @@ console.log('[VS OCR] name lines detected:', nameLines.length, nameLines.map(l =
         else if (field === 'value') row.value = parseFloat(value) || 0;
     };
 
-    // Lets admin/management hand-add a row (member + score) straight from
-    // looking at the screenshot, for cases OCR missed entirely or got wrong.
-    // New rows are appended to the "unmatched" section so they get the same
-    // dropdown + score editing as everything else before Apply.
     window.addManualVsImportRow = function() {
         if (!pendingVsImport) return;
         pendingVsImport.rows.push({
@@ -2160,8 +1742,6 @@ console.log('[VS OCR] name lines detected:', nameLines.length, nameLines.map(l =
         renderVsPoints();
     };
 
-    // Purely informational check — archiving is always allowed regardless of
-    // how long the current cycle has run, so this always returns true.
     function isCycleReadyToArchive() {
         return true;
     }
