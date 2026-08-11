@@ -1553,7 +1553,8 @@
         }
     };
 
-    // Upscales and binarizes the screenshot before OCR.
+    // Upscales and binarizes the screenshot before OCR — tuned specifically
+    // for the SCORE numbers (bold, thick-outlined game-UI digits).
     //
     // Calibrated against actual pixel samples pulled from this app's real
     // screenshots (checked across the gold/blue/peach/beige/brown row
@@ -1561,22 +1562,68 @@
     // dark outline stroke — text-fill luminance measured ~250-255, the dark
     // outline stroke measured ~0-55 even on the darkest (brown) row
     // background, while every row *background* color measured in the
-    // ~140-202 range. That's a clean, well-separated gap.
-    //
-    // A single global "grayscale + stretch the contrast a bit" pass (the
-    // previous approach) stretches contrast based on the *whole image's*
-    // histogram, so it still leaves the text only partially distinguished
-    // from whichever background color a given row happens to have — which
-    // is why some rows read fine and others didn't read at all. Instead,
-    // this binarizes per-pixel using the measured gap: any pixel at or
-    // above BRIGHT_THRESHOLD (the white fill) or at or below DARK_THRESHOLD
-    // (the dark outline) becomes pure black "text", everything else
-    // (any row background color) becomes pure white. That makes the text
-    // stand out the same way regardless of which row background it's on.
+    // ~140-202 range. That's a clean, well-separated gap, so hard
+    // binarizing on it (pixel -> pure black "text" or pure white
+    // "background") makes the bold score digits crisp regardless of which
+    // row background they sit on.
     const BRIGHT_THRESHOLD = 225; // white text fill; safely above every sampled background (~140-202)
     const DARK_THRESHOLD = 80;    // dark outline stroke; safely below every sampled background
 
-    function preprocessImageForOcr(file) {
+    function preprocessImageForOcrScores(file) {
+        return preprocessImageForOcr(file, (data) => {
+            for (let i = 0; i < data.length; i += 4) {
+                const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+                const isText = gray >= BRIGHT_THRESHOLD || gray <= DARK_THRESHOLD;
+                const out = isText ? 0 : 255; // black text on white background, which OCR engines read best
+                data[i] = data[i + 1] = data[i + 2] = out;
+            }
+        });
+    }
+
+    // Upscales and mildly contrast-stretches the screenshot before OCR —
+    // tuned for the MEMBER NAME text, which is a much smaller, regular
+    // (non-outlined, antialiased) UI font compared to the bold score
+    // digits. Hard binarizing that font (as the score pass does) erodes its
+    // thinner strokes into disconnected fragments — that's what was
+    // producing garbage single/double-letter reads ("a", "rr", "ul") in
+    // place of actual names. This pass keeps the grayscale mid-tones
+    // (percentile-based contrast stretch, no hard black/white clipping) so
+    // the antialiased edges Tesseract relies on for smaller text survive.
+    function preprocessImageForOcrNames(file) {
+        return preprocessImageForOcr(file, (data) => {
+            for (let i = 0; i < data.length; i += 4) {
+                const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+                data[i] = data[i + 1] = data[i + 2] = gray;
+            }
+            const hist = new Array(256).fill(0);
+            for (let i = 0; i < data.length; i += 4) hist[Math.round(data[i])]++;
+            const totalPixels = data.length / 4;
+            let cum = 0, lo = 0, hi = 255;
+            for (let v = 0; v < 256; v++) {
+                cum += hist[v];
+                if (cum >= totalPixels * 0.01) { lo = v; break; }
+            }
+            cum = 0;
+            for (let v = 255; v >= 0; v--) {
+                cum += hist[v];
+                if (cum >= totalPixels * 0.01) { hi = v; break; }
+            }
+            const range = Math.max(hi - lo, 1);
+            for (let i = 0; i < data.length; i += 4) {
+                let v = ((data[i] - lo) / range) * 255;
+                data[i] = data[i + 1] = data[i + 2] = Math.max(0, Math.min(255, v));
+            }
+        });
+    }
+
+    // Shared upscale + canvas setup. `applyFilter(data)` mutates the raw
+    // RGBA pixel array in place with whichever tone-mapping the caller
+    // needs. Both preprocessing variants above use the SAME scale factor on
+    // the SAME source image, which matters: it keeps their output images
+    // pixel-dimension-identical, so bounding boxes from OCR runs on either
+    // one land in the same coordinate space and can be compared directly
+    // when pairing names to scores by row position later.
+    function preprocessImageForOcr(file, applyFilter) {
         return new Promise((resolve, reject) => {
             const img = new Image();
             img.onload = () => {
@@ -1590,14 +1637,7 @@
                 ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
                 const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                const data = imageData.data;
-
-                for (let i = 0; i < data.length; i += 4) {
-                    const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
-                    const isText = gray >= BRIGHT_THRESHOLD || gray <= DARK_THRESHOLD;
-                    const out = isText ? 0 : 255; // black text on white background, which OCR engines read best
-                    data[i] = data[i + 1] = data[i + 2] = out;
-                }
+                applyFilter(imageData.data);
 
                 ctx.putImageData(imageData, 0, 0);
                 canvas.toBlob(blob => {
@@ -1676,68 +1716,66 @@
         return (bbox.y0 + bbox.y1) / 2;
     }
 
-    // Builds { nameGuess, value } pairs from OCR lines.
+    // Builds { nameGuess, value } pairs from two SEPARATE OCR runs — one on
+    // the image preprocessed for score digits, one on the image
+    // preprocessed for name text (see preprocessImageForOcrScores /
+    // preprocessImageForOcrNames above). Each font needs different tone
+    // mapping to read reliably, so they're OCR'd independently rather than
+    // classifying name-vs-score lines out of one pass.
     //
-    // This does NOT assume a name line and its score appear next to each
-    // other in the order Tesseract returns them — that assumption is what
-    // caused rows to go missing/merged in earlier versions, since Tesseract
-    // doesn't guarantee stream order matches the screenshot's visual
-    // top-to-bottom row order once name and score are separate text blocks.
-    //
-    // Instead: every line is classified as either self-contained (name and
-    // score together on one line — still handled directly), a name-only
-    // fragment, or a score-only fragment. Name-only and score-only
-    // fragments are then paired up by matching whichever pair has the
-    // closest vertical (Y) position in the original image — i.e. by which
-    // row they're actually sitting on — not by which order OCR emitted them
-    // in. When bbox data isn't available at all (fallback text-only mode),
-    // this falls back to "closest preceding name line in array order" as a
-    // best-effort degrade.
-    function buildRawPairsFromOcrLines(ocrLines) {
+    // Because both passes upscale the SAME source image by the SAME factor,
+    // their bounding boxes land in the same coordinate space. So instead of
+    // assuming a name and its score come out next to each other in
+    // whichever order either OCR run reports them (which isn't reliable),
+    // every score block is paired with whichever name block sits at the
+    // closest vertical (Y) position — i.e. whichever row it's actually on
+    // in the screenshot. When bbox data isn't available at all (older
+    // Tesseract.js response shape), this falls back to pairing scores with
+    // names in the order each list was collected, as a best-effort degrade.
+    function buildRawPairsFromOcrLines(nameLines, scoreLines) {
         const rawPairs = [];
         const pendingNames = []; // { text, bbox, claimed }
         const pendingScores = []; // { value, bbox, claimed }
 
-        ocrLines.forEach(line => {
+        nameLines.forEach(line => {
             const trimmed = (line.text || '').trim();
             if (!trimmed) return;
             if (isChromeLine(trimmed)) return;
             if (isTagOnlyLine(trimmed)) return;
             if (isPureNumberLine(trimmed)) return;
             if (looksLikeTagFragment(trimmed)) return;
-
-            const scoreInfo = extractScoreFromLine(trimmed);
-            if (scoreInfo) {
-                const inlineNamePart = trimmed.slice(0, scoreInfo.matchIndex)
-                    .replace(/\[.*?\]/g, '')
-                    .replace(/[•|:>#\-–\[\]]+$/, '').trim();
-                if (inlineNamePart.length >= 2) {
-                    // Name and score already on the same recognized line/block.
-                    rawPairs.push({ nameGuess: inlineNamePart, value: scoreInfo.value });
-                } else {
-                    pendingScores.push({ value: scoreInfo.value, bbox: line.bbox, claimed: false });
-                }
-                return;
-            }
-
+            // Ignore anything that's actually a score digit leaking through
+            // the name pass — that belongs to the score pass instead.
+            if (extractScoreFromLine(trimmed)) return;
+            if (trimmed.length < 2) return; // single-character reads are almost always OCR noise
             if (looksLikeNameLine(trimmed)) {
                 pendingNames.push({ text: trimmed, bbox: line.bbox, claimed: false });
+            }
+        });
+
+        scoreLines.forEach(line => {
+            const trimmed = (line.text || '').trim();
+            if (!trimmed) return;
+            if (isChromeLine(trimmed)) return;
+            const scoreInfo = extractScoreFromLine(trimmed);
+            if (scoreInfo) {
+                pendingScores.push({ value: scoreInfo.value, bbox: line.bbox, claimed: false });
             }
         });
 
         const haveBboxes = pendingScores.some(s => s.bbox) && pendingNames.some(n => n.bbox);
 
         if (haveBboxes) {
-            // Row-height-scale tolerance: use the tallest of the paired boxes
-            // (roughly one row's height) as the matching window, with a sane
-            // floor/ceiling so it isn't thrown off by a single stray box.
+            // Row-height-scale tolerance: use the median box height (roughly
+            // one row's height) as the matching window, with a sane floor so
+            // it isn't thrown off by a single stray box.
             const heights = [...pendingScores, ...pendingNames]
                 .map(e => e.bbox ? (e.bbox.y1 - e.bbox.y0) : null)
                 .filter(h => h);
             const medianHeight = heights.length
                 ? heights.sort((a, b) => a - b)[Math.floor(heights.length / 2)]
                 : 40;
-            const maxYDist = Math.max(medianHeight * 2.5, 40);
+            const maxYDist = Math.max(medianHeight * 3, 50);
 
             pendingScores.forEach(score => {
                 const scoreY = bboxYCenter(score.bbox);
@@ -1761,8 +1799,7 @@
             });
         } else {
             // No usable bbox data (older Tesseract.js response shape) — fall
-            // back to the previous "score claims the most recent unclaimed
-            // name line" heuristic.
+            // back to pairing scores with names in collection order.
             let nameIdx = 0;
             pendingScores.forEach(score => {
                 while (nameIdx < pendingNames.length && pendingNames[nameIdx].claimed) nameIdx++;
@@ -1797,19 +1834,34 @@
         if (importBtn) { importBtn.innerText = 'READING…'; importBtn.disabled = true; }
 
         try {
-            const preprocessedBlob = await preprocessImageForOcr(file);
+            // Two separate preprocessing passes on the same source image —
+            // one tuned for the bold outlined score digits, one gentler pass
+            // tuned for the smaller antialiased name text. See the comments
+            // on preprocessImageForOcrScores / preprocessImageForOcrNames
+            // for why a single shared preprocessing step can't serve both.
+            const [scoreBlob, nameBlob] = await Promise.all([
+                preprocessImageForOcrScores(file),
+                preprocessImageForOcrNames(file)
+            ]);
+
             const worker = await getOcrWorker();
             // Request block/line-level data (not just the flat text string) so
             // each recognized line comes with its bounding box. That's what
             // lets row-pairing below use vertical position instead of stream
-            // order — see the comment on buildRawPairsFromOcrLines.
-            const { data } = await worker.recognize(preprocessedBlob, {}, { blocks: true });
+            // order — see the comment on buildRawPairsFromOcrLines. The two
+            // recognize calls run sequentially on the shared worker (a
+            // Tesseract worker processes one job at a time).
+            const scoreResult = await worker.recognize(scoreBlob, {}, { blocks: true });
+            const nameResult = await worker.recognize(nameBlob, {}, { blocks: true });
 
-            const ocrLines = flattenOcrLines(data);
-            const rawText = data.text || ocrLines.map(l => l.text).join('\n');
+            const scoreLines = flattenOcrLines(scoreResult.data);
+            const nameLines = flattenOcrLines(nameResult.data);
+            const rawText =
+                '--- score pass ---\n' + (scoreResult.data.text || scoreLines.map(l => l.text).join('\n')) +
+                '\n\n--- name pass ---\n' + (nameResult.data.text || nameLines.map(l => l.text).join('\n'));
 
             const activeMembers = getActiveMembers();
-            const rawPairs = buildRawPairsFromOcrLines(ocrLines);
+            const rawPairs = buildRawPairsFromOcrLines(nameLines, scoreLines);
 
             // Even on a total miss, open the review modal instead of dead-ending
             // with an alert: it shows the raw text Tesseract actually produced
