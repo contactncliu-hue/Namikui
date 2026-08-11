@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>VS Points - Loopy's Playground</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Fredoka+One&family=Montserrat:wght@600;700;800&family=Noto+Sans+SC:wght@900&family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
     :root {
@@ -781,6 +782,47 @@
     function getWeekType(wk) {
         return (wk && typeof wk === 'object' && wk.type) ? wk.type : 'weekly';
     }
+        // --- Fuzzy name matching (tolerates OCR noise and non-Latin script names) ---
+    function levenshteinDistance(a, b) {
+        a = a || ''; b = b || '';
+        const matrix = Array.from({ length: a.length + 1 }, () => new Array(b.length + 1).fill(0));
+        for (let i = 0; i <= a.length; i++) matrix[i][0] = i;
+        for (let j = 0; j <= b.length; j++) matrix[0][j] = j;
+        for (let i = 1; i <= a.length; i++) {
+            for (let j = 1; j <= b.length; j++) {
+                const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+                matrix[i][j] = Math.min(
+                    matrix[i - 1][j] + 1,
+                    matrix[i][j - 1] + 1,
+                    matrix[i - 1][j - 1] + cost
+                );
+            }
+        }
+        return matrix[a.length][b.length];
+    }
+
+    function nameSimilarity(a, b) {
+        const normA = (a || '').toLowerCase().trim();
+        const normB = (b || '').toLowerCase().trim();
+        if (!normA || !normB) return 0;
+        if (normA === normB) return 1;
+        const dist = levenshteinDistance(normA, normB);
+        const maxLen = Math.max(normA.length, normB.length);
+        return 1 - (dist / maxLen);
+    }
+
+    function findBestMemberMatch(candidateName, memberList) {
+        let best = null;
+        let bestScore = 0;
+        memberList.forEach(m => {
+            const score = nameSimilarity(candidateName, m.name);
+            if (score > bestScore) {
+                bestScore = score;
+                best = m;
+            }
+        });
+        return { member: best, score: bestScore };
+    }
 
     const currentUser = {
         username: localStorage.getItem('amt_username') || null,
@@ -1302,25 +1344,97 @@
         }
     };
 
-    window.handleVsScreenshotImport = async function(event) {
+        window.handleVsScreenshotImport = async function(event) {
         if (!isManagementOrAdmin) return;
         const file = event.target.files[0];
         if (!file) return;
 
-        alert('Reading screenshot data and extracting weekly VS points...');
-        setTimeout(async () => {
-            vsData.membersScores.forEach(m => {
-                const randomExtra = Math.floor(Math.random() * 3000000) + 10500000;
-                if (m.scores.length > 0) {
-                    m.scores[m.scores.length - 1] = randomExtra;
+        if (vsData.weeks.length === 0) {
+            alert('Please add a date column first — the screenshot import fills in the most recent date column.');
+            event.target.value = '';
+            return;
+        }
+
+        const targetWeekIdx = vsData.weeks.length - 1; // most recently added (rightmost) date column
+        const targetWeekLabel = getWeekDate(vsData.weeks[targetWeekIdx]);
+
+        const importBtn = document.getElementById('btnImportVs');
+        const originalBtnText = importBtn ? importBtn.innerText : '📥 IMPORT';
+        if (importBtn) { importBtn.innerText = 'READING…'; importBtn.disabled = true; }
+
+        try {
+            // eng + chi_sim + kor + vie covers Latin, simplified Chinese, Korean, and
+            // Vietnamese diacritics — matching the languages this app already supports.
+            // First run downloads extra language data, so it's slower the first time.
+            const { data: { text } } = await Tesseract.recognize(file, 'eng+chi_sim+kor+vie');
+
+            const activeMembers = getActiveMembers();
+            const matches = [];
+            const unmatched = [];
+
+            text.split('\n').forEach(rawLine => {
+                const line = rawLine.trim();
+                if (!line) return;
+
+                const numMatch = line.match(/([\d,]{4,})\s*$/);
+                if (!numMatch) return;
+
+                const numericValue = parseInt(numMatch[1].replace(/,/g, ''), 10);
+                if (isNaN(numericValue)) return;
+
+                const namePart = line.slice(0, numMatch.index).replace(/[•|:>#\-–]+$/, '').trim();
+                if (!namePart) return;
+
+                const { member, score } = findBestMemberMatch(namePart, activeMembers);
+
+                if (member && score >= 0.55) {
+                    const existingIdx = matches.findIndex(m => String(m.member.id) === String(member.id));
+                    if (existingIdx === -1 || matches[existingIdx].score < score) {
+                        if (existingIdx > -1) matches.splice(existingIdx, 1);
+                        matches.push({ member, score, extractedValue: numericValue, rawLine: line });
+                    }
                 } else {
-                    m.scores.push(randomExtra);
+                    unmatched.push(line);
                 }
             });
+
+            if (matches.length === 0) {
+                alert('No member names could be matched from this screenshot. Try a clearer image.');
+                return;
+            }
+
+            let summary = `Matched ${matches.length} member(s) for "${targetWeekLabel}":\n\n`;
+            matches
+                .sort((a, b) => b.extractedValue - a.extractedValue)
+                .forEach(m => {
+                    summary += `${m.member.name}: ${m.extractedValue.toLocaleString()}${m.score < 0.85 ? '  (fuzzy match — please double-check)' : ''}\n`;
+                });
+            if (unmatched.length > 0) {
+                summary += `\n${unmatched.length} line(s) had a number but no matching member and were skipped.`;
+            }
+            summary += `\n\nApply these scores to the "${targetWeekLabel}" column?`;
+
+            if (!confirm(summary)) return;
+
+            matches.forEach(m => {
+                const scoreEntry = vsData.membersScores.find(s => String(s.id) === String(m.member.id));
+                if (scoreEntry) {
+                    if (!Array.isArray(scoreEntry.scores)) scoreEntry.scores = [];
+                    while (scoreEntry.scores.length <= targetWeekIdx) scoreEntry.scores.push(0);
+                    scoreEntry.scores[targetWeekIdx] = m.extractedValue;
+                }
+            });
+
             await saveData();
             renderVsPoints();
-            alert('Screenshot successfully parsed and synced to the latest date column tally!');
-        }, 800);
+            alert(`Applied ${matches.length} score(s) to "${targetWeekLabel}".`);
+        } catch (err) {
+            console.error('OCR import error:', err);
+            alert('Could not read the screenshot. Please try again with a clearer image.');
+        } finally {
+            if (importBtn) { importBtn.innerText = originalBtnText; importBtn.disabled = false; }
+            event.target.value = '';
+        }
     };
 
     // --- 4-week counting cycle: set start date, archive & reset, view archives ---
