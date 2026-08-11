@@ -1478,9 +1478,20 @@
             });
 
             if (matches.length === 0) {
-                alert('No member names could be matched from this screenshot. The image was read, but none of the extracted names matched your roster closely enough — check that these players exist in Members.');
-                return;
-            }
+    let debugMsg = 'No member names could be matched from this screenshot.\n\n';
+    if (rawPairs.length === 0) {
+        debugMsg += 'OCR did not extract ANY name+score pairs from the image at all. This usually means the text was too stylized/low-contrast for Tesseract to read reliably — try a clearer, more zoomed-in screenshot with less background clutter (avatars, gradients, decorative tags).';
+    } else {
+        debugMsg += `OCR extracted ${rawPairs.length} candidate line(s), but none matched a roster member closely enough:\n\n`;
+        rawPairs.forEach(p => {
+            const { member, score } = findBestMemberMatch(p.nameGuess, activeMembers);
+            debugMsg += `"${p.nameGuess}" → ${p.value.toLocaleString()}  (closest roster match: ${member ? member.name : 'none'}, similarity ${(score*100).toFixed(0)}%)\n`;
+        });
+        debugMsg += '\nIf these names look roughly right, the roster names may need to more closely match the in-game display names, or the 0.55 match threshold may need lowering.';
+    }
+    alert(debugMsg);
+    return;
+}
 
             let summary = `Matched ${matches.length} member(s) for "${targetWeekLabel}":\n\n`;
             matches
