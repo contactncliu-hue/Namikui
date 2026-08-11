@@ -1033,6 +1033,18 @@
         return /[a-zA-Z\u00C0-\u024F\u4e00-\u9fff\uac00-\ud7af]/.test(line);
     }
 
+    // A run of CJK / Hangul characters is information-dense — a single
+    // character is a real, common alliance name (e.g. "鬼", "他" as part of
+    // a longer name) unlike a single stray Latin letter, which is almost
+    // always OCR noise. So the "too short, discard" filter needs a lower
+    // floor for CJK/Hangul text than for Latin text.
+    function isCjkOrHangul(ch) {
+        return /[\u4e00-\u9fff\uac00-\ud7af]/.test(ch);
+    }
+    function minPlausibleNameLength(trimmed) {
+        return isCjkOrHangul(trimmed) ? 1 : 2;
+    }
+
     const currentUser = {
         username: localStorage.getItem('amt_username') || null,
         role: localStorage.getItem('amt_userRole') || null
@@ -1577,7 +1589,7 @@
                 const out = isText ? 0 : 255; // black text on white background, which OCR engines read best
                 data[i] = data[i + 1] = data[i + 2] = out;
             }
-        });
+        }, 3);
     }
 
     // Upscales and mildly contrast-stretches the screenshot before OCR —
@@ -1589,6 +1601,14 @@
     // place of actual names. This pass keeps the grayscale mid-tones
     // (percentile-based contrast stretch, no hard black/white clipping) so
     // the antialiased edges Tesseract relies on for smaller text survive.
+    //
+    // Uses a HIGHER upscale factor (4x vs the score pass's 3x) than the
+    // score pass. CJK/Hangul glyphs pack far more stroke detail per
+    // character than Latin letters or digits, so at the same pixel size
+    // their strokes were merging together under Tesseract's line
+    // detection — that's the single biggest cause of the "aw" / "sv" /
+    // single-character garbage reads on non-Latin names. The extra scale
+    // gives those strokes room to stay separated.
     function preprocessImageForOcrNames(file) {
         return preprocessImageForOcr(file, (data) => {
             for (let i = 0; i < data.length; i += 4) {
@@ -1613,21 +1633,23 @@
                 let v = ((data[i] - lo) / range) * 255;
                 data[i] = data[i + 1] = data[i + 2] = Math.max(0, Math.min(255, v));
             }
-        });
+        }, 4);
     }
 
     // Shared upscale + canvas setup. `applyFilter(data)` mutates the raw
     // RGBA pixel array in place with whichever tone-mapping the caller
-    // needs. Both preprocessing variants above use the SAME scale factor on
-    // the SAME source image, which matters: it keeps their output images
-    // pixel-dimension-identical, so bounding boxes from OCR runs on either
-    // one land in the same coordinate space and can be compared directly
-    // when pairing names to scores by row position later.
-    function preprocessImageForOcr(file, applyFilter) {
+    // needs. `scale` is now a parameter (rather than a shared constant)
+    // because the name pass needs a higher upscale factor than the score
+    // pass to keep dense CJK/Hangul strokes legible — see the comment on
+    // preprocessImageForOcrNames. Because the two passes can use different
+    // scales now, their bounding boxes are NOT directly comparable in raw
+    // pixel coordinates any more; buildRawPairsFromOcrLines normalizes both
+    // sets of bboxes to 0-1 (fraction of image height) before comparing Y
+    // position, so pairing still works correctly across different scales.
+    function preprocessImageForOcr(file, applyFilter, scale) {
         return new Promise((resolve, reject) => {
             const img = new Image();
             img.onload = () => {
-                const scale = 3;
                 const canvas = document.createElement('canvas');
                 canvas.width = img.width * scale;
                 canvas.height = img.height * scale;
@@ -1641,7 +1663,7 @@
 
                 ctx.putImageData(imageData, 0, 0);
                 canvas.toBlob(blob => {
-                    if (blob) resolve(blob);
+                    if (blob) resolve({ blob, width: canvas.width, height: canvas.height });
                     else reject(new Error('Canvas toBlob failed'));
                 }, 'image/png');
             };
@@ -1668,21 +1690,27 @@
     // matches this list-of-rows layout much better and stops it from
     // merging adjacent rows together.
     //
-    // A persistent worker is reused across calls instead of recreated every
-    // import, since createWorker() has real startup cost (loading the
-    // language data) and repeated imports are the common case here.
-    let ocrWorkerPromise = null;
-    async function getOcrWorker() {
-        if (!ocrWorkerPromise) {
-            ocrWorkerPromise = (async () => {
-                const worker = await Tesseract.createWorker('eng+chi_sim+kor+vie');
+    // Two SEPARATE workers are kept (one per language set) instead of one
+    // shared worker. The name pass needs the full eng+chi_sim+kor+vie
+    // language bundle since names can be almost anything, but running the
+    // SCORE pass (which is always plain digits/M/K) through that same
+    // multi-script model was measurably making it slower and occasionally
+    // misreading a digit as a lookalike CJK/Hangul stroke. The score
+    // worker uses eng only, which is both faster and more accurate for
+    // pure numerals.
+    let ocrWorkerPromises = {};
+    async function getOcrWorker(kind) {
+        if (!ocrWorkerPromises[kind]) {
+            ocrWorkerPromises[kind] = (async () => {
+                const langs = kind === 'names' ? 'eng+chi_sim+kor+vie' : 'eng';
+                const worker = await Tesseract.createWorker(langs);
                 await worker.setParameters({
                     tessedit_pageseg_mode: Tesseract.PSM.SPARSE_TEXT
                 });
                 return worker;
             })();
         }
-        return ocrWorkerPromise;
+        return ocrWorkerPromises[kind];
     }
 
     // Flattens Tesseract's block -> paragraph -> line structure into a flat
@@ -1720,22 +1748,28 @@
     // the image preprocessed for score digits, one on the image
     // preprocessed for name text (see preprocessImageForOcrScores /
     // preprocessImageForOcrNames above). Each font needs different tone
-    // mapping to read reliably, so they're OCR'd independently rather than
-    // classifying name-vs-score lines out of one pass.
+    // mapping (and, now, a different upscale factor) to read reliably, so
+    // they're OCR'd independently rather than classifying name-vs-score
+    // lines out of one pass.
     //
-    // Because both passes upscale the SAME source image by the SAME factor,
-    // their bounding boxes land in the same coordinate space. So instead of
-    // assuming a name and its score come out next to each other in
-    // whichever order either OCR run reports them (which isn't reliable),
-    // every score block is paired with whichever name block sits at the
-    // closest vertical (Y) position — i.e. whichever row it's actually on
-    // in the screenshot. When bbox data isn't available at all (older
-    // Tesseract.js response shape), this falls back to pairing scores with
-    // names in the order each list was collected, as a best-effort degrade.
-    function buildRawPairsFromOcrLines(nameLines, scoreLines) {
+    // Y positions are normalized to 0-1 (fraction of that pass's own image
+    // height) before comparing, since the two passes can now run at
+    // different scales (see preprocessImageForOcr) and their raw pixel
+    // coordinates are no longer directly comparable.
+    //
+    // IMPORTANT: every score that OCR successfully read is now kept, even
+    // if no name candidate is found nearby — it's pushed with an empty
+    // nameGuess ('(no name detected nearby)') instead of being silently
+    // dropped. Previously an unpaired score just vanished, which is why
+    // screenshots with 6+ visible scores were producing review-modal rows
+    // for only 2-3 of them: several correctly-read scores had no nearby
+    // name (because the name pass mis-segmented or completely missed that
+    // row's name, which happens often on CJK/Vietnamese/Korean text) and
+    // were thrown away instead of surfaced for manual entry.
+    function buildRawPairsFromOcrLines(nameLines, nameImgHeight, scoreLines, scoreImgHeight) {
         const rawPairs = [];
-        const pendingNames = []; // { text, bbox, claimed }
-        const pendingScores = []; // { value, bbox, claimed }
+        const pendingNames = []; // { text, bbox, yFrac, claimed }
+        const pendingScores = []; // { value, bbox, yFrac, claimed }
 
         nameLines.forEach(line => {
             const trimmed = (line.text || '').trim();
@@ -1747,9 +1781,15 @@
             // Ignore anything that's actually a score digit leaking through
             // the name pass — that belongs to the score pass instead.
             if (extractScoreFromLine(trimmed)) return;
-            if (trimmed.length < 2) return; // single-character reads are almost always OCR noise
+            if (trimmed.length < minPlausibleNameLength(trimmed)) return; // Latin: needs 2+ chars; CJK/Hangul: 1 char is plausible
             if (looksLikeNameLine(trimmed)) {
-                pendingNames.push({ text: trimmed, bbox: line.bbox, claimed: false });
+                const yC = bboxYCenter(line.bbox);
+                pendingNames.push({
+                    text: trimmed,
+                    bbox: line.bbox,
+                    yFrac: (yC != null && scoreImgHeight) ? yC / nameImgHeight : null,
+                    claimed: false
+                });
             }
         });
 
@@ -1759,53 +1799,71 @@
             if (isChromeLine(trimmed)) return;
             const scoreInfo = extractScoreFromLine(trimmed);
             if (scoreInfo) {
-                pendingScores.push({ value: scoreInfo.value, bbox: line.bbox, claimed: false });
+                const yC = bboxYCenter(line.bbox);
+                pendingScores.push({
+                    value: scoreInfo.value,
+                    bbox: line.bbox,
+                    yFrac: (yC != null && scoreImgHeight) ? yC / scoreImgHeight : null,
+                    claimed: false
+                });
             }
         });
 
-        const haveBboxes = pendingScores.some(s => s.bbox) && pendingNames.some(n => n.bbox);
+        const haveBboxes = pendingScores.some(s => s.yFrac != null) && pendingNames.some(n => n.yFrac != null);
 
         if (haveBboxes) {
-            // Row-height-scale tolerance: use the median box height (roughly
-            // one row's height) as the matching window, with a sane floor so
-            // it isn't thrown off by a single stray box.
+            // Row-height-scale tolerance, expressed as a fraction of image
+            // height so it's meaningful across the normalized 0-1 space.
+            // Widened from the previous multiplier (3x median row height)
+            // to 4x, and given a slightly larger floor — mixed-script rows
+            // (Latin score digits vs. CJK/Hangul names) don't always land
+            // at exactly the same vertical center within a row, so being
+            // too strict here was also contributing to dropped/unpaired
+            // scores.
             const heights = [...pendingScores, ...pendingNames]
-                .map(e => e.bbox ? (e.bbox.y1 - e.bbox.y0) : null)
+                .map(e => e.bbox && e.yFrac != null ? Math.abs((e.bbox.y1 - e.bbox.y0)) : null)
                 .filter(h => h);
-            const medianHeight = heights.length
-                ? heights.sort((a, b) => a - b)[Math.floor(heights.length / 2)]
-                : 40;
-            const maxYDist = Math.max(medianHeight * 3, 50);
+            // Approximate a "row height fraction" using the score image's
+            // own height for scores and name image's own height for names;
+            // since both are already normalized to fractions via yFrac, use
+            // a sane fixed fraction as the tolerance floor instead of mixing
+            // pixel heights from differently-scaled images.
+            const maxYFracDist = 0.035; // ~3.5% of image height, tuned for this app's row spacing
 
             pendingScores.forEach(score => {
-                const scoreY = bboxYCenter(score.bbox);
-                if (scoreY == null) return;
+                if (score.yFrac == null) return;
                 let best = null;
                 let bestDist = Infinity;
                 pendingNames.forEach(name => {
-                    if (name.claimed) return;
-                    const nameY = bboxYCenter(name.bbox);
-                    if (nameY == null) return;
-                    const dist = Math.abs(nameY - scoreY);
+                    if (name.claimed || name.yFrac == null) return;
+                    const dist = Math.abs(name.yFrac - score.yFrac);
                     if (dist < bestDist) {
                         bestDist = dist;
                         best = name;
                     }
                 });
-                if (best && bestDist <= maxYDist) {
+                if (best && bestDist <= maxYFracDist) {
                     best.claimed = true;
-                    rawPairs.push({ nameGuess: best.text, value: score.value });
+                    rawPairs.push({ nameGuess: best.text, value: score.value, nameMatched: true });
+                } else {
+                    // No nearby name candidate — keep the score anyway so it
+                    // shows up in the review modal instead of vanishing.
+                    rawPairs.push({ nameGuess: '', value: score.value, nameMatched: false });
                 }
             });
         } else {
             // No usable bbox data (older Tesseract.js response shape) — fall
-            // back to pairing scores with names in collection order.
+            // back to pairing scores with names in collection order, but
+            // still keep any leftover scores once names run out instead of
+            // dropping them.
             let nameIdx = 0;
             pendingScores.forEach(score => {
                 while (nameIdx < pendingNames.length && pendingNames[nameIdx].claimed) nameIdx++;
                 if (nameIdx < pendingNames.length) {
                     pendingNames[nameIdx].claimed = true;
-                    rawPairs.push({ nameGuess: pendingNames[nameIdx].text, value: score.value });
+                    rawPairs.push({ nameGuess: pendingNames[nameIdx].text, value: score.value, nameMatched: true });
+                } else {
+                    rawPairs.push({ nameGuess: '', value: score.value, nameMatched: false });
                 }
             });
         }
@@ -1835,24 +1893,34 @@
 
         try {
             // Two separate preprocessing passes on the same source image —
-            // one tuned for the bold outlined score digits, one gentler pass
-            // tuned for the smaller antialiased name text. See the comments
-            // on preprocessImageForOcrScores / preprocessImageForOcrNames
-            // for why a single shared preprocessing step can't serve both.
-            const [scoreBlob, nameBlob] = await Promise.all([
+            // one tuned for the bold outlined score digits (3x scale), one
+            // gentler pass tuned for the smaller antialiased/CJK-Hangul name
+            // text (4x scale). See the comments on preprocessImageForOcrScores
+            // / preprocessImageForOcrNames for why a single shared
+            // preprocessing step (and a single shared scale) can't serve both.
+            const [scorePrep, namePrep] = await Promise.all([
                 preprocessImageForOcrScores(file),
                 preprocessImageForOcrNames(file)
             ]);
 
-            const worker = await getOcrWorker();
+            // Two separate workers: an English-only one for the score pass,
+            // and the full multi-script bundle for the name pass. See the
+            // comment on getOcrWorker for why splitting these helps.
+            const [scoreWorker, nameWorker] = await Promise.all([
+                getOcrWorker('scores'),
+                getOcrWorker('names')
+            ]);
+
             // Request block/line-level data (not just the flat text string) so
             // each recognized line comes with its bounding box. That's what
             // lets row-pairing below use vertical position instead of stream
             // order — see the comment on buildRawPairsFromOcrLines. The two
-            // recognize calls run sequentially on the shared worker (a
-            // Tesseract worker processes one job at a time).
-            const scoreResult = await worker.recognize(scoreBlob, {}, { blocks: true });
-            const nameResult = await worker.recognize(nameBlob, {}, { blocks: true });
+            // recognize calls now run in parallel since they're on separate
+            // workers.
+            const [scoreResult, nameResult] = await Promise.all([
+                scoreWorker.recognize(scorePrep.blob, {}, { blocks: true }),
+                nameWorker.recognize(namePrep.blob, {}, { blocks: true })
+            ]);
 
             const scoreLines = flattenOcrLines(scoreResult.data);
             const nameLines = flattenOcrLines(nameResult.data);
@@ -1861,7 +1929,7 @@
                 '\n\n--- name pass ---\n' + (nameResult.data.text || nameLines.map(l => l.text).join('\n'));
 
             const activeMembers = getActiveMembers();
-            const rawPairs = buildRawPairsFromOcrLines(nameLines, scoreLines);
+            const rawPairs = buildRawPairsFromOcrLines(nameLines, namePrep.height, scoreLines, scorePrep.height);
 
             // Even on a total miss, open the review modal instead of dead-ending
             // with an alert: it shows the raw text Tesseract actually produced
@@ -1884,6 +1952,14 @@
             // the same member, the higher-confidence/higher-value one wins
             // the slot and the other falls through to unmatched for manual review.
             const scoredPairs = rawPairs.map(pair => {
+                if (!pair.nameMatched || !pair.nameGuess) {
+                    // No OCR name candidate at all for this score — still run
+                    // it through matching against '' (always fails), but keep
+                    // the raw label distinct so the reviewer can tell "score
+                    // read fine, name pass found nothing nearby" apart from
+                    // "name pass read something but it didn't match anyone".
+                    return { ...pair, member: null, matchScore: 0 };
+                }
                 const { member, score } = findBestMemberMatch(pair.nameGuess, activeMembers);
                 return { ...pair, member, matchScore: score };
             });
@@ -1899,9 +1975,14 @@
                         include: true
                     });
                 } else {
+                    // Prefill the dropdown with the best guess (even below the
+                    // auto-apply threshold) so the reviewer can just confirm or
+                    // correct it, rather than hunting through the full roster.
+                    // include stays false — nothing here gets applied without
+                    // the reviewer explicitly checking it.
                     unmatchedRows.push({
-                        rawText: p.nameGuess,
-                        memberId: '',
+                        rawText: p.nameGuess || '(no name detected near this score)',
+                        memberId: p.member ? String(p.member.id) : '',
                         value: p.value,
                         confidence: p.member ? p.matchScore : null,
                         include: false
