@@ -744,6 +744,13 @@
             <div class="import-review-section-label">Unmatched Rows (pick a member or leave as Skip)</div>
             <div id="vsImportUnmatchedRows"></div>
         </div>
+        <div id="vsImportAddRowWrap" style="display:none; margin-top:10px;">
+            <button class="btn-action" style="font-size:11px; padding:8px 14px;" onclick="addManualVsImportRow()">+ ADD ROW MANUALLY</button>
+        </div>
+        <details id="vsImportRawTextWrap" style="display:none; margin-top:14px;">
+            <summary style="cursor:pointer; font-size:11px; font-weight:800; color:var(--color-text-muted); text-transform:uppercase; letter-spacing:0.5px;">Raw OCR Text (what Tesseract actually read)</summary>
+            <pre id="vsImportRawText" style="white-space:pre-wrap; font-size:11px; background:#f7f6f0; border:1px solid var(--color-border-light); border-radius:4px; padding:10px; margin-top:8px; max-height:180px; overflow-y:auto; font-family:monospace;"></pre>
+        </details>
         <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:16px;">
             <button class="btn-action" onclick="closeVsImportReviewModal()">Cancel</button>
             <button class="btn-gold" onclick="applyVsImportReview()">✔ APPLY CHECKED ROWS</button>
@@ -914,6 +921,20 @@
         return { member: best, score: bestScore };
     }
 
+    // Stylized game fonts commonly get OCR'd with digits swapped for
+    // lookalike letters (O/o->0, I/l/i->1, S->5, B->8, Z->2, G->6). This is
+    // only applied to a substring that has already matched a number-shaped
+    // pattern (so it never touches actual name text) before parsing it.
+    function fixOcrDigitLookalikes(numStr) {
+        return numStr
+            .replace(/[Oo]/g, '0')
+            .replace(/[IilL]/g, '1')
+            .replace(/[Ss]/g, '5')
+            .replace(/[Bb]/g, '8')
+            .replace(/[Zz]/g, '2')
+            .replace(/[Gg]/g, '6');
+    }
+
     function extractScoreFromLine(line) {
         // Abbreviated e.g. 23.2M, 800K
         let m = line.match(/(\d+(?:\.\d+)?)\s*([MK])\b/i);
@@ -931,6 +952,20 @@
         m = line.match(/\b\d{4,}\b/);
         if (m) {
             return { value: parseInt(m[0], 10), matchIndex: m.index };
+        }
+        // Noisy abbreviated fallback: allow common digit/letter OCR mixups
+        // right before an M/K suffix, e.g. "23.ZM" (should be 23.2M) or
+        // "8OOK" (should be 800K). Only kicks in when the clean patterns
+        // above find nothing, and only the matched numeric-shaped chunk is
+        // touched — never the rest of the line.
+        m = line.match(/\b([0-9OoIilLSsBbZzGg]{1,3}(?:\.[0-9OoIilLSsBbZzGg]{1,3})?)\s*([MK])\b/);
+        if (m) {
+            const fixed = fixOcrDigitLookalikes(m[1]);
+            const num = parseFloat(fixed);
+            if (!isNaN(num)) {
+                const mult = m[2].toUpperCase() === 'M' ? 1000000 : 1000;
+                return { value: Math.round(num * mult), matchIndex: m.index };
+            }
         }
         return null;
     }
@@ -1485,6 +1520,65 @@
         }
     };
 
+    // Upscales, grayscales, and contrast-stretches the screenshot before OCR.
+    // Verified against this app's actual screenshots: at native resolution
+    // Tesseract barely reads any digits off the small stylized game font on
+    // gradient/photo backgrounds — a 2x upscale + grayscale + autocontrast
+    // pass consistently turns unreadable scores into clean digit strings.
+    function preprocessImageForOcr(file) {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => {
+                const scale = 2;
+                const canvas = document.createElement('canvas');
+                canvas.width = img.width * scale;
+                canvas.height = img.height * scale;
+                const ctx = canvas.getContext('2d');
+                ctx.imageSmoothingEnabled = true;
+                ctx.imageSmoothingQuality = 'high';
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const data = imageData.data;
+
+                // Grayscale first.
+                for (let i = 0; i < data.length; i += 4) {
+                    const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+                    data[i] = data[i + 1] = data[i + 2] = gray;
+                }
+
+                // Autocontrast: stretch the 1st-99th percentile gray range to 0-255.
+                const hist = new Array(256).fill(0);
+                for (let i = 0; i < data.length; i += 4) hist[Math.round(data[i])]++;
+                const totalPixels = data.length / 4;
+                let cum = 0, lo = 0, hi = 255;
+                for (let v = 0; v < 256; v++) {
+                    cum += hist[v];
+                    if (cum >= totalPixels * 0.01) { lo = v; break; }
+                }
+                cum = 0;
+                for (let v = 255; v >= 0; v--) {
+                    cum += hist[v];
+                    if (cum >= totalPixels * 0.01) { hi = v; break; }
+                }
+                const range = Math.max(hi - lo, 1);
+                for (let i = 0; i < data.length; i += 4) {
+                    let v = ((data[i] - lo) / range) * 255;
+                    v = Math.max(0, Math.min(255, v));
+                    data[i] = data[i + 1] = data[i + 2] = v;
+                }
+
+                ctx.putImageData(imageData, 0, 0);
+                canvas.toBlob(blob => {
+                    if (blob) resolve(blob);
+                    else reject(new Error('Canvas toBlob failed'));
+                }, 'image/png');
+            };
+            img.onerror = reject;
+            img.src = URL.createObjectURL(file);
+        });
+    }
+
     // --- Screenshot import: OCR extraction, then hand off to the review modal
     // for admin/management to double-check before anything is saved. ---
     window.handleVsScreenshotImport = async function(event) {
@@ -1506,7 +1600,8 @@
         if (importBtn) { importBtn.innerText = 'READING…'; importBtn.disabled = true; }
 
         try {
-            const { data: { text } } = await Tesseract.recognize(file, 'eng+chi_sim+kor+vie');
+            const preprocessedBlob = await preprocessImageForOcr(file);
+            const { data: { text } } = await Tesseract.recognize(preprocessedBlob, 'eng+chi_sim+kor+vie');
 
             const activeMembers = getActiveMembers();
             const rawPairs = [];
@@ -1539,8 +1634,12 @@
                 }
             });
 
+            // Even on a total miss, open the review modal instead of dead-ending
+            // with an alert: it shows the raw text Tesseract actually produced
+            // (so you can see whether it read the image at all) and lets
+            // admin/management manually add rows by hand from the screenshot.
             if (rawPairs.length === 0) {
-                alert('OCR did not extract any name+score pairs from this image at all. This usually means the text was too stylized/low-contrast for Tesseract to read reliably — try a clearer, more zoomed-in screenshot with less background clutter (avatars, gradients, decorative tags).');
+                openVsImportReviewModal([], [], targetWeekIdx, targetWeekLabel, activeMembers, text);
                 return;
             }
 
@@ -1581,7 +1680,7 @@
                 }
             });
 
-            openVsImportReviewModal(matchedRows, unmatchedRows, targetWeekIdx, targetWeekLabel, activeMembers);
+            openVsImportReviewModal(matchedRows, unmatchedRows, targetWeekIdx, targetWeekLabel, activeMembers, text);
         } catch (err) {
             console.error('OCR import error:', err);
             alert('Could not read the screenshot. Please try again with a clearer image.');
@@ -1594,15 +1693,16 @@
     // --- Import Review Modal: shows every OCR-read row (matched + unmatched)
     // with an editable member dropdown and score field for admin/management
     // to double-check before anything is written to vsData / saved. ---
-    let pendingVsImport = null; // { targetWeekIdx, targetWeekLabel, rows, activeMembers }
+    let pendingVsImport = null; // { targetWeekIdx, targetWeekLabel, rows, matchedCount, activeMembers, rawOcrText }
 
-    window.openVsImportReviewModal = function(matchedRows, unmatchedRows, targetWeekIdx, targetWeekLabel, activeMembers) {
+    window.openVsImportReviewModal = function(matchedRows, unmatchedRows, targetWeekIdx, targetWeekLabel, activeMembers, rawOcrText) {
         pendingVsImport = {
             targetWeekIdx,
             targetWeekLabel,
             rows: [...matchedRows, ...unmatchedRows],
             matchedCount: matchedRows.length,
-            activeMembers
+            activeMembers,
+            rawOcrText: rawOcrText || ''
         };
         document.getElementById('vsImportTargetLabel').innerText = targetWeekLabel;
         renderVsImportReviewModal();
@@ -1611,7 +1711,7 @@
 
     function renderVsImportReviewModal() {
         if (!pendingVsImport) return;
-        const { rows, activeMembers, matchedCount } = pendingVsImport;
+        const { rows, activeMembers, matchedCount, rawOcrText } = pendingVsImport;
 
         const memberOptions = (selectedId) => {
             let opts = `<option value="">— Skip —</option>`;
@@ -1623,11 +1723,11 @@
 
         const rowHTML = (r, idx) => {
             const confClass = (r.confidence != null && r.confidence >= 0.85) ? 'conf-high' : 'conf-low';
-            const confLabel = r.confidence != null ? `${Math.round(r.confidence * 100)}%` : 'no match';
+            const confLabel = r.confidence != null ? `${Math.round(r.confidence * 100)}%` : (r.rawText ? 'no match' : 'manual');
             return `
                 <div class="import-review-row">
                     <input type="checkbox" ${r.include ? 'checked' : ''} onchange="updateVsImportRow(${idx}, 'include', this.checked)">
-                    <span class="import-review-row__raw" title="${r.rawText}">${r.rawText}</span>
+                    <span class="import-review-row__raw" title="${r.rawText}">${r.rawText || '(manually added)'}</span>
                     <select onchange="updateVsImportRow(${idx}, 'memberId', this.value)">${memberOptions(r.memberId)}</select>
                     <input type="number" value="${r.value}" onchange="updateVsImportRow(${idx}, 'value', this.value)">
                     <span class="import-review-row__conf ${confClass}">${confLabel}</span>
@@ -1648,6 +1748,26 @@
             unmatchedWrap.style.display = 'none';
             unmatchedContainer.innerHTML = '';
         }
+
+        // Manual add-row control — always available, so a total OCR miss is
+        // recoverable by hand instead of a dead end.
+        const addRowWrap = document.getElementById('vsImportAddRowWrap');
+        if (addRowWrap) addRowWrap.style.display = 'block';
+
+        // Raw OCR debug text — always shown collapsed, so you can see exactly
+        // what Tesseract read off the screenshot (useful when nothing parsed,
+        // or when a name/score looks wrong and you want to check the source).
+        const debugWrap = document.getElementById('vsImportRawTextWrap');
+        const debugPre = document.getElementById('vsImportRawText');
+        if (debugWrap && debugPre) {
+            if (rawOcrText && rawOcrText.trim()) {
+                debugPre.textContent = rawOcrText;
+                debugWrap.style.display = 'block';
+            } else {
+                debugPre.textContent = '(Tesseract returned no text at all for this image.)';
+                debugWrap.style.display = 'block';
+            }
+        }
     }
 
     window.updateVsImportRow = function(idx, field, value) {
@@ -1657,6 +1777,22 @@
         if (field === 'include') row.include = value;
         else if (field === 'memberId') row.memberId = value;
         else if (field === 'value') row.value = parseFloat(value) || 0;
+    };
+
+    // Lets admin/management hand-add a row (member + score) straight from
+    // looking at the screenshot, for cases OCR missed entirely or got wrong.
+    // New rows are appended to the "unmatched" section so they get the same
+    // dropdown + score editing as everything else before Apply.
+    window.addManualVsImportRow = function() {
+        if (!pendingVsImport) return;
+        pendingVsImport.rows.push({
+            rawText: '',
+            memberId: '',
+            value: 0,
+            confidence: null,
+            include: true
+        });
+        renderVsImportReviewModal();
     };
 
     window.applyVsImportReview = async function() {
