@@ -1828,7 +1828,7 @@
             // since both are already normalized to fractions via yFrac, use
             // a sane fixed fraction as the tolerance floor instead of mixing
             // pixel heights from differently-scaled images.
-            const maxYFracDist = 0.035; // ~3.5% of image height, tuned for this app's row spacing
+            const maxYFracDist = 0.05; // widened from 0.035 — dense lists were losing name/score pairs at the edge of the old tolerance
 
             pendingScores.forEach(score => {
                 if (score.yFrac == null) return;
@@ -1924,6 +1924,8 @@
 
             const scoreLines = flattenOcrLines(scoreResult.data);
             const nameLines = flattenOcrLines(nameResult.data);
+            console.log('[VS OCR] score lines detected:', scoreLines.length, scoreLines.map(l => l.text));
+console.log('[VS OCR] name lines detected:', nameLines.length, nameLines.map(l => l.text));
             const rawText =
                 '--- score pass ---\n' + (scoreResult.data.text || scoreLines.map(l => l.text).join('\n')) +
                 '\n\n--- name pass ---\n' + (nameResult.data.text || nameLines.map(l => l.text).join('\n'));
@@ -2023,13 +2025,17 @@
         if (!pendingVsImport) return;
         const { rows, activeMembers, matchedCount, rawOcrText } = pendingVsImport;
 
-        const memberOptions = (selectedId) => {
-            let opts = `<option value="">— Skip —</option>`;
-            activeMembers.forEach(m => {
-                opts += `<option value="${m.id}" ${String(m.id) === String(selectedId) ? 'selected' : ''}>${m.name}</option>`;
-            });
-            return opts;
-        };
+        const memberOptions = (selectedId, confidence) => {
+    // Below ~50%, the "best guess" is often worse than no guess at all
+    // (e.g. matching "An" to "Häven" at 40%) — default to Skip instead
+    // of prefilling something misleading.
+    const showSelected = confidence == null || confidence >= 0.5;
+    let opts = `<option value="">— Skip —</option>`;
+    activeMembers.forEach(m => {
+        opts += `<option value="${m.id}" ${showSelected && String(m.id) === String(selectedId) ? 'selected' : ''}>${m.name}</option>`;
+    });
+    return opts;
+};
 
         const rowHTML = (r, idx) => {
             const confClass = (r.confidence != null && r.confidence >= 0.85) ? 'conf-high' : 'conf-low';
@@ -2038,7 +2044,7 @@
                 <div class="import-review-row">
                     <input type="checkbox" ${r.include ? 'checked' : ''} onchange="updateVsImportRow(${idx}, 'include', this.checked)">
                     <span class="import-review-row__raw" title="${r.rawText}">${r.rawText || '(manually added)'}</span>
-                    <select onchange="updateVsImportRow(${idx}, 'memberId', this.value)">${memberOptions(r.memberId)}</select>
+                   <select onchange="updateVsImportRow(${idx}, 'memberId', this.value)">${memberOptions(r.memberId, r.confidence)}</select>
                     <input type="number" value="${r.value}" onchange="updateVsImportRow(${idx}, 'value', this.value)">
                     <span class="import-review-row__conf ${confClass}">${confLabel}</span>
                 </div>`;
