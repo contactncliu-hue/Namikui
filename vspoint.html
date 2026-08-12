@@ -668,7 +668,7 @@
             </select>
             <button class="btn-gold admin-only" id="btnAddWeek" onclick="addNewWeekByDate()" style="display:none;">+ ADD DATE</button>
             <button class="btn-gold admin-only" id="btnImportVs" onclick="document.getElementById('vsScreenshotInput').click()" style="display:none;">📥 IMPORT</button>
-            <input type="file" id="vsScreenshotInput" accept="image/*" style="display: none;" onchange="handleVsScreenshotImport(event)">
+            <input type="file" id="vsScreenshotInput" accept="image/*" multiple style="display: none;" onchange="handleVsScreenshotImport(event)">
         </div>
     </div>
 
@@ -741,7 +741,7 @@
             <span id="vsImportTargetHint" style="font-size:10px; font-weight:700; color:var(--color-text-muted);"></span>
         </div>
         <div style="font-size:11px; color:var(--color-text-muted); font-weight:700; margin-bottom:12px;">
-            This shows exactly what OCR read from the screenshot. Check the member and score on each row, uncheck anything wrong, then apply — nothing is saved until you click Apply. Change the date above if the screenshot isn't for the most recent column — a new column will be created automatically if that date doesn't exist yet.
+            This shows exactly what OCR read from the screenshot(s). Check the member and score on each row, uncheck anything wrong, then apply — nothing is saved until you click Apply. Change the date above if these screenshots aren't for the most recent column — a new column will be created automatically if that date doesn't exist yet. All rows below apply to that one date.
         </div>
         <div class="import-review-section-label">Matched Rows</div>
         <div id="vsImportReviewRows"></div>
@@ -753,7 +753,7 @@
             <button class="btn-action" style="font-size:11px; padding:8px 14px;" onclick="addManualVsImportRow()">+ ADD ROW MANUALLY</button>
         </div>
         <details id="vsImportRawTextWrap" style="display:none; margin-top:14px;">
-            <summary style="cursor:pointer; font-size:11px; font-weight:800; color:var(--color-text-muted); text-transform:uppercase; letter-spacing:0.5px;">luffy bao</summary>
+            <summary style="cursor:pointer; font-size:11px; font-weight:800; color:var(--color-text-muted); text-transform:uppercase; letter-spacing:0.5px;">Raw OCR output</summary>
             <pre id="vsImportRawText" style="white-space:pre-wrap; font-size:11px; background:#f7f6f0; border:1px solid var(--color-border-light); border-radius:4px; padding:10px; margin-top:8px; max-height:180px; overflow-y:auto; font-family:monospace;"></pre>
         </details>
         <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:16px;">
@@ -1556,13 +1556,15 @@
         }
     };
 
-    // --- Screenshot import: sends the screenshot to a serverless function that
-    // calls Gemini for OCR, then hands the parsed rows to the review modal for
-    // admin/management to double-check before anything is saved. ---
+    // --- Screenshot import: sends each selected screenshot to a serverless
+    // function that calls Gemini for OCR, merges all of their rows together,
+    // then hands the combined list to the review modal for admin/management
+    // to double-check before anything is saved. Multiple screenshots share
+    // one target date — pick it per-batch in the review modal. ---
     window.handleVsScreenshotImport = async function(event) {
         if (!isManagementOrAdmin) return;
-        const file = event.target.files[0];
-        if (!file) return;
+        const files = Array.from(event.target.files || []);
+        if (files.length === 0) return;
 
         // Default target: the most recent date column if one exists, otherwise
         // today's date — either way it's editable in the review modal before applying.
@@ -1573,28 +1575,37 @@
 
         const importBtn = document.getElementById('btnImportVs');
         const originalBtnText = importBtn ? importBtn.innerText : '📥 IMPORT';
-        if (importBtn) { importBtn.innerText = 'READING…'; importBtn.disabled = true; }
 
         try {
-            const imageBase64 = await fileToBase64(file);
+            const activeMembers = getActiveMembers();
+            const allRows = [];
+            const rawTextParts = [];
 
-            const resp = await fetch('/api/ocr-import', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ imageBase64, mimeType: file.type || 'image/png' })
-            });
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                if (importBtn) { importBtn.innerText = `READING ${i + 1}/${files.length}…`; importBtn.disabled = true; }
 
-            if (!resp.ok) {
-                const errBody = await resp.json().catch(() => ({}));
-                throw new Error(errBody.error || `Server returned ${resp.status}`);
+                const imageBase64 = await fileToBase64(file);
+
+                const resp = await fetch('/api/ocr-import', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ imageBase64, mimeType: file.type || 'image/png' })
+                });
+
+                if (!resp.ok) {
+                    const errBody = await resp.json().catch(() => ({}));
+                    throw new Error(`${file.name}: ${errBody.error || `Server returned ${resp.status}`}`);
+                }
+
+                const { rows, raw } = await resp.json();
+                if (rows && rows.length) allRows.push(...rows);
+                rawTextParts.push(`--- ${file.name} ---\n${raw || JSON.stringify(rows, null, 2)}`);
             }
 
-            const { rows, raw } = await resp.json();
-            const rawText = raw || JSON.stringify(rows, null, 2);
+            const rawText = rawTextParts.join('\n\n');
 
-            const activeMembers = getActiveMembers();
-
-            if (!rows || rows.length === 0) {
+            if (allRows.length === 0) {
                 openVsImportReviewModal([], [], targetWeekIdx, targetWeekLabel, activeMembers, rawText);
                 return;
             }
@@ -1603,7 +1614,7 @@
             const unmatchedRows = [];
             const claimedMemberIds = new Set();
 
-            rows
+            allRows
                 // Skip rows Gemini couldn't read a score for, and reject any
                 // implausibly large value the same way the old Tesseract path
                 // did — a hallucinated/misread digit run is still possible
@@ -1613,6 +1624,10 @@
                     const { member, score: matchScore } = findBestMemberMatch(r.name || '', activeMembers);
                     const rawLabel = r.tag ? `${r.name} [${r.tag}]` : (r.name || '(no name read)');
 
+                    // If the same member was already matched from an earlier
+                    // screenshot in this batch, treat the repeat as unmatched
+                    // rather than silently overwriting/dropping it — the admin
+                    // can decide which one (or both, on different dates) to keep.
                     if (member && matchScore >= 0.55 && !claimedMemberIds.has(String(member.id))) {
                         claimedMemberIds.add(String(member.id));
                         matchedRows.push({
@@ -1636,7 +1651,7 @@
             openVsImportReviewModal(matchedRows, unmatchedRows, targetWeekIdx, targetWeekLabel, activeMembers, rawText);
         } catch (err) {
             console.error('OCR import error:', err);
-            alert('Could not read the screenshot: ' + (err.message || 'unknown error') + '\n\nPlease try again.');
+            alert('Could not read the screenshot(s): ' + (err.message || 'unknown error') + '\n\nPlease try again.');
         } finally {
             if (importBtn) { importBtn.innerText = originalBtnText; importBtn.disabled = false; }
             event.target.value = '';
