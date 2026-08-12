@@ -668,7 +668,7 @@
             </select>
             <button class="btn-gold admin-only" id="btnAddWeek" onclick="addNewWeekByDate()" style="display:none;">+ ADD DATE</button>
             <button class="btn-gold admin-only" id="btnImportVs" onclick="document.getElementById('vsScreenshotInput').click()" style="display:none;">📥 IMPORT</button>
-            <input type="file" id="vsScreenshotInput" accept="image/*" multiple style="display: none;" onchange="handleVsScreenshotImport(event)">
+            <input type="file" id="vsScreenshotInput" accept="image/*" multiple style="position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0;" onchange="handleVsScreenshotImport(event)">
         </div>
     </div>
 
