@@ -1579,7 +1579,7 @@
 
             if (resp.status === 429 && attempt < maxRetries) {
                 attempt++;
-                const waitMs = 5000 * attempt; // 5s, 10s, 15s backoff
+                const waitMs = 8000 * attempt; // 8s, 16s, 24s backoff
                 if (importStatusCallback) importStatusCallback(`Rate limited, waiting ${waitMs / 1000}s before retrying ${fileLabel}… (${attempt}/${maxRetries})`);
                 await sleep(waitMs);
                 continue;
@@ -1619,8 +1619,9 @@
             const rawTextParts = [];
             const failedFiles = [];
 
-            // ~15 requests/minute on the free tier = one every 4s; pad a bit for safety.
-            const SPACING_MS = 4500;
+            // Gemini 3.6 Flash's free tier is roughly 10 requests/minute, tighter
+            // than older Flash models — one every 7s keeps a comfortable margin.
+            const SPACING_MS = 7000;
 
             for (let i = 0; i < files.length; i++) {
                 const file = files[i];
@@ -1632,9 +1633,10 @@
                     if (rows && rows.length) allRows.push(...rows);
                     rawTextParts.push(`--- ${file.name} ---\n${raw || JSON.stringify(rows, null, 2)}`);
                 } catch (fileErr) {
+                    const reason = fileErr.message || String(fileErr);
                     console.error('OCR import error for', file.name, fileErr);
-                    failedFiles.push(file.name);
-                    rawTextParts.push(`--- ${file.name} ---\n(FAILED: ${fileErr.message || fileErr})`);
+                    failedFiles.push({ name: file.name, reason });
+                    rawTextParts.push(`--- ${file.name} ---\n(FAILED: ${reason})`);
                 }
 
                 // Space out calls so a batch doesn't burst past the rate limit.
@@ -1647,10 +1649,18 @@
             const rawText = rawTextParts.join('\n\n');
 
             if (failedFiles.length > 0 && allRows.length === 0) {
-                throw new Error(`All screenshots failed:\n${failedFiles.join('\n')}`);
+                // Still open the review modal (empty) so the raw-output panel below
+                // shows exactly why each file failed, instead of just an alert.
+                alert(`All ${failedFiles.length} screenshot(s) failed:\n\n` +
+                    failedFiles.map(f => `${f.name}: ${f.reason}`).join('\n\n') +
+                    `\n\nSee "Raw OCR output" in the review popup for full details.`);
+                openVsImportReviewModal([], [], targetWeekIdx, targetWeekLabel, activeMembers, rawText);
+                return;
             }
             if (failedFiles.length > 0) {
-                alert(`${failedFiles.length} screenshot(s) could not be read and were skipped:\n${failedFiles.join('\n')}\n\nContinuing with the ${files.length - failedFiles.length} that succeeded.`);
+                alert(`${failedFiles.length} screenshot(s) could not be read and were skipped:\n\n` +
+                    failedFiles.map(f => `${f.name}: ${f.reason}`).join('\n\n') +
+                    `\n\nContinuing with the ${files.length - failedFiles.length} that succeeded.`);
             }
 
             if (allRows.length === 0) {
