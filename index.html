@@ -1181,6 +1181,8 @@
         let polls = [];
         let notices = [];
         let vsData = { weeks: [], membersScores: [] };
+        // Mirrors members.html's group order so row order stays in sync across pages
+        const RANK_GROUP_ORDER = { R5: 0, R4: 1, R3: 2, R2: 3, R1: 4 };
         // Notice tab Gantt-style event timeline state (supports date ranges, weekly/biweekly/monthly repeats, start/end time, category, visibility)
         let calendarEvents = [];
         const CALENDAR_COLORS = ['#2563eb', '#dc2626', '#eab308', '#16a34a', '#ec4899']; // blue, red, yellow, green, pink
@@ -1235,6 +1237,8 @@
             if (typeof m.attended !== 'number' || isNaN(m.attended)) m.attended = 0;
             if (!Array.isArray(m.events)) m.events = [];
             while (m.events.length < eventDates.length) m.events.push(false);
+            if (!m.rank) m.rank = 'R1';
+            m.frozenRank = m.rank;
         });
         saveData();
 
@@ -1548,7 +1552,12 @@ window.openRoleAssignModal = function() {
             document.getElementById('userAvatarIcon').innerText = (currentUser.username || 'G').charAt(0).toUpperCase();
 
             let activeMembers = getActiveMembers(members);
-            activeMembers.sort((a, b) => b.attended - a.attended);
+            activeMembers.sort((a, b) => {
+                const rankA = RANK_GROUP_ORDER[a.frozenRank] !== undefined ? RANK_GROUP_ORDER[a.frozenRank] : 99;
+                const rankB = RANK_GROUP_ORDER[b.frozenRank] !== undefined ? RANK_GROUP_ORDER[b.frozenRank] : 99;
+                if (rankA !== rankB) return rankA - rankB;
+                return (b.f1Raw || 0) - (a.f1Raw || 0);
+            });
 
             const totalAttendedCount = activeMembers.reduce((sum, m) => sum + m.attended, 0);
             const avgAttendance = activeMembers.length ? (totalAttendedCount / activeMembers.length) : 0;
@@ -3191,7 +3200,7 @@ window.openRoleAssignModal = function() {
                         const name = match[1].trim(); const att = parseInt(match[2], 10);
                         const existing = members.find(m => m.name.toLowerCase() === name.toLowerCase());
                         if (existing) existing.attended = att;
-                        else members.push({ id: Date.now() + Math.random(), name, attended: att, hasPlus: false, events: new Array(eventDates.length).fill(false) });
+                        else members.push({ id: Date.now() + Math.random(), name, attended: att, hasPlus: false, events: new Array(eventDates.length).fill(false), rank: 'R1' });
                         addedCount++;
                     }
                 });
@@ -3314,22 +3323,6 @@ window.openRoleAssignModal = function() {
             new MutationObserver(killGoogleBar).observe(document.documentElement, { attributes: true, attributeFilter: ['style', 'class'], subtree: true });
             setInterval(killGoogleBar, 500);
         })();
-            <!-- Your existing HTML dashboard structure and modals go here -->
-
-    <!-- Supabase CDN Script (Must be placed before your custom script) -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-    <!-- Paste your custom Supabase script right here -->
-    <script>
-        const SUPABASE_URL = 'https://sqrrfslqwcgpsmzdovru.supabase.co';
-        const SUPABASE_ANON_KEY = 'sb_publishable_rb70-VY2GstWzdoXmoUkwg_Iw3EiqFO';
-        const { createClient } = supabase;
-        const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-        let currentUser = {
-            username: localStorage.getItem('amt_username') || null,
-            role: localStorage.getItem('amt_userRole') || null
-        };
     </script>
 </body>
 </html>
