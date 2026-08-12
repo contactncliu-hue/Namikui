@@ -1556,11 +1556,47 @@
         }
     };
 
+    // Basic sleep helper for spacing out OCR calls to stay under Gemini's
+    // free-tier rate limit (roughly 15 requests/minute on Flash models).
+    function sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    // Calls the OCR endpoint for one image, retrying with backoff specifically
+    // on rate-limit (429) responses instead of failing the whole batch.
+    async function callOcrImportWithRetry(imageBase64, mimeType, fileLabel, maxRetries = 3) {
+        let attempt = 0;
+        while (true) {
+            const resp = await fetch('/api/ocr-import', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ imageBase64, mimeType })
+            });
+
+            if (resp.ok) {
+                return await resp.json();
+            }
+
+            if (resp.status === 429 && attempt < maxRetries) {
+                attempt++;
+                const waitMs = 5000 * attempt; // 5s, 10s, 15s backoff
+                if (importStatusCallback) importStatusCallback(`Rate limited, waiting ${waitMs / 1000}s before retrying ${fileLabel}… (${attempt}/${maxRetries})`);
+                await sleep(waitMs);
+                continue;
+            }
+
+            const errBody = await resp.json().catch(() => ({}));
+            throw new Error(`${fileLabel}: ${errBody.error || (resp.status === 429 ? 'Rate limited by Gemini API — try fewer screenshots at once, or wait a minute.' : `Server returned ${resp.status}`)}`);
+        }
+    }
+    let importStatusCallback = null;
+
     // --- Screenshot import: sends each selected screenshot to a serverless
     // function that calls Gemini for OCR, merges all of their rows together,
     // then hands the combined list to the review modal for admin/management
     // to double-check before anything is saved. Multiple screenshots share
-    // one target date — pick it per-batch in the review modal. ---
+    // one target date — pick it per-batch in the review modal. Calls are
+    // spaced out and retried on 429s to stay under the free-tier rate limit. ---
     window.handleVsScreenshotImport = async function(event) {
         if (!isManagementOrAdmin) return;
         const files = Array.from(event.target.files || []);
@@ -1575,35 +1611,47 @@
 
         const importBtn = document.getElementById('btnImportVs');
         const originalBtnText = importBtn ? importBtn.innerText : '📥 IMPORT';
+        importStatusCallback = (msg) => { if (importBtn) importBtn.innerText = msg; };
 
         try {
             const activeMembers = getActiveMembers();
             const allRows = [];
             const rawTextParts = [];
+            const failedFiles = [];
+
+            // ~15 requests/minute on the free tier = one every 4s; pad a bit for safety.
+            const SPACING_MS = 4500;
 
             for (let i = 0; i < files.length; i++) {
                 const file = files[i];
                 if (importBtn) { importBtn.innerText = `READING ${i + 1}/${files.length}…`; importBtn.disabled = true; }
 
-                const imageBase64 = await fileToBase64(file);
-
-                const resp = await fetch('/api/ocr-import', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ imageBase64, mimeType: file.type || 'image/png' })
-                });
-
-                if (!resp.ok) {
-                    const errBody = await resp.json().catch(() => ({}));
-                    throw new Error(`${file.name}: ${errBody.error || `Server returned ${resp.status}`}`);
+                try {
+                    const imageBase64 = await fileToBase64(file);
+                    const { rows, raw } = await callOcrImportWithRetry(imageBase64, file.type || 'image/png', file.name);
+                    if (rows && rows.length) allRows.push(...rows);
+                    rawTextParts.push(`--- ${file.name} ---\n${raw || JSON.stringify(rows, null, 2)}`);
+                } catch (fileErr) {
+                    console.error('OCR import error for', file.name, fileErr);
+                    failedFiles.push(file.name);
+                    rawTextParts.push(`--- ${file.name} ---\n(FAILED: ${fileErr.message || fileErr})`);
                 }
 
-                const { rows, raw } = await resp.json();
-                if (rows && rows.length) allRows.push(...rows);
-                rawTextParts.push(`--- ${file.name} ---\n${raw || JSON.stringify(rows, null, 2)}`);
+                // Space out calls so a batch doesn't burst past the rate limit.
+                if (i < files.length - 1) {
+                    if (importBtn) importBtn.innerText = 'PAUSING…';
+                    await sleep(SPACING_MS);
+                }
             }
 
             const rawText = rawTextParts.join('\n\n');
+
+            if (failedFiles.length > 0 && allRows.length === 0) {
+                throw new Error(`All screenshots failed:\n${failedFiles.join('\n')}`);
+            }
+            if (failedFiles.length > 0) {
+                alert(`${failedFiles.length} screenshot(s) could not be read and were skipped:\n${failedFiles.join('\n')}\n\nContinuing with the ${files.length - failedFiles.length} that succeeded.`);
+            }
 
             if (allRows.length === 0) {
                 openVsImportReviewModal([], [], targetWeekIdx, targetWeekLabel, activeMembers, rawText);
@@ -1654,6 +1702,7 @@
             alert('Could not read the screenshot(s): ' + (err.message || 'unknown error') + '\n\nPlease try again.');
         } finally {
             if (importBtn) { importBtn.innerText = originalBtnText; importBtn.disabled = false; }
+            importStatusCallback = null;
             event.target.value = '';
         }
     };
