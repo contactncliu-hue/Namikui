@@ -734,9 +734,14 @@
 <!-- VS Import Review Modal -->
 <div class="modal-overlay" id="vsImportReviewModal">
     <div class="modal-card" style="max-width: 640px;">
-        <h3>Review Import — <span id="vsImportTargetLabel"></span> <span class="modal-close-x" onclick="closeVsImportReviewModal()">✕</span></h3>
+        <h3>Review Import <span class="modal-close-x" onclick="closeVsImportReviewModal()">✕</span></h3>
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px; background:var(--color-gold-bg); border:2px solid var(--color-gold); border-radius:4px; padding:10px 12px;">
+            <label for="vsImportTargetDateInput" style="font-size:11px; font-weight:800; color:var(--color-text-dark); text-transform:uppercase; letter-spacing:0.5px;">Applying to date:</label>
+            <input type="date" id="vsImportTargetDateInput" class="date-picker-input" style="background:white;" onchange="updateVsImportTargetDate(this.value)">
+            <span id="vsImportTargetHint" style="font-size:10px; font-weight:700; color:var(--color-text-muted);"></span>
+        </div>
         <div style="font-size:11px; color:var(--color-text-muted); font-weight:700; margin-bottom:12px;">
-            This shows exactly what OCR read from the screenshot. Check the member and score on each row, uncheck anything wrong, then apply — nothing is saved until you click Apply.
+            This shows exactly what OCR read from the screenshot. Check the member and score on each row, uncheck anything wrong, then apply — nothing is saved until you click Apply. Change the date above if the screenshot isn't for the most recent column — a new column will be created automatically if that date doesn't exist yet.
         </div>
         <div class="import-review-section-label">Matched Rows</div>
         <div id="vsImportReviewRows"></div>
@@ -864,6 +869,25 @@
     }
     function getWeekType(wk) {
         return (wk && typeof wk === 'object' && wk.type) ? wk.type : 'weekly';
+    }
+
+    // Date format helpers: the app stores/displays dates as MM-DD-YYYY, but
+    // <input type="date"> requires YYYY-MM-DD. These convert between the two.
+    function formatDateForInput(mmddyyyy) {
+        if (!mmddyyyy) return '';
+        const parts = mmddyyyy.split('-');
+        if (parts.length === 3 && parts[2].length === 4) {
+            return `${parts[2]}-${parts[0]}-${parts[1]}`;
+        }
+        return mmddyyyy;
+    }
+    function formatDateForDisplay(yyyymmdd) {
+        if (!yyyymmdd) return '';
+        const parts = yyyymmdd.split('-');
+        if (parts.length === 3 && parts[0].length === 4) {
+            return `${parts[1]}-${parts[2]}-${parts[0]}`;
+        }
+        return yyyymmdd;
     }
 
     // --- Fuzzy name matching (tolerates OCR noise and non-Latin script names) ---
@@ -1175,7 +1199,7 @@
         const hintEl = document.getElementById('roleHint');
         if (hintEl) {
             hintEl.innerText = isManagementOrAdmin 
-                ? '· Admin/Mgmt: Click any table cell (or ranking score) to edit points. Use ✕ under date columns to delete session.' 
+                ? '· Admin/Mgmt: Click any table cell (or ranking score) to edit points. Click a date to edit it. Use ✕ under date columns to delete session.' 
                 : '· Viewing mode (Read-only)';
         }
 
@@ -1245,9 +1269,12 @@
             if (isManagementOrAdmin) {
                 deleteActionHTML = `<span class="remove-date-btn" onclick="deleteWeekColumn(${idx})">✕</span>`;
             }
+            const dateLabelAttrs = isManagementOrAdmin
+                ? `onclick="startEditWeekDate(${idx})" style="cursor:pointer;" title="Click to edit this date"`
+                : '';
             headerHTML += `
                 <th>
-                    <div class="date-label">${wkDate}</div>
+                    <div class="date-label" id="dateLabel-${idx}" ${dateLabelAttrs}>${wkDate}</div>
                     <div class="week-label">Week ${idx + 1} · ${wkType === 'daily' ? 'Daily' : 'Weekly'}</div>
                     ${deleteActionHTML}
                 </th>`;
@@ -1480,6 +1507,42 @@
         renderVsPoints();
     };
 
+    // Lets admin/management click a date-column header and change its date
+    // via a native calendar input, instead of it being fixed once created.
+    window.startEditWeekDate = function(weekIdx) {
+        if (!isManagementOrAdmin) return;
+        const labelEl = document.getElementById(`dateLabel-${weekIdx}`);
+        if (!labelEl) return;
+        const currentDate = getWeekDate(vsData.weeks[weekIdx]);
+        const inputValue = formatDateForInput(currentDate);
+        labelEl.innerHTML = `<input type="date" value="${inputValue}"
+            style="font-size:12px; font-family:var(--font-family-base); font-weight:800; padding:2px 4px; border:1px solid var(--color-primary); border-radius:3px; background:white; color:var(--color-text-dark);"
+            onchange="commitWeekDateEdit(${weekIdx}, this.value)"
+            onclick="event.stopPropagation()">`;
+        const inputEl = labelEl.querySelector('input');
+        if (inputEl) inputEl.focus();
+    };
+
+    window.commitWeekDateEdit = async function(weekIdx, newValueYyyyMmDd) {
+        if (!newValueYyyyMmDd) { renderVsPoints(); return; }
+        const newDateStr = formatDateForDisplay(newValueYyyyMmDd);
+        const currentDateStr = getWeekDate(vsData.weeks[weekIdx]);
+        if (newDateStr === currentDateStr) { renderVsPoints(); return; }
+        if (vsData.weeks.some((w, i) => i !== weekIdx && getWeekDate(w) === newDateStr)) {
+            alert('A column for this date already exists.');
+            renderVsPoints();
+            return;
+        }
+        if (typeof vsData.weeks[weekIdx] === 'string') {
+            vsData.weeks[weekIdx] = { date: newDateStr, type: 'weekly' };
+        } else {
+            vsData.weeks[weekIdx].date = newDateStr;
+        }
+        sortWeeksAndScores();
+        await saveData();
+        renderVsPoints();
+    };
+
     window.editVsScore = async function(memberId, weekIdx) {
         if (!isManagementOrAdmin) return;
         const member = vsData.membersScores.find(m => String(m.id) === String(memberId));
@@ -1501,14 +1564,12 @@
         const file = event.target.files[0];
         if (!file) return;
 
-        if (vsData.weeks.length === 0) {
-            alert('Please add a date column first — the screenshot import fills in the most recent date column.');
-            event.target.value = '';
-            return;
-        }
-
-        const targetWeekIdx = vsData.weeks.length - 1;
-        const targetWeekLabel = getWeekDate(vsData.weeks[targetWeekIdx]);
+        // Default target: the most recent date column if one exists, otherwise
+        // today's date — either way it's editable in the review modal before applying.
+        let targetWeekIdx = vsData.weeks.length > 0 ? vsData.weeks.length - 1 : -1;
+        let targetWeekLabel = targetWeekIdx >= 0
+            ? getWeekDate(vsData.weeks[targetWeekIdx])
+            : formatDateForDisplay(new Date().toISOString().split('T')[0]);
 
         const importBtn = document.getElementById('btnImportVs');
         const originalBtnText = importBtn ? importBtn.innerText : '📥 IMPORT';
@@ -1598,21 +1659,52 @@
 
     // --- Import Review Modal: shows every OCR-read row (matched + unmatched)
     // with an editable member dropdown and score field for admin/management
-    // to double-check before anything is written to vsData / saved. ---
-    let pendingVsImport = null; // { targetWeekIdx, targetWeekLabel, rows, matchedCount, activeMembers, rawOcrText }
+    // to double-check before anything is written to vsData / saved. The
+    // target date is also editable here via a calendar input — it defaults
+    // to the most recent column but doesn't have to stay there. ---
+    let pendingVsImport = null; // { targetWeekIdx, targetWeekLabel, newTargetDate, rows, matchedCount, activeMembers, rawOcrText }
 
     window.openVsImportReviewModal = function(matchedRows, unmatchedRows, targetWeekIdx, targetWeekLabel, activeMembers, rawOcrText) {
         pendingVsImport = {
             targetWeekIdx,
             targetWeekLabel,
+            newTargetDate: targetWeekIdx === -1 ? targetWeekLabel : null,
             rows: [...matchedRows, ...unmatchedRows],
             matchedCount: matchedRows.length,
             activeMembers,
             rawOcrText: rawOcrText || ''
         };
-        document.getElementById('vsImportTargetLabel').innerText = targetWeekLabel;
+        const dateInputEl = document.getElementById('vsImportTargetDateInput');
+        if (dateInputEl) dateInputEl.value = formatDateForInput(targetWeekLabel);
+        updateVsImportTargetHint();
         renderVsImportReviewModal();
         document.getElementById('vsImportReviewModal').style.display = 'flex';
+    };
+
+    function updateVsImportTargetHint() {
+        const hintEl = document.getElementById('vsImportTargetHint');
+        if (!hintEl || !pendingVsImport) return;
+        hintEl.innerText = pendingVsImport.targetWeekIdx === -1
+            ? '(new column will be created)'
+            : `(existing Week ${pendingVsImport.targetWeekIdx + 1})`;
+    }
+
+    // Called when the admin changes the date in the import review modal.
+    // If the picked date matches an existing column, scores get applied
+    // there; otherwise a new column is created for it on Apply.
+    window.updateVsImportTargetDate = function(newValueYyyyMmDd) {
+        if (!pendingVsImport || !newValueYyyyMmDd) return;
+        const displayDate = formatDateForDisplay(newValueYyyyMmDd);
+        const idx = vsData.weeks.findIndex(w => getWeekDate(w) === displayDate);
+        pendingVsImport.targetWeekLabel = displayDate;
+        if (idx === -1) {
+            pendingVsImport.targetWeekIdx = -1;
+            pendingVsImport.newTargetDate = displayDate;
+        } else {
+            pendingVsImport.targetWeekIdx = idx;
+            pendingVsImport.newTargetDate = null;
+        }
+        updateVsImportTargetHint();
     };
 
     function renderVsImportReviewModal() {
@@ -1695,7 +1787,25 @@
 
     window.applyVsImportReview = async function() {
         if (!pendingVsImport) return;
-        const { targetWeekIdx, rows, targetWeekLabel } = pendingVsImport;
+        const { rows, targetWeekLabel } = pendingVsImport;
+
+        let targetWeekIdx = pendingVsImport.targetWeekIdx;
+
+        // If the chosen date doesn't match an existing column, create one now.
+        if (targetWeekIdx === -1) {
+            const newDate = pendingVsImport.newTargetDate || targetWeekLabel;
+            if (vsData.weeks.some(w => getWeekDate(w) === newDate)) {
+                targetWeekIdx = vsData.weeks.findIndex(w => getWeekDate(w) === newDate);
+            } else {
+                vsData.weeks.push({ date: newDate, type: 'weekly' });
+                vsData.membersScores.forEach(m => {
+                    if (!Array.isArray(m.scores)) m.scores = [];
+                    m.scores.push(0);
+                });
+                sortWeeksAndScores();
+                targetWeekIdx = vsData.weeks.findIndex(w => getWeekDate(w) === newDate);
+            }
+        }
 
         let appliedCount = 0;
         rows.forEach(r => {
@@ -1717,7 +1827,7 @@
         await saveData();
         renderVsPoints();
         closeVsImportReviewModal();
-        alert(`Applied ${appliedCount} score(s) to "${targetWeekLabel}".`);
+        alert(`Applied ${appliedCount} score(s) to "${getWeekDate(vsData.weeks[targetWeekIdx])}".`);
     };
 
     window.closeVsImportReviewModal = function() {
