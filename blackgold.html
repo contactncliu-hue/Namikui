@@ -427,16 +427,16 @@
     .map-subtab-btn:hover { background: #eef2f9; }
     .map-subtab-btn--active { background: var(--color-primary); color: white; }
 
-    .map-body { display: flex; gap: 22px; align-items: flex-start; }
+    .map-body { display: flex; gap: 18px; align-items: flex-start; }
     .map-table-wrapper {
-        flex: 0 0 460px;
-        width: 460px;
-        min-width: 400px;
+        flex: 0 0 380px;
+        width: 380px;
+        min-width: 340px;
         max-height: calc(100vh - 200px);
         overflow-y: auto;
         display: flex;
         flex-direction: column;
-        gap: 12px;
+        gap: 10px;
         padding-right: 6px;
     }
 
@@ -460,30 +460,30 @@
     .map-team-header__number--clickable:hover { background: rgba(255,255,255,0.5); }
 
     table.map-role-table { width: 100%; table-layout: fixed; border-collapse: collapse; font-family: var(--font-family-base); }
-    .map-role-table td { padding: 6px 8px; border-bottom: 1px solid var(--color-border-light); font-size: 11px; vertical-align: middle; overflow: visible; }
+    .map-role-table td { padding: 5px 6px; border-bottom: 1px solid var(--color-border-light); font-size: 10.5px; vertical-align: middle; overflow: visible; }
     .map-role-table tr:last-child td { border-bottom: none; }
-    .map-role-label { font-weight: 800; color: var(--color-text-dark); width: 148px; white-space: nowrap; }
+    .map-role-label { font-weight: 800; color: var(--color-text-dark); width: 122px; white-space: nowrap; }
     .map-role-label select { width: 100%; }
-    .map-role-faction-cell { width: 30px; text-align: center; padding-left: 4px !important; padding-right: 4px !important; }
+    .map-role-faction-cell { width: 26px; text-align: center; padding-left: 3px !important; padding-right: 3px !important; }
     .map-role-select {
-        width: 100%; padding: 5px 6px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 11px;
+        width: 100%; padding: 4px 5px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 10.5px;
         font-family: var(--font-family-base); font-weight: 600; background: #f7f6f0; outline: none; cursor: pointer;
         text-overflow: ellipsis;
     }
     .map-role-select:focus { border-color: var(--color-primary); background: white; }
     .map-role-select:disabled { cursor: default; background: #f0f1f5; color: #8c93a6; }
-    .map-role-power { font-weight: 800; color: var(--color-primary-dark); font-size: 11px; white-space: nowrap; width: 46px; text-align: right; padding-left: 4px !important; }
-    .map-role-delete-btn { color: #d9381e; font-weight: 800; font-size: 13px; cursor: pointer; padding: 2px 4px; }
+    .map-role-power { font-weight: 800; color: var(--color-primary-dark); font-size: 10.5px; white-space: nowrap; width: 42px; text-align: right; padding-left: 3px !important; }
+    .map-role-delete-btn { color: #d9381e; font-weight: 800; font-size: 12px; cursor: pointer; padding: 2px 4px; }
     .map-role-delete-btn:hover { text-decoration: underline; }
-    .map-role-add-row { padding: 8px; text-align: center; }
+    .map-role-add-row { padding: 7px; text-align: center; }
     .map-role-add-btn {
-        font-family: var(--font-family-base); font-weight: 800; font-size: 10px; letter-spacing: 0.3px;
+        font-family: var(--font-family-base); font-weight: 800; font-size: 9.5px; letter-spacing: 0.3px;
         color: var(--color-primary); background: var(--color-primary-light); border: 1px solid var(--color-primary);
         border-radius: 4px; padding: 6px 12px; cursor: pointer;
     }
     .map-role-add-btn:hover { background: var(--color-primary); color: white; }
 
-    .map-diagram-wrap { flex: 1 1 480px; min-width: 420px; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 10px; position: sticky; top: 12px; }
+    .map-diagram-wrap { flex: 1 1 420px; min-width: 360px; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 10px; position: sticky; top: 12px; }
     .map-diagram {
         position: relative; width: 100%; aspect-ratio: 1093 / 1096;
         max-height: calc(100vh - 200px);
@@ -580,11 +580,13 @@
         max-width: 1900px;
     }
 
-    @media (max-width: 1300px) {
+    @media (max-width: 980px) {
         .map-body { flex-direction: column; }
-        .map-table-wrapper { width: 100%; flex: 1 1 auto; max-height: none; overflow-y: visible; display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
+        .map-table-wrapper { width: 100%; flex: 1 1 auto; max-height: none; overflow-y: visible; display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px; }
         .map-diagram-wrap { position: static; }
         .map-diagram { max-width: 100%; max-height: none; }
+        .map-team-header { padding: 7px 10px; font-size: 11px; }
+        .map-role-table td { padding: 4px 6px; }
     }
 
     @media (max-width: 640px) {
@@ -593,6 +595,25 @@
         .toolbar-spacer { margin-left: 0; }
         .search-box { max-width: none; }
         .map-table-wrapper { grid-template-columns: 1fr; }
+
+        table.map-role-table { table-layout: auto; }
+        .map-role-table tr {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 10px;
+            border-bottom: 1px solid var(--color-border-light);
+        }
+        .map-role-table tr:last-child { border-bottom: none; }
+        .map-role-table td { display: block; border: none; padding: 0 !important; }
+        .map-role-label { flex: 1 1 100%; width: auto !important; order: -1; font-size: 12px; margin-bottom: 2px; }
+        .map-role-label select { font-size: 12px; }
+        .map-role-faction-cell { flex: 0 0 auto; width: auto !important; }
+        .map-role-table td:nth-child(3) { flex: 1 1 110px; min-width: 100px; }
+        .map-role-power { flex: 0 0 auto; width: auto !important; text-align: left !important; }
+        .map-role-table td:nth-child(5) { flex: 0 0 auto; }
+        .map-role-add-row { padding: 10px !important; }
     }
 
     #google_translate_element .goog-te-gadget { font-family: var(--font-family-base) !important; font-size: 11px !important; }
