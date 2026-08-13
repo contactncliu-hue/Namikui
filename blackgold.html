@@ -432,12 +432,9 @@
         flex: 0 0 380px;
         width: 380px;
         min-width: 340px;
-        max-height: calc(100vh - 200px);
-        overflow-y: auto;
         display: flex;
         flex-direction: column;
-        gap: 10px;
-        padding-right: 6px;
+        gap: 12px;
     }
 
     .map-team-block { border: 2px solid var(--color-border-light); border-radius: 6px; overflow: hidden; }
@@ -460,33 +457,33 @@
     .map-team-header__number--clickable:hover { background: rgba(255,255,255,0.5); }
 
     table.map-role-table { width: 100%; table-layout: fixed; border-collapse: collapse; font-family: var(--font-family-base); }
-    .map-role-table td { padding: 5px 6px; border-bottom: 1px solid var(--color-border-light); font-size: 10.5px; vertical-align: middle; overflow: visible; }
+    .map-role-table td { padding: 7px 8px; border-bottom: 1px solid var(--color-border-light); font-size: 11.5px; vertical-align: middle; overflow: visible; }
     .map-role-table tr:last-child td { border-bottom: none; }
     .map-role-label { font-weight: 800; color: var(--color-text-dark); width: 122px; white-space: nowrap; }
     .map-role-label select { width: 100%; }
-    .map-role-faction-cell { width: 26px; text-align: center; padding-left: 3px !important; padding-right: 3px !important; }
+    .map-role-faction-cell { width: 26px; text-align: center; padding-left: 4px !important; padding-right: 4px !important; }
     .map-role-select {
-        width: 100%; padding: 4px 5px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 10.5px;
+        width: 100%; padding: 5px 6px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 11.5px;
         font-family: var(--font-family-base); font-weight: 600; background: #f7f6f0; outline: none; cursor: pointer;
         text-overflow: ellipsis;
     }
     .map-role-select:focus { border-color: var(--color-primary); background: white; }
     .map-role-select:disabled { cursor: default; background: #f0f1f5; color: #8c93a6; }
-    .map-role-power { font-weight: 800; color: var(--color-primary-dark); font-size: 10.5px; white-space: nowrap; width: 42px; text-align: right; padding-left: 3px !important; }
-    .map-role-delete-btn { color: #d9381e; font-weight: 800; font-size: 12px; cursor: pointer; padding: 2px 4px; }
+    .map-role-power { font-weight: 800; color: var(--color-primary-dark); font-size: 11.5px; white-space: nowrap; width: 44px; text-align: right; padding-left: 4px !important; }
+    .map-role-delete-btn { color: #d9381e; font-weight: 800; font-size: 13px; cursor: pointer; padding: 2px 4px; }
     .map-role-delete-btn:hover { text-decoration: underline; }
-    .map-role-add-row { padding: 7px; text-align: center; }
+    .map-role-add-row { padding: 9px; text-align: center; }
     .map-role-add-btn {
-        font-family: var(--font-family-base); font-weight: 800; font-size: 9.5px; letter-spacing: 0.3px;
+        font-family: var(--font-family-base); font-weight: 800; font-size: 10px; letter-spacing: 0.3px;
         color: var(--color-primary); background: var(--color-primary-light); border: 1px solid var(--color-primary);
-        border-radius: 4px; padding: 6px 12px; cursor: pointer;
+        border-radius: 4px; padding: 7px 14px; cursor: pointer;
     }
     .map-role-add-btn:hover { background: var(--color-primary); color: white; }
 
     .map-diagram-wrap { flex: 1 1 420px; min-width: 360px; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 10px; position: sticky; top: 12px; }
     .map-diagram {
         position: relative; width: 100%; aspect-ratio: 1093 / 1096;
-        max-height: calc(100vh - 200px);
+        max-height: calc(100vh - 160px);
         background: #c58f5f;
         border-radius: 14px; border: 3px solid #93672f; box-shadow: inset 0 0 30px rgba(0,0,0,0.15);
         overflow: hidden;
@@ -578,6 +575,10 @@
     #mapSection .main,
     body:has(#mapSection[style*="block"]) .main {
         max-width: 1900px;
+    }
+
+    @media (min-width: 981px) {
+        .map-toolbar__hint { display: none !important; }
     }
 
     @media (max-width: 980px) {
