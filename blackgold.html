@@ -399,7 +399,8 @@
 
     .map-connector-dot {
         position: absolute;
-        width: 30px; height: 30px;
+        width: 2.75cqw; height: 2.75cqw;
+        min-width: 14px; min-height: 14px;
         transform: translate(-50%, -50%);
         display: flex; align-items: center; justify-content: center;
         cursor: pointer;
@@ -459,7 +460,7 @@
     table.map-role-table { width: 100%; table-layout: fixed; border-collapse: collapse; font-family: var(--font-family-base); }
     .map-role-table td { padding: 7px 8px; border-bottom: 1px solid var(--color-border-light); font-size: 11.5px; vertical-align: middle; overflow: visible; }
     .map-role-table tr:last-child td { border-bottom: none; }
-    .map-role-label { font-weight: 800; color: var(--color-text-dark); width: 122px; white-space: nowrap; }
+    .map-role-label { font-weight: 800; color: var(--color-text-dark); width: 128px; white-space: nowrap; }
     .map-role-label select { width: 100%; }
     .map-role-faction-cell { width: 26px; text-align: center; padding-left: 4px !important; padding-right: 4px !important; }
     .map-role-select {
@@ -469,9 +470,10 @@
     }
     .map-role-select:focus { border-color: var(--color-primary); background: white; }
     .map-role-select:disabled { cursor: default; background: #f0f1f5; color: #8c93a6; }
-    .map-role-power { font-weight: 800; color: var(--color-primary-dark); font-size: 11.5px; white-space: nowrap; width: 44px; text-align: right; padding-left: 4px !important; }
+    .map-role-power { font-weight: 800; color: var(--color-primary-dark); font-size: 11.5px; white-space: nowrap; width: 34px; text-align: right; padding-left: 2px !important; padding-right: 2px !important; }
     .map-role-delete-btn { color: #d9381e; font-weight: 800; font-size: 13px; cursor: pointer; padding: 2px 4px; }
     .map-role-delete-btn:hover { text-decoration: underline; }
+    .map-role-table td:last-child { padding-left: 2px !important; width: 18px; }
     .map-role-add-row { padding: 9px; text-align: center; }
     .map-role-add-btn {
         font-family: var(--font-family-base); font-weight: 800; font-size: 10px; letter-spacing: 0.3px;
@@ -487,6 +489,8 @@
         background: #c58f5f;
         border-radius: 14px; border: 3px solid #93672f; box-shadow: inset 0 0 30px rgba(0,0,0,0.15);
         overflow: hidden;
+        container-type: inline-size;
+        container-name: mapdiagram;
     }
 
     .map-icon-static {
@@ -507,7 +511,8 @@
 
     .map-pin {
         position: absolute;
-        width: 46px; height: 54px;
+        width: 4.21cqw; height: 4.93cqw;
+        min-width: 22px; min-height: 26px;
         transform: translate(-50%, -62%);
         display: flex; align-items: center; justify-content: center;
         cursor: pointer;
@@ -523,7 +528,7 @@
         color: #fff;
         font-weight: 800;
         font-family: var(--font-family-base);
-        font-size: 16px;
+        font-size: 1.46cqw;
     }
 
     .map-locked-state {
