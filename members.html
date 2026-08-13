@@ -703,9 +703,9 @@ if (!currentUser.role) {
         document.getElementById('importBtn').style.display = isManagementOrAdmin ? 'flex' : 'none';
         document.getElementById('btnAddMemberModal').style.display = isManagementOrAdmin ? 'flex' : 'none';
         document.getElementById('thActionHeader').style.display = isManagementOrAdmin ? 'table-cell' : 'none';
-        document.getElementById('thF1Power').style.display = isManagementOrAdmin ? 'table-cell' : 'none';
-        document.getElementById('thDiff').style.display = isManagementOrAdmin ? 'table-cell' : 'none';
-        document.getElementById('btnToggleDiff').style.display = isManagementOrAdmin ? 'inline-flex' : 'none';
+        document.getElementById('thF1Power').style.display = 'table-cell';
+        document.getElementById('thDiff').style.display = 'table-cell';
+        document.getElementById('btnToggleDiff').style.display = 'inline-flex';
         const filterQuery = document.getElementById('searchInput').value.toLowerCase();
         // Count total active/inactive members (strictly excluding removed ones from general totals)
         const activeOrInactiveMembers = members.filter(m => m.status !== 'removed');
@@ -740,7 +740,7 @@ if (!currentUser.role) {
             tableFooterRow.innerHTML = '';
             return;
         }
-        const groupColSpan = isManagementOrAdmin ? 10 : 7;
+        const groupColSpan = isManagementOrAdmin ? 10 : 9;
         let html = '';
         let lastGroupKey = null;
         filtered.forEach((member, index) => {
@@ -790,15 +790,15 @@ if (!currentUser.role) {
                 </td>
             ` : '';
             const historyCount = member.f1History ? member.f1History.length : 0;
-            const f1Cell = isManagementOrAdmin ? `
+            const f1Cell = `
                 <td>
                     <div style="display: flex; flex-direction: column;">
-                        <input type="text" value="${member.f1Cp || '0G'}" onchange="updateF1Power(${member.id}, this.value)" onkeydown="if(event.key==='Enter') { this.blur(); }" class="editable-input" placeholder="0G">
+                        <input type="text" value="${member.f1Cp || '0G'}" ${isManagementOrAdmin ? `onchange="updateF1Power(${member.id}, this.value)" onkeydown="if(event.key==='Enter') { this.blur(); }"` : 'readonly'} class="editable-input" placeholder="0G">
                         <button class="f1-history-badge" onclick="openF1History(${member.id})"><i class="fa-solid fa-clock-rotate-left"></i> History (${historyCount})</button>
                     </div>
                 </td>
-            ` : '';
-            const diffCell = isManagementOrAdmin ? `<td style="text-align: center;">${diffHtml}</td>` : '';
+            `;
+            const diffCell = `<td style="text-align: center;">${diffHtml}</td>`;
             const statusTabsContent = isManagementOrAdmin ? `
                 <div class="status-tabs">
                     <button onclick="setPlayerStatus(${member.id}, 'active')" class="status-tab ${isAct ? 'active-active' : ''}" title="Active">A</button>
@@ -853,7 +853,7 @@ if (!currentUser.role) {
             `;
         });
         tbody.innerHTML = html;
-        const colSpanVal = isManagementOrAdmin ? 10 : 7;
+        const colSpanVal = isManagementOrAdmin ? 10 : 9;
         tableFooterRow.innerHTML = `<tr><td colspan="${colSpanVal}">Showing ${filtered.length} of ${activeOrInactiveMembers.length} active/inactive members</td></tr>`;
     }
     function generateLevelOptions(currentVal) {
