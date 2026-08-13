@@ -12,11 +12,14 @@
 //    root (or wherever your other Vercel functions live) — no extra config
 //    needed for a simple Node serverless function.
 //
-// NOTE (Aug 2026): gemini-2.5-flash was retired for new usage, switched to
-// gemini-3.6-flash (current GA model) — same generateContent REST endpoint,
-// no other code changes needed. If this model is retired in the future,
-// check https://ai.google.dev/gemini-api/docs/changelog for the current
-// recommended Flash model name.
+// NOTE (Aug 2026): switched from gemini-3.6-flash back to gemini-2.5-flash.
+// gemini-3.6-flash's free tier caps at just 20 requests/day per project
+// (GenerateRequestsPerDayPerProjectPerModel-FreeTier), which is too low for
+// regular screenshot-import use. gemini-2.5-flash has a much higher free
+// daily quota and is more than capable for this OCR/extraction task — no
+// need for the newest model here. If quotas change again, check
+// https://ai.google.dev/gemini-api/docs/rate-limits for current numbers,
+// or consider enabling billing on the Google Cloud project instead.
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -50,7 +53,7 @@ Example output:
 
   try {
     const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
