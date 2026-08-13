@@ -383,6 +383,25 @@
     .map-toolbar__controls { display: flex; gap: 8px; }
     .map-toolbar__hint { font-family: var(--font-family-base); font-weight: 600; font-size: 11px; color: var(--color-text-muted); width: 100%; }
 
+    .map-toolbar__right { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+
+    .map-circles-toggle-btn {
+        background: white;
+        border: 2px solid var(--color-primary);
+        color: var(--color-primary);
+        font-family: var(--font-family-base);
+        font-weight: 800;
+        font-size: 11px;
+        letter-spacing: 0.4px;
+        padding: 8px 14px;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.15s;
+        white-space: nowrap;
+    }
+    .map-circles-toggle-btn:hover { background: #eef2f9; }
+    .map-circles-toggle-btn--active { background: var(--color-primary); color: white; }
+
     .map-dot-color-picker { display: flex; align-items: center; gap: 10px; }
     .map-dot-color-picker__label {
         font-family: var(--font-family-base); font-weight: 800; font-size: 11px; letter-spacing: 0.3px;
@@ -399,14 +418,15 @@
 
     .map-connector-dot {
         position: absolute;
-        width: 2.75cqw; height: 2.75cqw;
-        min-width: 14px; min-height: 14px;
+        width: clamp(16px, 3.6cqw, 30px);
+        height: clamp(16px, 3.6cqw, 30px);
         transform: translate(-50%, -50%);
         display: flex; align-items: center; justify-content: center;
         cursor: pointer;
-        transition: filter 0.15s ease;
+        transition: filter 0.15s ease, opacity 0.15s ease;
     }
     .map-connector-dot--readonly { cursor: default; }
+    .map-connector-dot--hidden { opacity: 0; pointer-events: none; }
     .map-connector-dot svg { width: 100%; height: 100%; overflow: visible; }
     .map-connector-arrow-inner { transition: transform 0.15s ease; transform-origin: 50% 50%; }
     .map-connector-dot--selected { filter: drop-shadow(0 0 0 2px white) drop-shadow(0 0 5px var(--color-primary-dark)); }
@@ -818,16 +838,19 @@
             <div class="map-card" id="mapCard">
                 <div class="map-toolbar">
                     <span class="map-toolbar__label">FORMATION MAP · GROUPS &amp; RALLY ORDER</span>
-                    <div class="map-dot-color-picker" id="mapDotColorPicker" style="display:none;">
-                        <span class="map-dot-color-picker__label">Selected arrow color</span>
-                        <div class="map-dot-color-picker__swatches" id="mapDotColorSwatches"></div>
+                    <div class="map-toolbar__right">
+                        <button class="map-circles-toggle-btn" id="mapCirclesToggleBtn" style="display:none;" title="Show or hide the plain (unset) rally circles on the map">SHOW CIRCLES</button>
+                        <div class="map-dot-color-picker" id="mapDotColorPicker" style="display:none;">
+                            <span class="map-dot-color-picker__label">Selected arrow color</span>
+                            <div class="map-dot-color-picker__swatches" id="mapDotColorSwatches"></div>
+                        </div>
                     </div>
                 </div>
                 <div class="map-subtabs">
                     <button class="map-subtab-btn map-subtab-btn--active" id="mapSubtabA">TEAM A</button>
                     <button class="map-subtab-btn" id="mapSubtabB">TEAM B</button>
                 </div>
-                <div class="map-toolbar__hint" id="mapAdminHint" style="display:none;">The map always shows a fixed set of 6 markers — adding or removing a group never adds or removes a marker; it only fills or empties one of the 6 slots (up to 8 groups total, the 7th &amp; 8th are "extra" and don't get their own marker, but their colors are still available for the arrow swatches below). The number badge on each group's tab (top-right of its block) cycles 1–8 and is just a label for that group — it does not change the map. Click a numbered marker directly on the map itself to change that marker's own number (cycles 1–6). Use the select boxes on the left to assign members (auto-pulls Faction &amp; F1 Power from Members) · click a group's color swatch to recolor it · use a role's name dropdown to rename it, the × to delete that row, and + ADD ROLE ROW to add a new one — all scoped to that one group, on the team you're currently viewing · click any small circle or arrow on the map to select it and rotate it (each click rotates it 25°; a full rotation returns it to a plain circle) — once selected, use the swatches above to set that one arrow's own color, chosen from this team's current group colors, including groups 7 &amp; 8 (each team's rally path and its color options are separate). Assigning a member here automatically sets their Slot (A or B, matching this tab) and Main/Substitute status on the most recent A/B Slots session. A member can only be assigned to one team (A or B) per session.</div>
+                <div class="map-toolbar__hint" id="mapAdminHint" style="display:none;">The map always shows a fixed set of 6 markers — adding or removing a group never adds or removes a marker; it only fills or empties one of the 6 slots (up to 8 groups total, the 7th &amp; 8th are "extra" and don't get their own marker, but their colors are still available for the arrow swatches below). The number badge on each group's tab (top-right of its block) cycles 1–8 and is just a label for that group — it does not change the map. Click a numbered marker directly on the map itself to change that marker's own number (cycles 1–6). Use the select boxes on the left to assign members (auto-pulls Faction &amp; F1 Power from Members) · click a group's color swatch to recolor it · use a role's name dropdown to rename it, the × to delete that row, and + ADD ROLE ROW to add a new one — all scoped to that one group, on the team you're currently viewing · click any small circle or arrow on the map to select it and rotate it (each click rotates it 25°; a full rotation returns it to a plain circle) — once selected, use the swatches above to set that one arrow's own color, chosen from this team's current group colors, including groups 7 &amp; 8 (each team's rally path and its color options are separate). Plain (unset) circles are hidden by default to keep the map uncluttered — use the SHOW CIRCLES button above to reveal them for editing, then hide them again when you're done. Assigning a member here automatically sets their Slot (A or B, matching this tab) and Main/Substitute status on the most recent A/B Slots session. A member can only be assigned to one team (A or B) per session.</div>
                 <div class="map-body">
                     <div class="map-table-wrapper" id="mapTableWrapper"></div>
                     <div class="map-diagram-wrap">
@@ -1026,6 +1049,15 @@
     let mapBoards = { A: [], B: [] };
     let activeBoard = 'A';
     let activeTab = 'ab';
+
+    // Whether the plain (unset) rally circles are visible on the map. Circles that
+    // have already been rotated into arrows always stay visible regardless of this
+    // flag — only the un-rotated, purely decorative/clickable circles are affected.
+    // Defaults to hidden (false) so the map isn't cluttered with 18 empty circles;
+    // the SHOW CIRCLES button reveals them so they can be clicked/rotated, then
+    // HIDE CIRCLES declutters the view again. This is a local display preference
+    // only — it is not saved, so each viewer starts with circles hidden.
+    let showConnectorCircles = false;
 
     const SLOT_POSITIONS = [
         { left: 70.91, top: 63.69 },
@@ -1362,6 +1394,18 @@
     document.getElementById('mapSubtabA').addEventListener('click', () => switchMapSubtab('A'));
     document.getElementById('mapSubtabB').addEventListener('click', () => switchMapSubtab('B'));
 
+    document.getElementById('mapCirclesToggleBtn').addEventListener('click', () => {
+        showConnectorCircles = !showConnectorCircles;
+        updateCirclesToggleBtn();
+        renderMapDiagram();
+    });
+
+    function updateCirclesToggleBtn() {
+        const btn = document.getElementById('mapCirclesToggleBtn');
+        btn.innerText = showConnectorCircles ? 'HIDE CIRCLES' : 'SHOW CIRCLES';
+        btn.classList.toggle('map-circles-toggle-btn--active', showConnectorCircles);
+    }
+
     function render() {
         const activeMembers = getActiveMembers();
         const query = document.getElementById('searchInput').value.toLowerCase();
@@ -1383,6 +1427,8 @@
         document.getElementById('calBtnAddDate').style.display = isManagementOrAdmin ? 'inline-block' : 'none';
         document.getElementById('calCalendarPicker').style.display = isManagementOrAdmin ? 'inline-block' : 'none';
         document.getElementById('mapDotColorPicker').style.display = isManagementOrAdmin ? 'flex' : 'none';
+        document.getElementById('mapCirclesToggleBtn').style.display = canViewMap ? 'inline-block' : 'none';
+        updateCirclesToggleBtn();
 
         const legendHint = document.getElementById('legendHint');
         if (isManagementOrAdmin) {
@@ -1919,11 +1965,15 @@
         DOT_POSITIONS.forEach((pos, i) => {
             const step = boardDots.steps[i] || 0;
             const color = (boardDots.colors && boardDots.colors[i]) || DEFAULT_DOT_COLOR;
-            const inner = step === 0 ? connectorDotSvg(color) : connectorArrowSvg(color, step * DOT_ROTATION_STEP);
+            const isArrow = step !== 0;
+            const inner = isArrow ? connectorArrowSvg(color, step * DOT_ROTATION_STEP) : connectorDotSvg(color);
             const isSelected = isManagementOrAdmin && selectedDotIndex === i;
+            // Plain (un-rotated) circles are hidden by default to declutter the map;
+            // arrows (already rotated) always stay visible since they carry meaning.
+            const isHiddenPlainCircle = !isArrow && !showConnectorCircles;
             const clickAttr = isManagementOrAdmin ? `onclick="cycleConnectorDot(${i})" title="Click to select & rotate (${step === 0 ? 'currently a dot' : step * DOT_ROTATION_STEP + '°'}) · then use the swatches above for its own color"` : '';
             html += `
-                <div class="map-connector-dot ${isManagementOrAdmin ? '' : 'map-connector-dot--readonly'} ${isSelected ? 'map-connector-dot--selected' : ''}" style="left:${pos.left}%; top:${pos.top}%;" ${clickAttr}>
+                <div class="map-connector-dot ${isManagementOrAdmin ? '' : 'map-connector-dot--readonly'} ${isSelected ? 'map-connector-dot--selected' : ''} ${isHiddenPlainCircle ? 'map-connector-dot--hidden' : ''}" style="left:${pos.left}%; top:${pos.top}%;" ${clickAttr}>
                     ${inner}
                 </div>
             `;
