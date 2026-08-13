@@ -12,14 +12,19 @@
 //    root (or wherever your other Vercel functions live) — no extra config
 //    needed for a simple Node serverless function.
 //
-// NOTE (Aug 2026): switched from gemini-3.6-flash back to gemini-2.5-flash.
+// NOTE (Aug 2026): switched from gemini-3.6-flash to gemini-3.5-flash-lite.
 // gemini-3.6-flash's free tier caps at just 20 requests/day per project
 // (GenerateRequestsPerDayPerProjectPerModel-FreeTier), which is too low for
-// regular screenshot-import use. gemini-2.5-flash has a much higher free
-// daily quota and is more than capable for this OCR/extraction task — no
-// need for the newest model here. If quotas change again, check
-// https://ai.google.dev/gemini-api/docs/rate-limits for current numbers,
-// or consider enabling billing on the Google Cloud project instead.
+// regular screenshot-import use. gemini-2.5-flash was tried next but returns
+// a 404 ("no longer available to new users") — it's been fully retired for
+// any project/key created after Google's cutoff, even though its official
+// shutdown date is later. Flash-Lite tier models have historically carried
+// much higher free daily quotas than standard/flagship Flash models, so
+// gemini-3.5-flash-lite is used here instead. This task (structured OCR
+// extraction) doesn't need flagship-level reasoning, so Flash-Lite is a
+// good fit either way. If this model is retired in the future, check
+// https://ai.google.dev/gemini-api/docs/deprecations for the current
+// recommended Flash-Lite model name.
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -53,7 +58,7 @@ Example output:
 
   try {
     const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${apiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
