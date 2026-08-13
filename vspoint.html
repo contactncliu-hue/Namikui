@@ -7,6 +7,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Fredoka+One&family=Montserrat:wght@600;700;800&family=Noto+Sans+SC:wght@900&family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
     :root {
         --color-bg-main: #f5f4ef;
@@ -236,6 +237,25 @@
     .r5 { background: #e53e3e; }
     .vs-hint { color: var(--color-text-muted); font-weight: 600; font-size: 11px; font-style: italic; }
 
+    /* ===== Tier group separator bars (member rank tier, R5 down to R1 — matches members.html) ===== */
+    .tier-group-bar-row td { padding: 0; border-bottom: none; }
+    .tier-group-bar {
+        display: flex;
+        align-items: center;
+        padding: 7px 20px;
+        font-family: var(--font-family-base);
+        font-weight: 800;
+        font-size: 11px;
+        letter-spacing: 1px;
+        color: #ffffff;
+        text-transform: uppercase;
+    }
+    .tier-group-bar--r5 { background-color: #2563eb; }
+    .tier-group-bar--r4 { background-color: #dc2626; }
+    .tier-group-bar--r3 { background-color: #ea580c; }
+    .tier-group-bar--r2 { background-color: #eab308; }
+    .tier-group-bar--r1 { background-color: #16a34a; }
+
     /* Table Container */
     .table-card {
         background: white;
@@ -264,6 +284,8 @@
     
     thead th .date-label { font-size: 13px; font-weight: 800; color: var(--color-text-dark); }
     thead th .week-label { font-size: 9px; font-weight: 700; color: var(--color-text-muted); text-transform: none; margin-top: 2px; }
+    thead th .week-label--editable { cursor: pointer; text-decoration: underline dotted; }
+    thead th .week-label--editable:hover { color: var(--color-primary); }
     thead th .remove-date-btn {
         display: inline-block;
         margin-top: 4px;
@@ -375,7 +397,7 @@
         padding: 12px 14px;
         margin-bottom: 10px;
     }
-    .archive-entry__title { font-weight: 800; font-size: 13px; color: var(--color-primary-dark); margin-bottom: 4px; }
+    .archive-entry__title { font-weight: 800; font-size: 13px; color: var(--color-primary-dark); margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center; }
     .archive-entry__meta { font-size: 11px; color: var(--color-text-muted); font-weight: 700; margin-bottom: 8px; }
     .archive-entry__row {
         display: flex;
@@ -386,6 +408,18 @@
         border-bottom: 1px solid #f0f2f8;
     }
     .archive-entry__row:last-child { border-bottom: none; }
+    .archive-entry__delete-btn {
+        border: 1px solid #dc2626;
+        color: #dc2626;
+        background: white;
+        font-family: var(--font-family-base);
+        font-weight: 800;
+        font-size: 10px;
+        padding: 4px 8px;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+    .archive-entry__delete-btn:hover { background: #fee2e2; }
 
     /* ===== Import Review Modal ===== */
     .import-review-row {
@@ -1199,7 +1233,7 @@
         const hintEl = document.getElementById('roleHint');
         if (hintEl) {
             hintEl.innerText = isManagementOrAdmin 
-                ? '· Admin/Mgmt: Click any table cell (or ranking score) to edit points. Click a date to edit it. Use ✕ under date columns to delete session.' 
+                ? '· Admin/Mgmt: Click any table cell (or ranking score) to edit points. Click a date to edit it. Click Weekly/Daily to change session type. Use ✕ under date columns to delete session.' 
                 : '· Viewing mode (Read-only)';
         }
 
@@ -1256,6 +1290,8 @@
         }
     }
 
+    const RANK_GROUP_ORDER = { R5: 0, R4: 1, R3: 2, R2: 3, R1: 4 };
+
     function renderVsWeeklyTable(filter) {
         const headersTr = document.getElementById('vsTableHeaders');
         const bodyTb = document.getElementById('vsTableBody');
@@ -1272,10 +1308,13 @@
             const dateLabelAttrs = isManagementOrAdmin
                 ? `onclick="startEditWeekDate(${idx})" style="cursor:pointer;" title="Click to edit this date"`
                 : '';
+            const weekLabelAttrs = isManagementOrAdmin
+                ? `class="week-label week-label--editable" onclick="toggleWeekType(${idx})" title="Click to switch between Weekly and Daily"`
+                : `class="week-label"`;
             headerHTML += `
                 <th>
                     <div class="date-label" id="dateLabel-${idx}" ${dateLabelAttrs}>${wkDate}</div>
-                    <div class="week-label">Week ${idx + 1} · ${wkType === 'daily' ? 'Daily' : 'Weekly'}</div>
+                    <div ${weekLabelAttrs} id="weekLabel-${idx}">Week ${idx + 1} · ${wkType === 'daily' ? 'Daily' : 'Weekly'}</div>
                     ${deleteActionHTML}
                 </th>`;
         });
@@ -1287,7 +1326,6 @@
         const activeMemberIds = new Set(activeMembers.map(m => String(m.id)));
         const activeScores = vsData.membersScores.filter(m => activeMemberIds.has(String(m.id)));
 
-        const RANK_GROUP_ORDER = { R5: 0, R4: 1, R3: 2, R2: 3, R1: 4 };
         const memberOrderIndex = new Map(activeMembers.map((m, idx) => [String(m.id), idx]));
         const memberRankById = new Map(activeMembers.map(m => [String(m.id), m.rank || 'R1']));
 
@@ -1300,16 +1338,19 @@
             top5Ids = new Set(top5.map(m => String(m.id)));
         }
 
-        const rest = activeScores
-            .filter(m => !top5Ids.has(String(m.id)))
-            .sort((a, b) => {
-                const rankA = RANK_GROUP_ORDER[memberRankById.get(String(a.id))] ?? 99;
-                const rankB = RANK_GROUP_ORDER[memberRankById.get(String(b.id))] ?? 99;
-                if (rankA !== rankB) return rankA - rankB;
-                return (memberOrderIndex.get(String(a.id)) ?? 0) - (memberOrderIndex.get(String(b.id)) ?? 0);
-            });
-
-        const sortedMembers = [...top5, ...rest];
+        // Sort every active member into rank-tier groups (R5 at the top, descending
+        // to R1), matching members.html. Within a tier, members are ordered by
+        // their latest-session score (highest first) so the top scorers in each
+        // tier surface near the top of that tier's block.
+        const sortedMembers = [...activeScores].sort((a, b) => {
+            const rankA = RANK_GROUP_ORDER[memberRankById.get(String(a.id))] ?? 99;
+            const rankB = RANK_GROUP_ORDER[memberRankById.get(String(b.id))] ?? 99;
+            if (rankA !== rankB) return rankA - rankB;
+            const scoreA = latestWeekIdx >= 0 ? (a.scores[latestWeekIdx] || 0) : 0;
+            const scoreB = latestWeekIdx >= 0 ? (b.scores[latestWeekIdx] || 0) : 0;
+            if (scoreA !== scoreB) return scoreB - scoreA;
+            return (memberOrderIndex.get(String(a.id)) ?? 0) - (memberOrderIndex.get(String(b.id)) ?? 0);
+        });
 
         const filtered = sortedMembers.filter(m => m.name.toLowerCase().includes(filter));
         document.getElementById('shownCount').innerText = `${filtered.length}/${activeMembers.length} members shown`;
@@ -1319,8 +1360,22 @@
             return;
         }
 
+        const groupColSpan = 2 + vsData.weeks.length;
         let bodyHTML = '';
+        let lastGroupKey = null;
         filtered.forEach((m) => {
+            const groupKey = memberRankById.get(String(m.id)) || 'R1';
+            if (groupKey !== lastGroupKey) {
+                lastGroupKey = groupKey;
+                bodyHTML += `
+                    <tr class="tier-group-bar-row">
+                        <td colspan="${groupColSpan}">
+                            <div class="tier-group-bar tier-group-bar--${groupKey.toLowerCase()}">${groupKey}</div>
+                        </td>
+                    </tr>
+                `;
+            }
+
             const medalRank = top5Ids.has(String(m.id)) ? (top5.findIndex(t => String(t.id) === String(m.id)) + 1) : null;
 
             let rankBadgeHTML = '';
@@ -1539,6 +1594,24 @@
             vsData.weeks[weekIdx].date = newDateStr;
         }
         sortWeeksAndScores();
+        await saveData();
+        renderVsPoints();
+    };
+
+    // Lets admin/management flip an already-created session between Weekly
+    // and Daily (this changes which red-highlight threshold applies to that
+    // column) by clicking the "Week N · Weekly/Daily" label under the date.
+    window.toggleWeekType = async function(weekIdx) {
+        if (!isManagementOrAdmin) return;
+        const wk = vsData.weeks[weekIdx];
+        if (!wk) return;
+        const currentType = getWeekType(wk);
+        const newType = currentType === 'daily' ? 'weekly' : 'daily';
+        if (typeof vsData.weeks[weekIdx] === 'string') {
+            vsData.weeks[weekIdx] = { date: vsData.weeks[weekIdx], type: newType };
+        } else {
+            vsData.weeks[weekIdx].type = newType;
+        }
         await saveData();
         renderVsPoints();
     };
@@ -1978,9 +2051,13 @@
             const total = vsData.archives.length;
             [...vsData.archives].reverse().forEach((arc, revIdx) => {
                 const cycleNumber = total - revIdx;
+                const archiveIdx = total - 1 - revIdx; // index into vsData.archives (unreversed)
                 const sortedTotals = [...(arc.membersTotals || [])].sort((a, b) => b.total - a.total);
+                const deleteBtnHTML = isManagementOrAdmin
+                    ? `<button class="archive-entry__delete-btn" onclick="deleteArchiveEntry(${archiveIdx})" title="Delete this archived cycle"><i class="fa-solid fa-trash"></i> Delete</button>`
+                    : '';
                 html += `<div class="archive-entry">
-                    <div class="archive-entry__title">Cycle ${cycleNumber}</div>
+                    <div class="archive-entry__title"><span>Cycle ${cycleNumber}</span>${deleteBtnHTML}</div>
                     <div class="archive-entry__meta">${arc.cycleStartDate || '—'} to ${arc.cycleEndDate || '—'} · ${arc.weeks ? arc.weeks.length : 0} sessions</div>`;
                 sortedTotals.slice(0, 10).forEach((m, i) => {
                     html += `<div class="archive-entry__row"><span>#${i + 1} ${m.name}</span><span>${m.total.toLocaleString()}</span></div>`;
@@ -1993,6 +2070,19 @@
             container.innerHTML = html;
         }
         document.getElementById('archivesModal').style.display = 'flex';
+    };
+
+    // Lets admin/management permanently remove one archived cycle entry.
+    window.deleteArchiveEntry = async function(archiveIdx) {
+        if (!isManagementOrAdmin) return;
+        const arc = vsData.archives[archiveIdx];
+        if (!arc) return;
+        if (!confirm(`Permanently delete the archived cycle from ${arc.cycleStartDate || '—'} to ${arc.cycleEndDate || '—'}? This cannot be undone.`)) return;
+
+        vsData.archives.splice(archiveIdx, 1);
+        await saveData();
+        renderVsPoints();
+        openArchivesModal();
     };
 
     window.closeArchivesModal = function() {
