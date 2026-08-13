@@ -34,6 +34,11 @@
 
         --font-xs: 12px;
         --font-sm: 14px;
+
+        /* Multiplier applied to map markers/arrows so they stay readable when the
+           page is zoomed out (desktop browser zoom or mobile pinch-zoom). Updated
+           live from JS; 1 = no boost (normal 100% zoom). */
+        --zoom-boost: 1;
     }
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -420,10 +425,10 @@
         position: absolute;
         width: clamp(16px, 3.6cqw, 30px);
         height: clamp(16px, 3.6cqw, 30px);
-        transform: translate(-50%, -50%);
+        transform: translate(-50%, -50%) scale(var(--zoom-boost, 1));
         display: flex; align-items: center; justify-content: center;
         cursor: pointer;
-        transition: filter 0.15s ease, opacity 0.15s ease;
+        transition: filter 0.15s ease, opacity 0.15s ease, transform 0.1s ease;
     }
     .map-connector-dot--readonly { cursor: default; }
     .map-connector-dot--hidden { opacity: 0; pointer-events: none; }
@@ -533,12 +538,13 @@
         position: absolute;
         width: 4.21cqw; height: 4.93cqw;
         min-width: 22px; min-height: 26px;
-        transform: translate(-50%, -62%);
+        max-width: 46px; max-height: 54px;
+        transform: translate(-50%, -62%) scale(var(--zoom-boost, 1));
         display: flex; align-items: center; justify-content: center;
         cursor: pointer;
         transition: transform 0.12s;
     }
-    .map-pin:active { transform: translate(-50%, -62%) scale(0.92); }
+    .map-pin:active { transform: translate(-50%, -62%) scale(calc(var(--zoom-boost, 1) * 0.92)); }
     .map-pin--readonly { cursor: default; }
     .map-pin svg { width: 100%; height: 100%; filter: drop-shadow(0 3px 4px rgba(0,0,0,0.35)); }
     .map-pin__num {
@@ -1041,6 +1047,28 @@
         if (kind !== 'error') {
             saveStatusTimer = setTimeout(() => { saveStatusEl.className = 'save-status'; }, 1500);
         }
+    }
+
+    // --- Adaptive marker sizing: keep map pins/arrows readable at any zoom level ---
+    // Desktop browser page-zoom (Ctrl/Cmd +/-) changes window.devicePixelRatio
+    // proportionally to the zoom level; mobile pinch-zoom instead changes
+    // window.visualViewport.scale (devicePixelRatio doesn't move for pinch).
+    // Track both and grow the --zoom-boost CSS variable as the page zooms out
+    // so markers don't shrink into unreadable dots.
+    const baseDevicePixelRatio = window.devicePixelRatio || 1;
+    function updateZoomBoost() {
+        const desktopZoomFactor = baseDevicePixelRatio / (window.devicePixelRatio || baseDevicePixelRatio);
+        const visualZoomFactor = (window.visualViewport && window.visualViewport.scale)
+            ? (1 / window.visualViewport.scale)
+            : 1;
+        const boost = Math.min(2.5, Math.max(1, desktopZoomFactor, visualZoomFactor));
+        document.documentElement.style.setProperty('--zoom-boost', boost.toFixed(3));
+    }
+    updateZoomBoost();
+    window.addEventListener('resize', updateZoomBoost);
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', updateZoomBoost);
+        window.visualViewport.addEventListener('scroll', updateZoomBoost);
     }
 
     let members = [];
