@@ -1209,10 +1209,11 @@
         const SUPABASE_ANON_KEY = 'sb_publishable_rb70-VY2GstWzdoXmoUkwg_Iw3EiqFO';
         const { createClient } = supabase;
         const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const FAKE_EMAIL_DOMAIN = '@loopysplayground.local';
 
         let currentUser = {
-            username: localStorage.getItem('amt_username') || null,
-            role: localStorage.getItem('amt_userRole') || null
+            username: null,
+            role: null
         };
 
         // Only these roles may view real data. 'member' (the default role for new
@@ -1260,6 +1261,29 @@
             return memberList.filter(m => m.status !== 'removed');
         };
 
+        // Loads role/account info for the currently authenticated Supabase Auth user
+        // (real session), keyed by user_id rather than username/password.
+        async function loadCurrentUserAccount() {
+            const { data: { session } } = await db.auth.getSession();
+            if (!session) {
+                currentUser.username = null;
+                currentUser.role = null;
+                return false;
+            }
+            const { data: acc, error } = await db.from('accounts')
+                .select('*')
+                .eq('user_id', session.user.id)
+                .maybeSingle();
+            if (error || !acc) {
+                currentUser.username = null;
+                currentUser.role = null;
+                return false;
+            }
+            currentUser.username = acc.username;
+            currentUser.role = acc.role;
+            return true;
+        }
+
         async function loadDataFromCloud() {
             try {
                 const { data, error } = await db.from('app_data').select('*');
@@ -1302,17 +1326,8 @@
             const { data: accountsData, error: accountsErr } = await db.from('accounts').select('*');
             if (!accountsErr && accountsData) accounts = accountsData;
 
-                        if (currentUser.role && currentUser.username) {
-                const freshAcc = accounts.find(a => a.username.toLowerCase() === currentUser.username.toLowerCase());
-                if (freshAcc) {
-                    currentUser.role = freshAcc.role;
-                    localStorage.setItem('amt_userRole', freshAcc.role);
-                } else {
-                    currentUser.role = null;
-                    currentUser.username = null;
-                    localStorage.removeItem('amt_userRole');
-                    localStorage.removeItem('amt_username');
-                }
+            const isLoggedIn = await loadCurrentUserAccount();
+            if (isLoggedIn) {
                 enterDashboard();
             } else {
                 showLoginScreen();
@@ -1320,14 +1335,6 @@
         }
 
         async function saveData() {
-            if (currentUser.role && currentUser.username) {
-                localStorage.setItem('amt_userRole', currentUser.role);
-                localStorage.setItem('amt_username', currentUser.username);
-            } else {
-                localStorage.removeItem('amt_userRole');
-                localStorage.removeItem('amt_username');
-            }
-
             try {
                 const results = await Promise.all([
                     db.from('app_data').upsert({ id: 1, key: 'eventDates', value: eventDates }, { onConflict: 'id' }),
@@ -1435,7 +1442,7 @@
 
         document.getElementById('btnCancelModal').addEventListener('click', () => loginModal.style.display = 'none');
 
-                document.getElementById('btnSubmitLogin').addEventListener('click', async () => {
+        document.getElementById('btnSubmitLogin').addEventListener('click', async () => {
             const uInput = document.getElementById('loginUsername').value.trim();
             const pInput = document.getElementById('loginPassword').value;
 
@@ -1445,79 +1452,87 @@
                 return;
             }
 
-            const { data: foundAcc, error } = await db.from('accounts')
-                .select('*')
-                .ilike('username', uInput)
-                .eq('pass', pInput)
-                .maybeSingle();
+            const fakeEmail = uInput.toLowerCase() + FAKE_EMAIL_DOMAIN;
+            const { data: signInData, error: signInError } = await db.auth.signInWithPassword({
+                email: fakeEmail,
+                password: pInput
+            });
 
-            if (foundAcc && !error) {
-                currentUser.username = foundAcc.username;
-                currentUser.role = foundAcc.role;
-                saveData();
-                loginModal.style.display = 'none';
-                document.getElementById('loginUsername').value = '';
-                document.getElementById('loginPassword').value = '';
-                loginErrorMsg.style.display = 'none';
-                enterDashboard();
-            } else {
+            if (signInError || !signInData.session) {
                 loginErrorMsg.innerText = 'Invalid credentials! Check your username and password.';
                 loginErrorMsg.style.display = 'block';
+                return;
             }
+
+            const ok = await loadCurrentUserAccount();
+            if (!ok) {
+                loginErrorMsg.innerText = 'Your account could not be found. Please contact an Admin.';
+                loginErrorMsg.style.display = 'block';
+                await db.auth.signOut();
+                return;
+            }
+
+            const { data: accountsData } = await db.from('accounts').select('*');
+            if (accountsData) accounts = accountsData;
+
+            loginModal.style.display = 'none';
+            document.getElementById('loginUsername').value = '';
+            document.getElementById('loginPassword').value = '';
+            loginErrorMsg.style.display = 'none';
+            enterDashboard();
         });
 
         function handleLogout() {
+            db.auth.signOut();
             currentUser.role = null;
             currentUser.username = null;
-            localStorage.removeItem('amt_userRole');
-            localStorage.removeItem('amt_username');
             showLoginScreen();
         }
 
         document.getElementById('sidebarLogoutBtn').addEventListener('click', handleLogout);
 
         document.getElementById('btnSubmitCreateAccount').addEventListener('click', async () => {
-    const newU = document.getElementById('newAccUser').value.trim();
-    const newP = document.getElementById('newAccPass').value;
-    const newR = 'member';
+            const newU = document.getElementById('newAccUser').value.trim();
+            const newP = document.getElementById('newAccPass').value;
 
-    if(!newU || !newP) {
-        alert('Please enter a username and password.');
-        return;
-    }
+            if(!newU || !newP) {
+                alert('Please enter a username and password.');
+                return;
+            }
 
-    if(accounts.some(a => a.username.toLowerCase() === newU.toLowerCase())) {
-        alert('Username already exists!');
-        return;
-    }
+            if(accounts.some(a => a.username.toLowerCase() === newU.toLowerCase())) {
+                alert('Username already exists!');
+                return;
+            }
 
-    const { data: inserted, error } = await db.from('accounts')
-        .insert({ username: newU, pass: newP, role: newR })
-        .select()
-        .single();
+            const fakeEmail = newU.toLowerCase() + FAKE_EMAIL_DOMAIN;
+            const { data, error } = await db.auth.signUp({
+                email: fakeEmail,
+                password: newP,
+                options: { data: { username: newU } }
+            });
 
-    if (error) {
-        console.error('Create account error:', error);
-        alert('Could not create account. Please try again.');
-        return;
-    }
+            if (error) {
+                console.error('Create account error:', error);
+                alert('Could not create account. Please try again. (' + error.message + ')');
+                return;
+            }
 
-    accounts.push(inserted);
-    logAction('CREATE_ACCOUNT', `Created user account: ${newU} with default role [member]`);
-    createAccountModal.style.display = 'none';
-    document.getElementById('newAccUser').value = '';
-    document.getElementById('newAccPass').value = '';
-    alert(`Account ${newU} successfully created! You can now log in using these details.`);
-});
+            // The handle_new_user trigger creates the matching accounts row server-side.
+            createAccountModal.style.display = 'none';
+            document.getElementById('newAccUser').value = '';
+            document.getElementById('newAccPass').value = '';
+            alert(`Account ${newU} successfully created! You can now log in using these details.`);
+        });
 
-                document.getElementById('btnSubmitRoleAssign').addEventListener('click', async () => {
+        document.getElementById('btnSubmitRoleAssign').addEventListener('click', async () => {
             const targetUser = document.getElementById('targetAccountSelect').value;
             const newRole = document.getElementById('targetRoleSelect').value;
             const acc = accounts.find(a => a.username === targetUser);
             if (!acc) return;
 
             const oldRole = acc.role;
-            const { error } = await db.from('accounts').update({ role: newRole }).eq('username', targetUser);
+            const { error } = await db.from('accounts').update({ role: newRole }).eq('user_id', acc.user_id);
 
             if (error) {
                 alert('Could not update role. Please try again.');
