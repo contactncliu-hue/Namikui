@@ -796,7 +796,7 @@
                 <section class="table-card" id="subViewViolators" style="display: none;">
                     <div style="padding: 16px 20px; border-bottom: 2px solid var(--color-border-light);">
                         <h2 style="font-size: 14px; color: var(--color-text-dark); margin-bottom: 4px;">⚔ War</h2>
-                        <p style="font-size: 12px; color: var(--color-text-muted); font-weight: 600;">Totals across all war events only: total war events attended, and red/yellow flag counts. Members flagged red (voted Yes, didn't attend) or yellow (voted Maybe, didn't attend) are shown; members with no flags are hidden.</p>
+                        <p style="font-size: 12px; color: var(--color-text-muted); font-weight: 600;">Totals across all war events only: total war events attended (🟢), and red/yellow flag counts. Members with at least one attended war event or a red/yellow flag are shown; members with none of the above are hidden.</p>
                     </div>
                     <div class="table-wrapper">
                         <table class="data-table">
@@ -1697,11 +1697,11 @@ window.openRoleAssignModal = function() {
 
             const withCounts = filteredMembers
                 .map(m => ({ member: m, ...computeWarViolationCounts(m) }))
-                .filter(x => x.red > 0 || x.yellow > 0)
-                .sort((a, b) => (b.red - a.red) || (b.yellow - a.yellow));
+                .filter(x => x.red > 0 || x.yellow > 0 || x.attended > 0)
+                .sort((a, b) => (b.red - a.red) || (b.yellow - a.yellow) || (b.attended - a.attended));
 
             if (withCounts.length === 0) {
-                body.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#8c93a6; padding: 24px;">No violators found. 🎉</td></tr>`;
+                body.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#8c93a6; padding: 24px;">No war activity recorded yet. 🎉</td></tr>`;
                 return;
             }
 
@@ -3031,7 +3031,7 @@ window.openRoleAssignModal = function() {
                         <div style="display: flex; flex-direction: column; align-items: center;">
                             ${isWar ? `<span style="font-size:9px; font-weight:800; color:#dc2626; letter-spacing:0.5px; margin-bottom:2px;">⚔ WAR</span>` : ''}
                             <span class="${isManagementOrAdmin ? 'editable-num' : ''} notranslate" style="font-weight: 800; color: ${isWar ? '#dc2626' : 'var(--color-primary)'};" onclick="${isManagementOrAdmin ? `editEventName(${evIdx})` : ''}">${ev.name || 'Event'}</span>
-                            <span class="${isManagementOrAdmin ? 'editable-num' : ''} notranslate" style="font-size: 11px; color: #a0a6b5;" onclick="${isManagementOrAdmin ? `editEventDate(${evIdx})` : ''}">${ev.date}</span>
+                            <span class="${isManagementOrAdmin ? 'editable-num' : ''} notranslate" id="eventDateLabel-${evIdx}" style="font-size: 11px; color: #a0a6b5;" onclick="${isManagementOrAdmin ? `startEditEventDate(${evIdx})` : ''}">${ev.date}</span>
                             ${isManagementOrAdmin ? `<span style="color:#d9381e; cursor:pointer; font-size:var(--font-xs);" onclick="removeEvent(${evIdx})">x</span>` : ''}
                         </div>
                     </th>`;
@@ -3244,26 +3244,38 @@ window.openRoleAssignModal = function() {
             }
         };
 
-        // Dates remain editable at any time (before or after creation) for both common and war events.
-        // Stored/displayed format matches the existing "MM-DD" convention used when events are added.
-        window.editEventDate = function(i) {
+        // Click-to-edit event date via a native calendar picker (replaces the old MM-DD text prompt).
+        // eventDates store dates as "MM-DD" with no year, so the picker is seeded with the current
+        // year purely for display/selection — only MM-DD is written back to eventDates[i].date.
+        window.startEditEventDate = function(i) {
+            const labelEl = document.getElementById(`eventDateLabel-${i}`);
             const ev = eventDates[i];
-            if (!ev) return;
-            const s = prompt('Edit event date (MM-DD):', ev.date);
-            if (s !== null) {
-                const trimmed = s.trim();
-                const match = trimmed.match(/^(\d{1,2})-(\d{1,2})$/);
-                if (match) {
-                    const mm = match[1].padStart(2, '0');
-                    const dd = match[2].padStart(2, '0');
-                    ev.date = `${mm}-${dd}`;
-                    logAction('EDIT_EVENT', `Updated event date index ${i} to ${ev.date}`);
-                    saveData();
-                    render();
-                } else if (trimmed) {
-                    alert('Please enter the date in MM-DD format (e.g. 08-15).');
-                }
+            if (!labelEl || !ev) return;
+            const currentYear = new Date().getFullYear();
+            let inputValue = '';
+            const match = (ev.date || '').match(/^(\d{1,2})-(\d{1,2})$/);
+            if (match) {
+                const mm = match[1].padStart(2, '0');
+                const dd = match[2].padStart(2, '0');
+                inputValue = `${currentYear}-${mm}-${dd}`;
             }
+            labelEl.innerHTML = `<input type="date" value="${inputValue}"
+                style="font-size:11px; font-family:var(--font-family-ui); font-weight:800; padding:2px 4px; border:1px solid var(--color-primary); border-radius:3px; background:white; color:var(--color-text-dark);"
+                onchange="commitEventDateEdit(${i}, this.value)"
+                onclick="event.stopPropagation()">`;
+            const inputEl = labelEl.querySelector('input');
+            if (inputEl) inputEl.focus();
+        };
+
+        window.commitEventDateEdit = function(i, yyyyMmDd) {
+            if (!yyyyMmDd) { render(); return; }
+            const parts = yyyyMmDd.split('-');
+            if (parts.length === 3) {
+                eventDates[i].date = `${parts[1]}-${parts[2]}`;
+                logAction('EDIT_EVENT', `Updated event date index ${i} to ${eventDates[i].date}`);
+                saveData();
+            }
+            render();
         };
 
         document.getElementById('btnAddEvent').addEventListener('click', () => {
