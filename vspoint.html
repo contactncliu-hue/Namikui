@@ -616,7 +616,7 @@
         <div class="sidebar__user">
             <div class="sidebar__user-avatar" id="userAvatarIcon">U</div>
             <div>
-                <div id="userRoleDisplay" style="font-size: 12px; text-transform: uppercase;">USERNAME</div>
+                <div id="userRoleDisplay" class="notranslate" translate="no" style="font-size: 12px; text-transform: uppercase;">USERNAME</div>
                 <div id="userPermissionBadge" style="font-size: 12px; color: #8c93a6;">Role</div>
             </div>
         </div>
@@ -788,7 +788,7 @@
         </div>
         <details id="vsImportRawTextWrap" style="display:none; margin-top:14px;">
             <summary style="cursor:pointer; font-size:11px; font-weight:800; color:var(--color-text-muted); text-transform:uppercase; letter-spacing:0.5px;">Raw OCR output</summary>
-            <pre id="vsImportRawText" style="white-space:pre-wrap; font-size:11px; background:#f7f6f0; border:1px solid var(--color-border-light); border-radius:4px; padding:10px; margin-top:8px; max-height:180px; overflow-y:auto; font-family:monospace;"></pre>
+            <pre id="vsImportRawText" class="notranslate" translate="no" style="white-space:pre-wrap; font-size:11px; background:#f7f6f0; border:1px solid var(--color-border-light); border-radius:4px; padding:10px; margin-top:8px; max-height:180px; overflow-y:auto; font-family:monospace;"></pre>
         </details>
         <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:16px;">
             <button class="btn-action" onclick="closeVsImportReviewModal()">Cancel</button>
@@ -1313,7 +1313,7 @@
                 : `class="week-label"`;
             headerHTML += `
                 <th>
-                    <div class="date-label" id="dateLabel-${idx}" ${dateLabelAttrs}>${wkDate}</div>
+                    <div class="date-label notranslate" translate="no" id="dateLabel-${idx}" ${dateLabelAttrs}>${wkDate}</div>
                     <div ${weekLabelAttrs} id="weekLabel-${idx}">Week ${idx + 1} · ${wkType === 'daily' ? 'Daily' : 'Weekly'}</div>
                     ${deleteActionHTML}
                 </th>`;
@@ -1393,7 +1393,7 @@
 
             bodyHTML += `<tr>`;
             bodyHTML += `<td class="col-rank">${rankCellContent}</td>`;
-            bodyHTML += `<td class="col-member"><div style="display:flex; align-items:center;">${rankBadgeHTML}<span>${m.name}</span></div></td>`;
+            bodyHTML += `<td class="col-member"><div style="display:flex; align-items:center;">${rankBadgeHTML}<span class="notranslate" translate="no">${m.name}</span></div></td>`;
             
             vsData.weeks.forEach((wk, wIdx) => {
                 const score = m.scores[wIdx] || 0;
@@ -1406,7 +1406,7 @@
                     : 'background: #ffffff;';
                     
                 bodyHTML += `
-                    <td style="${cellStyle} ${isManagementOrAdmin ? 'cursor: pointer;' : ''}" 
+                    <td class="notranslate" translate="no" style="${cellStyle} ${isManagementOrAdmin ? 'cursor: pointer;' : ''}" 
                         ${isManagementOrAdmin ? `onclick="editVsScore('${m.id}', ${wIdx})"` : ''}>
                         ${formattedScore}
                     </td>`;
@@ -1482,7 +1482,7 @@
             });
             barsHTML += `</div>`;
 
-            let weeksBreakdownHTML = `<div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:4px; font-size:11px; color:var(--color-text-muted); font-weight:600;">`;
+            let weeksBreakdownHTML = `<div class="notranslate" translate="no" style="display:flex; gap:12px; flex-wrap:wrap; margin-top:4px; font-size:11px; color:var(--color-text-muted); font-weight:600;">`;
             vsData.weeks.forEach((wk, wIdx) => {
                 const sVal = m.scores[wIdx] || 0;
                 const threshold = getThreshold(getWeekType(wk));
@@ -1500,14 +1500,14 @@
                     <div style="display: flex; align-items: center; gap: 16px;">
                         <div style="width: 32px; text-align: center;">${rankDisplay}</div>
                         <div>
-                            <div style="font-weight: 800; font-size: 15px; color: var(--color-text-dark);">${m.name}</div>
+                            <div class="notranslate" translate="no" style="font-weight: 800; font-size: 15px; color: var(--color-text-dark);">${m.name}</div>
                             ${weeksBreakdownHTML}
                         </div>
                     </div>
                     <div style="display: flex; align-items: center; gap: 20px;">
                         ${barsHTML}
                         <div style="text-align: right; min-width: 90px;">
-                            <div style="font-size: 18px; font-weight: 800; color: var(--color-primary-dark);">${m.total.toLocaleString()}</div>
+                            <div class="notranslate" translate="no" style="font-size: 18px; font-weight: 800; color: var(--color-primary-dark);">${m.total.toLocaleString()}</div>
                             <div style="font-size: 10px; font-weight: 700; color: var(--color-text-muted); text-transform: uppercase;">total pts</div>
                         </div>
                     </div>
@@ -1873,10 +1873,10 @@
             return `
                 <div class="import-review-row">
                     <input type="checkbox" ${r.include ? 'checked' : ''} onchange="updateVsImportRow(${idx}, 'include', this.checked)">
-                    <span class="import-review-row__raw" title="${r.rawText}">${r.rawText || '(manually added)'}</span>
-                   <select onchange="updateVsImportRow(${idx}, 'memberId', this.value)">${memberOptions(r.memberId, r.confidence)}</select>
-                    <input type="number" value="${r.value}" onchange="updateVsImportRow(${idx}, 'value', this.value)">
-                    <span class="import-review-row__conf ${confClass}">${confLabel}</span>
+                    <span class="import-review-row__raw notranslate" translate="no" title="${r.rawText}">${r.rawText || '(manually added)'}</span>
+                   <select class="notranslate" translate="no" onchange="updateVsImportRow(${idx}, 'memberId', this.value)">${memberOptions(r.memberId, r.confidence)}</select>
+                    <input type="number" class="notranslate" translate="no" value="${r.value}" onchange="updateVsImportRow(${idx}, 'value', this.value)">
+                    <span class="import-review-row__conf ${confClass} notranslate" translate="no">${confLabel}</span>
                 </div>`;
         };
 
@@ -2060,7 +2060,7 @@
                     <div class="archive-entry__title"><span>Cycle ${cycleNumber}</span>${deleteBtnHTML}</div>
                     <div class="archive-entry__meta">${arc.cycleStartDate || '—'} to ${arc.cycleEndDate || '—'} · ${arc.weeks ? arc.weeks.length : 0} sessions</div>`;
                 sortedTotals.slice(0, 10).forEach((m, i) => {
-                    html += `<div class="archive-entry__row"><span>#${i + 1} ${m.name}</span><span>${m.total.toLocaleString()}</span></div>`;
+                    html += `<div class="archive-entry__row notranslate" translate="no"><span>#${i + 1} ${m.name}</span><span>${m.total.toLocaleString()}</span></div>`;
                 });
                 if (sortedTotals.length === 0) {
                     html += `<div class="archive-entry__row"><span style="color:var(--color-text-muted);">No member data recorded.</span><span></span></div>`;
