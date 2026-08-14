@@ -318,7 +318,7 @@
         <div class="sidebar__user">
             <div class="sidebar__user-avatar" id="userAvatarIcon">U</div>
             <div>
-                <div id="userRoleDisplay" style="font-size: var(--font-xs); text-transform: uppercase;">USERNAME</div>
+                <div id="userRoleDisplay" class="notranslate" translate="no" style="font-size: var(--font-xs); text-transform: uppercase;">USERNAME</div>
                 <div id="userPermissionBadge" style="font-size: var(--font-xs); color: #8c93a6;">Role</div>
             </div>
         </div>
@@ -509,9 +509,9 @@
     <div class="modal-card">
         <h3>Add New Member</h3>
         <label>In-Game Name</label>
-        <input type="text" id="newMemberName" placeholder="Enter fighter name...">
+        <input type="text" id="newMemberName" class="notranslate" translate="no" placeholder="Enter fighter name...">
         <label>Combat Power (CP)</label>
-        <input type="text" id="newMemberCp" placeholder="e.g. 5,390,000,000">
+        <input type="text" id="newMemberCp" class="notranslate" translate="no" placeholder="e.g. 5,390,000,000">
         <label>Initial Faction</label>
         <select id="newMemberFaction">
             <option value="F">F (Blue)</option>
@@ -793,12 +793,12 @@ if (!currentUser.role) {
             const f1Cell = `
                 <td>
                     <div style="display: flex; flex-direction: column;">
-                        <input type="text" value="${member.f1Cp || '0G'}" ${isManagementOrAdmin ? `onchange="updateF1Power(${member.id}, this.value)" onkeydown="if(event.key==='Enter') { this.blur(); }"` : 'readonly'} class="editable-input" placeholder="0G">
+                        <input type="text" value="${member.f1Cp || '0G'}" ${isManagementOrAdmin ? `onchange="updateF1Power(${member.id}, this.value)" onkeydown="if(event.key==='Enter') { this.blur(); }"` : 'readonly'} class="editable-input notranslate" translate="no" placeholder="0G">
                         <button class="f1-history-badge" onclick="openF1History(${member.id})"><i class="fa-solid fa-clock-rotate-left"></i> History (${historyCount})</button>
                     </div>
                 </td>
             `;
-            const diffCell = `<td style="text-align: center;">${diffHtml}</td>`;
+            const diffCell = `<td class="notranslate" translate="no" style="text-align: center;">${diffHtml}</td>`;
             const statusTabsContent = isManagementOrAdmin ? `
                 <div class="status-tabs">
                     <button onclick="setPlayerStatus(${member.id}, 'active')" class="status-tab ${isAct ? 'active-active' : ''}" title="Active">A</button>
@@ -813,14 +813,14 @@ if (!currentUser.role) {
                 </div>
             `;
             const nameFieldContent = isManagementOrAdmin 
-                ? `<input type="text" value="${member.name || ''}" onchange="updateMemberMeta(${member.id}, 'name', this.value)" onkeydown="if(event.key==='Enter') { this.blur(); }" class="editable-input" placeholder="Member name...">`
-                : `<span>${member.name}</span>`;
+                ? `<input type="text" value="${member.name || ''}" onchange="updateMemberMeta(${member.id}, 'name', this.value)" onkeydown="if(event.key==='Enter') { this.blur(); }" class="editable-input notranslate" translate="no" placeholder="Member name...">`
+                : `<span class="notranslate" translate="no">${member.name}</span>`;
             const rankDotContent = isManagementOrAdmin
-                ? `<div class="rank-dot ${rankDotClass}" onclick="cycleRank(${member.id})" title="Click to cycle rank">${member.rank}</div>`
-                : `<div class="rank-dot ${rankDotClass}">${member.rank}</div>`;
+                ? `<div class="rank-dot ${rankDotClass} notranslate" translate="no" onclick="cycleRank(${member.id})" title="Click to cycle rank">${member.rank}</div>`
+                : `<div class="rank-dot ${rankDotClass} notranslate" translate="no">${member.rank}</div>`;
             const factionCircleContent = isManagementOrAdmin
-                ? `<div class="faction-circle ${factionClass}" onclick="cycleFaction(${member.id})" title="Click to cycle faction (F, S, R)">${member.faction || 'F'}</div>`
-                : `<div class="faction-circle ${factionClass}">${member.faction || 'F'}</div>`;
+                ? `<div class="faction-circle ${factionClass} notranslate" translate="no" onclick="cycleFaction(${member.id})" title="Click to cycle faction (F, S, R)">${member.faction || 'F'}</div>`
+                : `<div class="faction-circle ${factionClass} notranslate" translate="no">${member.faction || 'F'}</div>`;
             html += `
                 <tr class="${rankClass}">
                     <td class="col-rank">${rank}</td>
@@ -832,21 +832,21 @@ if (!currentUser.role) {
                         </div>
                     </td>
                     <td>
-                        <input type="text" value="${member.cp || '0'}" ${isManagementOrAdmin ? `onchange="updateCombatPower(${member.id}, this.value)" onkeydown="if(event.key==='Enter') { this.blur(); }"` : 'readonly'} class="editable-input" style="font-family: monospace; font-weight: 800; color: #16a34a;" placeholder="e.g. 5,390,000,000">
+                        <input type="text" value="${member.cp || '0'}" ${isManagementOrAdmin ? `onchange="updateCombatPower(${member.id}, this.value)" onkeydown="if(event.key==='Enter') { this.blur(); }"` : 'readonly'} class="editable-input notranslate" translate="no" style="font-family: monospace; font-weight: 800; color: #16a34a;" placeholder="e.g. 5,390,000,000">
                     </td>
                     ${f1Cell}
                     <td style="text-align: center;">
                         ${factionCircleContent}
                     </td>
                     <td class="col-level-cell" style="text-align: center;">
-                        <select class="editable-select" ${isManagementOrAdmin ? `onchange="updateMemberMeta(${member.id}, 'level', this.value)"` : 'disabled'}>
+                        <select class="editable-select notranslate" translate="no" ${isManagementOrAdmin ? `onchange="updateMemberMeta(${member.id}, 'level', this.value)"` : 'disabled'}>
                             ${generateLevelOptions(member.level)}
                         </select>
                     </td>
-                    <td style="text-align: center; font-weight: 800; color: var(--color-primary-dark);">#${rank}</td>
+                    <td class="notranslate" translate="no" style="text-align: center; font-weight: 800; color: var(--color-primary-dark);">#${rank}</td>
                     ${diffCell}
                     <td class="col-note-cell">
-                        <input type="text" value="${member.note || ''}" ${isManagementOrAdmin ? `onchange="updateMemberMeta(${member.id}, 'note', this.value)" onkeydown="if(event.key==='Enter') { this.blur(); }"` : 'readonly'} class="editable-input" placeholder="Add note...">
+                        <input type="text" value="${member.note || ''}" ${isManagementOrAdmin ? `onchange="updateMemberMeta(${member.id}, 'note', this.value)" onkeydown="if(event.key==='Enter') { this.blur(); }"` : 'readonly'} class="editable-input notranslate" translate="no" placeholder="Add note...">
                     </td>
                     ${actionCell}
                 </tr>
@@ -943,7 +943,7 @@ if (!currentUser.role) {
     window.openF1History = function(id) {
         const m = members.find(x => x.id === id);
         if (!m) return;
-        document.getElementById('f1HistoryTitle').innerHTML = `${m.name} - F1 History <i class="fa-solid fa-xmark" style="cursor:pointer;" onclick="document.getElementById('f1HistoryModal').style.display='none'"></i>`;
+        document.getElementById('f1HistoryTitle').innerHTML = `<span class="notranslate" translate="no">${m.name}</span> - F1 History <i class="fa-solid fa-xmark" style="cursor:pointer;" onclick="document.getElementById('f1HistoryModal').style.display='none'"></i>`;
         const listEl = document.getElementById('f1HistoryList');
         if (!m.f1History || m.f1History.length === 0) {
             listEl.innerHTML = `<div style="text-align: center; color: var(--color-text-muted); padding: 12px; font-size: 12px;">No historical records found.</div>`;
@@ -956,7 +956,7 @@ if (!currentUser.role) {
                 }
                 listHtml += `
                     <div class="history-item">
-                        <div>
+                        <div class="notranslate" translate="no">
                             <span class="history-item-date">${item.date}</span>
                             <div class="history-item-val">${item.val}</div>
                         </div>
