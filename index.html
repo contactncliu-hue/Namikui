@@ -481,7 +481,6 @@
                 <h1 class="login-card__title">Alliance Management Tool</h1>
                 <button type="button" class="login-card__button" id="btnOpenLoginModal">LOG IN</button>
                 <button type="button" class="login-card__guest-link" id="btnOpenCreateAccountModal">Create Account</button>
-                <button type="button" class="login-card__guest-link" id="btnGuestAccess">Proceed as Guest</button>
             </section>
         </main>
     </div>
@@ -1216,6 +1215,13 @@
             role: localStorage.getItem('amt_userRole') || null
         };
 
+        // Only these roles may view real data. 'member' (the default role for new
+        // sign-ups) can see the navigation/tabs but not the underlying data until an
+        // Admin promotes them to 'alliance' or higher via Assign User Roles.
+        function canViewData() {
+            return currentUser.role === 'admin' || currentUser.role === 'management' || currentUser.role === 'alliance';
+        }
+
         let currentSubTab = 'attendance';
         let currentDiscTab = 'chat';
         let showDiffMode = false;
@@ -1351,7 +1357,7 @@
             const entry = {
                 timestamp: new Date().toLocaleString(),
                 user: currentUser.username || 'System',
-                role: currentUser.role || 'guest',
+                role: currentUser.role || 'unknown',
                 type: actionType,
                 details: description
             };
@@ -1460,13 +1466,6 @@
             }
         });
 
-        document.getElementById('btnGuestAccess').addEventListener('click', () => {
-            currentUser.username = 'Guest User';
-            currentUser.role = 'guest';
-            saveData();
-            enterDashboard();
-        });
-
         function handleLogout() {
             currentUser.role = null;
             currentUser.username = null;
@@ -1573,12 +1572,100 @@ window.openRoleAssignModal = function() {
 
         window.addEventListener('DOMContentLoaded', loadDataFromCloud);
 
+        // Shown to 'member' role (and anyone else without data clearance) in place of
+        // every data-bearing panel. Navigation/tabs stay visible and clickable; only the
+        // underlying content is withheld until an Admin promotes the account to Alliance
+        // Member, Management, or Admin.
+        function renderRestrictedState() {
+            const lockMsg = '🔒 This content is only available to Alliance Members and Staff. Ask an Admin to assign you the Alliance role.';
+
+            ['homeKpiMembers', 'homeKpiRate', 'kpiMembers', 'kpiAvgAttendance', 'kpiAvgRate', 'kpiPctBase'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.innerText = '—';
+            });
+            const kpiAvgRateEl = document.getElementById('kpiAvgRate');
+            if (kpiAvgRateEl) kpiAvgRateEl.classList.remove('attended-high', 'attended-mid', 'attended-low');
+            const homeKpiMembersSub = document.getElementById('homeKpiMembersSub');
+            if (homeKpiMembersSub) homeKpiMembersSub.innerText = '';
+            const homeKpiEventsSub = document.getElementById('homeKpiEventsSub');
+            if (homeKpiEventsSub) homeKpiEventsSub.innerText = '';
+            const headerEventsCount = document.getElementById('headerEventsCount');
+            if (headerEventsCount) headerEventsCount.innerText = '';
+            const footerMembersShown = document.getElementById('footerMembersShown');
+            if (footerMembersShown) footerMembersShown.innerText = '';
+
+            const lockHtml = `<div class="home-empty-state">${lockMsg}</div>`;
+
+            const homePhotosContainer = document.getElementById('homePhotosContainer');
+            if (homePhotosContainer) homePhotosContainer.innerHTML = lockHtml;
+            const homeTopContributors = document.getElementById('homeTopContributors');
+            if (homeTopContributors) homeTopContributors.innerHTML = lockHtml;
+            const homeRecentEvents = document.getElementById('homeRecentEvents');
+            if (homeRecentEvents) homeRecentEvents.innerHTML = lockHtml;
+            const homeNoticesContainer = document.getElementById('homeNoticesContainer');
+            if (homeNoticesContainer) homeNoticesContainer.innerHTML = lockHtml;
+            const noticeAnnouncementsContainer = document.getElementById('noticeAnnouncementsContainer');
+            if (noticeAnnouncementsContainer) noticeAnnouncementsContainer.innerHTML = lockHtml;
+            const ganttGrid = document.getElementById('ganttGrid');
+            if (ganttGrid) ganttGrid.innerHTML = `<div class="gantt-empty-state">${lockMsg}</div>`;
+            const ganttLegend = document.getElementById('ganttLegend');
+            if (ganttLegend) ganttLegend.innerHTML = '';
+            const ganttRangeLabel = document.getElementById('ganttRangeLabel');
+            if (ganttRangeLabel) ganttRangeLabel.innerText = '';
+
+            const membersDirectoryBody = document.getElementById('membersDirectoryBody');
+            if (membersDirectoryBody) membersDirectoryBody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#8c93a6; padding:24px;">${lockMsg}</td></tr>`;
+
+            const tableHeaderRow = document.getElementById('tableHeaderRow');
+            if (tableHeaderRow) tableHeaderRow.innerHTML = '';
+            const memberTableBody = document.getElementById('memberTableBody');
+            if (memberTableBody) memberTableBody.innerHTML = `<tr><td style="text-align:center; padding:24px; color:#8c93a6;">${lockMsg}</td></tr>`;
+            const tableFooterRow = document.getElementById('tableFooterRow');
+            if (tableFooterRow) tableFooterRow.innerHTML = '';
+            const subViewRanking = document.getElementById('subViewRanking');
+            if (subViewRanking) subViewRanking.innerHTML = `<div class="generic-view-card">${lockMsg}</div>`;
+            const violatorsTableBody = document.getElementById('violatorsTableBody');
+            if (violatorsTableBody) violatorsTableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:24px; color:#8c93a6;">${lockMsg}</td></tr>`;
+
+            const vsTableHeaderRow = document.getElementById('vsTableHeaderRow');
+            if (vsTableHeaderRow) vsTableHeaderRow.innerHTML = `<th>#</th><th>Fighter Name</th><th>Total Score</th>`;
+            const vsTableBody = document.getElementById('vsTableBody');
+            if (vsTableBody) vsTableBody.innerHTML = `<tr><td colspan="3" style="text-align:center; padding:24px; color:#8c93a6;">${lockMsg}</td></tr>`;
+
+            const auditTableBody = document.getElementById('auditTableBody');
+            if (auditTableBody) auditTableBody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:24px; color:#8c93a6;">${lockMsg}</td></tr>`;
+
+            const chatMessagesContainer = document.getElementById('chatMessagesContainer');
+            if (chatMessagesContainer) chatMessagesContainer.innerHTML = lockHtml;
+            const activePollsContainer = document.getElementById('activePollsContainer');
+            if (activePollsContainer) activePollsContainer.innerHTML = lockHtml;
+            const archivedPollsContainer = document.getElementById('archivedPollsContainer');
+            if (archivedPollsContainer) archivedPollsContainer.innerHTML = '';
+            const managementNoticesContainer = document.getElementById('managementNoticesContainer');
+            if (managementNoticesContainer) managementNoticesContainer.innerHTML = '';
+
+            // Admin/management-only controls must stay hidden for restricted roles too.
+            document.getElementById('adminPanel').style.display = 'none';
+            document.getElementById('btnAddEvent').style.display = 'none';
+            document.getElementById('vsAdminPanel').style.display = 'none';
+            document.getElementById('importBtn').style.display = 'none';
+            document.getElementById('adminHelpText').style.display = 'none';
+            document.getElementById('adminSectionHeader').style.display = 'none';
+            document.getElementById('navDiscussionLi').style.display = 'none';
+            document.getElementById('navHistoryLi').style.display = 'none';
+            document.getElementById('assignRolesNavLi').style.display = 'none';
+            const addCalBtn = document.getElementById('btnAddCalendarEvent');
+            if (addCalBtn) addCalBtn.style.display = 'none';
+            const addNoticeBtn = document.getElementById('btnAddNoticeAnnouncement');
+            if (addNoticeBtn) addNoticeBtn.style.display = 'none';
+            const homePostBtn = document.getElementById('btnHomePostNotice');
+            if (homePostBtn) homePostBtn.style.display = 'none';
+            const homeUploadBtn = document.getElementById('btnHomeUploadPhoto');
+            if (homeUploadBtn) homeUploadBtn.style.display = 'none';
+        }
+
         function render() {
             const filterQuery = document.getElementById('searchInput').value.toLowerCase();
-            
-            if (currentUser.username === 'Guest User' || currentUser.role === 'guest') {
-                currentUser.role = 'guest';
-            }
 
             const isAdmin = currentUser.role === 'admin';
             const isManagementOrAdmin = currentUser.role === 'admin' || currentUser.role === 'management';
@@ -1596,9 +1683,14 @@ window.openRoleAssignModal = function() {
             document.getElementById('navHistoryLi').style.display = isAdmin ? 'block' : 'none';
             document.getElementById('assignRolesNavLi').style.display = isAdmin ? 'block' : 'none';
 
-            document.getElementById('userRoleDisplay').innerText = (currentUser.username || 'Guest').toUpperCase();
-            document.getElementById('userPermissionBadge').innerText = `Role: ${(currentUser.role || 'guest').toUpperCase()}`;
-            document.getElementById('userAvatarIcon').innerText = (currentUser.username || 'G').charAt(0).toUpperCase();
+            document.getElementById('userRoleDisplay').innerText = (currentUser.username || 'Member').toUpperCase();
+            document.getElementById('userPermissionBadge').innerText = `Role: ${(currentUser.role || 'member').toUpperCase()}`;
+            document.getElementById('userAvatarIcon').innerText = (currentUser.username || 'M').charAt(0).toUpperCase();
+
+            if (!canViewData()) {
+                renderRestrictedState();
+                return;
+            }
 
             let activeMembers = getActiveMembers(members);
             activeMembers.sort((a, b) => {
