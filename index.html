@@ -127,6 +127,8 @@
         .admin-panel__input-date { padding: 8px 12px; border: 2px solid var(--color-gold); background-color: var(--color-gold-bg); border-radius: 4px; font-size: 12px; outline: none; font-family: var(--font-family-ui); font-weight: 800; color: var(--color-text-dark); cursor: pointer; }
         .admin-panel__input-text { padding: 8px 12px; border: 2px solid var(--color-gold); background-color: var(--color-gold-bg); border-radius: 4px; font-size: 12px; outline: none; font-family: var(--font-family-ui); font-weight: 800; color: var(--color-text-dark); width: 140px; }
         .admin-panel__input-text::placeholder { color: #b89117; font-weight: 700; }
+        .war-event-checkbox-label { display: flex; align-items: center; gap: 6px; font-family: var(--font-family-ui); font-size: 11px; font-weight: 800; color: var(--color-not-attended); cursor: pointer; padding: 8px 10px; border: 2px solid var(--color-not-attended); border-radius: 4px; background: #fdeceb; user-select: none; }
+        .war-event-checkbox-label input { width: 15px; height: 15px; cursor: pointer; accent-color: var(--color-not-attended); }
 
         .btn-action-custom { background: white; border: 2px solid var(--color-primary); color: var(--color-primary); font-weight: 800; font-size: 12px; padding: 10px 18px; border-radius: 4px; cursor: pointer; font-family: var(--font-family-ui); display: inline-flex; align-items: center; gap: 8px; transition: all 0.15s; }
         .btn-action-custom--add, .btn-action-custom--import { border: 2px solid var(--color-gold); color: var(--color-gold); background: var(--color-gold-bg); letter-spacing: 0.5px; }
@@ -175,6 +177,7 @@
         .col-attended { width: 110px; text-align: center; font-size: var(--font-sm); font-weight: 800; }
         .col-percentage { width: 130px; text-align: center; font-size: var(--font-sm); font-weight: 800; }
         .col-event { width: 110px; text-align: center; }
+        .col-event--war { background-color: #fdeceb !important; border-bottom: 3px solid var(--color-not-attended) !important; }
         .col-actions { width: 80px; text-align: center; }
 
         .attended-high { color: #2563eb; }
@@ -192,6 +195,16 @@
         .check-icon { color: var(--color-primary); font-weight: 800; font-size: var(--font-md); }
         .cross-icon { color: #ccc; font-weight: bold; }
         .editable-num { cursor: pointer; border-bottom: 1px dashed var(--color-primary); }
+
+        /* War event vote + attendance cell */
+        .war-cell { display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 5px 4px; border-radius: 6px; }
+        .war-cell--red { background-color: #fbdcda; }
+        .war-cell--yellow { background-color: #fdf1c7; }
+        .war-vote-badge { font-family: var(--font-family-ui); font-size: 10px; font-weight: 800; padding: 3px 9px; border-radius: 12px; cursor: pointer; letter-spacing: 0.4px; white-space: nowrap; }
+        .war-vote-badge--yes { background: #dcfce7; color: #16a34a; }
+        .war-vote-badge--no { background: #e9ecf1; color: #6b7280; }
+        .war-vote-badge--maybe { background: #fef9c3; color: #b89117; }
+        .war-vote-badge--none { background: #eef0f5; color: #a0a6b5; }
 
         .progress-bar-container { display: flex; align-items: center; gap: 8px; width: 100%; min-width: 140px; }
         .progress-bar { height: 10px; flex-grow: 1; background-color: #eef0f5; border-radius: 5px; overflow: hidden; }
@@ -722,6 +735,7 @@
                     <div class="btn-group">
                         <button class="btn-toggle btn-toggle--active" id="btnTabAttendance">ATTENDANCE</button>
                         <button class="btn-toggle" id="btnTabRanking">RANKING</button>
+                        <button class="btn-toggle" id="btnTabViolators">⚠ VIOLATORS</button>
                     </div>
                     <div class="search-box">
                         <span class="search-box__icon">🔍</span>
@@ -733,6 +747,9 @@
                         <div class="date-input-wrapper" id="adminPanel" style="display: none;">
                             <input type="text" class="admin-panel__input-text" id="newEventNameInput" placeholder="Event Name">
                             <input type="date" class="admin-panel__input-date" id="newDateInput" title="Event Date">
+                            <label class="war-event-checkbox-label" for="newEventIsWarInput">
+                                <input type="checkbox" id="newEventIsWarInput"> WAR EVENT
+                            </label>
                         </div>
                         <input type="text" id="newSubtextInput" style="display: none;">
                         <button class="btn-action-custom btn-action-custom--add" id="btnAddEvent" style="display: none;">+ ADD EVENT</button>
@@ -755,7 +772,8 @@
                     <span class="legend-pill-item"><span class="badge-rank r3">3</span> 3rd</span>
                     <span class="legend-pill-item"><span class="badge-rank r4">4</span> 4th</span>
                     <span class="legend-pill-item"><span class="badge-rank r5">5</span> 5th</span>
-                    <span class="vs-hint" id="adminHelpText">· Admin/Mgmt: Click any table cell or event name to edit. Use ✕ under date columns to delete session.</span>
+                    <span class="legend-pill-item"><span class="war-vote-badge war-vote-badge--yes" style="cursor:default;">YES</span><span class="war-vote-badge war-vote-badge--no" style="cursor:default;">NO</span><span class="war-vote-badge war-vote-badge--maybe" style="cursor:default;">MAYBE</span> · War event votes</span>
+                    <span class="vs-hint" id="adminHelpText">· Admin/Mgmt: Click any table cell, event name, or date to edit. Use ✕ under date columns to delete session.</span>
                 </div>
 
                 <div class="table-card" id="subViewAttendance">
@@ -768,6 +786,26 @@
                     </div>
                 </div>
                 <section class="ranking-cards-list" id="subViewRanking" style="display: none;"></section>
+
+                <section class="table-card" id="subViewViolators" style="display: none;">
+                    <div style="padding: 16px 20px; border-bottom: 2px solid var(--color-border-light);">
+                        <h2 style="font-size: 14px; color: var(--color-text-dark); margin-bottom: 4px;">⚠ War Event Violators</h2>
+                        <p style="font-size: 12px; color: var(--color-text-muted); font-weight: 600;">Members flagged red (voted Yes, didn't attend) or yellow (voted Maybe, didn't attend) across all war events. Members with no flags are hidden.</p>
+                    </div>
+                    <div class="table-wrapper">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th class="col-rank">#</th>
+                                    <th>MEMBER</th>
+                                    <th style="text-align:center; color:#dc2626;">🔴 RED COUNT</th>
+                                    <th style="text-align:center; color:#b89117;">🟡 YELLOW COUNT</th>
+                                </tr>
+                            </thead>
+                            <tbody id="violatorsTableBody"></tbody>
+                        </table>
+                    </div>
+                </section>
             </section>
 
             <section id="viewVsPoints" class="app-view" style="display: none; flex-direction: column; gap: 20px;">
@@ -1233,10 +1271,14 @@
 
         // Members created via members.html don't include `attended`/`events` —
         // normalize any member missing these so attendance math never hits NaN.
+        // Also normalize war-event vote arrays (`eventVotes`) and backfill `isWar` on old events.
+        eventDates.forEach(ev => { if (typeof ev.isWar !== 'boolean') ev.isWar = false; });
         members.forEach(m => {
             if (typeof m.attended !== 'number' || isNaN(m.attended)) m.attended = 0;
             if (!Array.isArray(m.events)) m.events = [];
             while (m.events.length < eventDates.length) m.events.push(false);
+            if (!Array.isArray(m.eventVotes)) m.eventVotes = [];
+            while (m.eventVotes.length < eventDates.length) m.eventVotes.push(null);
             if (!m.rank) m.rank = 'R1';
             m.frozenRank = m.rank;
         });
@@ -1588,14 +1630,81 @@ window.openRoleAssignModal = function() {
 
             if (currentSubTab === 'attendance') {
                 renderAttendanceTable(filteredMembers, avgRate, isManagementOrAdmin, totalEvents, totalAttendedCount);
-            } else {
+            } else if (currentSubTab === 'ranking') {
                 renderRankingCards(filteredMembers, avgRate, isManagementOrAdmin, totalEvents);
+            } else if (currentSubTab === 'violators') {
+                renderViolatorsTable(filteredMembers, isManagementOrAdmin);
             }
 
             renderMembersDirectory();
             renderVsPointsTable(isManagementOrAdmin);
             renderAuditTable();
             renderDiscussionRoom();
+        }
+
+        // ===== War Event helpers: vote status + red/yellow violation classification =====
+        // Rules (war events only):
+        //  - Voted No               -> never flagged, regardless of attendance
+        //  - Voted Yes + not attended  -> RED violation
+        //  - Voted Maybe + not attended -> YELLOW violation
+        //  - Attended (any vote)     -> never flagged
+        function getWarCellStatus(member, evIdx) {
+            const vote = (member.eventVotes && member.eventVotes[evIdx]) ? member.eventVotes[evIdx] : null;
+            const attended = !!(member.events && member.events[evIdx]);
+            let flag = null; // 'red' | 'yellow' | null
+            if (!attended) {
+                if (vote === 'yes') flag = 'red';
+                else if (vote === 'maybe') flag = 'yellow';
+            }
+            return { vote, attended, flag };
+        }
+
+        window.cycleWarVote = function(memberId, evIdx) {
+            const member = members.find(m => m.id === memberId);
+            if (!member) return;
+            if (!Array.isArray(member.eventVotes)) member.eventVotes = [];
+            while (member.eventVotes.length < eventDates.length) member.eventVotes.push(null);
+            const current = member.eventVotes[evIdx];
+            const order = [null, 'yes', 'no', 'maybe'];
+            const nextIdx = (order.indexOf(current) + 1) % order.length;
+            member.eventVotes[evIdx] = order[nextIdx];
+            logAction('WAR_VOTE', `Set war event vote for [${member.name}] on event index ${evIdx} to ${member.eventVotes[evIdx] || 'none'}`);
+            saveData(); render();
+        };
+
+        function computeWarViolationCounts(member) {
+            let red = 0, yellow = 0;
+            eventDates.forEach((ev, evIdx) => {
+                if (!ev.isWar) return;
+                const status = getWarCellStatus(member, evIdx);
+                if (status.flag === 'red') red++;
+                else if (status.flag === 'yellow') yellow++;
+            });
+            return { red, yellow };
+        }
+
+        function renderViolatorsTable(filteredMembers, isManagementOrAdmin) {
+            const body = document.getElementById('violatorsTableBody');
+            if (!body) return;
+
+            const withCounts = filteredMembers
+                .map(m => ({ member: m, ...computeWarViolationCounts(m) }))
+                .filter(x => x.red > 0 || x.yellow > 0)
+                .sort((a, b) => (b.red - a.red) || (b.yellow - a.yellow));
+
+            if (withCounts.length === 0) {
+                body.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#8c93a6; padding: 24px;">No violators found. 🎉</td></tr>`;
+                return;
+            }
+
+            body.innerHTML = withCounts.map((x, idx) => `
+                <tr>
+                    <td class="col-rank notranslate">${idx + 1}</td>
+                    <td class="col-name notranslate">${x.member.name}</td>
+                    <td style="text-align:center; font-weight:800;" class="notranslate"><span style="color:#dc2626;">${x.red}</span></td>
+                    <td style="text-align:center; font-weight:800;" class="notranslate"><span style="color:#b89117;">${x.yellow}</span></td>
+                </tr>
+            `).join('');
         }
 
         // ===== Home dashboard: Notices card (linked to the Notice tab's Notice Board) =====
@@ -2907,11 +3016,13 @@ window.openRoleAssignModal = function() {
             if (showDiffMode) headerHTML += `<th>VS AVG</th>`;
 
             eventDates.forEach((ev, evIdx) => {
+                const isWar = !!ev.isWar;
                 headerHTML += `
-                    <th class="col-event">
+                    <th class="col-event ${isWar ? 'col-event--war' : ''}">
                         <div style="display: flex; flex-direction: column; align-items: center;">
-                            <span class="${isManagementOrAdmin ? 'editable-num' : ''} notranslate" style="font-weight: 800; color: var(--color-primary);" onclick="${isManagementOrAdmin ? `editEventName(${evIdx})` : ''}">${ev.name || 'Event'}</span>
-                            <span style="font-size: 11px; color: #a0a6b5;" class="notranslate">${ev.date}</span>
+                            ${isWar ? `<span style="font-size:9px; font-weight:800; color:#dc2626; letter-spacing:0.5px; margin-bottom:2px;">⚔ WAR</span>` : ''}
+                            <span class="${isManagementOrAdmin ? 'editable-num' : ''} notranslate" style="font-weight: 800; color: ${isWar ? '#dc2626' : 'var(--color-primary)'};" onclick="${isManagementOrAdmin ? `editEventName(${evIdx})` : ''}">${ev.name || 'Event'}</span>
+                            <span class="${isManagementOrAdmin ? 'editable-num' : ''} notranslate" style="font-size: 11px; color: #a0a6b5;" onclick="${isManagementOrAdmin ? `editEventDate(${evIdx})` : ''}">${ev.date}</span>
                             ${isManagementOrAdmin ? `<span style="color:#d9381e; cursor:pointer; font-size:var(--font-xs);" onclick="removeEvent(${evIdx})">x</span>` : ''}
                         </div>
                     </th>`;
@@ -2957,7 +3068,25 @@ window.openRoleAssignModal = function() {
 
                 eventDates.forEach((ev, evIdx) => {
                     const isChecked = member.events && member.events[evIdx];
-                    
+
+                    if (ev.isWar) {
+                        // War events: Yes/No/Maybe vote badge + attended/not-attended toggle,
+                        // colored red/yellow per the violation rules (voted Yes/Maybe but absent).
+                        const status = getWarCellStatus(member, evIdx);
+                        const voteClass = status.vote === 'yes' ? 'war-vote-badge--yes' : status.vote === 'no' ? 'war-vote-badge--no' : status.vote === 'maybe' ? 'war-vote-badge--maybe' : 'war-vote-badge--none';
+                        const voteLabel = status.vote === 'yes' ? 'YES' : status.vote === 'no' ? 'NO' : status.vote === 'maybe' ? 'MAYBE' : '—';
+                        const cellFlagClass = status.flag === 'red' ? 'war-cell--red' : (status.flag === 'yellow' ? 'war-cell--yellow' : '');
+
+                        rowHTML += `
+                            <td class="col-event col-event--war">
+                                <div class="war-cell ${cellFlagClass}">
+                                    <span class="war-vote-badge ${voteClass}" onclick="${isManagementOrAdmin ? `cycleWarVote(${member.id}, ${evIdx})` : ''}">${voteLabel}</span>
+                                    <span class="check-toggle" onclick="${isManagementOrAdmin ? `toggleAttendance(${member.id}, ${evIdx})` : ''}">${isChecked ? '<span class="check-icon">✓</span>' : '<span class="cross-icon">—</span>'}</span>
+                                </div>
+                            </td>`;
+                        return;
+                    }
+
                     let changeBadgeHTML = '';
                     if (showDiffMode) {
                         if (evIdx > 0) {
@@ -3103,9 +3232,32 @@ window.openRoleAssignModal = function() {
             }
         };
 
+        // Dates remain editable at any time (before or after creation) for both common and war events.
+        // Stored/displayed format matches the existing "MM-DD" convention used when events are added.
+        window.editEventDate = function(i) {
+            const ev = eventDates[i];
+            if (!ev) return;
+            const s = prompt('Edit event date (MM-DD):', ev.date);
+            if (s !== null) {
+                const trimmed = s.trim();
+                const match = trimmed.match(/^(\d{1,2})-(\d{1,2})$/);
+                if (match) {
+                    const mm = match[1].padStart(2, '0');
+                    const dd = match[2].padStart(2, '0');
+                    ev.date = `${mm}-${dd}`;
+                    logAction('EDIT_EVENT', `Updated event date index ${i} to ${ev.date}`);
+                    saveData();
+                    render();
+                } else if (trimmed) {
+                    alert('Please enter the date in MM-DD format (e.g. 08-15).');
+                }
+            }
+        };
+
         document.getElementById('btnAddEvent').addEventListener('click', () => {
             const eventNameInput = document.getElementById('newEventNameInput');
             const dateInput = document.getElementById('newDateInput');
+            const isWarInput = document.getElementById('newEventIsWarInput');
             
             const eventName = eventNameInput.value.trim();
             if (!eventName) {
@@ -3121,19 +3273,26 @@ window.openRoleAssignModal = function() {
 
             const parts = dateInput.value.split('-');
             const formattedDate = parts.length === 3 ? `${parts[1]}-${parts[2]}` : dateInput.value;
+            const isWar = !!(isWarInput && isWarInput.checked);
 
             eventDates.push({ 
                 id: Date.now(), 
                 name: eventName, 
                 date: formattedDate, 
-                subtext: eventName 
+                subtext: eventName,
+                isWar: isWar
             });
 
-            members.forEach(m => { if (!m.events) m.events = new Array(eventDates.length).fill(false); });
-            logAction('ADD_EVENT', `Added event column: ${eventName} (${formattedDate})`);
+            members.forEach(m => {
+                if (!m.events) m.events = new Array(eventDates.length).fill(false);
+                if (!Array.isArray(m.eventVotes)) m.eventVotes = [];
+                while (m.eventVotes.length < eventDates.length) m.eventVotes.push(null);
+            });
+            logAction('ADD_EVENT', `Added event column: ${eventName} (${formattedDate})${isWar ? ' [WAR EVENT]' : ''}`);
             
             eventNameInput.value = '';
             dateInput.value = '';
+            if (isWarInput) isWarInput.checked = false;
             saveData(); 
             render();
         });
@@ -3149,6 +3308,9 @@ window.openRoleAssignModal = function() {
                     }
                     if (m.events) {
                         m.events.splice(i, 1);
+                    }
+                    if (Array.isArray(m.eventVotes)) {
+                        m.eventVotes.splice(i, 1);
                     }
                 });
 
@@ -3168,8 +3330,10 @@ window.openRoleAssignModal = function() {
             currentSubTab = 'attendance';
             document.getElementById('btnTabAttendance').classList.add('btn-toggle--active');
             document.getElementById('btnTabRanking').classList.remove('btn-toggle--active');
+            document.getElementById('btnTabViolators').classList.remove('btn-toggle--active');
             document.getElementById('subViewAttendance').style.display = 'flex';
             document.getElementById('subViewRanking').style.display = 'none';
+            document.getElementById('subViewViolators').style.display = 'none';
             render();
         });
 
@@ -3177,8 +3341,21 @@ window.openRoleAssignModal = function() {
             currentSubTab = 'ranking';
             document.getElementById('btnTabRanking').classList.add('btn-toggle--active');
             document.getElementById('btnTabAttendance').classList.remove('btn-toggle--active');
+            document.getElementById('btnTabViolators').classList.remove('btn-toggle--active');
             document.getElementById('subViewAttendance').style.display = 'none';
             document.getElementById('subViewRanking').style.display = 'flex';
+            document.getElementById('subViewViolators').style.display = 'none';
+            render();
+        });
+
+        document.getElementById('btnTabViolators').addEventListener('click', () => {
+            currentSubTab = 'violators';
+            document.getElementById('btnTabViolators').classList.add('btn-toggle--active');
+            document.getElementById('btnTabAttendance').classList.remove('btn-toggle--active');
+            document.getElementById('btnTabRanking').classList.remove('btn-toggle--active');
+            document.getElementById('subViewAttendance').style.display = 'none';
+            document.getElementById('subViewRanking').style.display = 'none';
+            document.getElementById('subViewViolators').style.display = 'flex';
             render();
         });
 
@@ -3200,7 +3377,7 @@ window.openRoleAssignModal = function() {
                         const name = match[1].trim(); const att = parseInt(match[2], 10);
                         const existing = members.find(m => m.name.toLowerCase() === name.toLowerCase());
                         if (existing) existing.attended = att;
-                        else members.push({ id: Date.now() + Math.random(), name, attended: att, hasPlus: false, events: new Array(eventDates.length).fill(false), rank: 'R1' });
+                        else members.push({ id: Date.now() + Math.random(), name, attended: att, hasPlus: false, events: new Array(eventDates.length).fill(false), eventVotes: new Array(eventDates.length).fill(null), rank: 'R1' });
                         addedCount++;
                     }
                 });
