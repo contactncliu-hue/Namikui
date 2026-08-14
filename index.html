@@ -206,6 +206,12 @@
         .war-vote-badge--maybe { background: #fef9c3; color: #b89117; }
         .war-vote-badge--none { background: #eef0f5; color: #a0a6b5; }
 
+        /* Attended / Not attended pill (top of war column) - mirrors blackgold.html's attend-pill */
+        .attend-pill { font-family: var(--font-family-ui); font-size: 9px; font-weight: 800; letter-spacing: 0.3px; padding: 3px 8px; border-radius: 10px; cursor: pointer; user-select: none; text-transform: uppercase; white-space: nowrap; }
+        .attend-pill--yes { background: #e6f4ea; color: #1f9d55; border: 1px solid #1f9d55; }
+        .attend-pill--no { background: #fce8e6; color: #d9381e; border: 1px solid #d9381e; }
+        .attend-pill--readonly { cursor: default; }
+
         .progress-bar-container { display: flex; align-items: center; gap: 8px; width: 100%; min-width: 140px; }
         .progress-bar { height: 10px; flex-grow: 1; background-color: #eef0f5; border-radius: 5px; overflow: hidden; }
         .progress-bar__fill { height: 100%; border-radius: 5px; }
@@ -735,7 +741,7 @@
                     <div class="btn-group">
                         <button class="btn-toggle btn-toggle--active" id="btnTabAttendance">ATTENDANCE</button>
                         <button class="btn-toggle" id="btnTabRanking">RANKING</button>
-                        <button class="btn-toggle" id="btnTabViolators">⚠ VIOLATORS</button>
+                        <button class="btn-toggle" id="btnTabViolators">⚠ WAR</button>
                     </div>
                     <div class="search-box">
                         <span class="search-box__icon">🔍</span>
@@ -772,7 +778,7 @@
                     <span class="legend-pill-item"><span class="badge-rank r3">3</span> 3rd</span>
                     <span class="legend-pill-item"><span class="badge-rank r4">4</span> 4th</span>
                     <span class="legend-pill-item"><span class="badge-rank r5">5</span> 5th</span>
-                    <span class="legend-pill-item"><span class="war-vote-badge war-vote-badge--yes" style="cursor:default;">YES</span><span class="war-vote-badge war-vote-badge--no" style="cursor:default;">NO</span><span class="war-vote-badge war-vote-badge--maybe" style="cursor:default;">MAYBE</span> · War event votes</span>
+                    <span class="legend-pill-item"><span class="attend-pill attend-pill--yes attend-pill--readonly">Attended</span><span class="attend-pill attend-pill--no attend-pill--readonly">Not Attended</span><span class="war-vote-badge war-vote-badge--yes" style="cursor:default;">YES</span><span class="war-vote-badge war-vote-badge--no" style="cursor:default;">NO</span><span class="war-vote-badge war-vote-badge--maybe" style="cursor:default;">MAYBE</span> · War event attendance &amp; votes</span>
                     <span class="vs-hint" id="adminHelpText">· Admin/Mgmt: Click any table cell, event name, or date to edit. Use ✕ under date columns to delete session.</span>
                 </div>
 
@@ -789,8 +795,8 @@
 
                 <section class="table-card" id="subViewViolators" style="display: none;">
                     <div style="padding: 16px 20px; border-bottom: 2px solid var(--color-border-light);">
-                        <h2 style="font-size: 14px; color: var(--color-text-dark); margin-bottom: 4px;">⚠ War Event Violators</h2>
-                        <p style="font-size: 12px; color: var(--color-text-muted); font-weight: 600;">Members flagged red (voted Yes, didn't attend) or yellow (voted Maybe, didn't attend) across all war events. Members with no flags are hidden.</p>
+                        <h2 style="font-size: 14px; color: var(--color-text-dark); margin-bottom: 4px;">⚔ War</h2>
+                        <p style="font-size: 12px; color: var(--color-text-muted); font-weight: 600;">Totals across all war events only: total war events attended, and red/yellow flag counts. Members flagged red (voted Yes, didn't attend) or yellow (voted Maybe, didn't attend) are shown; members with no flags are hidden.</p>
                     </div>
                     <div class="table-wrapper">
                         <table class="data-table">
@@ -798,6 +804,7 @@
                                 <tr>
                                     <th class="col-rank">#</th>
                                     <th>MEMBER</th>
+                                    <th style="text-align:center; color:#1f9d55;">✅ WAR ATTENDED</th>
                                     <th style="text-align:center; color:#dc2626;">🔴 RED COUNT</th>
                                     <th style="text-align:center; color:#b89117;">🟡 YELLOW COUNT</th>
                                 </tr>
@@ -1673,14 +1680,15 @@ window.openRoleAssignModal = function() {
         };
 
         function computeWarViolationCounts(member) {
-            let red = 0, yellow = 0;
+            let red = 0, yellow = 0, attended = 0;
             eventDates.forEach((ev, evIdx) => {
                 if (!ev.isWar) return;
                 const status = getWarCellStatus(member, evIdx);
+                if (status.attended) attended++;
                 if (status.flag === 'red') red++;
                 else if (status.flag === 'yellow') yellow++;
             });
-            return { red, yellow };
+            return { red, yellow, attended };
         }
 
         function renderViolatorsTable(filteredMembers, isManagementOrAdmin) {
@@ -1693,7 +1701,7 @@ window.openRoleAssignModal = function() {
                 .sort((a, b) => (b.red - a.red) || (b.yellow - a.yellow));
 
             if (withCounts.length === 0) {
-                body.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#8c93a6; padding: 24px;">No violators found. 🎉</td></tr>`;
+                body.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#8c93a6; padding: 24px;">No violators found. 🎉</td></tr>`;
                 return;
             }
 
@@ -1701,6 +1709,7 @@ window.openRoleAssignModal = function() {
                 <tr>
                     <td class="col-rank notranslate">${idx + 1}</td>
                     <td class="col-name notranslate">${x.member.name}</td>
+                    <td style="text-align:center; font-weight:800;" class="notranslate"><span style="color:#1f9d55;">${x.attended}</span></td>
                     <td style="text-align:center; font-weight:800;" class="notranslate"><span style="color:#dc2626;">${x.red}</span></td>
                     <td style="text-align:center; font-weight:800;" class="notranslate"><span style="color:#b89117;">${x.yellow}</span></td>
                 </tr>
@@ -3070,18 +3079,21 @@ window.openRoleAssignModal = function() {
                     const isChecked = member.events && member.events[evIdx];
 
                     if (ev.isWar) {
-                        // War events: Yes/No/Maybe vote badge + attended/not-attended toggle,
+                        // War events: attend/not-attend pill on top, Yes/No/Maybe vote pill below,
                         // colored red/yellow per the violation rules (voted Yes/Maybe but absent).
+                        // No checkmarks are used in the war column.
                         const status = getWarCellStatus(member, evIdx);
                         const voteClass = status.vote === 'yes' ? 'war-vote-badge--yes' : status.vote === 'no' ? 'war-vote-badge--no' : status.vote === 'maybe' ? 'war-vote-badge--maybe' : 'war-vote-badge--none';
                         const voteLabel = status.vote === 'yes' ? 'YES' : status.vote === 'no' ? 'NO' : status.vote === 'maybe' ? 'MAYBE' : '—';
                         const cellFlagClass = status.flag === 'red' ? 'war-cell--red' : (status.flag === 'yellow' ? 'war-cell--yellow' : '');
+                        const attendClass = status.attended ? 'attend-pill--yes' : 'attend-pill--no';
+                        const attendLabel = status.attended ? 'ATTENDED' : 'NOT ATTENDED';
 
                         rowHTML += `
                             <td class="col-event col-event--war">
                                 <div class="war-cell ${cellFlagClass}">
+                                    <span class="attend-pill ${attendClass} ${isManagementOrAdmin ? '' : 'attend-pill--readonly'}" onclick="${isManagementOrAdmin ? `toggleAttendance(${member.id}, ${evIdx})` : ''}">${attendLabel}</span>
                                     <span class="war-vote-badge ${voteClass}" onclick="${isManagementOrAdmin ? `cycleWarVote(${member.id}, ${evIdx})` : ''}">${voteLabel}</span>
-                                    <span class="check-toggle" onclick="${isManagementOrAdmin ? `toggleAttendance(${member.id}, ${evIdx})` : ''}">${isChecked ? '<span class="check-icon">✓</span>' : '<span class="cross-icon">—</span>'}</span>
                                 </div>
                             </td>`;
                         return;
