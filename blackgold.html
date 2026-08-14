@@ -730,7 +730,7 @@
         <div class="sidebar__user">
             <div class="sidebar__user-avatar" id="userAvatarIcon">U</div>
             <div>
-                <div id="userRoleDisplay" style="font-size: var(--font-xs); text-transform: uppercase;">USERNAME</div>
+                <div id="userRoleDisplay" class="notranslate" translate="no" style="font-size: var(--font-xs); text-transform: uppercase;">USERNAME</div>
                 <div id="userPermissionBadge" style="font-size: var(--font-xs); color: #8c93a6;">Role</div>
             </div>
         </div>
@@ -1484,7 +1484,7 @@
             const dateClickAttr = isManagementOrAdmin ? `onclick="editDate('${d.id}')" title="Click to edit date"` : '';
             html += `
                 <th>
-                    <div class="date-label" ${dateClickAttr}>${d.date}</div>
+                    <div class="date-label notranslate" translate="no" ${dateClickAttr}>${d.date}</div>
                     <div class="week-label">Week ${idx + 1}</div>
                     ${isManagementOrAdmin ? `<span class="remove-date-btn" onclick="removeDate('${d.id}')">✕</span>` : ''}
                 </th>
@@ -1545,7 +1545,7 @@
                 cellsHTML += `
                     <td>
                         <div class="cell-stack">
-                            <div class="slot-btn ${slotClass} ${isManagementOrAdmin ? '' : 'slot-btn--readonly'}"
+                            <div class="slot-btn ${slotClass} notranslate ${isManagementOrAdmin ? '' : 'slot-btn--readonly'}" translate="no"
                                  ${isManagementOrAdmin ? `onclick="cycleSlot('${member.id}','${d.id}')"` : ''}>${slotLabel}</div>
                             <div class="attend-pill ${attendClass} ${isManagementOrAdmin ? '' : 'attend-pill--readonly'}"
                                  ${isManagementOrAdmin ? `onclick="toggleAttended('${member.id}','${d.id}')"` : ''}>${attendLabel}</div>
@@ -1559,9 +1559,9 @@
             body.insertAdjacentHTML('beforeend', `
                 <tr>
                     <td class="col-rank">${index + 1}</td>
-                    <td class="col-member">${member.name}</td>
+                    <td class="col-member notranslate" translate="no">${member.name}</td>
                     ${cellsHTML}
-                    <td class="col-penalty" style="color: ${penaltyWeeks > 0 ? 'var(--color-not-attended)' : 'var(--color-text-muted)'};">${penaltyWeeks} weeks</td>
+                    <td class="col-penalty notranslate" translate="no" style="color: ${penaltyWeeks > 0 ? 'var(--color-not-attended)' : 'var(--color-text-muted)'};">${penaltyWeeks} weeks</td>
                 </tr>
             `);
         });
@@ -1579,7 +1579,7 @@
                 if (entry.slot === 'A') countA++;
                 if (entry.slot === 'B') countB++;
             });
-            html += `<td><span class="ab-count-a">A:${countA}</span> · <span class="ab-count-b">B:${countB}</span></td>`;
+            html += `<td class="notranslate" translate="no"><span class="ab-count-a">A:${countA}</span> · <span class="ab-count-b">B:${countB}</span></td>`;
         });
 
         html += `<td></td></tr>`;
@@ -1731,10 +1731,10 @@
 
             html += `
                 <tr>
-                    <td class="col-member" ${dateAttrs}>${d.date}</td>
+                    <td class="col-member notranslate" translate="no" ${dateAttrs}>${d.date}</td>
                     <td>Week ${idx + 1}</td>
-                    <td><span class="ab-count-a">${countA}</span></td>
-                    <td><span class="ab-count-b">${countB}</span></td>
+                    <td class="notranslate" translate="no"><span class="ab-count-a">${countA}</span></td>
+                    <td class="notranslate" translate="no"><span class="ab-count-b">${countB}</span></td>
                     <td>${isManagementOrAdmin ? `<span class="remove-date-btn" style="cursor:pointer; font-size:11px;" onclick="removeDate('${d.id}')">✕ Remove</span>` : '—'}</td>
                 </tr>
             `;
@@ -1752,7 +1752,7 @@
         let factionClass = 'faction-f';
         if (member.faction === 'S') factionClass = 'faction-s';
         if (member.faction === 'R') factionClass = 'faction-r';
-        return `<div class="faction-circle ${factionClass}">${member.faction || 'F'}</div>`;
+        return `<div class="faction-circle ${factionClass} notranslate" translate="no">${member.faction || 'F'}</div>`;
     }
 
     function memberOptionsHtml(selectedId, disabledIds) {
@@ -1847,7 +1847,7 @@
                             ${colorSwatch}
                             <span>GROUP</span>
                         </div>
-                        <div class="map-team-header__number ${isManagementOrAdmin ? 'map-team-header__number--clickable' : ''}" ${numberClickable}>${team.groupNumber}</div>
+                        <div class="map-team-header__number notranslate ${isManagementOrAdmin ? 'map-team-header__number--clickable' : ''}" translate="no" ${numberClickable}>${team.groupNumber}</div>
                     </div>
                     <table class="map-role-table">
                         <tbody>
@@ -1858,16 +1858,16 @@
                                     <tr>
                                         <td class="map-role-label">
                                             ${isManagementOrAdmin
-                                                ? `<select class="map-role-select" title="Rename this role row (this group only)" onchange="changeRoleLabel('${team.id}','${row.key}', this.value)">${roleLabelOptionsHtml(row.label)}</select>`
-                                                : row.label}
+                                                ? `<select class="map-role-select notranslate" translate="no" title="Rename this role row (this group only)" onchange="changeRoleLabel('${team.id}','${row.key}', this.value)">${roleLabelOptionsHtml(row.label)}</select>`
+                                                : `<span class="notranslate" translate="no">${row.label}</span>`}
                                         </td>
                                         <td class="map-role-faction-cell">${factionCircleHtml(assignedMember)}</td>
                                         <td>
-                                            <select class="map-role-select" ${isManagementOrAdmin ? `onchange="assignMapRole('${team.id}','${row.key}', this.value)"` : 'disabled'}>
+                                            <select class="map-role-select notranslate" translate="no" ${isManagementOrAdmin ? `onchange="assignMapRole('${team.id}','${row.key}', this.value)"` : 'disabled'}>
                                                 ${memberOptionsHtml(row.memberId, otherBoardMemberIds)}
                                             </select>
                                         </td>
-                                        <td class="map-role-power">${power}</td>
+                                        <td class="map-role-power notranslate" translate="no">${power}</td>
                                         <td>${isManagementOrAdmin ? `<span class="map-role-delete-btn" onclick="deleteGroupRoleRow('${team.id}','${row.key}')" title="Delete this role row (this group only)">×</span>` : ''}</td>
                                     </tr>
                                 `;
@@ -1957,7 +1957,7 @@
                 html += `
                     <div class="map-pin ${isManagementOrAdmin ? '' : 'map-pin--readonly'}" style="left:${pos.left}%; top:${pos.top}%;" ${clickAttr}>
                         ${mapPinSvg(team.color)}
-                        <span class="map-pin__num">${team.number}</span>
+                        <span class="map-pin__num notranslate" translate="no">${team.number}</span>
                     </div>
                 `;
             } else {
