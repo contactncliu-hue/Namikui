@@ -1062,16 +1062,22 @@
         return isCjkOrHangul(trimmed) ? 1 : 2;
     }
 
-    const currentUser = {
-        username: localStorage.getItem('amt_username') || null,
-        role: localStorage.getItem('amt_userRole') || null
-    };
+    let currentUser = { username: null, role: null };
+let isManagementOrAdmin = false;
 
-    if (!currentUser.role) {
-        window.location.href = 'index.html';
-    }
-
-    const isManagementOrAdmin = currentUser.role === 'admin' || currentUser.role === 'management';
+async function loadCurrentUserAccount() {
+    const { data: { session } } = await db.auth.getSession();
+    if (!session) return false;
+    const { data: acc, error } = await db.from('accounts')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .maybeSingle();
+    if (error || !acc) return false;
+    currentUser.username = acc.username;
+    currentUser.role = acc.role;
+    isManagementOrAdmin = (acc.role === 'admin' || acc.role === 'management');
+    return true;
+}
 
     const saveStatusEl = document.getElementById('saveStatus');
     let saveStatusTimer = null;
@@ -2095,10 +2101,6 @@
 
     document.getElementById('vsSearchInput').addEventListener('input', renderVsPoints);
 
-    document.addEventListener('DOMContentLoaded', () => {
-        loadData();
-    });
-
     // ===== Sidebar (added for uniformity with index.html) =====
     function initSidebar() {
         const isAdmin = currentUser.role === 'admin';
@@ -2139,8 +2141,15 @@
     if (sidebarOverlayEl) {
         sidebarOverlayEl.addEventListener('click', closeSidebar);
     }
-
-    document.addEventListener('DOMContentLoaded', initSidebar);
+    document.addEventListener('DOMContentLoaded', async () => {
+    const ok = await loadCurrentUserAccount();
+    if (!ok) {
+        window.location.href = 'index.html';
+        return;
+    }
+    initSidebar();
+    loadData();
+});
 </script>
 
 <script>
