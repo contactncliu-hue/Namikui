@@ -845,7 +845,7 @@
                 <div class="map-toolbar">
                     <span class="map-toolbar__label">FORMATION MAP · GROUPS &amp; RALLY ORDER</span>
                     <div class="map-toolbar__right">
-                        <button class="map-circles-toggle-btn" id="mapCirclesToggleBtn" style="display:none;" title="Show or hide the plain (unset) rally circles on the map">SHOW CIRCLES</button>
+                        <button class="map-circles-toggle-btn" id="mapCirclesToggleBtn" style="display:none;" title="Show or hide the plain (unset) circles for connector dots, teardrops, and landmark markers on the map">SHOW CIRCLES</button>
                         <div class="map-dot-color-picker" id="mapDotColorPicker" style="display:none;">
                             <span class="map-dot-color-picker__label">Selected arrow color</span>
                             <div class="map-dot-color-picker__swatches" id="mapDotColorSwatches"></div>
@@ -856,7 +856,7 @@
                     <button class="map-subtab-btn map-subtab-btn--active" id="mapSubtabA">TEAM A</button>
                     <button class="map-subtab-btn" id="mapSubtabB">TEAM B</button>
                 </div>
-                <div class="map-toolbar__hint" id="mapAdminHint" style="display:none;">The map always shows a fixed set of 6 markers — adding or removing a group never adds or removes a marker; it only fills or empties one of the 6 slots (up to 8 groups total, the 7th &amp; 8th are "extra" and don't get their own marker, but their colors are still available for the arrow swatches below). The number badge on each group's tab (top-right of its block) cycles 1–8 and is just a label for that group — it does not change the map. Click a numbered marker directly on the map itself to change that marker's own number (cycles 1–6). Use the select boxes on the left to assign members (auto-pulls Faction &amp; F1 Power from Members) · click a group's color swatch to recolor it · use a role's name dropdown to rename it, the × to delete that row, and + ADD ROLE ROW to add a new one — all scoped to that one group, on the team you're currently viewing · click any small circle or arrow on the map to select it and rotate it (each click rotates it 25°; a full rotation returns it to a plain circle) — once selected, use the swatches above to set that one arrow's own color, chosen from this team's current group colors, including groups 7 &amp; 8 (each team's rally path and its color options are separate). Plain (unset) circles are hidden by default to keep the map uncluttered — use the SHOW CIRCLES button above to reveal them for editing, then hide them again when you're done. Assigning a member here automatically sets their Slot (A or B, matching this tab) and Main/Substitute status on the most recent A/B Slots session. A member can only be assigned to one team (A or B) per session.</div>
+                <div class="map-toolbar__hint" id="mapAdminHint" style="display:none;">The map always shows a fixed set of 6 teardrop markers plus 4 fixed landmark markers (2 Military Base stars, 2 Hospital crosses) — adding or removing a group never adds or removes a teardrop marker; it only fills or empties one of the 6 teardrop slots (up to 8 groups total, the 7th &amp; 8th are "extra" and don't get their own teardrop, but their colors are still available for the arrow swatches below). The number badge on each group's tab (top-right of its block) cycles 1–8 and is just a label for that group — it does not change the map. Click a teardrop, star, or cross marker directly on the map to cycle its own number (1–8, then a hidable blank circle, then back to 1) — this number is independent of the group's own number. Click a teardrop marker to also select it for its own color — use the swatches above to set that teardrop's color from a fixed palette (teardrop colors no longer follow the group's color). Star and cross markers keep their fixed colors and are not customisable. Use the select boxes on the left to assign members (auto-pulls Faction &amp; F1 Power from Members) · click a group's color swatch to recolor its table header (and its rally-path color options) · use a role's name dropdown to rename it — or pick "➕ Add New Role to List..." / "🗑 Remove a Role from List..." to manage the shared dropdown options so you don't have to keep retyping — the × deletes that row, and + ADD ROLE ROW adds a new one, all scoped to that one group, on the team you're currently viewing · click any small circle or arrow on the map to select it and rotate it (each click rotates it 25°; a full rotation returns it to a plain circle) — once selected, use the swatches above to set that one arrow's own color, chosen from this team's current group colors, including groups 7 &amp; 8 (each team's rally path and its color options are separate). Plain (unset) circles — on connector dots, teardrops, and landmark markers alike — are hidden by default to keep the map uncluttered — use the SHOW CIRCLES button above to reveal them for editing, then hide them again when you're done. Assigning a member here automatically sets their Slot (A or B, matching this tab) and Main/Substitute status on the most recent A/B Slots session. A member can only be assigned to one team (A or B) per session.</div>
                 <div class="map-body">
                     <div class="map-table-wrapper" id="mapTableWrapper"></div>
                     <div class="map-diagram-wrap">
@@ -1104,10 +1104,21 @@
         { left: 50.00, top: 18.50 },
         { left: 50.00, top: 80.50 }
     ];
-    const MAX_PIN_NUMBER = 6;
+    const MAX_PIN_NUMBER = 8;
+    const MARKER_CYCLE_STATES = MAX_PIN_NUMBER + 1; // 0 = blank/hidable circle, 1-8 = numbered
     const DEFAULT_GROUP_COUNT = 6;
     const MAP_PIN_POSITIONS = SLOT_POSITIONS.slice(0, 6);
     const MAX_GROUPS = 8;
+
+    // Fixed background landmarks (2 Military Base stars, 2 Hospital crosses) that
+    // are also clickable number markers now, independent of the teardrop groups.
+    // Their colors are fixed (not customisable) — only their number cycles.
+    const LANDMARK_MARKERS = [
+        { left: 18.30, top: 13.78, color: '#f4c94c', label: 'Military Base' },
+        { left: 50.78, top: 13.78, color: '#4b7c40', label: 'Hospital' },
+        { left: 50.78, top: 82.94, color: '#4b7c40', label: 'Hospital' },
+        { left: 81.43, top: 82.94, color: '#f4c94c', label: 'Military Base' }
+    ];
 
     const DOT_POSITIONS = [
         { left: 40.34, top: 24.64 },
@@ -1139,7 +1150,22 @@
         A: { colors: new Array(DOT_POSITIONS.length).fill(DEFAULT_DOT_COLOR), steps: new Array(DOT_POSITIONS.length).fill(0) },
         B: { colors: new Array(DOT_POSITIONS.length).fill(DEFAULT_DOT_COLOR), steps: new Array(DOT_POSITIONS.length).fill(0) }
     };
-    let selectedDotIndex = null;
+
+    // Teardrop marker colors are now independent from the group's own color
+    // (no more sync) — stored per board, one color per of the 6 map slots.
+    function defaultPinColors() {
+        return DEFAULT_GROUP_COLORS.slice(0, MAP_PIN_POSITIONS.length);
+    }
+    let mapPinColorsByBoard = { A: defaultPinColors(), B: defaultPinColors() };
+
+    // Number state (0-8) for each of the 4 fixed landmark markers, per board.
+    let mapLandmarksByBoard = {
+        A: new Array(LANDMARK_MARKERS.length).fill(0),
+        B: new Array(LANDMARK_MARKERS.length).fill(0)
+    };
+
+    // Currently selected map marker for recoloring: { type: 'dot' | 'pin', index } or null.
+    let selectedMarker = null;
 
     function getBoardColorPalette(board) {
         const teams = mapBoards[board] || [];
@@ -1159,7 +1185,11 @@
         { key: 'substitute', label: 'Substitute' }
     ];
 
-    const PRESET_ROLES = ['Ball Capture', 'Territory Capture', 'Ball Support', 'Substitute', 'Scout', 'Reserve', 'Defense', 'Attack'];
+    const DEFAULT_ROLE_PRESETS = ['Ball Capture', 'Territory Capture', 'Ball Support', 'Substitute', 'Scout', 'Reserve', 'Defense', 'Attack'];
+    // Shared, editable list of role-name dropdown options for admin/management —
+    // add/remove entries directly from the dropdown so they don't have to keep
+    // retyping the same custom names.
+    let rolePresets = DEFAULT_ROLE_PRESETS.slice();
 
     function getActiveMembers() {
         return members.filter(m => m.status !== 'removed');
@@ -1210,6 +1240,7 @@
 
     async function loadData() {
         let legacyMap = null, mapA = null, mapB = null, legacyRoleDefs = null, dotsLoadedA = null, dotsLoadedB = null, legacyDotsLoaded = null;
+        let rolePresetsLoaded = null, pinColorsLoadedA = null, pinColorsLoadedB = null, landmarksLoadedA = null, landmarksLoadedB = null;
         try {
             const { data, error } = await db.from('app_data').select('*');
             if (error) throw error;
@@ -1232,6 +1263,9 @@
                     if (row.key === 'blackGoldRoles') {
                         legacyRoleDefs = (row.value && Array.isArray(row.value) && row.value.length > 0) ? row.value : null;
                     }
+                    if (row.key === 'blackGoldRolePresets') {
+                        rolePresetsLoaded = (row.value && Array.isArray(row.value) && row.value.length > 0) ? row.value : null;
+                    }
                     if (row.key === 'blackGoldMapDotsA') {
                         dotsLoadedA = (row.value && typeof row.value === 'object') ? row.value : null;
                     }
@@ -1240,6 +1274,18 @@
                     }
                     if (row.key === 'blackGoldMapDots') {
                         legacyDotsLoaded = (row.value && typeof row.value === 'object') ? row.value : null;
+                    }
+                    if (row.key === 'blackGoldMapPinColorsA') {
+                        pinColorsLoadedA = (row.value && Array.isArray(row.value)) ? row.value : null;
+                    }
+                    if (row.key === 'blackGoldMapPinColorsB') {
+                        pinColorsLoadedB = (row.value && Array.isArray(row.value)) ? row.value : null;
+                    }
+                    if (row.key === 'blackGoldMapLandmarksA') {
+                        landmarksLoadedA = (row.value && Array.isArray(row.value)) ? row.value : null;
+                    }
+                    if (row.key === 'blackGoldMapLandmarksB') {
+                        landmarksLoadedB = (row.value && Array.isArray(row.value)) ? row.value : null;
                     }
                 });
             }
@@ -1254,6 +1300,15 @@
         const fallbackRoleDefs = legacyRoleDefs || DEFAULT_ROLE_DEFS;
 
         let needResaveA = false, needResaveB = false, needResaveDotsA = false, needResaveDotsB = false;
+        let needResaveRolePresets = false, needResavePinColorsA = false, needResavePinColorsB = false;
+        let needResaveLandmarksA = false, needResaveLandmarksB = false;
+
+        if (rolePresetsLoaded) {
+            rolePresets = rolePresetsLoaded;
+        } else {
+            rolePresets = DEFAULT_ROLE_PRESETS.slice();
+            needResaveRolePresets = true;
+        }
 
         ['A', 'B'].forEach(board => {
             let teams = mapBoards[board];
@@ -1261,7 +1316,7 @@
                 teams = teams.filter(t => t).slice(0, MAX_GROUPS);
                 teams.forEach((t, i) => {
                     if (typeof t.slot !== 'number') t.slot = i;
-                    if (typeof t.number !== 'number' || t.number < 1 || t.number > MAX_PIN_NUMBER) t.number = (i % MAX_PIN_NUMBER) + 1;
+                    if (typeof t.number !== 'number' || t.number < 0 || t.number > MAX_PIN_NUMBER) t.number = (i % MAX_PIN_NUMBER) + 1;
                     if (typeof t.groupNumber !== 'number' || t.groupNumber < 1 || t.groupNumber > MAX_GROUPS) {
                         t.groupNumber = i + 1;
                         if (board === 'A') needResaveA = true; else needResaveB = true;
@@ -1317,6 +1372,23 @@
             return { data: { colors, steps }, needResave };
         }
 
+        function normalizePinColors(loaded) {
+            const isHex = c => typeof c === 'string' && /^#[0-9a-fA-F]{6}$/.test(c);
+            if (!Array.isArray(loaded)) return { data: defaultPinColors(), needResave: true };
+            let needResave = loaded.length !== MAP_PIN_POSITIONS.length;
+            let colors = loaded.slice(0, MAP_PIN_POSITIONS.length).map(c => isHex(c) ? c : DEFAULT_DOT_COLOR);
+            while (colors.length < MAP_PIN_POSITIONS.length) { colors.push(DEFAULT_DOT_COLOR); needResave = true; }
+            return { data: colors, needResave };
+        }
+
+        function normalizeLandmarkNumbers(loaded) {
+            if (!Array.isArray(loaded)) return { data: new Array(LANDMARK_MARKERS.length).fill(0), needResave: true };
+            let needResave = loaded.length !== LANDMARK_MARKERS.length;
+            let nums = loaded.slice(0, LANDMARK_MARKERS.length).map(n => (typeof n === 'number' && n >= 0 && n <= MAX_PIN_NUMBER) ? n : 0);
+            while (nums.length < LANDMARK_MARKERS.length) { nums.push(0); needResave = true; }
+            return { data: nums, needResave };
+        }
+
         const resultA = normalizeDotsData(dotsLoadedA || legacyDotsLoaded);
         const resultB = normalizeDotsData(dotsLoadedB || legacyDotsLoaded);
         mapDotsByBoard.A = resultA.data;
@@ -1324,10 +1396,29 @@
         needResaveDotsA = resultA.needResave || !dotsLoadedA;
         needResaveDotsB = resultB.needResave || !dotsLoadedB;
 
+        const pinResultA = normalizePinColors(pinColorsLoadedA);
+        const pinResultB = normalizePinColors(pinColorsLoadedB);
+        mapPinColorsByBoard.A = pinResultA.data;
+        mapPinColorsByBoard.B = pinResultB.data;
+        needResavePinColorsA = pinResultA.needResave || !pinColorsLoadedA;
+        needResavePinColorsB = pinResultB.needResave || !pinColorsLoadedB;
+
+        const landmarkResultA = normalizeLandmarkNumbers(landmarksLoadedA);
+        const landmarkResultB = normalizeLandmarkNumbers(landmarksLoadedB);
+        mapLandmarksByBoard.A = landmarkResultA.data;
+        mapLandmarksByBoard.B = landmarkResultB.data;
+        needResaveLandmarksA = landmarkResultA.needResave || !landmarksLoadedA;
+        needResaveLandmarksB = landmarkResultB.needResave || !landmarksLoadedB;
+
         if (needResaveA) await saveMapBoard('A');
         if (needResaveB) await saveMapBoard('B');
         if (needResaveDotsA) await saveMapDots('A');
         if (needResaveDotsB) await saveMapDots('B');
+        if (needResaveRolePresets) await saveRolePresets();
+        if (needResavePinColorsA) await saveMapPinColors('A');
+        if (needResavePinColorsB) await saveMapPinColors('B');
+        if (needResaveLandmarksA) await saveMapLandmarks('A');
+        if (needResaveLandmarksB) await saveMapLandmarks('B');
 
         render();
     }
@@ -1396,6 +1487,55 @@
         }
     }
 
+    async function saveRolePresets() {
+        showSaveStatus('saving', 'Saving…');
+        try {
+            const { error } = await db.from('app_data')
+                .upsert({ id: 18, key: 'blackGoldRolePresets', value: rolePresets }, { onConflict: 'id' });
+            if (error) {
+                showSaveStatus('error', 'Save failed: ' + error.message);
+                return;
+            }
+            showSaveStatus('ok', 'Saved');
+        } catch (err) {
+            showSaveStatus('error', 'Save failed');
+        }
+    }
+
+    async function saveMapPinColors(board) {
+        showSaveStatus('saving', 'Saving…');
+        const key = board === 'A' ? 'blackGoldMapPinColorsA' : 'blackGoldMapPinColorsB';
+        const id = board === 'A' ? 19 : 20;
+        try {
+            const { error } = await db.from('app_data')
+                .upsert({ id, key, value: mapPinColorsByBoard[board] }, { onConflict: 'id' });
+            if (error) {
+                showSaveStatus('error', 'Save failed: ' + error.message);
+                return;
+            }
+            showSaveStatus('ok', 'Saved');
+        } catch (err) {
+            showSaveStatus('error', 'Save failed');
+        }
+    }
+
+    async function saveMapLandmarks(board) {
+        showSaveStatus('saving', 'Saving…');
+        const key = board === 'A' ? 'blackGoldMapLandmarksA' : 'blackGoldMapLandmarksB';
+        const id = board === 'A' ? 21 : 22;
+        try {
+            const { error } = await db.from('app_data')
+                .upsert({ id, key, value: mapLandmarksByBoard[board] }, { onConflict: 'id' });
+            if (error) {
+                showSaveStatus('error', 'Save failed: ' + error.message);
+                return;
+            }
+            showSaveStatus('ok', 'Saved');
+        } catch (err) {
+            showSaveStatus('error', 'Save failed');
+        }
+    }
+
     function switchTab(tab) {
         if (tab === 'map' && !canViewMap) return;
         activeTab = tab;
@@ -1421,7 +1561,7 @@
     function switchMapSubtab(board) {
         if (!canViewMap) return;
         activeBoard = board;
-        selectedDotIndex = null;
+        selectedMarker = null;
         document.getElementById('mapSubtabA').classList.toggle('map-subtab-btn--active', board === 'A');
         document.getElementById('mapSubtabB').classList.toggle('map-subtab-btn--active', board === 'B');
         render();
@@ -1775,10 +1915,14 @@
     }
 
     function roleLabelOptionsHtml(currentLabel) {
-        let opts = PRESET_ROLES.slice();
+        let opts = rolePresets.slice();
         if (!opts.includes(currentLabel)) opts.unshift(currentLabel);
-        let html = opts.map(o => `<option value="${o}" ${o === currentLabel ? 'selected' : ''}>${o}</option>`).join('');
-        html += `<option value="__custom__">✎ Custom Name...</option>`;
+        let html = opts.map(o => `<option value="${o.replace(/"/g, '&quot;')}" ${o === currentLabel ? 'selected' : ''}>${o}</option>`).join('');
+        html += `<option value="__custom__">✎ One-time Custom Name...</option>`;
+        html += `<option value="__addpreset__">➕ Add New Role to List...</option>`;
+        if (rolePresets.length > 1) {
+            html += `<option value="__removepreset__">🗑 Remove a Role from List...</option>`;
+        }
         return html;
     }
 
@@ -1812,13 +1956,27 @@
     function renderDotColorSwatches() {
         if (!isManagementOrAdmin) return;
         const wrap = document.getElementById('mapDotColorSwatches');
-        const boardDots = mapDotsByBoard[activeBoard];
-        if (selectedDotIndex === null || !boardDots.colors) {
-            wrap.innerHTML = `<span style="font-family: var(--font-family-base); font-weight: 700; font-size: 10px; color: var(--color-text-muted);">Click a dot/arrow on the map to recolor it</span>`;
+        if (!selectedMarker) {
+            wrap.innerHTML = `<span style="font-family: var(--font-family-base); font-weight: 700; font-size: 10px; color: var(--color-text-muted);">Click a dot/arrow, or a teardrop marker on the map, to recolor it</span>`;
             return;
         }
-        const activeColor = boardDots.colors[selectedDotIndex];
-        const palette = getBoardColorPalette(activeBoard);
+
+        let activeColor = null;
+        let palette = [];
+        if (selectedMarker.type === 'dot') {
+            const boardDots = mapDotsByBoard[activeBoard];
+            if (!boardDots.colors) { wrap.innerHTML = ''; return; }
+            activeColor = boardDots.colors[selectedMarker.index];
+            palette = getBoardColorPalette(activeBoard);
+        } else if (selectedMarker.type === 'pin') {
+            const pinColors = mapPinColorsByBoard[activeBoard] || [];
+            activeColor = pinColors[selectedMarker.index];
+            palette = DEFAULT_GROUP_COLORS;
+        } else {
+            wrap.innerHTML = '';
+            return;
+        }
+
         wrap.innerHTML = palette.map(c => `
             <span class="map-dot-color-swatch ${c === activeColor ? 'map-dot-color-swatch--active' : ''}"
                   style="background:${c};" title="${c}" onclick="setDotColor('${c}')"></span>
@@ -1865,7 +2023,7 @@
                                     <tr>
                                         <td class="map-role-label">
                                             ${isManagementOrAdmin
-                                                ? `<select class="map-role-select notranslate" translate="no" title="Rename this role row (this group only)" onchange="changeRoleLabel('${team.id}','${row.key}', this.value)">${roleLabelOptionsHtml(row.label)}</select>`
+                                                ? `<select class="map-role-select notranslate" translate="no" title="Rename this role row, or manage the shared role list" onchange="changeRoleLabel('${team.id}','${row.key}', this.value)">${roleLabelOptionsHtml(row.label)}</select>`
                                                 : `<span class="notranslate" translate="no">${row.label}</span>`}
                                         </td>
                                         <td class="map-role-faction-cell">${factionCircleHtml(assignedMember)}</td>
@@ -1951,20 +2109,30 @@
         `;
     }
 
+    function landmarkCircleSvg(color) {
+        return `<svg viewBox="0 0 22 22"><circle cx="11" cy="11" r="9" fill="${color}" stroke="rgba(0,0,0,0.25)" stroke-width="1"/></svg>`;
+    }
+
     function renderMapDiagram() {
         const diagram = document.getElementById('mapDiagram');
         let html = staticMapBackgroundHtml();
         html += renderConnectorDotsHtml();
 
         const teams = currentTeams();
+        const pinColors = mapPinColorsByBoard[activeBoard] || defaultPinColors();
         MAP_PIN_POSITIONS.forEach((pos, i) => {
             const team = teams[i];
             if (team) {
-                const clickAttr = isManagementOrAdmin ? `onclick="cycleTeamNumber('${team.id}')" title="Click to change this group's number (cycles 1–6)"` : '';
+                const num = (typeof team.number === 'number') ? team.number : 1;
+                const isBlank = num === 0;
+                const pinColor = pinColors[i] || DEFAULT_DOT_COLOR;
+                const isSelected = isManagementOrAdmin && selectedMarker && selectedMarker.type === 'pin' && selectedMarker.index === i;
+                const isHiddenBlank = isBlank && !showConnectorCircles;
+                const clickAttr = isManagementOrAdmin ? `onclick="cycleTeamNumber('${team.id}', ${i})" title="Click to cycle this marker's number (1–8, then a hidable blank circle) · then use the swatches above to set this teardrop's own color"` : '';
                 html += `
-                    <div class="map-pin ${isManagementOrAdmin ? '' : 'map-pin--readonly'}" style="left:${pos.left}%; top:${pos.top}%;" ${clickAttr}>
-                        ${mapPinSvg(team.color)}
-                        <span class="map-pin__num notranslate" translate="no">${team.number}</span>
+                    <div class="map-pin ${isManagementOrAdmin ? '' : 'map-pin--readonly'} ${isSelected ? 'map-connector-dot--selected' : ''} ${isHiddenBlank ? 'map-connector-dot--hidden' : ''}" style="left:${pos.left}%; top:${pos.top}%;" ${clickAttr}>
+                        ${isBlank ? landmarkCircleSvg(pinColor) : mapPinSvg(pinColor)}
+                        ${isBlank ? '' : `<span class="map-pin__num notranslate" translate="no">${num}</span>`}
                     </div>
                 `;
             } else {
@@ -1977,8 +2145,37 @@
             }
         });
 
+        html += renderLandmarkMarkersHtml();
+
         diagram.innerHTML = html;
     }
+
+    function renderLandmarkMarkersHtml() {
+        let html = '';
+        const nums = mapLandmarksByBoard[activeBoard] || new Array(LANDMARK_MARKERS.length).fill(0);
+        LANDMARK_MARKERS.forEach((lm, i) => {
+            const num = nums[i] || 0;
+            const isBlank = num === 0;
+            const isHiddenBlank = isBlank && !showConnectorCircles;
+            const clickAttr = isManagementOrAdmin ? `onclick="cycleLandmarkNumber(${i})" title="${lm.label}: click to cycle this marker's number (1–8, then a hidable blank circle)"` : `title="${lm.label}"`;
+            html += `
+                <div class="map-pin ${isManagementOrAdmin ? '' : 'map-pin--readonly'} ${isHiddenBlank ? 'map-connector-dot--hidden' : ''}" style="left:${lm.left}%; top:${lm.top}%;" ${clickAttr}>
+                    ${landmarkCircleSvg(lm.color)}
+                    ${isBlank ? '' : `<span class="map-pin__num notranslate" translate="no">${num}</span>`}
+                </div>
+            `;
+        });
+        return html;
+    }
+
+    window.cycleLandmarkNumber = function(index) {
+        if (!isManagementOrAdmin) return;
+        const arr = mapLandmarksByBoard[activeBoard];
+        if (!arr || index < 0 || index >= arr.length) return;
+        arr[index] = (arr[index] + 1) % MARKER_CYCLE_STATES;
+        saveMapLandmarks(activeBoard);
+        renderMapDiagram();
+    };
 
     function connectorDotSvg(color) {
         return `<svg viewBox="0 0 22 22"><circle cx="11" cy="11" r="8" fill="none" stroke="${color}" stroke-width="2.5"/></svg>`;
@@ -2002,7 +2199,7 @@
             const color = (boardDots.colors && boardDots.colors[i]) || DEFAULT_DOT_COLOR;
             const isArrow = step !== 0;
             const inner = isArrow ? connectorArrowSvg(color, step * DOT_ROTATION_STEP) : connectorDotSvg(color);
-            const isSelected = isManagementOrAdmin && selectedDotIndex === i;
+            const isSelected = isManagementOrAdmin && selectedMarker && selectedMarker.type === 'dot' && selectedMarker.index === i;
             // Plain (un-rotated) circles are hidden by default to declutter the map;
             // arrows (already rotated) always stay visible since they carry meaning.
             const isHiddenPlainCircle = !isArrow && !showConnectorCircles;
@@ -2021,7 +2218,7 @@
         const boardDots = mapDotsByBoard[activeBoard];
         if (index < 0 || index >= boardDots.steps.length) return;
         boardDots.steps[index] = (boardDots.steps[index] + 1) % DOT_STEPS_PER_CYCLE;
-        selectedDotIndex = index;
+        selectedMarker = { type: 'dot', index };
         saveMapDots(activeBoard);
         renderMapDiagram();
         renderDotColorSwatches();
@@ -2029,22 +2226,32 @@
 
     window.setDotColor = function(color) {
         if (!isManagementOrAdmin) return;
-        if (selectedDotIndex === null) return;
-        if (!getBoardColorPalette(activeBoard).includes(color)) return;
-        mapDotsByBoard[activeBoard].colors[selectedDotIndex] = color;
-        saveMapDots(activeBoard);
-        renderMapDiagram();
+        if (!selectedMarker) return;
+        if (selectedMarker.type === 'dot') {
+            if (!getBoardColorPalette(activeBoard).includes(color)) return;
+            mapDotsByBoard[activeBoard].colors[selectedMarker.index] = color;
+            saveMapDots(activeBoard);
+            renderMapDiagram();
+        } else if (selectedMarker.type === 'pin') {
+            if (!DEFAULT_GROUP_COLORS.includes(color)) return;
+            mapPinColorsByBoard[activeBoard][selectedMarker.index] = color;
+            saveMapPinColors(activeBoard);
+            renderMapDiagram();
+        }
         renderDotColorSwatches();
     };
 
-    window.cycleTeamNumber = function(teamId) {
+    window.cycleTeamNumber = function(teamId, pinIndex) {
         if (!isManagementOrAdmin) return;
         const team = currentTeams().find(t => t.id === teamId);
         if (!team) return;
-        team.number = (team.number % MAX_PIN_NUMBER) + 1;
+        const current = (typeof team.number === 'number') ? team.number : 0;
+        team.number = (current + 1) % MARKER_CYCLE_STATES;
+        if (typeof pinIndex === 'number') selectedMarker = { type: 'pin', index: pinIndex };
         saveMapBoard(activeBoard);
         renderMapTable();
         renderMapDiagram();
+        renderDotColorSwatches();
     };
 
     window.cycleGroupNumber = function(teamId) {
@@ -2102,15 +2309,51 @@
         if (!row) return;
 
         if (newLabelVal === '__custom__') {
-            const custom = prompt('Enter custom role name:', row.label);
+            const custom = prompt('Enter a one-time custom role name (this will NOT be added to the shared list):', row.label);
             if (custom !== null && custom.trim() !== '') {
                 row.label = custom.trim();
                 saveMapBoard(activeBoard);
             }
-        } else {
-            row.label = newLabelVal;
-            saveMapBoard(activeBoard);
+            renderMapTable();
+            return;
         }
+
+        if (newLabelVal === '__addpreset__') {
+            const newRole = prompt('Enter a new role name to add to the dropdown list (saved for everyone, so you don\'t have to retype it again):');
+            if (newRole !== null && newRole.trim() !== '') {
+                const trimmed = newRole.trim();
+                if (rolePresets.includes(trimmed)) {
+                    alert('That role is already in the list.');
+                } else {
+                    rolePresets.push(trimmed);
+                    saveRolePresets();
+                    row.label = trimmed;
+                    saveMapBoard(activeBoard);
+                }
+            }
+            renderMapTable();
+            return;
+        }
+
+        if (newLabelVal === '__removepreset__') {
+            const toRemove = prompt(`Type the exact role name to remove from the shared list:\n\n${rolePresets.join('\n')}`);
+            if (toRemove !== null && toRemove.trim() !== '') {
+                const trimmed = toRemove.trim();
+                if (!rolePresets.includes(trimmed)) {
+                    alert('That role was not found in the list (names are case-sensitive).');
+                } else if (rolePresets.length <= 1) {
+                    alert('You must keep at least one role in the list.');
+                } else if (confirm(`Remove "${trimmed}" from the shared role list? Rows already using that name keep their current label.`)) {
+                    rolePresets = rolePresets.filter(r => r !== trimmed);
+                    saveRolePresets();
+                }
+            }
+            renderMapTable();
+            return;
+        }
+
+        row.label = newLabelVal;
+        saveMapBoard(activeBoard);
         renderMapTable();
     };
 
@@ -2166,7 +2409,7 @@
             return;
         }
         teams.pop();
-        selectedDotIndex = null;
+        selectedMarker = null;
         await saveMapBoard(activeBoard);
         renderMap();
     });
