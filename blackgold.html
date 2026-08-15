@@ -983,18 +983,26 @@
     const { createClient } = supabase;
     const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    const currentUser = {
-        username: localStorage.getItem('amt_username') || null,
-        role: localStorage.getItem('amt_userRole') || null
-    };
+    let currentUser = { username: null, role: null };
+    let isManagementOrAdmin = false;
+    let isAdmin = false;
+    let canViewMap = false;
 
-    if (!currentUser.role) {
-        window.location.href = 'index.html';
+    async function loadCurrentUserAccount() {
+        const { data: { session } } = await db.auth.getSession();
+        if (!session) return false;
+        const { data: acc, error } = await db.from('accounts')
+            .select('*')
+            .eq('user_id', session.user.id)
+            .maybeSingle();
+        if (error || !acc) return false;
+        currentUser.username = acc.username;
+        currentUser.role = acc.role;
+        isManagementOrAdmin = (acc.role === 'admin' || acc.role === 'management');
+        isAdmin = (acc.role === 'admin');
+        canViewMap = isManagementOrAdmin || acc.role === 'member' || acc.role === 'alliance';
+        return true;
     }
-
-    const isManagementOrAdmin = currentUser.role === 'admin' || currentUser.role === 'management';
-    const isAdmin = currentUser.role === 'admin';
-    const canViewMap = isManagementOrAdmin || currentUser.role === 'member' || currentUser.role === 'alliance';
 
     const sidebarEl = document.getElementById('sidebar');
     const sidebarOverlayEl = document.getElementById('sidebarOverlay');
@@ -1020,9 +1028,8 @@
         sidebarOverlayEl.addEventListener('click', closeSidebar);
     }
 
-    document.getElementById('sidebarLogoutBtn').addEventListener('click', () => {
-        localStorage.removeItem('amt_userRole');
-        localStorage.removeItem('amt_username');
+    document.getElementById('sidebarLogoutBtn').addEventListener('click', async () => {
+        await db.auth.signOut();
         window.location.href = 'index.html';
     });
 
@@ -2164,7 +2171,15 @@
         renderMap();
     });
 
-    loadData();
+    (async function initPage() {
+        const ok = await loadCurrentUserAccount();
+        if (!ok) {
+            window.location.href = 'index.html';
+            return;
+        }
+        renderSidebarUser();
+        loadData();
+    })();
 </script>
 
 <script>
