@@ -1210,9 +1210,15 @@
         const { createClient } = supabase;
         const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         const FAKE_EMAIL_DOMAIN = '@loopysplaygroundapp.com';
-        
 
-        let currentUser = {
+function usernameToEmailSafe(username) {
+    return username
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, '') // strip anything not a-z or 0-9
+        || 'user' + Date.now();     // fallback if nothing's left (e.g. all-CJK username)
+}
+
+let currentUser = {
             username: null,
             role: null
         };
