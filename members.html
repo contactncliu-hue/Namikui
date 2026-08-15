@@ -546,16 +546,24 @@
     const SUPABASE_ANON_KEY = 'sb_publishable_rb70-VY2GstWzdoXmoUkwg_Iw3EiqFO';
     const { createClient } = supabase;
     const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    let currentUser = {
-    username: localStorage.getItem('amt_username') || null,
-    role: localStorage.getItem('amt_userRole') || null
-};
+    let currentUser = { username: null, role: null };
+    let isManagementOrAdmin = false;
+    let isAdmin = false;
 
-if (!currentUser.role) {
-    window.location.href = 'index.html';
-}
-    const isManagementOrAdmin = currentUser.role === 'admin' || currentUser.role === 'management';
-    const isAdmin = currentUser.role === 'admin';
+    async function loadCurrentUserAccount() {
+        const { data: { session } } = await db.auth.getSession();
+        if (!session) return false;
+        const { data: acc, error } = await db.from('accounts')
+            .select('*')
+            .eq('user_id', session.user.id)
+            .maybeSingle();
+        if (error || !acc) return false;
+        currentUser.username = acc.username;
+        currentUser.role = acc.role;
+        isManagementOrAdmin = (acc.role === 'admin' || acc.role === 'management');
+        isAdmin = (acc.role === 'admin');
+        return true;
+    }
     // --- SIDEBAR (always off-canvas; only opens via hamburger, closes via X-tap on overlay) ---
     const sidebarEl = document.getElementById('sidebar');
     const sidebarOverlayEl = document.getElementById('sidebarOverlay');
@@ -577,9 +585,8 @@ if (!currentUser.role) {
     if (sidebarOverlayEl) {
         sidebarOverlayEl.addEventListener('click', closeSidebar);
     }
-    document.getElementById('sidebarLogoutBtn').addEventListener('click', () => {
-        localStorage.removeItem('amt_userRole');
-        localStorage.removeItem('amt_username');
+    document.getElementById('sidebarLogoutBtn').addEventListener('click', async () => {
+        await db.auth.signOut();
         window.location.href = 'index.html';
     });
     function renderSidebarUser() {
@@ -591,7 +598,6 @@ if (!currentUser.role) {
         document.getElementById('navHistoryLi').style.display = isAdmin ? 'block' : 'none';
         document.getElementById('assignRolesNavLi').style.display = isAdmin ? 'block' : 'none';
     }
-    renderSidebarUser();
     const saveStatusEl = document.getElementById('saveStatus');
     let saveStatusTimer = null;
     function showSaveStatus(kind, text) {
@@ -1090,7 +1096,15 @@ if (!currentUser.role) {
         } catch (err) { alert('OCR Error during processing'); }
         finally { importBtn.innerText = 'UPLOAD SCREENSHOT'; importBtn.disabled = false; screenshotInput.value = ''; }
     });
-    window.addEventListener('DOMContentLoaded', loadDataFromCloud);
+    window.addEventListener('DOMContentLoaded', async () => {
+        const ok = await loadCurrentUserAccount();
+        if (!ok) {
+            window.location.href = 'index.html';
+            return;
+        }
+        renderSidebarUser();
+        loadDataFromCloud();
+    });
 </script>
 <script>
     (function () {
