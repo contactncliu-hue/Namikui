@@ -235,6 +235,7 @@
         .ranking-card--rank-3 .ranking-card__badge { background: #b7791f; }
         .ranking-card--rank-4 .ranking-card__badge { background: #3182ce; }
         .ranking-card--rank-5 .ranking-card__badge { background: #e53e3e; }
+        .ranking-card__badge--blank { background: transparent !important; border: 2px solid rgba(255,255,255,0.6); }
         
         .ranking-card__name { font-weight: 800; font-size: 15px; color: var(--color-text-dark); }
         .ranking-card__subtext { font-size: 11px; color: var(--color-text-muted); font-weight: 600; }
@@ -247,6 +248,50 @@
         .generic-view-card { background: white; border: 2px solid var(--color-border); border-radius: 8px; padding: 32px; }
         .generic-view-card h2 { color: var(--color-text-dark); font-family: var(--font-family-ui); font-weight: 800; font-size: 16px; margin-bottom: 12px; }
         .generic-view-card p { font-size: var(--font-sm); line-height: 1.6; }
+
+        /* ===== Rank group divider bars (reference: members.html) ===== */
+        .rank-group-bar-row td { padding: 0; border-bottom: none; }
+        .rank-group-bar {
+            display: flex;
+            align-items: center;
+            padding: 7px 20px;
+            font-family: var(--font-family-ui);
+            font-weight: 800;
+            font-size: 11px;
+            letter-spacing: 1px;
+            color: #ffffff;
+            text-transform: uppercase;
+        }
+        .rank-group-bar--r5 { background-color: #2563eb; }
+        .rank-group-bar--r4 { background-color: #dc2626; }
+        .rank-group-bar--r3 { background-color: #ea580c; }
+        .rank-group-bar--r2 { background-color: #eab308; }
+        .rank-group-bar--r1 { background-color: #16a34a; }
+        .rank-group-bar-card {
+            display: flex; align-items: center;
+            padding: 7px 16px;
+            font-family: var(--font-family-ui);
+            font-weight: 800;
+            font-size: 11px;
+            letter-spacing: 1px;
+            color: #ffffff;
+            text-transform: uppercase;
+            border-radius: 6px;
+            margin-top: 4px;
+        }
+
+        /* ===== Ranking / War tab sort mode toolbar ===== */
+        .sort-mode-bar { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; background: white; border: 2px solid var(--color-border); border-radius: 6px; padding: 12px 16px; }
+        .sort-mode-bar__label { font-family: var(--font-family-ui); font-size: 11px; font-weight: 800; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+
+        /* ===== War tab own stat row ===== */
+        .war-stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); border: 2px solid var(--color-not-attended); border-radius: 8px; background: white; overflow: hidden; }
+        .war-stat-card { padding: 18px 22px; border-right: 1px solid var(--color-border-light); background: var(--color-bg-card); }
+        .war-stat-card:last-child { border-right: none; }
+        .war-stat-card:nth-child(2) { background-color: #fdeceb; }
+        .war-stat-card:nth-child(4) { background-color: #fdeceb; }
+        .war-stat-card__label { font-family: var(--font-family-ui); font-size: 11px; font-weight: 800; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+        .war-stat-card__value { font-family: var(--font-family-ui); font-size: 28px; font-weight: 800; color: var(--color-not-attended); }
 
         /* ===== Home Dashboard Layout ===== */
         .home-card { background: white; border: 2px solid var(--color-border); border-radius: 8px; padding: 24px; position: relative; overflow: hidden; }
@@ -790,26 +835,55 @@
                         </table>
                     </div>
                 </div>
-                <section class="ranking-cards-list" id="subViewRanking" style="display: none;"></section>
 
-                <section class="table-card" id="subViewViolators" style="display: none;">
-                    <div style="padding: 16px 20px; border-bottom: 2px solid var(--color-border-light);">
-                        <h2 style="font-size: 14px; color: var(--color-text-dark); margin-bottom: 4px;">⚔ War</h2>
-                        <p style="font-size: 12px; color: var(--color-text-muted); font-weight: 600;">Totals across all war events only: total war events attended (🟢), and red/yellow flag counts. Members with at least one attended war event or a red/yellow flag are shown; members with none of the above are hidden.</p>
+                <section id="subViewRanking" style="display: none; flex-direction: column; gap: 14px;">
+                    <div class="sort-mode-bar">
+                        <span class="sort-mode-bar__label">Sort Ranking By:</span>
+                        <div class="btn-group">
+                            <button class="btn-toggle btn-toggle--active" id="btnRankingSortDefault">DEFAULT</button>
+                            <button class="btn-toggle" id="btnRankingSortRank">BY PARTICIPATION</button>
+                        </div>
                     </div>
-                    <div class="table-wrapper">
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th class="col-rank">#</th>
-                                    <th>MEMBER</th>
-                                    <th style="text-align:center; color:#1f9d55;">🟢</th>
-                                    <th style="text-align:center; color:#dc2626;">🔴</th>
-                                    <th style="text-align:center; color:#b89117;">🟡</th>
-                                </tr>
-                            </thead>
-                            <tbody id="violatorsTableBody"></tbody>
-                        </table>
+                    <div class="ranking-cards-list" id="rankingCardsList"></div>
+                </section>
+
+                <section id="subViewViolators" style="display: none; flex-direction: column; gap: 14px;">
+                    <div style="padding: 4px 4px 0 4px;">
+                        <h2 style="font-size: 14px; color: var(--color-text-dark); margin-bottom: 4px;">⚔ War</h2>
+                        <p style="font-size: 12px; color: var(--color-text-muted); font-weight: 600;">War-only participation. Participation % counts war events only. Members who voted Yes/Maybe (or did not vote at all) and did not attend are flagged red/yellow.</p>
+                    </div>
+
+                    <section class="war-stat-grid">
+                        <div class="war-stat-card"><div class="war-stat-card__label">Members</div><div class="war-stat-card__value notranslate" id="warKpiMembers">0</div></div>
+                        <div class="war-stat-card"><div class="war-stat-card__label">Avg War Attendance</div><div class="war-stat-card__value notranslate" id="warKpiAvgAttendance">0.0</div></div>
+                        <div class="war-stat-card"><div class="war-stat-card__label">Avg War Rate</div><div class="war-stat-card__value notranslate" id="warKpiAvgRate">0.0%</div></div>
+                        <div class="war-stat-card"><div class="war-stat-card__label">Pct Base</div><div class="war-stat-card__value notranslate" id="warKpiPctBase">0 war events</div></div>
+                    </section>
+
+                    <div class="sort-mode-bar">
+                        <span class="sort-mode-bar__label">Sort War Ranking By:</span>
+                        <div class="btn-group">
+                            <button class="btn-toggle btn-toggle--active" id="btnWarSortDefault">DEFAULT</button>
+                            <button class="btn-toggle" id="btnWarSortRank">BY PARTICIPATION</button>
+                        </div>
+                    </div>
+
+                    <div class="table-card">
+                        <div class="table-wrapper">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th class="col-rank">#</th>
+                                        <th>MEMBER</th>
+                                        <th style="text-align:center; color:#1f9d55;">🟢 ATTENDED</th>
+                                        <th style="text-align:center; color:#dc2626;">🔴 RED</th>
+                                        <th style="text-align:center; color:#b89117;">🟡 YELLOW</th>
+                                        <th class="col-percentage">PARTICIPATION %</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="violatorsTableBody"></tbody>
+                            </table>
+                        </div>
                     </div>
                 </section>
             </section>
@@ -1242,6 +1316,10 @@ let currentUser = {
         let vsData = { weeks: [], membersScores: [] };
         // Mirrors members.html's group order so row order stays in sync across pages
         const RANK_GROUP_ORDER = { R5: 0, R4: 1, R3: 2, R2: 3, R1: 4 };
+        // Sort mode state for the Ranking tab and War tab: 'default' mirrors the Members
+        // tab order (frozen rank group + F1 power); 'rank' sorts by participation %.
+        let rankingSortMode = 'default';
+        let warSortMode = 'default';
         // Notice tab Gantt-style event timeline state (supports date ranges, weekly/biweekly/monthly repeats, start/end time, category, visibility)
         let calendarEvents = [];
         const CALENDAR_COLORS = ['#2563eb', '#dc2626', '#eab308', '#16a34a', '#ec4899']; // blue, red, yellow, green, pink
@@ -1267,6 +1345,46 @@ let currentUser = {
         window.getActiveMembers = function(memberList) {
             return memberList.filter(m => m.status !== 'removed');
         };
+
+        // ===== Event date sorting =====
+        // eventDates store dates as "MM-DD" (no year). Event columns must always display
+        // in chronological (month/day) order regardless of the order they were added or
+        // edited in. Because members' attendance/vote data are stored as PARALLEL ARRAYS
+        // indexed against eventDates, re-ordering eventDates requires re-ordering every
+        // member's events[]/eventVotes[] arrays the same way so each entry stays aligned
+        // with the correct event.
+        function eventDateSortValue(ev) {
+            if (!ev || !ev.date) return 999999;
+            const m = String(ev.date).match(/^(\d{1,2})-(\d{1,2})$/);
+            if (!m) return 999999;
+            const month = parseInt(m[1], 10);
+            const day = parseInt(m[2], 10);
+            return month * 100 + day;
+        }
+
+        function sortEventsByDate() {
+            if (!Array.isArray(eventDates) || eventDates.length < 2) return false;
+            const order = eventDates.map((ev, idx) => idx);
+            order.sort((a, b) => {
+                const diff = eventDateSortValue(eventDates[a]) - eventDateSortValue(eventDates[b]);
+                if (diff !== 0) return diff;
+                return a - b; // stable tie-break: keep original relative order
+            });
+            const alreadySorted = order.every((val, idx) => val === idx);
+            if (alreadySorted) return false;
+
+            const newEventDates = order.map(i => eventDates[i]);
+            members.forEach(m => {
+                if (Array.isArray(m.events)) {
+                    m.events = order.map(i => !!m.events[i]);
+                }
+                if (Array.isArray(m.eventVotes)) {
+                    m.eventVotes = order.map(i => (m.eventVotes[i] !== undefined ? m.eventVotes[i] : null));
+                }
+            });
+            eventDates = newEventDates;
+            return true;
+        }
 
         // Loads role/account info for the currently authenticated Supabase Auth user
         // (real session), keyed by user_id rather than username/password.
@@ -1326,6 +1444,9 @@ let currentUser = {
             if (!m.rank) m.rank = 'R1';
             m.frozenRank = m.rank;
         });
+        // Ensure event columns are always in chronological order, fixing any events
+        // that were previously added/edited out of order.
+        sortEventsByDate();
         saveData();
 
         pruneExpiredCalendarEvents();
@@ -1601,7 +1722,7 @@ window.openRoleAssignModal = function() {
         function renderRestrictedState() {
             const lockMsg = '🔒 This content is only available to Alliance Members and Staff. Ask an Admin to assign you the Alliance role.';
 
-            ['homeKpiMembers', 'homeKpiRate', 'kpiMembers', 'kpiAvgAttendance', 'kpiAvgRate', 'kpiPctBase'].forEach(id => {
+            ['homeKpiMembers', 'homeKpiRate', 'kpiMembers', 'kpiAvgAttendance', 'kpiAvgRate', 'kpiPctBase', 'warKpiMembers', 'warKpiAvgAttendance', 'warKpiAvgRate', 'warKpiPctBase'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.innerText = '—';
             });
@@ -1644,10 +1765,10 @@ window.openRoleAssignModal = function() {
             if (memberTableBody) memberTableBody.innerHTML = `<tr><td style="text-align:center; padding:24px; color:#8c93a6;">${lockMsg}</td></tr>`;
             const tableFooterRow = document.getElementById('tableFooterRow');
             if (tableFooterRow) tableFooterRow.innerHTML = '';
-            const subViewRanking = document.getElementById('subViewRanking');
-            if (subViewRanking) subViewRanking.innerHTML = `<div class="generic-view-card">${lockMsg}</div>`;
+            const rankingCardsList = document.getElementById('rankingCardsList');
+            if (rankingCardsList) rankingCardsList.innerHTML = `<div class="generic-view-card">${lockMsg}</div>`;
             const violatorsTableBody = document.getElementById('violatorsTableBody');
-            if (violatorsTableBody) violatorsTableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:24px; color:#8c93a6;">${lockMsg}</td></tr>`;
+            if (violatorsTableBody) violatorsTableBody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:24px; color:#8c93a6;">${lockMsg}</td></tr>`;
 
             const vsTableHeaderRow = document.getElementById('vsTableHeaderRow');
             if (vsTableHeaderRow) vsTableHeaderRow.innerHTML = `<th>#</th><th>Fighter Name</th><th>Total Score</th>`;
@@ -1715,12 +1836,7 @@ window.openRoleAssignModal = function() {
             }
 
             let activeMembers = getActiveMembers(members);
-            activeMembers.sort((a, b) => {
-                const rankA = RANK_GROUP_ORDER[a.frozenRank] !== undefined ? RANK_GROUP_ORDER[a.frozenRank] : 99;
-                const rankB = RANK_GROUP_ORDER[b.frozenRank] !== undefined ? RANK_GROUP_ORDER[b.frozenRank] : 99;
-                if (rankA !== rankB) return rankA - rankB;
-                return (b.f1Raw || 0) - (a.f1Raw || 0);
-            });
+            activeMembers = sortMembersDefaultOrder(activeMembers);
 
             const totalAttendedCount = activeMembers.reduce((sum, m) => sum + m.attended, 0);
             const avgAttendance = activeMembers.length ? (totalAttendedCount / activeMembers.length) : 0;
@@ -1763,18 +1879,59 @@ window.openRoleAssignModal = function() {
             renderDiscussionRoom();
         }
 
+        // Shared "default" ordering used by the Attendance tab, the Members tab, and as
+        // the Default sort mode for the Ranking/War tabs: frozen rank group first
+        // (R5 -> R4 -> R3 -> R2 -> R1), then F1 power descending — identical to members.html.
+        function sortMembersDefaultOrder(memberList) {
+            const list = memberList.slice();
+            list.sort((a, b) => {
+                const rankA = RANK_GROUP_ORDER[a.frozenRank] !== undefined ? RANK_GROUP_ORDER[a.frozenRank] : 99;
+                const rankB = RANK_GROUP_ORDER[b.frozenRank] !== undefined ? RANK_GROUP_ORDER[b.frozenRank] : 99;
+                if (rankA !== rankB) return rankA - rankB;
+                return (b.f1Raw || 0) - (a.f1Raw || 0);
+            });
+            return list;
+        }
+
+        // ===== Shared "competition ranking" helper (ties share a rank; only the first =====
+        // ===== occurrence of each rank gets a placement/medal, later ties are colored  =====
+        // ===== the same but show no numeral).                                          =====
+        // sortedDescList must already be sorted descending by valueGetter.
+        function computeCompetitionRanks(sortedDescList, valueGetter) {
+            let lastValue = null;
+            let lastRank = 0;
+            return sortedDescList.map((item, idx) => {
+                const val = valueGetter(item);
+                let rank;
+                if (lastValue !== null && val === lastValue) {
+                    rank = lastRank;
+                } else {
+                    rank = idx + 1;
+                }
+                const isFirstOfRank = (rank === idx + 1);
+                lastValue = val;
+                lastRank = rank;
+                return { item, rank, isFirstOfRank, value: val };
+            });
+        }
+
+        function getRankTierClassSuffix(rank) {
+            if (rank >= 1 && rank <= 5) return String(rank);
+            return null;
+        }
+
         // ===== War Event helpers: vote status + red/yellow violation classification =====
         // Rules (war events only):
-        //  - Voted No               -> never flagged, regardless of attendance
-        //  - Voted Yes + not attended  -> RED violation
-        //  - Voted Maybe + not attended -> YELLOW violation
-        //  - Attended (any vote)     -> never flagged
+        //  - Voted No                          -> never flagged, regardless of attendance
+        //  - Voted Yes, or never voted at all, and not attended -> RED violation
+        //  - Voted Maybe + not attended         -> YELLOW violation
+        //  - Attended (any vote)                -> never flagged
         function getWarCellStatus(member, evIdx) {
             const vote = (member.eventVotes && member.eventVotes[evIdx]) ? member.eventVotes[evIdx] : null;
             const attended = !!(member.events && member.events[evIdx]);
             let flag = null; // 'red' | 'yellow' | null
             if (!attended) {
-                if (vote === 'yes') flag = 'red';
+                if (vote === 'yes' || vote === null) flag = 'red';
                 else if (vote === 'maybe') flag = 'yellow';
             }
             return { vote, attended, flag };
@@ -1805,29 +1962,122 @@ window.openRoleAssignModal = function() {
             return { red, yellow, attended };
         }
 
+        function getTotalWarEventsCount() {
+            return eventDates.filter(ev => ev.isWar).length;
+        }
+
+        window.setRankingSortMode = function(mode) {
+            rankingSortMode = mode;
+            document.getElementById('btnRankingSortDefault').classList.toggle('btn-toggle--active', mode === 'default');
+            document.getElementById('btnRankingSortRank').classList.toggle('btn-toggle--active', mode === 'rank');
+            render();
+        };
+
+        window.setWarSortMode = function(mode) {
+            warSortMode = mode;
+            document.getElementById('btnWarSortDefault').classList.toggle('btn-toggle--active', mode === 'default');
+            document.getElementById('btnWarSortRank').classList.toggle('btn-toggle--active', mode === 'rank');
+            render();
+        };
+
+        // Builds the colored rank-group divider markup (mirrors members.html) for a table
+        // body, given a list already in default (frozen-rank-grouped) order.
+        function buildRankGroupTableRows(orderedList, colSpan, rowRendererFn) {
+            let html = '';
+            let lastGroupKey = null;
+            orderedList.forEach((entry, idx) => {
+                const groupKey = (entry.frozenRank || entry.member && entry.member.frozenRank || 'R1');
+                const key = entry.frozenRank ? entry.frozenRank : (entry.member ? (entry.member.frozenRank || 'R1') : 'R1');
+                if (key !== lastGroupKey) {
+                    lastGroupKey = key;
+                    html += `
+                        <tr class="rank-group-bar-row">
+                            <td colspan="${colSpan}">
+                                <div class="rank-group-bar rank-group-bar--${key.toLowerCase()}">${key}</div>
+                            </td>
+                        </tr>
+                    `;
+                }
+                html += rowRendererFn(entry, idx);
+            });
+            return html;
+        }
+
         function renderViolatorsTable(filteredMembers, isManagementOrAdmin) {
             const body = document.getElementById('violatorsTableBody');
             if (!body) return;
 
-            const withCounts = filteredMembers
-                .map(m => ({ member: m, ...computeWarViolationCounts(m) }))
-                .filter(x => x.red > 0 || x.yellow > 0 || x.attended > 0)
-                .sort((a, b) => (b.red - a.red) || (b.yellow - a.yellow) || (b.attended - a.attended));
+            const totalWarEvents = getTotalWarEventsCount();
+
+            document.getElementById('warKpiMembers').innerText = `${filteredMembers.length}`;
+            document.getElementById('warKpiPctBase').innerText = `${totalWarEvents} war events`;
+
+            const withCounts = filteredMembers.map(m => {
+                const counts = computeWarViolationCounts(m);
+                const rateNum = totalWarEvents > 0 ? parseFloat(((counts.attended / totalWarEvents) * 100).toFixed(1)) : 0;
+                return { member: m, ...counts, rateNum, frozenRank: m.frozenRank };
+            });
+
+            const totalWarAttended = withCounts.reduce((sum, x) => sum + x.attended, 0);
+            const avgWarAttendance = withCounts.length ? (totalWarAttended / withCounts.length) : 0;
+            const avgWarRate = totalWarEvents > 0 ? (avgWarAttendance / totalWarEvents) * 100 : 0;
+            document.getElementById('warKpiAvgAttendance').innerText = avgWarAttendance.toFixed(1);
+            const warKpiAvgRateEl = document.getElementById('warKpiAvgRate');
+            warKpiAvgRateEl.innerText = `${avgWarRate.toFixed(1)}%`;
 
             if (withCounts.length === 0) {
-                body.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#8c93a6; padding: 24px;">No war activity recorded yet. 🎉</td></tr>`;
+                body.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#8c93a6; padding: 24px;">No members found.</td></tr>`;
                 return;
             }
 
-            body.innerHTML = withCounts.map((x, idx) => `
-                <tr>
-                    <td class="col-rank notranslate">${idx + 1}</td>
-                    <td class="col-name notranslate">${x.member.name}</td>
-                    <td style="text-align:center; font-weight:800;" class="notranslate"><span style="color:#1f9d55;">${x.attended}</span></td>
-                    <td style="text-align:center; font-weight:800;" class="notranslate"><span style="color:#dc2626;">${x.red}</span></td>
-                    <td style="text-align:center; font-weight:800;" class="notranslate"><span style="color:#b89117;">${x.yellow}</span></td>
-                </tr>
-            `).join('');
+            // Medal ranking is always computed by war-attended count descending, regardless
+            // of the current display sort mode, so Default mode still shows correct medals.
+            const medalSourceSorted = withCounts.slice().sort((a, b) => b.attended - a.attended);
+            const medalRanked = computeCompetitionRanks(medalSourceSorted, x => x.attended);
+            const medalMap = new Map();
+            medalRanked.forEach(r => medalMap.set(r.item.member.id, r));
+
+            let displayList;
+            if (warSortMode === 'rank') {
+                displayList = medalRanked.map(r => r.item);
+            } else {
+                displayList = sortMembersDefaultOrder(withCounts.map(x => x.member)).map(m => withCounts.find(x => x.member.id === m.id));
+            }
+
+            function rowHtml(x, positionalIdx) {
+                const medalInfo = medalMap.get(x.member.id);
+                const tier = medalInfo ? getRankTierClassSuffix(medalInfo.rank) : null;
+                const showMedalNumber = medalInfo && medalInfo.isFirstOfRank && tier;
+                const rankClass = tier ? `rank-${tier}` : '';
+                const rankCellContent = showMedalNumber ? medalInfo.rank : (positionalIdx + 1);
+                const colorClass = getProgressBarColorClass(x.rateNum);
+                const attendedColorClass = getAttendedColorClass(x.rateNum);
+                return `
+                    <tr class="${rankClass}">
+                        <td class="col-rank notranslate">${rankCellContent}</td>
+                        <td class="col-name notranslate">${x.member.name}</td>
+                        <td style="text-align:center; font-weight:800;" class="notranslate"><span style="color:#1f9d55;">${x.attended}</span></td>
+                        <td style="text-align:center; font-weight:800;" class="notranslate"><span style="color:#dc2626;">${x.red}</span></td>
+                        <td style="text-align:center; font-weight:800;" class="notranslate"><span style="color:#b89117;">${x.yellow}</span></td>
+                        <td class="col-percentage">
+                            <div style="display: flex; flex-direction: column; gap: 4px;">
+                                <div style="display: flex; justify-content: flex-end; align-items: center; font-size: 12px;">
+                                    <span style="font-weight: 800;" class="notranslate ${attendedColorClass}">${x.rateNum}%</span>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-bar__fill ${colorClass}" style="width: ${x.rateNum}%;"></div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }
+
+            if (warSortMode === 'default') {
+                body.innerHTML = buildRankGroupTableRows(displayList.map(x => Object.assign({ frozenRank: x.member.frozenRank }, x)), 6, (entry, idx) => rowHtml(entry, idx));
+            } else {
+                body.innerHTML = displayList.map((x, idx) => rowHtml(x, idx)).join('');
+            }
         }
 
         // ===== Home dashboard: Notices card (linked to the Notice tab's Notice Board) =====
@@ -3194,7 +3444,7 @@ window.openRoleAssignModal = function() {
 
                     if (ev.isWar) {
                         // War events: attend/not-attend pill on top, Yes/No/Maybe vote pill below,
-                        // colored red/yellow per the violation rules (voted Yes/Maybe but absent).
+                        // colored red/yellow per the violation rules (voted Yes/Maybe/never-voted but absent).
                         // No checkmarks are used in the war column.
                         const status = getWarCellStatus(member, evIdx);
                         const voteClass = status.vote === 'yes' ? 'war-vote-badge--yes' : status.vote === 'no' ? 'war-vote-badge--no' : status.vote === 'maybe' ? 'war-vote-badge--maybe' : 'war-vote-badge--none';
@@ -3257,19 +3507,44 @@ window.openRoleAssignModal = function() {
         }
 
         function renderRankingCards(filteredMembers, avgRate, isManagementOrAdmin, totalEvents) {
-            const rankingView = document.getElementById('subViewRanking');
+            const rankingView = document.getElementById('rankingCardsList');
+            if (!rankingView) return;
             rankingView.innerHTML = '';
-            
-            filteredMembers.forEach((member, index) => {
-                const rank = index + 1;
-                const rateNum = totalEvents > 0 ? parseFloat(((member.attended / totalEvents) * 100).toFixed(1)) : 0;
+
+            const withMetric = filteredMembers.map(m => {
+                const rateNum = totalEvents > 0 ? parseFloat(((m.attended / totalEvents) * 100).toFixed(1)) : 0;
+                return { member: m, rateNum, frozenRank: m.frozenRank };
+            });
+
+            // Medal ranking always computed by events-attended count descending, regardless
+            // of the current display sort mode, so Default mode still shows correct medals.
+            const medalSourceSorted = withMetric.slice().sort((a, b) => b.member.attended - a.member.attended);
+            const medalRanked = computeCompetitionRanks(medalSourceSorted, x => x.member.attended);
+            const medalMap = new Map();
+            medalRanked.forEach(r => medalMap.set(r.item.member.id, r));
+
+            let displayList;
+            if (rankingSortMode === 'rank') {
+                displayList = medalRanked.map(r => r.item);
+            } else {
+                displayList = sortMembersDefaultOrder(withMetric.map(x => x.member)).map(m => withMetric.find(x => x.member.id === m.id));
+            }
+
+            function cardHtml(x) {
+                const member = x.member;
+                const rateNum = x.rateNum;
                 const colorClass = getProgressBarColorClass(rateNum);
                 const attendedColorClass = getAttendedColorClass(rateNum);
                 const vsAvgDiff = parseFloat((rateNum - avgRate).toFixed(1));
                 const vsAvgString = (vsAvgDiff >= 0 ? `+` : ``) + vsAvgDiff.toFixed(1) + `%`;
                 const vsAvgClass = vsAvgDiff >= 0 ? 'vs-avg-pos' : 'vs-avg-neg';
-                let cardClass = rank === 1 ? 'ranking-card--rank-1' : (rank === 2 ? 'ranking-card--rank-2' : (rank === 3 ? 'ranking-card--rank-3' : (rank === 4 ? 'ranking-card--rank-4' : (rank === 5 ? 'ranking-card--rank-5' : ''))));
-                let badgeText = `${rank}`;
+
+                const medalInfo = medalMap.get(member.id);
+                const tier = medalInfo ? getRankTierClassSuffix(medalInfo.rank) : null;
+                const showMedalNumber = medalInfo && medalInfo.isFirstOfRank && tier;
+                const cardClass = tier ? `ranking-card--rank-${tier}` : '';
+                const badgeClass = (tier && !showMedalNumber) ? 'ranking-card__badge--blank' : '';
+                const badgeText = showMedalNumber ? medalInfo.rank : '';
 
                 let diffVal = 0;
                 if (member.events && member.events.length >= 2) {
@@ -3291,10 +3566,10 @@ window.openRoleAssignModal = function() {
                     }
                 }
 
-                rankingView.insertAdjacentHTML('beforeend', `
+                return `
                     <div class="ranking-card ${cardClass}">
                         <div class="ranking-card__left">
-                            <div class="ranking-card__badge notranslate">${badgeText}</div>
+                            <div class="ranking-card__badge ${badgeClass} notranslate">${badgeText}</div>
                             <div>
                                 <div class="ranking-card__name notranslate">${member.name}</div>
                                 <div class="ranking-card__subtext"><span class="${attendedColorClass} notranslate" style="font-weight:800;">${member.attended}</span> events attended</div>
@@ -3312,8 +3587,24 @@ window.openRoleAssignModal = function() {
                             <div style="width: 80px; text-align: center;">${diffHtml}</div>
                             ${showDiffMode ? `<div style="width: 75px; text-align: right;"><span class="${vsAvgClass} notranslate">${vsAvgString}</span></div>` : ''}
                         </div>
-                    </div>`);
-            });
+                    </div>`;
+            }
+
+            if (rankingSortMode === 'default') {
+                let html = '';
+                let lastGroupKey = null;
+                displayList.forEach(x => {
+                    const groupKey = x.member.frozenRank || 'R1';
+                    if (groupKey !== lastGroupKey) {
+                        lastGroupKey = groupKey;
+                        html += `<div class="rank-group-bar-card rank-group-bar--${groupKey.toLowerCase()}">${groupKey}</div>`;
+                    }
+                    html += cardHtml(x);
+                });
+                rankingView.innerHTML = html;
+            } else {
+                rankingView.innerHTML = displayList.map(x => cardHtml(x)).join('');
+            }
         }
 
         function renderAuditTable() {
@@ -3387,6 +3678,7 @@ window.openRoleAssignModal = function() {
             if (parts.length === 3) {
                 eventDates[i].date = `${parts[1]}-${parts[2]}`;
                 logAction('EDIT_EVENT', `Updated event date index ${i} to ${eventDates[i].date}`);
+                sortEventsByDate();
                 saveData();
             }
             render();
@@ -3431,6 +3723,7 @@ window.openRoleAssignModal = function() {
             eventNameInput.value = '';
             dateInput.value = '';
             if (isWarInput) isWarInput.checked = false;
+            sortEventsByDate();
             saveData(); 
             render();
         });
@@ -3496,6 +3789,11 @@ window.openRoleAssignModal = function() {
             document.getElementById('subViewViolators').style.display = 'flex';
             render();
         });
+
+        document.getElementById('btnRankingSortDefault').addEventListener('click', () => setRankingSortMode('default'));
+        document.getElementById('btnRankingSortRank').addEventListener('click', () => setRankingSortMode('rank'));
+        document.getElementById('btnWarSortDefault').addEventListener('click', () => setWarSortMode('default'));
+        document.getElementById('btnWarSortRank').addEventListener('click', () => setWarSortMode('rank'));
 
         document.getElementById('searchInput').addEventListener('input', render);
 
