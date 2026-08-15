@@ -180,6 +180,16 @@
         .col-event--war { background-color: #fdeceb !important; border-bottom: 3px solid var(--color-not-attended) !important; }
         .col-actions { width: 80px; text-align: center; }
 
+        /* ===== Per-day event column collapse (mass-hide a day's events) ===== */
+        .day-group-header { text-align: center; background-color: #e9ecf7; vertical-align: middle; }
+        .day-group-header__date { display: block; font-size: 10px; font-weight: 800; color: var(--color-text-muted); margin-top: 4px; }
+        .day-collapse-btn { width: 18px; height: 18px; border: 2px solid var(--color-primary); background: white; color: var(--color-primary); border-radius: 4px; font-size: 12px; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 0; line-height: 1; font-family: var(--font-family-ui); }
+        .day-collapse-btn:hover { background: var(--color-primary-light); }
+        .day-collapse-btn--collapsed { background: var(--color-gold-bg); border-color: var(--color-gold); color: var(--color-gold); }
+        .day-collapsed-cell { text-align: center; cursor: pointer; font-weight: 800; color: var(--color-primary); background: #f4f6fb; font-size: 12px; }
+        .day-collapsed-cell:hover { background: #eceff8; }
+        .day-collapsed-cell__sub { display: block; font-size: 9px; font-weight: 700; color: var(--color-text-muted); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.3px; }
+
         .attended-high { color: #2563eb; }
         .attended-mid { color: #b89117; }
         .attended-low { color: #dc2626; }
@@ -829,7 +839,7 @@
                 <div class="table-card" id="subViewAttendance">
                     <div class="table-wrapper">
                         <table class="data-table">
-                            <thead><tr id="tableHeaderRow"></tr></thead>
+                            <thead><tr id="dayGroupHeaderRow"></tr><tr id="tableHeaderRow"></tr></thead>
                             <tbody id="memberTableBody"></tbody>
                             <tfoot id="tableFooterRow"></tfoot>
                         </table>
@@ -1320,6 +1330,19 @@ let currentUser = {
         // tab order (frozen rank group + F1 power); 'rank' sorts by participation %.
         let rankingSortMode = 'default';
         let warSortMode = 'default';
+        // Dates (event columns) the person has collapsed via the small square button
+        // above the event name, so they don't have to scroll sideways past days they've
+        // already checked. Session-only UI state — not persisted to the cloud.
+        let collapsedEventDates = new Set();
+
+        window.toggleDayCollapse = function(dateKey) {
+            if (collapsedEventDates.has(dateKey)) {
+                collapsedEventDates.delete(dateKey);
+            } else {
+                collapsedEventDates.add(dateKey);
+            }
+            render();
+        };
         // Notice tab Gantt-style event timeline state (supports date ranges, weekly/biweekly/monthly repeats, start/end time, category, visibility)
         let calendarEvents = [];
         const CALENDAR_COLORS = ['#2563eb', '#dc2626', '#eab308', '#16a34a', '#ec4899']; // blue, red, yellow, green, pink
@@ -3381,14 +3404,52 @@ window.openRoleAssignModal = function() {
         }
 
         function renderAttendanceTable(filteredMembers, avgRate, isManagementOrAdmin, totalEvents, totalAttendedCount) {
+            const dayGroupHeaderRow = document.getElementById('dayGroupHeaderRow');
             const tableHeaderRow = document.getElementById('tableHeaderRow');
             const tableBody = document.getElementById('memberTableBody');
             const tableFooterRow = document.getElementById('tableFooterRow');
+
+            // Group event columns by date so a whole day can be mass-collapsed into a
+            // single narrow column via the small square button, instead of scrolling
+            // sideways past every event to re-check a name/date/checklist.
+            // eventDates is kept chronologically sorted, so same-date events are adjacent.
+            const dayGroups = [];
+            eventDates.forEach((ev, evIdx) => {
+                const key = ev.date || 'no-date';
+                let group = dayGroups.length ? dayGroups[dayGroups.length - 1] : null;
+                if (!group || group.key !== key) {
+                    group = { key, indices: [] };
+                    dayGroups.push(group);
+                }
+                group.indices.push(evIdx);
+            });
+
+            let dayHeaderHTML = `<th class="col-rank"></th><th></th><th></th><th></th>`;
+            if (showDiffMode) dayHeaderHTML += `<th></th>`;
+
+            dayGroups.forEach(group => {
+                const isCollapsed = collapsedEventDates.has(group.key);
+                if (isCollapsed) {
+                    dayHeaderHTML += `
+                        <th class="day-group-header" rowspan="2">
+                            <button type="button" class="day-collapse-btn day-collapse-btn--collapsed" onclick="toggleDayCollapse('${group.key}')" title="Expand ${group.key}">+</button>
+                            <span class="day-group-header__date notranslate">${group.key}</span>
+                        </th>`;
+                } else {
+                    dayHeaderHTML += `
+                        <th class="day-group-header" colspan="${group.indices.length}">
+                            <button type="button" class="day-collapse-btn" onclick="toggleDayCollapse('${group.key}')" title="Collapse ${group.key}">−</button>
+                            <span class="day-group-header__date notranslate">${group.key}</span>
+                        </th>`;
+                }
+            });
+            dayGroupHeaderRow.innerHTML = dayHeaderHTML;
 
             let headerHTML = `<th class="col-rank">#</th><th>MEMBER</th><th class="col-attended">ATTENDED</th><th class="col-percentage">PARTICIPATION %</th>`;
             if (showDiffMode) headerHTML += `<th>VS AVG</th>`;
 
             eventDates.forEach((ev, evIdx) => {
+                if (collapsedEventDates.has(ev.date)) return; // covered by the rowspan cell above
                 const isWar = !!ev.isWar;
                 headerHTML += `
                     <th class="col-event ${isWar ? 'col-event--war' : ''}">
@@ -3412,8 +3473,10 @@ window.openRoleAssignModal = function() {
 
             // Total column count, used for the colored rank-group divider rows below
             // (mirrors members.html's group bars): rank, name, attended, percentage,
-            // optional VS AVG column, then one column per event.
-            const attendanceColSpan = 4 + (showDiffMode ? 1 : 0) + eventDates.length;
+            // optional VS AVG column, then one column per visible event (collapsed
+            // day-groups count as a single column).
+            const visibleEventColumnCount = dayGroups.reduce((sum, g) => sum + (collapsedEventDates.has(g.key) ? 1 : g.indices.length), 0);
+            const attendanceColSpan = 4 + (showDiffMode ? 1 : 0) + visibleEventColumnCount;
             let lastGroupKey = null;
 
             filteredMembers.forEach((member, index) => {
@@ -3457,57 +3520,21 @@ window.openRoleAssignModal = function() {
                     rowHTML += `<td><span class="${vsAvgClass} notranslate">${vsAvgString}</span></td>`;
                 }
 
-                eventDates.forEach((ev, evIdx) => {
-                    const isChecked = member.events && member.events[evIdx];
-
-                    if (ev.isWar) {
-                        // War events: attend/not-attend pill on top, Yes/No/Maybe vote pill below,
-                        // colored red/yellow per the violation rules (voted Yes/Maybe/never-voted but absent).
-                        // No checkmarks are used in the war column.
-                        const status = getWarCellStatus(member, evIdx);
-                        const voteClass = status.vote === 'yes' ? 'war-vote-badge--yes' : status.vote === 'no' ? 'war-vote-badge--no' : status.vote === 'maybe' ? 'war-vote-badge--maybe' : 'war-vote-badge--none';
-                        const voteLabel = status.vote === 'yes' ? 'YES' : status.vote === 'no' ? 'NO' : status.vote === 'maybe' ? 'MAYBE' : '—';
-                        const cellFlagClass = status.flag === 'red' ? 'war-cell--red' : (status.flag === 'yellow' ? 'war-cell--yellow' : '');
-                        const attendClass = status.attended ? 'attend-pill--yes' : 'attend-pill--no';
-                        const attendLabel = status.attended ? 'ATTENDED' : 'NOT ATTENDED';
-
+                dayGroups.forEach(group => {
+                    if (collapsedEventDates.has(group.key)) {
+                        const attendedThatDay = group.indices.reduce((sum, i) => sum + ((member.events && member.events[i]) ? 1 : 0), 0);
+                        const totalThatDay = group.indices.length;
+                        const dayColorClass = getAttendedColorClass(totalThatDay > 0 ? (attendedThatDay / totalThatDay) * 100 : 0);
                         rowHTML += `
-                            <td class="col-event col-event--war">
-                                <div class="war-cell ${cellFlagClass}">
-                                    <span class="attend-pill ${attendClass} ${isManagementOrAdmin ? '' : 'attend-pill--readonly'}" onclick="${isManagementOrAdmin ? `toggleAttendance(${member.id}, ${evIdx})` : ''}">${attendLabel}</span>
-                                    <span class="war-vote-badge ${voteClass}" onclick="${isManagementOrAdmin ? `cycleWarVote(${member.id}, ${evIdx})` : ''}">${voteLabel}</span>
-                                </div>
+                            <td class="day-collapsed-cell" onclick="toggleDayCollapse('${group.key}')" title="Expand ${group.key}">
+                                <span class="notranslate ${dayColorClass}">${attendedThatDay}/${totalThatDay}</span>
+                                <span class="day-collapsed-cell__sub">attended</span>
                             </td>`;
                         return;
                     }
-
-                    let changeBadgeHTML = '';
-                    if (showDiffMode) {
-                        if (evIdx > 0) {
-                            const prevChecked = member.events && member.events[evIdx - 1];
-                            if (!prevChecked && isChecked) {
-                                changeBadgeHTML = `<div style="font-size: var(--font-xs); margin-top: 2px;"><span class="diff-green">▲</span></div>`;
-                            } else if (prevChecked && !isChecked) {
-                                changeBadgeHTML = `<div style="font-size: var(--font-xs); margin-top: 2px;"><span class="diff-red">▼</span></div>`;
-                            } else {
-                                changeBadgeHTML = `<div style="font-size: var(--font-xs); margin-top: 2px;"><span class="diff-yellow">▬</span></div>`;
-                            }
-                        } else {
-                            if (isChecked) {
-                                changeBadgeHTML = `<div style="font-size: var(--font-xs); margin-top: 2px;"><span class="diff-green">▲</span></div>`;
-                            } else {
-                                changeBadgeHTML = `<div style="font-size: var(--font-xs); margin-top: 2px;"><span class="diff-yellow">▬</span></div>`;
-                            }
-                        }
-                    }
-
-                    rowHTML += `
-                        <td class="col-event">
-                            <div style="display: flex; flex-direction: column; align-items: center;">
-                                <span class="check-toggle" onclick="${isManagementOrAdmin ? `toggleAttendance(${member.id}, ${evIdx})` : ''}">${isChecked ? '<span class="check-icon">✓</span>' : '<span class="cross-icon">—</span>'}</span>
-                                ${changeBadgeHTML}
-                            </div>
-                        </td>`;
+                    group.indices.forEach(evIdx => {
+                        rowHTML += renderAttendanceEventCell(member, evIdx, isManagementOrAdmin);
+                    });
                 });
 
                 rowHTML += `</tr>`;
@@ -3516,12 +3543,74 @@ window.openRoleAssignModal = function() {
 
             let footerHTML = `<tr><td colspan="3" style="font-weight: 800;">TOTAL ATTENDANCE</td><td></td>`;
             if (showDiffMode) footerHTML += `<td></td>`;
-            eventDates.forEach((ev, evIdx) => {
-                const eventTotal = filteredMembers.reduce((sum, m) => sum + ((m.events && m.events[evIdx]) ? 1 : 0), 0);
-                footerHTML += `<td class="col-event notranslate" style="font-weight: 800; color: var(--color-primary);">${eventTotal}</td>`;
+            dayGroups.forEach(group => {
+                if (collapsedEventDates.has(group.key)) {
+                    const dayTotal = group.indices.reduce((sum, evIdx) => sum + filteredMembers.reduce((s, m) => s + ((m.events && m.events[evIdx]) ? 1 : 0), 0), 0);
+                    footerHTML += `<td class="day-collapsed-cell notranslate" style="font-weight: 800; color: var(--color-primary);">${dayTotal}</td>`;
+                    return;
+                }
+                group.indices.forEach(evIdx => {
+                    const eventTotal = filteredMembers.reduce((sum, m) => sum + ((m.events && m.events[evIdx]) ? 1 : 0), 0);
+                    footerHTML += `<td class="col-event notranslate" style="font-weight: 800; color: var(--color-primary);">${eventTotal}</td>`;
+                });
             });
             footerHTML += `</tr>`;
             tableFooterRow.innerHTML = footerHTML;
+        }
+
+        // Renders one event <td> for a member row in the (non-collapsed) attendance table —
+        // extracted so both the normal render path and any future callers share identical markup.
+        function renderAttendanceEventCell(member, evIdx, isManagementOrAdmin) {
+            const ev = eventDates[evIdx];
+            const isChecked = member.events && member.events[evIdx];
+
+            if (ev.isWar) {
+                // War events: attend/not-attend pill on top, Yes/No/Maybe vote pill below,
+                // colored red/yellow per the violation rules (voted Yes/Maybe/never-voted but absent).
+                // No checkmarks are used in the war column.
+                const status = getWarCellStatus(member, evIdx);
+                const voteClass = status.vote === 'yes' ? 'war-vote-badge--yes' : status.vote === 'no' ? 'war-vote-badge--no' : status.vote === 'maybe' ? 'war-vote-badge--maybe' : 'war-vote-badge--none';
+                const voteLabel = status.vote === 'yes' ? 'YES' : status.vote === 'no' ? 'NO' : status.vote === 'maybe' ? 'MAYBE' : '—';
+                const cellFlagClass = status.flag === 'red' ? 'war-cell--red' : (status.flag === 'yellow' ? 'war-cell--yellow' : '');
+                const attendClass = status.attended ? 'attend-pill--yes' : 'attend-pill--no';
+                const attendLabel = status.attended ? 'ATTENDED' : 'NOT ATTENDED';
+
+                return `
+                    <td class="col-event col-event--war">
+                        <div class="war-cell ${cellFlagClass}">
+                            <span class="attend-pill ${attendClass} ${isManagementOrAdmin ? '' : 'attend-pill--readonly'}" onclick="${isManagementOrAdmin ? `toggleAttendance(${member.id}, ${evIdx})` : ''}">${attendLabel}</span>
+                            <span class="war-vote-badge ${voteClass}" onclick="${isManagementOrAdmin ? `cycleWarVote(${member.id}, ${evIdx})` : ''}">${voteLabel}</span>
+                        </div>
+                    </td>`;
+            }
+
+            let changeBadgeHTML = '';
+            if (showDiffMode) {
+                if (evIdx > 0) {
+                    const prevChecked = member.events && member.events[evIdx - 1];
+                    if (!prevChecked && isChecked) {
+                        changeBadgeHTML = `<div style="font-size: var(--font-xs); margin-top: 2px;"><span class="diff-green">▲</span></div>`;
+                    } else if (prevChecked && !isChecked) {
+                        changeBadgeHTML = `<div style="font-size: var(--font-xs); margin-top: 2px;"><span class="diff-red">▼</span></div>`;
+                    } else {
+                        changeBadgeHTML = `<div style="font-size: var(--font-xs); margin-top: 2px;"><span class="diff-yellow">▬</span></div>`;
+                    }
+                } else {
+                    if (isChecked) {
+                        changeBadgeHTML = `<div style="font-size: var(--font-xs); margin-top: 2px;"><span class="diff-green">▲</span></div>`;
+                    } else {
+                        changeBadgeHTML = `<div style="font-size: var(--font-xs); margin-top: 2px;"><span class="diff-yellow">▬</span></div>`;
+                    }
+                }
+            }
+
+            return `
+                <td class="col-event">
+                    <div style="display: flex; flex-direction: column; align-items: center;">
+                        <span class="check-toggle" onclick="${isManagementOrAdmin ? `toggleAttendance(${member.id}, ${evIdx})` : ''}">${isChecked ? '<span class="check-icon">✓</span>' : '<span class="cross-icon">—</span>'}</span>
+                        ${changeBadgeHTML}
+                    </div>
+                </td>`;
         }
 
         function renderRankingCards(filteredMembers, avgRate, isManagementOrAdmin, totalEvents) {
