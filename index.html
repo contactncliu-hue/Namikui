@@ -3410,6 +3410,12 @@ window.openRoleAssignModal = function() {
                 return;
             }
 
+            // Total column count, used for the colored rank-group divider rows below
+            // (mirrors members.html's group bars): rank, name, attended, percentage,
+            // optional VS AVG column, then one column per event.
+            const attendanceColSpan = 4 + (showDiffMode ? 1 : 0) + eventDates.length;
+            let lastGroupKey = null;
+
             filteredMembers.forEach((member, index) => {
                 const rank = index + 1;
                 const rateNum = totalEvents > 0 ? parseFloat(((member.attended / totalEvents) * 100).toFixed(1)) : 0;
@@ -3418,6 +3424,18 @@ window.openRoleAssignModal = function() {
                 const vsAvgString = (vsAvgDiff >= 0 ? `+` : ``) + vsAvgDiff.toFixed(1) + `%`;
                 const vsAvgClass = vsAvgDiff >= 0 ? 'vs-avg-pos' : 'vs-avg-neg';
                 const rankClass = rank === 1 ? 'rank-1' : (rank === 2 ? 'rank-2' : (rank === 3 ? 'rank-3' : ''));
+
+                const groupKey = member.frozenRank || 'R1';
+                if (groupKey !== lastGroupKey) {
+                    lastGroupKey = groupKey;
+                    tableBody.insertAdjacentHTML('beforeend', `
+                        <tr class="rank-group-bar-row">
+                            <td colspan="${attendanceColSpan}">
+                                <div class="rank-group-bar rank-group-bar--${groupKey.toLowerCase()}">${groupKey}</div>
+                            </td>
+                        </tr>
+                    `);
+                }
 
                 let rowHTML = `
                     <tr class="${rankClass}">
