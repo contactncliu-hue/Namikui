@@ -2504,12 +2504,45 @@
 
         try {
             const canvas = await html2canvas(wrapper, { backgroundColor: '#f5f4ef', scale: 2, useCORS: true });
-            const link = document.createElement('a');
+
+            // Convert to a Blob (more reliable across browsers than a raw
+            // data URL, especially on mobile/Safari) and trigger the
+            // download via a link that's actually attached to the page —
+            // some browsers silently no-op link.click() on a detached <a>.
             const dateStr = new Date().toISOString().slice(0, 10);
-            link.download = `black-gold-map-team-${activeBoard}-${dateStr}.png`;
-            link.href = canvas.toDataURL('image/png');
-            link.click();
-            showSaveStatus('ok', 'Exported');
+            const filename = `black-gold-map-team-${activeBoard}-${dateStr}.png`;
+
+            const supportsDownloadAttr = 'download' in document.createElement('a');
+
+            await new Promise((resolve) => {
+                canvas.toBlob((blob) => {
+                    if (!blob) { resolve(); return; }
+                    const blobUrl = URL.createObjectURL(blob);
+
+                    if (!supportsDownloadAttr) {
+                        // iOS Safari (and some in-app browsers) ignore the
+                        // download attribute entirely — open the image in a
+                        // new tab so the user can long-press → Save Image.
+                        window.open(blobUrl, '_blank');
+                        setTimeout(() => URL.revokeObjectURL(blobUrl), 15000);
+                        resolve();
+                        return;
+                    }
+
+                    const link = document.createElement('a');
+                    link.href = blobUrl;
+                    link.download = filename;
+                    link.rel = 'noopener';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    // Give the browser a moment to pick up the blob URL before revoking it.
+                    setTimeout(() => URL.revokeObjectURL(blobUrl), 4000);
+                    resolve();
+                }, 'image/png');
+            });
+
+            showSaveStatus('ok', supportsDownloadAttr ? 'Exported' : 'Opened in new tab — long-press to save');
         } catch (err) {
             console.error('PNG export failed:', err);
             showSaveStatus('error', 'Export failed');
