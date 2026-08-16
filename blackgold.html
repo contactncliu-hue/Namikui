@@ -430,8 +430,13 @@
         cursor: pointer;
         transition: filter 0.15s ease, opacity 0.15s ease, transform 0.1s ease;
     }
+    /* Arrows (rotated connector dots) render noticeably larger than plain circles so
+       rally direction is easy to read at a glance. */
+    .map-connector-dot--arrow {
+        width: clamp(30px, 6.4cqw, 52px);
+        height: clamp(30px, 6.4cqw, 52px);
+    }
     .map-connector-dot--readonly { cursor: default; }
-    .map-connector-dot--hidden { opacity: 0; pointer-events: none; }
     .map-connector-dot svg { width: 100%; height: 100%; overflow: visible; }
     .map-connector-arrow-inner { transition: transform 0.15s ease; transform-origin: 50% 50%; }
     .map-connector-dot--selected { filter: drop-shadow(0 0 0 2px white) drop-shadow(0 0 5px var(--color-primary-dark)); }
@@ -453,14 +458,68 @@
     .map-subtab-btn:hover { background: #eef2f9; }
     .map-subtab-btn--active { background: var(--color-primary); color: white; }
 
-    .map-body { display: flex; gap: 18px; align-items: flex-start; }
+    .map-body { display: flex; gap: 0; align-items: flex-start; position: relative; }
+
+    /* Groups panel behaves as a true sidebar: collapsed by default so the map
+       fills all available space, and when opened it takes its own column
+       BESIDE the map (flex layout), never overlapping/covering it. */
     .map-table-wrapper {
-        flex: 0 0 380px;
-        width: 380px;
-        min-width: 340px;
+        flex: 0 0 0px;
+        width: 0px;
+        min-width: 0;
+        overflow: hidden;
         display: flex;
         flex-direction: column;
         gap: 12px;
+        opacity: 0;
+        transition: flex-basis 0.2s ease, width 0.2s ease, opacity 0.15s ease;
+    }
+    .map-body--sidebar-open .map-table-wrapper {
+        flex: 0 0 380px;
+        width: 380px;
+        min-width: 340px;
+        opacity: 1;
+        margin-right: 18px;
+        overflow-y: auto;
+        max-height: calc(100vh - 160px);
+    }
+
+    /* Three-line hamburger toggle sitting at the upper-left corner of the map,
+       used to reveal/hide the groups sidebar without ever covering the map. */
+    .map-groups-toggle-btn {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        z-index: 20;
+        width: 40px;
+        height: 40px;
+        border-radius: 6px;
+        background: rgba(59, 82, 164, 0.92);
+        border: none;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        cursor: pointer;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+        transition: background 0.15s;
+    }
+    .map-groups-toggle-btn span {
+        display: block;
+        width: 20px;
+        height: 3px;
+        background: white;
+        border-radius: 2px;
+    }
+    .map-groups-toggle-btn:hover,
+    .map-groups-toggle-btn--active {
+        background: var(--color-primary-dark);
+    }
+    .map-body--sidebar-open .map-groups-toggle-btn {
+        position: static;
+        margin-right: 10px;
+        align-self: flex-start;
     }
 
     .map-team-block { border: 2px solid var(--color-border-light); border-radius: 6px; overflow: hidden; }
@@ -507,10 +566,10 @@
     }
     .map-role-add-btn:hover { background: var(--color-primary); color: white; }
 
-    .map-diagram-wrap { flex: 1 1 420px; min-width: 360px; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 10px; position: sticky; top: 12px; }
+    .map-diagram-wrap { flex: 1 1 auto; min-width: 360px; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 10px; position: sticky; top: 12px; }
     .map-diagram {
         position: relative; width: 100%; aspect-ratio: 1093 / 1096;
-        max-height: calc(100vh - 160px);
+        max-height: calc(100vh - 110px);
         background: #c58f5f;
         border-radius: 14px; border: 3px solid #93672f; box-shadow: inset 0 0 30px rgba(0,0,0,0.15);
         overflow: hidden;
@@ -605,8 +664,11 @@
 
     #mapSection .main,
     body:has(#mapSection[style*="block"]) .main {
-        max-width: 1900px;
+        max-width: 2000px;
     }
+
+    /* Only the Map (and its Groups sidebar) is used on this page for now. */
+    #tabAB, #tabCalendar, #abSlotsSection, #calendarSection, #abSearchBox, #calendarToolbarControls { display: none !important; }
 
     @media (min-width: 981px) {
         .map-toolbar__hint { display: none !important; }
@@ -845,10 +907,10 @@
                 <div class="map-toolbar">
                     <span class="map-toolbar__label">FORMATION MAP · GROUPS &amp; RALLY ORDER</span>
                     <div class="map-toolbar__right">
-                        <button class="map-circles-toggle-btn" id="mapCirclesToggleBtn" style="display:none;" title="Show or hide the plain (unset) circles for connector dots, teardrops, and landmark markers on the map">SHOW CIRCLES</button>
+                        <button class="map-circles-toggle-btn" id="mapExportPngBtn" style="display:none;" title="Export the map and group names as a PNG image">EXPORT PNG</button>
                         <div class="map-dot-color-picker" id="mapDotColorPicker" style="display:none;">
-                            <span class="map-dot-color-picker__label">Selected arrow color</span>
-                            <div class="map-dot-color-picker__swatches" id="mapDotColorSwatches"></div>
+                            <span class="map-dot-color-picker__label" id="mapDotColorPickerLabel">Selected arrow color</span>
+                            <input type="color" id="mapDotColorInput" class="map-team-header__color" style="border:2px solid var(--color-primary); width:26px; height:26px;" oninput="setDotColor(this.value)">
                         </div>
                     </div>
                 </div>
@@ -856,8 +918,11 @@
                     <button class="map-subtab-btn map-subtab-btn--active" id="mapSubtabA">TEAM A</button>
                     <button class="map-subtab-btn" id="mapSubtabB">TEAM B</button>
                 </div>
-                <div class="map-toolbar__hint" id="mapAdminHint" style="display:none;">The map always shows a fixed set of 6 teardrop markers plus 4 fixed landmark markers (2 Military Base stars, 2 Hospital crosses) — adding or removing a group never adds or removes a teardrop marker; it only fills or empties one of the 6 teardrop slots (up to 8 groups total, the 7th &amp; 8th are "extra" and don't get their own teardrop, but their colors are still available for the arrow swatches below). The number badge on each group's tab (top-right of its block) cycles 1–8 and is just a label for that group — it does not change the map. Click a teardrop, star, or cross marker directly on the map to cycle its own number (1–8, then a hidable blank circle, then back to 1) — this number is independent of the group's own number. Click a teardrop marker to also select it for its own color — use the swatches above to set that teardrop's color from a fixed palette (teardrop colors no longer follow the group's color). Star and cross markers keep their fixed colors and are not customisable. Use the select boxes on the left to assign members (auto-pulls Faction &amp; F1 Power from Members) · click a group's color swatch to recolor its table header (and its rally-path color options) · use a role's name dropdown to rename it — or pick "➕ Add New Role to List..." / "🗑 Remove a Role from List..." to manage the shared dropdown options so you don't have to keep retyping — the × deletes that row, and + ADD ROLE ROW adds a new one, all scoped to that one group, on the team you're currently viewing · click any small circle or arrow on the map to select it and rotate it (each click rotates it 25°; a full rotation returns it to a plain circle) — once selected, use the swatches above to set that one arrow's own color, chosen from this team's current group colors, including groups 7 &amp; 8 (each team's rally path and its color options are separate). Plain (unset) circles — on connector dots, teardrops, and landmark markers alike — are hidden by default to keep the map uncluttered — use the SHOW CIRCLES button above to reveal them for editing, then hide them again when you're done. Assigning a member here automatically sets their Slot (A or B, matching this tab) and Main/Substitute status on the most recent A/B Slots session. A member can only be assigned to one team (A or B) per session.</div>
+                <div class="map-toolbar__hint" id="mapAdminHint" style="display:none;">The map always shows a fixed set of 6 teardrop markers plus 4 fixed landmark markers (2 Military Base stars, 2 Hospital crosses) — adding or removing a group never adds or removes a teardrop marker; it only fills or empties one of the 6 teardrop slots (up to 8 groups total, the 7th &amp; 8th are "extra" and don't get their own teardrop, but their colors are still available for the arrow swatches below). The number badge on each group's tab (top-right of its block) cycles 1–8 and is just a label for that group — it does not change the map. Click a teardrop, star, or cross marker directly on the map to cycle its own number (1–8, then back to 1) — the marker's shape always stays the same and never disappears; at the start of the cycle it simply shows no number. Click a teardrop marker to also select it for its own color — use the color picker above (same one used for a group's header color) to set that teardrop's color. Star and cross markers keep their fixed colors and are not customisable. Use the select boxes on the left to assign members (auto-pulls Faction &amp; F1 Power from Members) · click a group's color swatch to recolor its table header (and its rally-path color options) · use a role's name dropdown to rename it — or pick "➕ Add New Role to List..." / "🗑 Remove a Role from List..." to manage the shared dropdown options so you don't have to keep retyping — the × deletes that row, and + ADD ROLE ROW adds a new one, all scoped to that one group, on the team you're currently viewing · click any small circle or arrow on the map to select it and rotate it (each click rotates it 25°; a full rotation returns it to a plain circle — the circle stays visible, it never disappears) — once selected, use the color picker above to set that one arrow's own color. Assigning a member here automatically sets their Slot (A or B, matching this tab) and Main/Substitute status on the most recent A/B Slots session. A member can only be assigned to one team (A or B) per session.</div>
                 <div class="map-body">
+                    <button class="map-groups-toggle-btn" id="mapGroupsToggleBtn" title="Show / hide groups panel">
+                        <span></span><span></span><span></span>
+                    </button>
                     <div class="map-table-wrapper" id="mapTableWrapper"></div>
                     <div class="map-diagram-wrap">
                         <div class="map-diagram" id="mapDiagram"></div>
@@ -914,6 +979,7 @@
     }
 </script>
 <script type="text/javascript" src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
 <script>
     (function() {
@@ -1083,16 +1149,8 @@
     let assignments = {};
     let mapBoards = { A: [], B: [] };
     let activeBoard = 'A';
-    let activeTab = 'ab';
-
-    // Whether the plain (unset) rally circles are visible on the map. Circles that
-    // have already been rotated into arrows always stay visible regardless of this
-    // flag — only the un-rotated, purely decorative/clickable circles are affected.
-    // Defaults to hidden (false) so the map isn't cluttered with 18 empty circles;
-    // the SHOW CIRCLES button reveals them so they can be clicked/rotated, then
-    // HIDE CIRCLES declutters the view again. This is a local display preference
-    // only — it is not saved, so each viewer starts with circles hidden.
-    let showConnectorCircles = false;
+    let activeTab = 'map';
+    let groupsSidebarOpen = false;
 
     const SLOT_POSITIONS = [
         { left: 70.91, top: 63.69 },
@@ -1105,7 +1163,7 @@
         { left: 50.00, top: 80.50 }
     ];
     const MAX_PIN_NUMBER = 8;
-    const MARKER_CYCLE_STATES = MAX_PIN_NUMBER + 1; // 0 = blank/hidable circle, 1-8 = numbered
+    const MARKER_CYCLE_STATES = MAX_PIN_NUMBER + 1; // 0 = no-number state, 1-8 = numbered (shape never changes)
     const DEFAULT_GROUP_COUNT = 6;
     const MAP_PIN_POSITIONS = SLOT_POSITIONS.slice(0, 6);
     const MAX_GROUPS = 8;
@@ -1166,17 +1224,6 @@
 
     // Currently selected map marker for recoloring: { type: 'dot' | 'pin', index } or null.
     let selectedMarker = null;
-
-    function getBoardColorPalette(board) {
-        const teams = mapBoards[board] || [];
-        const seen = new Set();
-        const palette = [];
-        teams.forEach(t => {
-            const c = t.color || DEFAULT_DOT_COLOR;
-            if (!seen.has(c)) { seen.add(c); palette.push(c); }
-        });
-        return palette.length > 0 ? palette : DEFAULT_GROUP_COLORS;
-    }
 
     const DEFAULT_ROLE_DEFS = [
         { key: 'ballCapture', label: 'Ball Capture' },
@@ -1569,17 +1616,21 @@
     document.getElementById('mapSubtabA').addEventListener('click', () => switchMapSubtab('A'));
     document.getElementById('mapSubtabB').addEventListener('click', () => switchMapSubtab('B'));
 
-    document.getElementById('mapCirclesToggleBtn').addEventListener('click', () => {
-        showConnectorCircles = !showConnectorCircles;
-        updateCirclesToggleBtn();
-        renderMapDiagram();
+    function setGroupsSidebarOpen(open) {
+        groupsSidebarOpen = open;
+        const body = document.querySelector('.map-body');
+        const btn = document.getElementById('mapGroupsToggleBtn');
+        if (body) body.classList.toggle('map-body--sidebar-open', groupsSidebarOpen);
+        if (btn) btn.classList.toggle('map-groups-toggle-btn--active', groupsSidebarOpen);
+    }
+
+    document.getElementById('mapGroupsToggleBtn').addEventListener('click', () => {
+        setGroupsSidebarOpen(!groupsSidebarOpen);
     });
 
-    function updateCirclesToggleBtn() {
-        const btn = document.getElementById('mapCirclesToggleBtn');
-        btn.innerText = showConnectorCircles ? 'HIDE CIRCLES' : 'SHOW CIRCLES';
-        btn.classList.toggle('map-circles-toggle-btn--active', showConnectorCircles);
-    }
+    document.getElementById('mapExportPngBtn').addEventListener('click', () => {
+        exportMapToPng();
+    });
 
     function render() {
         const activeMembers = getActiveMembers();
@@ -1602,8 +1653,7 @@
         document.getElementById('calBtnAddDate').style.display = isManagementOrAdmin ? 'inline-block' : 'none';
         document.getElementById('calCalendarPicker').style.display = isManagementOrAdmin ? 'inline-block' : 'none';
         document.getElementById('mapDotColorPicker').style.display = isManagementOrAdmin ? 'flex' : 'none';
-        document.getElementById('mapCirclesToggleBtn').style.display = canViewMap ? 'inline-block' : 'none';
-        updateCirclesToggleBtn();
+        document.getElementById('mapExportPngBtn').style.display = canViewMap ? 'inline-block' : 'none';
 
         const legendHint = document.getElementById('legendHint');
         if (isManagementOrAdmin) {
@@ -1943,7 +1993,7 @@
 
     function renderMap() {
         document.getElementById('mapLegendCard').style.display = canViewMap ? 'flex' : 'none';
-        renderDotColorSwatches();
+        renderDotColorPicker();
         if (!canViewMap) {
             document.getElementById('mapTableWrapper').innerHTML = `<div class="map-locked-state">This section is available to alliance members, management, and admins only.</div>`;
             document.getElementById('mapDiagram').innerHTML = '';
@@ -1951,36 +2001,33 @@
         }
         renderMapTable();
         renderMapDiagram();
+        setGroupsSidebarOpen(groupsSidebarOpen);
     }
 
-    function renderDotColorSwatches() {
+    function renderDotColorPicker() {
         if (!isManagementOrAdmin) return;
-        const wrap = document.getElementById('mapDotColorSwatches');
+        const input = document.getElementById('mapDotColorInput');
+        const label = document.getElementById('mapDotColorPickerLabel');
         if (!selectedMarker) {
-            wrap.innerHTML = `<span style="font-family: var(--font-family-base); font-weight: 700; font-size: 10px; color: var(--color-text-muted);">Click a dot/arrow, or a teardrop marker on the map, to recolor it</span>`;
+            input.disabled = true;
+            input.value = '#966426';
+            label.textContent = 'Click a dot/arrow or a teardrop marker on the map to recolor it';
             return;
         }
 
-        let activeColor = null;
-        let palette = [];
+        let activeColor = DEFAULT_DOT_COLOR;
         if (selectedMarker.type === 'dot') {
             const boardDots = mapDotsByBoard[activeBoard];
-            if (!boardDots.colors) { wrap.innerHTML = ''; return; }
-            activeColor = boardDots.colors[selectedMarker.index];
-            palette = getBoardColorPalette(activeBoard);
+            if (!boardDots.colors) return;
+            activeColor = boardDots.colors[selectedMarker.index] || DEFAULT_DOT_COLOR;
+            label.textContent = 'Selected arrow color';
         } else if (selectedMarker.type === 'pin') {
             const pinColors = mapPinColorsByBoard[activeBoard] || [];
-            activeColor = pinColors[selectedMarker.index];
-            palette = DEFAULT_GROUP_COLORS;
-        } else {
-            wrap.innerHTML = '';
-            return;
+            activeColor = pinColors[selectedMarker.index] || DEFAULT_DOT_COLOR;
+            label.textContent = 'Selected marker color';
         }
-
-        wrap.innerHTML = palette.map(c => `
-            <span class="map-dot-color-swatch ${c === activeColor ? 'map-dot-color-swatch--active' : ''}"
-                  style="background:${c};" title="${c}" onclick="setDotColor('${c}')"></span>
-        `).join('');
+        input.disabled = false;
+        input.value = activeColor;
     }
 
     function renderMapTable() {
@@ -2127,11 +2174,10 @@
                 const isBlank = num === 0;
                 const pinColor = pinColors[i] || DEFAULT_DOT_COLOR;
                 const isSelected = isManagementOrAdmin && selectedMarker && selectedMarker.type === 'pin' && selectedMarker.index === i;
-                const isHiddenBlank = isBlank && !showConnectorCircles;
-                const clickAttr = isManagementOrAdmin ? `onclick="cycleTeamNumber('${team.id}', ${i})" title="Click to cycle this marker's number (1–8, then a hidable blank circle) · then use the swatches above to set this teardrop's own color"` : '';
+                const clickAttr = isManagementOrAdmin ? `onclick="cycleTeamNumber('${team.id}', ${i})" title="Click to cycle this marker's number (1–8) — the marker's shape never changes or disappears · then use the color picker above to set this teardrop's own color"` : '';
                 html += `
-                    <div class="map-pin ${isManagementOrAdmin ? '' : 'map-pin--readonly'} ${isSelected ? 'map-connector-dot--selected' : ''} ${isHiddenBlank ? 'map-connector-dot--hidden' : ''}" style="left:${pos.left}%; top:${pos.top}%;" ${clickAttr}>
-                        ${isBlank ? landmarkCircleSvg(pinColor) : mapPinSvg(pinColor)}
+                    <div class="map-pin ${isManagementOrAdmin ? '' : 'map-pin--readonly'} ${isSelected ? 'map-connector-dot--selected' : ''}" style="left:${pos.left}%; top:${pos.top}%;" ${clickAttr}>
+                        ${mapPinSvg(pinColor)}
                         ${isBlank ? '' : `<span class="map-pin__num notranslate" translate="no">${num}</span>`}
                     </div>
                 `;
@@ -2156,10 +2202,9 @@
         LANDMARK_MARKERS.forEach((lm, i) => {
             const num = nums[i] || 0;
             const isBlank = num === 0;
-            const isHiddenBlank = isBlank && !showConnectorCircles;
-            const clickAttr = isManagementOrAdmin ? `onclick="cycleLandmarkNumber(${i})" title="${lm.label}: click to cycle this marker's number (1–8, then a hidable blank circle)"` : `title="${lm.label}"`;
+            const clickAttr = isManagementOrAdmin ? `onclick="cycleLandmarkNumber(${i})" title="${lm.label}: click to cycle this marker's number (1–8) — the marker never disappears, it just shows no number at the start of the cycle"` : `title="${lm.label}"`;
             html += `
-                <div class="map-pin ${isManagementOrAdmin ? '' : 'map-pin--readonly'} ${isHiddenBlank ? 'map-connector-dot--hidden' : ''}" style="left:${lm.left}%; top:${lm.top}%;" ${clickAttr}>
+                <div class="map-pin ${isManagementOrAdmin ? '' : 'map-pin--readonly'}" style="left:${lm.left}%; top:${lm.top}%;" ${clickAttr}>
                     ${landmarkCircleSvg(lm.color)}
                     ${isBlank ? '' : `<span class="map-pin__num notranslate" translate="no">${num}</span>`}
                 </div>
@@ -2185,7 +2230,7 @@
         return `
             <svg viewBox="0 0 22 22">
                 <g class="map-connector-arrow-inner" style="transform: rotate(${degrees}deg);">
-                    <path d="M4,11 L16,11 M16,11 L11,6 M16,11 L11,16" stroke="${color}" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M2,11 L18,11 M18,11 L11,4 M18,11 L11,18" stroke="${color}" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
                 </g>
             </svg>
         `;
@@ -2200,12 +2245,9 @@
             const isArrow = step !== 0;
             const inner = isArrow ? connectorArrowSvg(color, step * DOT_ROTATION_STEP) : connectorDotSvg(color);
             const isSelected = isManagementOrAdmin && selectedMarker && selectedMarker.type === 'dot' && selectedMarker.index === i;
-            // Plain (un-rotated) circles are hidden by default to declutter the map;
-            // arrows (already rotated) always stay visible since they carry meaning.
-            const isHiddenPlainCircle = !isArrow && !showConnectorCircles;
-            const clickAttr = isManagementOrAdmin ? `onclick="cycleConnectorDot(${i})" title="Click to select & rotate (${step === 0 ? 'currently a dot' : step * DOT_ROTATION_STEP + '°'}) · then use the swatches above for its own color"` : '';
+            const clickAttr = isManagementOrAdmin ? `onclick="cycleConnectorDot(${i})" title="Click to select & rotate (${step === 0 ? 'currently a dot' : step * DOT_ROTATION_STEP + '°'}) · then use the color picker above for its own color"` : '';
             html += `
-                <div class="map-connector-dot ${isManagementOrAdmin ? '' : 'map-connector-dot--readonly'} ${isSelected ? 'map-connector-dot--selected' : ''} ${isHiddenPlainCircle ? 'map-connector-dot--hidden' : ''}" style="left:${pos.left}%; top:${pos.top}%;" ${clickAttr}>
+                <div class="map-connector-dot ${isManagementOrAdmin ? '' : 'map-connector-dot--readonly'} ${isArrow ? 'map-connector-dot--arrow' : ''} ${isSelected ? 'map-connector-dot--selected' : ''}" style="left:${pos.left}%; top:${pos.top}%;" ${clickAttr}>
                     ${inner}
                 </div>
             `;
@@ -2221,24 +2263,21 @@
         selectedMarker = { type: 'dot', index };
         saveMapDots(activeBoard);
         renderMapDiagram();
-        renderDotColorSwatches();
+        renderDotColorPicker();
     };
 
     window.setDotColor = function(color) {
         if (!isManagementOrAdmin) return;
         if (!selectedMarker) return;
         if (selectedMarker.type === 'dot') {
-            if (!getBoardColorPalette(activeBoard).includes(color)) return;
             mapDotsByBoard[activeBoard].colors[selectedMarker.index] = color;
             saveMapDots(activeBoard);
             renderMapDiagram();
         } else if (selectedMarker.type === 'pin') {
-            if (!DEFAULT_GROUP_COLORS.includes(color)) return;
             mapPinColorsByBoard[activeBoard][selectedMarker.index] = color;
             saveMapPinColors(activeBoard);
             renderMapDiagram();
         }
-        renderDotColorSwatches();
     };
 
     window.cycleTeamNumber = function(teamId, pinIndex) {
@@ -2251,7 +2290,7 @@
         saveMapBoard(activeBoard);
         renderMapTable();
         renderMapDiagram();
-        renderDotColorSwatches();
+        renderDotColorPicker();
     };
 
     window.cycleGroupNumber = function(teamId) {
@@ -2414,6 +2453,71 @@
         renderMap();
     });
 
+    async function exportMapToPng() {
+        if (typeof html2canvas === 'undefined') {
+            alert('Export library failed to load. Check your connection and try again.');
+            return;
+        }
+        showSaveStatus('saving', 'Exporting…');
+
+        const teams = [...currentTeams()].sort((a, b) => a.groupNumber - b.groupNumber);
+        const wrapper = document.createElement('div');
+        wrapper.style.cssText = 'position:fixed; left:-99999px; top:0; z-index:-1; background:#f5f4ef; padding:28px; display:flex; flex-direction:column; align-items:center; gap:20px; width:1150px; font-family:Montserrat, sans-serif;';
+
+        // Names arranged symmetrically above the map: two mirrored rows,
+        // built outward from the center so the layout balances left/right.
+        const namesRow = document.createElement('div');
+        namesRow.style.cssText = 'display:flex; justify-content:center; align-items:center; gap:16px; flex-wrap:wrap; width:100%;';
+
+        const ordered = [];
+        let left = true;
+        teams.forEach(t => {
+            if (left) { ordered.unshift(t); } else { ordered.push(t); }
+            left = !left;
+        });
+
+        ordered.forEach(team => {
+            const memberNames = team.roleRows
+                .filter(r => r.memberId)
+                .map(r => { const m = findMemberById(r.memberId); return m ? m.name : null; })
+                .filter(Boolean);
+            const chip = document.createElement('div');
+            chip.style.cssText = `display:flex; align-items:center; gap:8px; padding:8px 16px; border-radius:20px; background:${team.color || '#966426'}; color:#ffffff; font-weight:800; font-size:13px; box-shadow:0 1px 3px rgba(0,0,0,0.2);`;
+            chip.innerText = `#${team.groupNumber} · ${memberNames.length ? memberNames.join(', ') : 'Unassigned'}`;
+            namesRow.appendChild(chip);
+        });
+
+        const titleEl = document.createElement('div');
+        titleEl.style.cssText = 'font-weight:800; font-size:16px; color:#2d3a91; text-transform:uppercase; letter-spacing:0.5px;';
+        titleEl.innerText = `Black Gold · Team ${activeBoard} · Formation Map`;
+
+        const mapClone = document.getElementById('mapDiagram').cloneNode(true);
+        mapClone.style.position = 'relative';
+        mapClone.style.width = '1050px';
+        mapClone.style.aspectRatio = '1093 / 1096';
+        mapClone.style.maxHeight = 'none';
+
+        wrapper.appendChild(titleEl);
+        wrapper.appendChild(namesRow);
+        wrapper.appendChild(mapClone);
+        document.body.appendChild(wrapper);
+
+        try {
+            const canvas = await html2canvas(wrapper, { backgroundColor: '#f5f4ef', scale: 2, useCORS: true });
+            const link = document.createElement('a');
+            const dateStr = new Date().toISOString().slice(0, 10);
+            link.download = `black-gold-map-team-${activeBoard}-${dateStr}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            showSaveStatus('ok', 'Exported');
+        } catch (err) {
+            console.error('PNG export failed:', err);
+            showSaveStatus('error', 'Export failed');
+        } finally {
+            document.body.removeChild(wrapper);
+        }
+    }
+
     (async function initPage() {
         const ok = await loadCurrentUserAccount();
         if (!ok) {
@@ -2422,6 +2526,7 @@
         }
         renderSidebarUser();
         loadData();
+        switchTab('map');
     })();
 </script>
 
