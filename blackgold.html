@@ -440,6 +440,7 @@
     .map-connector-dot svg { width: 100%; height: 100%; overflow: visible; }
     .map-connector-arrow-inner { transition: transform 0.15s ease; transform-origin: 50% 50%; }
     .map-connector-dot--selected { filter: drop-shadow(0 0 0 2px white) drop-shadow(0 0 5px var(--color-primary-dark)); }
+    .map-connector-dot--hidden { display: none; }
 
     .map-subtabs { display: flex; gap: 8px; }
     .map-subtab-btn {
@@ -614,6 +615,7 @@
         font-weight: 800;
         font-family: var(--font-family-base);
         font-size: 1.46cqw;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.45), 0 0 3px rgba(0,0,0,0.5);
     }
 
     .map-locked-state {
@@ -907,6 +909,7 @@
                 <div class="map-toolbar">
                     <span class="map-toolbar__label">FORMATION MAP · GROUPS &amp; RALLY ORDER</span>
                     <div class="map-toolbar__right">
+                        <button class="map-circles-toggle-btn" id="mapHideCirclesBtn" style="display:none;" title="Hide arrow/dot markers that are still unmodified (plain circle, default color)">HIDE DEFAULT CIRCLES</button>
                         <button class="map-circles-toggle-btn" id="mapExportPngBtn" style="display:none;" title="Export the map and group names as a PNG image">EXPORT PNG</button>
                         <div class="map-dot-color-picker" id="mapDotColorPicker" style="display:none;">
                             <span class="map-dot-color-picker__label" id="mapDotColorPickerLabel">Selected arrow color</span>
@@ -918,7 +921,7 @@
                     <button class="map-subtab-btn map-subtab-btn--active" id="mapSubtabA">TEAM A</button>
                     <button class="map-subtab-btn" id="mapSubtabB">TEAM B</button>
                 </div>
-                <div class="map-toolbar__hint" id="mapAdminHint" style="display:none;">The map always shows a fixed set of 6 teardrop markers plus 4 fixed landmark markers (2 Military Base stars, 2 Hospital crosses) — adding or removing a group never adds or removes a teardrop marker; it only fills or empties one of the 6 teardrop slots (up to 8 groups total, the 7th &amp; 8th are "extra" and don't get their own teardrop, but their colors are still available for the arrow swatches below). The number badge on each group's tab (top-right of its block) cycles 1–8 and is just a label for that group — it does not change the map. Click a teardrop, star, or cross marker directly on the map to cycle its own number (1–8, then back to 1) — the marker's shape always stays the same and never disappears; at the start of the cycle it simply shows no number. Click a teardrop marker to also select it for its own color — use the color picker above (same one used for a group's header color) to set that teardrop's color. Star and cross markers keep their fixed colors and are not customisable. Use the select boxes on the left to assign members (auto-pulls Faction &amp; F1 Power from Members) · click a group's color swatch to recolor its table header (and its rally-path color options) · use a role's name dropdown to rename it — or pick "➕ Add New Role to List..." / "🗑 Remove a Role from List..." to manage the shared dropdown options so you don't have to keep retyping — the × deletes that row, and + ADD ROLE ROW adds a new one, all scoped to that one group, on the team you're currently viewing · click any small circle or arrow on the map to select it and rotate it (each click rotates it 25°; a full rotation returns it to a plain circle — the circle stays visible, it never disappears) — once selected, use the color picker above to set that one arrow's own color. Assigning a member here automatically sets their Slot (A or B, matching this tab) and Main/Substitute status on the most recent A/B Slots session. A member can only be assigned to one team (A or B) per session.</div>
+                <div class="map-toolbar__hint" id="mapAdminHint" style="display:none;">The map always shows a fixed set of 6 teardrop markers plus 4 fixed landmark markers (2 Military Base stars, 2 Hospital crosses) and 1 house marker — adding or removing a group never adds or removes a teardrop marker; it only fills or empties one of the 6 teardrop slots (up to 10 groups total, the 7th–10th are "extra" and don't get their own teardrop, but their colors are still available for the arrow swatches below). The number badge on each group's tab (top-right of its block) cycles 1–10 and is just a label for that group — it does not change the map. Click a teardrop, star, cross, or house marker directly on the map to cycle its own number (1–10, then back to no number) — the marker's shape always stays the same and never disappears or changes; at the start of the cycle it simply shows no number. Click a teardrop marker to also select it for its own color — use the color picker above (same one used for a group's header color) to set that teardrop's color. Star, cross, and house markers keep their fixed shape and background colors and are not customisable, but their numbers are still clickable. Use the select boxes on the left to assign members (auto-pulls Faction &amp; F1 Power from Members) · click a group's color swatch to recolor its table header (and its rally-path color options) · use a role's name dropdown to rename it — or pick "➕ Add New Role to List..." / "🗑 Remove a Role from List..." to manage the shared dropdown options so you don't have to keep retyping — the × deletes that row, and + ADD ROLE ROW adds a new one, all scoped to that one group, on the team you're currently viewing · click any small circle or arrow on the map to select it and rotate it (each click rotates it 25°; a full rotation returns it to a plain circle — the circle stays visible, it never disappears) — once selected, use the color picker above to set that one arrow's own color · use HIDE DEFAULT CIRCLES to temporarily hide any small circle markers that are still untouched (never rotated into an arrow and still the default color) so the map looks cleaner. Assigning a member here automatically sets their Slot (A or B, matching this tab) and Main/Substitute status on the most recent A/B Slots session. A member can only be assigned to one team (A or B) per session.</div>
                 <div class="map-body">
                     <button class="map-groups-toggle-btn" id="mapGroupsToggleBtn" title="Show / hide groups panel">
                         <span></span><span></span><span></span>
@@ -1151,6 +1154,7 @@
     let activeBoard = 'A';
     let activeTab = 'map';
     let groupsSidebarOpen = false;
+    let hideDefaultCircles = false;
 
     const SLOT_POSITIONS = [
         { left: 70.91, top: 63.69 },
@@ -1162,20 +1166,22 @@
         { left: 50.00, top: 18.50 },
         { left: 50.00, top: 80.50 }
     ];
-    const MAX_PIN_NUMBER = 8;
-    const MARKER_CYCLE_STATES = MAX_PIN_NUMBER + 1; // 0 = no-number state, 1-8 = numbered (shape never changes)
+    const MAX_PIN_NUMBER = 10;
+    const MARKER_CYCLE_STATES = MAX_PIN_NUMBER + 1; // 0 = no-number state, 1-10 = numbered (shape never changes)
     const DEFAULT_GROUP_COUNT = 6;
     const MAP_PIN_POSITIONS = SLOT_POSITIONS.slice(0, 6);
-    const MAX_GROUPS = 8;
+    const MAX_GROUPS = 10;
+    const HOUSE_POSITION = { left: 50.78, top: 48.36 };
 
     // Fixed background landmarks (2 Military Base stars, 2 Hospital crosses) that
     // are also clickable number markers now, independent of the teardrop groups.
-    // Their colors are fixed (not customisable) — only their number cycles.
+    // Their shapes/colors are fixed (not customisable) — only their number cycles,
+    // and no extra circle is drawn on top of them.
     const LANDMARK_MARKERS = [
-        { left: 18.30, top: 13.78, color: '#f4c94c', label: 'Military Base' },
-        { left: 50.78, top: 13.78, color: '#4b7c40', label: 'Hospital' },
-        { left: 50.78, top: 82.94, color: '#4b7c40', label: 'Hospital' },
-        { left: 81.43, top: 82.94, color: '#f4c94c', label: 'Military Base' }
+        { left: 18.30, top: 13.78, label: 'Military Base' },
+        { left: 50.78, top: 13.78, label: 'Hospital' },
+        { left: 50.78, top: 82.94, label: 'Hospital' },
+        { left: 81.43, top: 82.94, label: 'Military Base' }
     ];
 
     const DOT_POSITIONS = [
@@ -1201,7 +1207,7 @@
     const DOT_ROTATION_STEP = 25;
     const DOT_STEPS_PER_CYCLE = Math.ceil(360 / DOT_ROTATION_STEP);
 
-    const DEFAULT_GROUP_COLORS = ['#966426', '#3b52a4', '#c0392b', '#1f9d55', '#9333ea', '#ea580c', '#0e7490', '#a16207'];
+    const DEFAULT_GROUP_COLORS = ['#966426', '#3b52a4', '#c0392b', '#1f9d55', '#9333ea', '#ea580c', '#0e7490', '#a16207', '#be185d', '#0d9488'];
     const DEFAULT_DOT_COLOR = DEFAULT_GROUP_COLORS[0];
 
     let mapDotsByBoard = {
@@ -1216,11 +1222,14 @@
     }
     let mapPinColorsByBoard = { A: defaultPinColors(), B: defaultPinColors() };
 
-    // Number state (0-8) for each of the 4 fixed landmark markers, per board.
+    // Number state (0-10) for each of the 4 fixed landmark markers, per board.
     let mapLandmarksByBoard = {
         A: new Array(LANDMARK_MARKERS.length).fill(0),
         B: new Array(LANDMARK_MARKERS.length).fill(0)
     };
+
+    // Number state (0-10) for the single house marker, per board.
+    let mapHouseByBoard = { A: 0, B: 0 };
 
     // Currently selected map marker for recoloring: { type: 'dot' | 'pin', index } or null.
     let selectedMarker = null;
@@ -1288,6 +1297,7 @@
     async function loadData() {
         let legacyMap = null, mapA = null, mapB = null, legacyRoleDefs = null, dotsLoadedA = null, dotsLoadedB = null, legacyDotsLoaded = null;
         let rolePresetsLoaded = null, pinColorsLoadedA = null, pinColorsLoadedB = null, landmarksLoadedA = null, landmarksLoadedB = null;
+        let houseLoadedA = null, houseLoadedB = null;
         try {
             const { data, error } = await db.from('app_data').select('*');
             if (error) throw error;
@@ -1334,6 +1344,12 @@
                     if (row.key === 'blackGoldMapLandmarksB') {
                         landmarksLoadedB = (row.value && Array.isArray(row.value)) ? row.value : null;
                     }
+                    if (row.key === 'blackGoldMapHouseA') {
+                        houseLoadedA = (typeof row.value === 'number') ? row.value : null;
+                    }
+                    if (row.key === 'blackGoldMapHouseB') {
+                        houseLoadedB = (typeof row.value === 'number') ? row.value : null;
+                    }
                 });
             }
             bgDates.sort((a, b) => parseDateString(a.date) - parseDateString(b.date));
@@ -1349,6 +1365,7 @@
         let needResaveA = false, needResaveB = false, needResaveDotsA = false, needResaveDotsB = false;
         let needResaveRolePresets = false, needResavePinColorsA = false, needResavePinColorsB = false;
         let needResaveLandmarksA = false, needResaveLandmarksB = false;
+        let needResaveHouseA = false, needResaveHouseB = false;
 
         if (rolePresetsLoaded) {
             rolePresets = rolePresetsLoaded;
@@ -1436,6 +1453,11 @@
             return { data: nums, needResave };
         }
 
+        function normalizeHouseNumber(loaded) {
+            if (typeof loaded !== 'number' || loaded < 0 || loaded > MAX_PIN_NUMBER) return { data: 0, needResave: true };
+            return { data: loaded, needResave: false };
+        }
+
         const resultA = normalizeDotsData(dotsLoadedA || legacyDotsLoaded);
         const resultB = normalizeDotsData(dotsLoadedB || legacyDotsLoaded);
         mapDotsByBoard.A = resultA.data;
@@ -1457,6 +1479,13 @@
         needResaveLandmarksA = landmarkResultA.needResave || !landmarksLoadedA;
         needResaveLandmarksB = landmarkResultB.needResave || !landmarksLoadedB;
 
+        const houseResultA = normalizeHouseNumber(houseLoadedA);
+        const houseResultB = normalizeHouseNumber(houseLoadedB);
+        mapHouseByBoard.A = houseResultA.data;
+        mapHouseByBoard.B = houseResultB.data;
+        needResaveHouseA = houseResultA.needResave || houseLoadedA === null;
+        needResaveHouseB = houseResultB.needResave || houseLoadedB === null;
+
         if (needResaveA) await saveMapBoard('A');
         if (needResaveB) await saveMapBoard('B');
         if (needResaveDotsA) await saveMapDots('A');
@@ -1466,6 +1495,8 @@
         if (needResavePinColorsB) await saveMapPinColors('B');
         if (needResaveLandmarksA) await saveMapLandmarks('A');
         if (needResaveLandmarksB) await saveMapLandmarks('B');
+        if (needResaveHouseA) await saveMapHouse('A');
+        if (needResaveHouseB) await saveMapHouse('B');
 
         render();
     }
@@ -1583,6 +1614,23 @@
         }
     }
 
+    async function saveMapHouse(board) {
+        showSaveStatus('saving', 'Saving…');
+        const key = board === 'A' ? 'blackGoldMapHouseA' : 'blackGoldMapHouseB';
+        const id = board === 'A' ? 23 : 24;
+        try {
+            const { error } = await db.from('app_data')
+                .upsert({ id, key, value: mapHouseByBoard[board] }, { onConflict: 'id' });
+            if (error) {
+                showSaveStatus('error', 'Save failed: ' + error.message);
+                return;
+            }
+            showSaveStatus('ok', 'Saved');
+        } catch (err) {
+            showSaveStatus('error', 'Save failed');
+        }
+    }
+
     function switchTab(tab) {
         if (tab === 'map' && !canViewMap) return;
         activeTab = tab;
@@ -1632,6 +1680,13 @@
         exportMapToPng();
     });
 
+    document.getElementById('mapHideCirclesBtn').addEventListener('click', () => {
+        hideDefaultCircles = !hideDefaultCircles;
+        document.getElementById('mapHideCirclesBtn').classList.toggle('map-circles-toggle-btn--active', hideDefaultCircles);
+        document.getElementById('mapHideCirclesBtn').innerText = hideDefaultCircles ? 'SHOW DEFAULT CIRCLES' : 'HIDE DEFAULT CIRCLES';
+        renderMapDiagram();
+    });
+
     function render() {
         const activeMembers = getActiveMembers();
         const query = document.getElementById('searchInput').value.toLowerCase();
@@ -1654,6 +1709,7 @@
         document.getElementById('calCalendarPicker').style.display = isManagementOrAdmin ? 'inline-block' : 'none';
         document.getElementById('mapDotColorPicker').style.display = isManagementOrAdmin ? 'flex' : 'none';
         document.getElementById('mapExportPngBtn').style.display = canViewMap ? 'inline-block' : 'none';
+        document.getElementById('mapHideCirclesBtn').style.display = canViewMap ? 'inline-block' : 'none';
 
         const legendHint = document.getElementById('legendHint');
         if (isManagementOrAdmin) {
@@ -2048,7 +2104,7 @@
 
         let html = '';
         sortedTeams.forEach(team => {
-            const numberClickable = isManagementOrAdmin ? `onclick="cycleGroupNumber('${team.id}')" title="Click to change this group's number (cycles 1–8) — does not affect the map marker"` : '';
+            const numberClickable = isManagementOrAdmin ? `onclick="cycleGroupNumber('${team.id}')" title="Click to change this group's number (cycles 1–10) — does not affect the map marker"` : '';
             const colorSwatch = isManagementOrAdmin
                 ? `<input type="color" class="map-team-header__color" value="${team.color || '#966426'}" onchange="setTeamColor('${team.id}', this.value)" title="Group color">`
                 : '';
@@ -2101,30 +2157,6 @@
             <svg class="map-dotted-svg" viewBox="0 0 1093 1096" preserveAspectRatio="xMidYMid slice">
                 <rect x="0" y="0" width="1093" height="1096" fill="#c58f5f"/>
 
-                <defs>
-                    <path id="mapPouchShape" d="
-                        M58,4
-                        L92,4
-                        Q102,4 102,14
-                        L102,26
-                        Q106,28 118,28
-                        Q138,30 140,46
-                        Q142,60 126,60
-                        Q130,64 132,68
-                        L132,128
-                        Q130,148 100,156
-                        Q75,160 50,156
-                        Q20,148 18,128
-                        L18,68
-                        Q20,64 24,60
-                        Q8,60 10,46
-                        Q12,30 32,28
-                        Q44,28 48,26
-                        L48,14
-                        Q48,4 58,4
-                        Z"/>
-                </defs>
-
                 <g>
                     <rect x="450" y="618" width="210" height="30" rx="15" fill="#c97b3d"/>
                     <rect x="468" y="516" width="174" height="106" rx="10" fill="#c97b3d"/>
@@ -2142,8 +2174,12 @@
                     <path d="M534,863 h42 v25 h25 v42 h-25 v25 h-42 v-25 h-25 v-42 h25 z"/>
                 </g>
 
-                <use href="#mapPouchShape" x="835" y="55" fill="#4a6fd8"/>
-                <use href="#mapPouchShape" x="125" y="850" fill="#c33f2f"/>
+                <!-- Base pouches: drawn as plain inline <path> elements (not <use>/<defs>)
+                     so their fill colors survive export via html2canvas, which does not
+                     reliably resolve <use href="#..."> references when the SVG is cloned
+                     into an off-screen node for rasterization. -->
+                <path d="M58,4 L92,4 Q102,4 102,14 L102,26 Q106,28 118,28 Q138,30 140,46 Q142,60 126,60 Q130,64 132,68 L132,128 Q130,148 100,156 Q75,160 50,156 Q20,148 18,128 L18,68 Q20,64 24,60 Q8,60 10,46 Q12,30 32,28 Q44,28 48,26 L48,14 Q48,4 58,4 Z" transform="translate(835,55)" fill="#4a6fd8"/>
+                <path d="M58,4 L92,4 Q102,4 102,14 L102,26 Q106,28 118,28 Q138,30 140,46 Q142,60 126,60 Q130,64 132,68 L132,128 Q130,148 100,156 Q75,160 50,156 Q20,148 18,128 L18,68 Q20,64 24,60 Q8,60 10,46 Q12,30 32,28 Q44,28 48,26 L48,14 Q48,4 58,4 Z" transform="translate(125,850)" fill="#c33f2f"/>
             </svg>
         `;
     }
@@ -2154,10 +2190,6 @@
                 <path d="M50,4 L83,43 A44,44 0 1 1 17,43 Z" fill="${color || '#966426'}"/>
             </svg>
         `;
-    }
-
-    function landmarkCircleSvg(color) {
-        return `<svg viewBox="0 0 22 22"><circle cx="11" cy="11" r="9" fill="${color}" stroke="rgba(0,0,0,0.25)" stroke-width="1"/></svg>`;
     }
 
     function renderMapDiagram() {
@@ -2174,7 +2206,7 @@
                 const isBlank = num === 0;
                 const pinColor = pinColors[i] || DEFAULT_DOT_COLOR;
                 const isSelected = isManagementOrAdmin && selectedMarker && selectedMarker.type === 'pin' && selectedMarker.index === i;
-                const clickAttr = isManagementOrAdmin ? `onclick="cycleTeamNumber('${team.id}', ${i})" title="Click to cycle this marker's number (1–8) — the marker's shape never changes or disappears · then use the color picker above to set this teardrop's own color"` : '';
+                const clickAttr = isManagementOrAdmin ? `onclick="cycleTeamNumber('${team.id}', ${i})" title="Click to cycle this marker's number (1–10) — the marker's shape never changes or disappears · then use the color picker above to set this teardrop's own color"` : '';
                 html += `
                     <div class="map-pin ${isManagementOrAdmin ? '' : 'map-pin--readonly'} ${isSelected ? 'map-connector-dot--selected' : ''}" style="left:${pos.left}%; top:${pos.top}%;" ${clickAttr}>
                         ${mapPinSvg(pinColor)}
@@ -2192,25 +2224,41 @@
         });
 
         html += renderLandmarkMarkersHtml();
+        html += renderHouseMarkerHtml();
 
         diagram.innerHTML = html;
     }
 
     function renderLandmarkMarkersHtml() {
+        // Numbers only — the star/cross shapes themselves live in the static
+        // background SVG and are never redrawn or covered by a circle here.
         let html = '';
         const nums = mapLandmarksByBoard[activeBoard] || new Array(LANDMARK_MARKERS.length).fill(0);
         LANDMARK_MARKERS.forEach((lm, i) => {
             const num = nums[i] || 0;
             const isBlank = num === 0;
-            const clickAttr = isManagementOrAdmin ? `onclick="cycleLandmarkNumber(${i})" title="${lm.label}: click to cycle this marker's number (1–8) — the marker never disappears, it just shows no number at the start of the cycle"` : `title="${lm.label}"`;
+            const clickAttr = isManagementOrAdmin ? `onclick="cycleLandmarkNumber(${i})" title="${lm.label}: click to cycle this marker's number (1–10) — the marker's shape never changes, it just shows no number at the start of the cycle"` : `title="${lm.label}"`;
             html += `
                 <div class="map-pin ${isManagementOrAdmin ? '' : 'map-pin--readonly'}" style="left:${lm.left}%; top:${lm.top}%;" ${clickAttr}>
-                    ${landmarkCircleSvg(lm.color)}
                     ${isBlank ? '' : `<span class="map-pin__num notranslate" translate="no">${num}</span>`}
                 </div>
             `;
         });
         return html;
+    }
+
+    function renderHouseMarkerHtml() {
+        // Same idea as the landmarks: the house shape lives in the static
+        // background SVG and is never redrawn — this is just a clickable
+        // number overlay on top of it.
+        const num = mapHouseByBoard[activeBoard] || 0;
+        const isBlank = num === 0;
+        const clickAttr = isManagementOrAdmin ? `onclick="cycleHouseNumber()" title="House: click to cycle this marker's number (1–10) — the marker's shape never changes, it just shows no number at the start of the cycle"` : `title="House"`;
+        return `
+            <div class="map-pin ${isManagementOrAdmin ? '' : 'map-pin--readonly'}" style="left:${HOUSE_POSITION.left}%; top:${HOUSE_POSITION.top}%;" ${clickAttr}>
+                ${isBlank ? '' : `<span class="map-pin__num notranslate" translate="no">${num}</span>`}
+            </div>
+        `;
     }
 
     window.cycleLandmarkNumber = function(index) {
@@ -2219,6 +2267,13 @@
         if (!arr || index < 0 || index >= arr.length) return;
         arr[index] = (arr[index] + 1) % MARKER_CYCLE_STATES;
         saveMapLandmarks(activeBoard);
+        renderMapDiagram();
+    };
+
+    window.cycleHouseNumber = function() {
+        if (!isManagementOrAdmin) return;
+        mapHouseByBoard[activeBoard] = (mapHouseByBoard[activeBoard] + 1) % MARKER_CYCLE_STATES;
+        saveMapHouse(activeBoard);
         renderMapDiagram();
     };
 
@@ -2243,6 +2298,8 @@
             const step = boardDots.steps[i] || 0;
             const color = (boardDots.colors && boardDots.colors[i]) || DEFAULT_DOT_COLOR;
             const isArrow = step !== 0;
+            const isDefaultCircle = !isArrow && color === DEFAULT_DOT_COLOR;
+            if (hideDefaultCircles && isDefaultCircle) return;
             const inner = isArrow ? connectorArrowSvg(color, step * DOT_ROTATION_STEP) : connectorDotSvg(color);
             const isSelected = isManagementOrAdmin && selectedMarker && selectedMarker.type === 'dot' && selectedMarker.index === i;
             const clickAttr = isManagementOrAdmin ? `onclick="cycleConnectorDot(${i})" title="Click to select & rotate (${step === 0 ? 'currently a dot' : step * DOT_ROTATION_STEP + '°'}) · then use the color picker above for its own color"` : '';
@@ -2453,6 +2510,14 @@
         renderMap();
     });
 
+    function escapeHtml(str) {
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
     async function exportMapToPng() {
         if (typeof html2canvas === 'undefined') {
             alert('Export library failed to load. Check your connection and try again.');
@@ -2477,13 +2542,24 @@
         });
 
         ordered.forEach(team => {
-            const memberNames = team.roleRows
+            // Substitute-role members are underlined in the exported chip so
+            // rally leaders can tell mains and subs apart at a glance.
+            const memberEntries = team.roleRows
                 .filter(r => r.memberId)
-                .map(r => { const m = findMemberById(r.memberId); return m ? m.name : null; })
+                .map(r => {
+                    const m = findMemberById(r.memberId);
+                    if (!m) return null;
+                    return { name: m.name, isSub: r.key === 'substitute' };
+                })
                 .filter(Boolean);
+
+            const namesHtml = memberEntries.length
+                ? memberEntries.map(e => e.isSub ? `<u>${escapeHtml(e.name)}</u>` : escapeHtml(e.name)).join(', ')
+                : 'Unassigned';
+
             const chip = document.createElement('div');
             chip.style.cssText = `display:flex; align-items:center; gap:8px; padding:8px 16px; border-radius:20px; background:${team.color || '#966426'}; color:#ffffff; font-weight:800; font-size:13px; box-shadow:0 1px 3px rgba(0,0,0,0.2);`;
-            chip.innerText = `#${team.groupNumber} · ${memberNames.length ? memberNames.join(', ') : 'Unassigned'}`;
+            chip.innerHTML = `#${team.groupNumber} · ${namesHtml}`;
             namesRow.appendChild(chip);
         });
 
