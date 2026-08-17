@@ -1488,6 +1488,62 @@ let currentUser = {
             }
         }
 
+        // Lightweight refresh: re-pulls just the app_data rows (skips the login/session
+        // check) and re-renders, so changes made on other pages (e.g. members.html)
+        // show up here without a manual reload.
+        async function fetchAppDataOnly() {
+            try {
+                const { data, error } = await db.from('app_data').select('*');
+                if (error) throw error;
+                if (data && data.length > 0) {
+                    data.forEach(row => {
+                        if (row.key === 'eventDates') eventDates = row.value || [];
+                        if (row.key === 'members') members = row.value || [];
+                        if (row.key === 'auditLogs') auditLogs = row.value || [];
+                        if (row.key === 'vsData') vsData = row.value || { weeks: [], membersScores: [] };
+                        if (row.key === 'chatMessages') chatMessages = row.value || [];
+                        if (row.key === 'polls') polls = row.value || [];
+                        if (row.key === 'notices') notices = row.value || [];
+                        if (row.key === 'calendarEvents') calendarEvents = row.value || [];
+                        if (row.key === 'noticeAnnouncements') noticeAnnouncements = row.value || [];
+                        if (row.key === 'homePhotos') homePhotos = row.value || [];
+                    });
+                }
+            } catch (err) {
+                console.error('Error refreshing from cloud:', err);
+                return;
+            }
+
+            eventDates.forEach(ev => { if (typeof ev.isWar !== 'boolean') ev.isWar = false; });
+            members.forEach(m => {
+                if (typeof m.attended !== 'number' || isNaN(m.attended)) m.attended = 0;
+                if (!Array.isArray(m.events)) m.events = [];
+                while (m.events.length < eventDates.length) m.events.push(false);
+                if (!Array.isArray(m.eventVotes)) m.eventVotes = [];
+                while (m.eventVotes.length < eventDates.length) m.eventVotes.push(null);
+                if (!m.rank) m.rank = 'R1';
+                m.frozenRank = m.rank;
+            });
+            sortEventsByDate();
+
+            if (appDashboard.style.display !== 'none') render();
+        }
+
+        // Live sync: re-fetch from Supabase whenever any row in app_data changes,
+        // so edits made on another page (e.g. members.html updating rankings) show up
+        // here without a manual refresh. Requires Realtime to be turned on for the
+        // app_data table in the Supabase dashboard (Database > Replication).
+        let realtimeSubscribed = false;
+        function subscribeToAppDataChanges() {
+            if (realtimeSubscribed) return; // guard against double-subscribing
+            realtimeSubscribed = true;
+            db.channel('app_data_changes_index')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'app_data' }, (payload) => {
+                    fetchAppDataOnly();
+                })
+                .subscribe();
+        }
+
         async function saveData() {
             try {
                 const results = await Promise.all([
@@ -1737,6 +1793,7 @@ window.openRoleAssignModal = function() {
             loginScreen.style.display = 'none';
             appDashboard.style.display = 'flex';
             render();
+            subscribeToAppDataChanges();
         }
 
         window.addEventListener('DOMContentLoaded', loadDataFromCloud);
