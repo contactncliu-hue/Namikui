@@ -441,6 +441,7 @@
     .map-connector-arrow-inner { transition: transform 0.15s ease; transform-origin: 50% 50%; }
     .map-connector-dot--selected { filter: drop-shadow(0 0 0 2px white) drop-shadow(0 0 5px var(--color-primary-dark)); }
     .map-connector-dot--hidden { display: none; }
+    .map-connector-dot--dragging { transition: none; cursor: grabbing; z-index: 30; }
 
     .map-subtabs { display: flex; gap: 8px; }
     .map-subtab-btn {
@@ -530,14 +531,32 @@
         text-transform: uppercase; letter-spacing: 0.5px;
         background: #5c4127;
     }
-    .map-team-header__title { display: flex; align-items: center; gap: 8px; }
+    .map-team-header__title { display: flex; align-items: center; gap: 8px; flex: 1 1 auto; min-width: 0; }
     .map-team-header__color {
         width: 18px; height: 18px; padding: 0; border: 2px solid rgba(255,255,255,0.65);
         border-radius: 4px; cursor: pointer; background: none;
     }
+    .map-team-header__name-input {
+        flex: 1 1 auto;
+        min-width: 0;
+        background: rgba(255,255,255,0.16);
+        border: 1px solid rgba(255,255,255,0.4);
+        border-radius: 4px;
+        color: #ffffff;
+        font-family: var(--font-family-base);
+        font-weight: 800;
+        font-size: 11px;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        padding: 5px 7px;
+        outline: none;
+    }
+    .map-team-header__name-input::placeholder { color: rgba(255,255,255,0.6); text-transform: none; font-weight: 600; }
+    .map-team-header__name-input:focus { background: rgba(255,255,255,0.26); border-color: #ffffff; }
     .map-team-header__number {
         width: 22px; height: 22px; border-radius: 50%; background: rgba(255,255,255,0.28);
         display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800;
+        flex-shrink: 0;
     }
     .map-team-header__number--clickable { cursor: pointer; }
     .map-team-header__number--clickable:hover { background: rgba(255,255,255,0.5); }
@@ -576,6 +595,7 @@
         overflow: hidden;
         container-type: inline-size;
         container-name: mapdiagram;
+        touch-action: none;
     }
 
     .map-icon-static {
@@ -921,7 +941,7 @@
                     <button class="map-subtab-btn map-subtab-btn--active" id="mapSubtabA">TEAM A</button>
                     <button class="map-subtab-btn" id="mapSubtabB">TEAM B</button>
                 </div>
-                <div class="map-toolbar__hint" id="mapAdminHint" style="display:none;">The map always shows a fixed set of 6 teardrop markers plus 4 fixed landmark markers (2 Military Base stars, 2 Hospital crosses) and 1 house marker — adding or removing a group never adds or removes a teardrop marker; it only fills or empties one of the 6 teardrop slots (up to 10 groups total, the 7th–10th are "extra" and don't get their own teardrop, but their colors are still available for the arrow swatches below). The number badge on each group's tab (top-right of its block) cycles 1–10 and is just a label for that group — it does not change the map. Click a teardrop, star, cross, or house marker directly on the map to cycle its own number (1–10, then back to no number) — the marker's shape always stays the same and never disappears or changes; at the start of the cycle it simply shows no number. Click a teardrop marker to also select it for its own color — use the color picker above (same one used for a group's header color) to set that teardrop's color. Star, cross, and house markers keep their fixed shape and background colors and are not customisable, but their numbers are still clickable. Use the select boxes on the left to assign members (auto-pulls Faction &amp; F1 Power from Members) · click a group's color swatch to recolor its table header (and its rally-path color options) · use a role's name dropdown to rename it — or pick "➕ Add New Role to List..." / "🗑 Remove a Role from List..." to manage the shared dropdown options so you don't have to keep retyping — the × deletes that row, and + ADD ROLE ROW adds a new one, all scoped to that one group, on the team you're currently viewing · click any small circle or arrow on the map to select it and rotate it (each click rotates it 25°; a full rotation returns it to a plain circle — the circle stays visible, it never disappears) — once selected, use the color picker above to set that one arrow's own color · use HIDE DEFAULT CIRCLES to temporarily hide any small circle markers that are still untouched (never rotated into an arrow and still the default color) so the map looks cleaner. Assigning a member here automatically sets their Slot (A or B, matching this tab) and Main/Substitute status on the most recent A/B Slots session. A member can only be assigned to one team (A or B) per session.</div>
+                <div class="map-toolbar__hint" id="mapAdminHint" style="display:none;">The map always shows a fixed set of 6 teardrop markers plus 4 fixed landmark markers (2 Military Base stars, 2 Hospital crosses) and 1 house marker — adding or removing a group never adds or removes a teardrop marker; it only fills or empties one of the 6 teardrop slots (up to 10 groups total, the 7th–10th are "extra" and don't get their own teardrop, but their colors are still available for the arrow swatches below). The number badge on each group's tab (top-right of its block) cycles 1–10 and is just a label for that group — it does not change the map. Click a teardrop, star, cross, or house marker directly on the map to cycle its own number (1–10, then back to no number) — the marker's shape always stays the same and never disappears or changes; at the start of the cycle it simply shows no number. Click a teardrop marker to also select it for its own color — use the color picker above (same one used for a group's header color) to set that teardrop's color. Star, cross, and house markers keep their fixed shape and background colors and are not customisable, but their numbers are still clickable. Click a small circle or arrow marker to cycle its rotation, or drag it to reposition it anywhere on the map (handy for nudging an arrow off the house or another icon so nothing overlaps, especially in the exported PNG) — dragging never changes its rotation or color, and a quick double-click/double-tap snaps it back to its original spot. Use the select boxes on the left to assign members (auto-pulls Faction &amp; F1 Power from Members) · click a group's color swatch to recolor its table header (and its rally-path color options) · type a name in a group's header field to label that group for your own reference (shown in the sidebar list only, and in the exported PNG once set — the number badge stays visible either way) · use a role's name dropdown to rename it — or pick "➕ Add New Role to List..." / "🗑 Remove a Role from List..." to manage the shared dropdown options so you don't have to keep retyping — the × deletes that row, and + ADD ROLE ROW adds a new one, all scoped to that one group, on the team you're currently viewing · use HIDE DEFAULT CIRCLES to temporarily hide any small circle markers that are still untouched (never rotated into an arrow, never dragged, and still the default color) so the map looks cleaner. Assigning a member here automatically sets their Slot (A or B, matching this tab) and Main/Substitute status on the most recent A/B Slots session. A member can only be assigned to one team (A or B) per session.</div>
                 <div class="map-body">
                     <button class="map-groups-toggle-btn" id="mapGroupsToggleBtn" title="Show / hide groups panel">
                         <span></span><span></span><span></span>
@@ -1211,8 +1231,8 @@
     const DEFAULT_DOT_COLOR = DEFAULT_GROUP_COLORS[0];
 
     let mapDotsByBoard = {
-        A: { colors: new Array(DOT_POSITIONS.length).fill(DEFAULT_DOT_COLOR), steps: new Array(DOT_POSITIONS.length).fill(0) },
-        B: { colors: new Array(DOT_POSITIONS.length).fill(DEFAULT_DOT_COLOR), steps: new Array(DOT_POSITIONS.length).fill(0) }
+        A: { colors: new Array(DOT_POSITIONS.length).fill(DEFAULT_DOT_COLOR), steps: new Array(DOT_POSITIONS.length).fill(0), offsets: DOT_POSITIONS.map(() => ({ dx: 0, dy: 0 })) },
+        B: { colors: new Array(DOT_POSITIONS.length).fill(DEFAULT_DOT_COLOR), steps: new Array(DOT_POSITIONS.length).fill(0), offsets: DOT_POSITIONS.map(() => ({ dx: 0, dy: 0 })) }
     };
 
     // Teardrop marker colors are now independent from the group's own color
@@ -1283,6 +1303,7 @@
                 slot: i,
                 number: (i % MAX_PIN_NUMBER) + 1,
                 groupNumber: i + 1,
+                name: '',
                 color: DEFAULT_GROUP_COLORS[i % DEFAULT_GROUP_COLORS.length],
                 roleRows: DEFAULT_ROLE_DEFS.map(r => ({ key: r.key, label: r.label, memberId: null }))
             });
@@ -1385,6 +1406,7 @@
                         t.groupNumber = i + 1;
                         if (board === 'A') needResaveA = true; else needResaveB = true;
                     }
+                    if (typeof t.name !== 'string') t.name = '';
                     if (!t.color) t.color = DEFAULT_GROUP_COLORS[i % DEFAULT_GROUP_COLORS.length];
                     delete t.icon;
                     delete t.arrowOffset;
@@ -1412,7 +1434,7 @@
 
         function normalizeDotsData(loaded) {
             if (!loaded || !Array.isArray(loaded.steps)) {
-                return { data: { colors: new Array(DOT_POSITIONS.length).fill(DEFAULT_DOT_COLOR), steps: new Array(DOT_POSITIONS.length).fill(0) }, needResave: true };
+                return { data: { colors: new Array(DOT_POSITIONS.length).fill(DEFAULT_DOT_COLOR), steps: new Array(DOT_POSITIONS.length).fill(0), offsets: DOT_POSITIONS.map(() => ({ dx: 0, dy: 0 })) }, needResave: true };
             }
             let needResave = false;
             const steps = loaded.steps.slice(0, DOT_POSITIONS.length).map(s => (typeof s === 'number' && s >= 0 && s < DOT_STEPS_PER_CYCLE) ? s : 0);
@@ -1433,7 +1455,18 @@
                 needResave = true;
             }
 
-            return { data: { colors, steps }, needResave };
+            const isFiniteNum = n => typeof n === 'number' && isFinite(n);
+            let offsets;
+            if (Array.isArray(loaded.offsets)) {
+                offsets = loaded.offsets.slice(0, DOT_POSITIONS.length).map(o => (o && isFiniteNum(o.dx) && isFiniteNum(o.dy)) ? { dx: o.dx, dy: o.dy } : { dx: 0, dy: 0 });
+                if (offsets.length !== loaded.offsets.length) needResave = true;
+                while (offsets.length < DOT_POSITIONS.length) { offsets.push({ dx: 0, dy: 0 }); needResave = true; }
+            } else {
+                offsets = DOT_POSITIONS.map(() => ({ dx: 0, dy: 0 }));
+                needResave = true;
+            }
+
+            return { data: { colors, steps, offsets }, needResave };
         }
 
         function normalizePinColors(loaded) {
@@ -2108,12 +2141,15 @@
             const colorSwatch = isManagementOrAdmin
                 ? `<input type="color" class="map-team-header__color" value="${team.color || '#966426'}" onchange="setTeamColor('${team.id}', this.value)" title="Group color">`
                 : '';
+            const nameField = isManagementOrAdmin
+                ? `<input type="text" class="map-team-header__name-input notranslate" translate="no" placeholder="Name this group…" value="${escapeHtml(team.name || '')}" maxlength="40" onchange="setGroupName('${team.id}', this.value)" title="Label this group (shown in this sidebar list and in the exported PNG once set)">`
+                : `<span class="notranslate" translate="no">${team.name ? escapeHtml(team.name) : 'GROUP'}</span>`;
             html += `
                 <div class="map-team-block">
                     <div class="map-team-header" style="background:${team.color || '#5c4127'};">
                         <div class="map-team-header__title">
                             ${colorSwatch}
-                            <span>GROUP</span>
+                            ${nameField}
                         </div>
                         <div class="map-team-header__number notranslate ${isManagementOrAdmin ? 'map-team-header__number--clickable' : ''}" translate="no" ${numberClickable}>${team.groupNumber}</div>
                     </div>
@@ -2151,6 +2187,14 @@
         });
         wrap.innerHTML = html;
     }
+
+    window.setGroupName = function(teamId, value) {
+        if (!isManagementOrAdmin) return;
+        const team = currentTeams().find(t => t.id === teamId);
+        if (!team) return;
+        team.name = value.trim().slice(0, 40);
+        saveMapBoard(activeBoard);
+    };
 
     function staticMapBackgroundHtml() {
         return `
@@ -2227,6 +2271,7 @@
         html += renderHouseMarkerHtml();
 
         diagram.innerHTML = html;
+        attachConnectorDragHandlers();
     }
 
     function renderLandmarkMarkersHtml() {
@@ -2285,7 +2330,7 @@
         return `
             <svg viewBox="0 0 22 22">
                 <g class="map-connector-arrow-inner" style="transform: rotate(${degrees}deg);">
-                    <path d="M2,11 L18,11 M18,11 L11,4 M18,11 L11,18" stroke="${color}" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M2,11 L18,11 M18,11 L12,7 M18,11 L12,15" stroke="${color}" stroke-width="3.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
                 </g>
             </svg>
         `;
@@ -2297,19 +2342,107 @@
         DOT_POSITIONS.forEach((pos, i) => {
             const step = boardDots.steps[i] || 0;
             const color = (boardDots.colors && boardDots.colors[i]) || DEFAULT_DOT_COLOR;
+            const offset = (boardDots.offsets && boardDots.offsets[i]) || { dx: 0, dy: 0 };
             const isArrow = step !== 0;
-            const isDefaultCircle = !isArrow && color === DEFAULT_DOT_COLOR;
+            const isDefaultCircle = !isArrow && color === DEFAULT_DOT_COLOR && offset.dx === 0 && offset.dy === 0;
             if (hideDefaultCircles && isDefaultCircle) return;
             const inner = isArrow ? connectorArrowSvg(color, step * DOT_ROTATION_STEP) : connectorDotSvg(color);
             const isSelected = isManagementOrAdmin && selectedMarker && selectedMarker.type === 'dot' && selectedMarker.index === i;
-            const clickAttr = isManagementOrAdmin ? `onclick="cycleConnectorDot(${i})" title="Click to select & rotate (${step === 0 ? 'currently a dot' : step * DOT_ROTATION_STEP + '°'}) · then use the color picker above for its own color"` : '';
+            const left = pos.left + offset.dx;
+            const top = pos.top + offset.dy;
+            const titleText = isManagementOrAdmin ? `Click to select &amp; rotate (${step === 0 ? 'currently a dot' : step * DOT_ROTATION_STEP + '°'}) · drag to reposition · double-click to reset position` : '';
             html += `
-                <div class="map-connector-dot ${isManagementOrAdmin ? '' : 'map-connector-dot--readonly'} ${isArrow ? 'map-connector-dot--arrow' : ''} ${isSelected ? 'map-connector-dot--selected' : ''}" style="left:${pos.left}%; top:${pos.top}%;" ${clickAttr}>
+                <div class="map-connector-dot ${isManagementOrAdmin ? '' : 'map-connector-dot--readonly'} ${isArrow ? 'map-connector-dot--arrow' : ''} ${isSelected ? 'map-connector-dot--selected' : ''}" data-dot-index="${i}" style="left:${left}%; top:${top}%;" title="${titleText}">
                     ${inner}
                 </div>
             `;
         });
         return html;
+    }
+
+    // Drag-to-reposition for connector dots/arrows, layered on top of the
+    // existing click-to-rotate behavior. A short pointer movement threshold
+    // distinguishes a tap (rotate) from a drag (reposition) so both keep
+    // working from the same marker. Double-click/double-tap resets the
+    // marker back to its original, un-dragged position.
+    const DOT_DRAG_THRESHOLD_PX = 5;
+
+    function attachConnectorDragHandlers() {
+        const diagram = document.getElementById('mapDiagram');
+        if (!diagram) return;
+        diagram.querySelectorAll('.map-connector-dot').forEach(el => {
+            const index = parseInt(el.getAttribute('data-dot-index'), 10);
+            if (isNaN(index)) return;
+
+            if (!isManagementOrAdmin) return;
+
+            let pointerDownPos = null;
+            let didDrag = false;
+            let startOffset = null;
+
+            el.addEventListener('pointerdown', (e) => {
+                e.stopPropagation();
+                pointerDownPos = { x: e.clientX, y: e.clientY };
+                didDrag = false;
+                const boardDots = mapDotsByBoard[activeBoard];
+                startOffset = (boardDots.offsets && boardDots.offsets[index]) ? { ...boardDots.offsets[index] } : { dx: 0, dy: 0 };
+                el.setPointerCapture(e.pointerId);
+            });
+
+            el.addEventListener('pointermove', (e) => {
+                if (!pointerDownPos) return;
+                const movedX = e.clientX - pointerDownPos.x;
+                const movedY = e.clientY - pointerDownPos.y;
+                if (!didDrag && Math.hypot(movedX, movedY) < DOT_DRAG_THRESHOLD_PX) return;
+                didDrag = true;
+                el.classList.add('map-connector-dot--dragging');
+
+                const rect = diagram.getBoundingClientRect();
+                const deltaPctX = (movedX / rect.width) * 100;
+                const deltaPctY = (movedY / rect.height) * 100;
+                let newDx = startOffset.dx + deltaPctX;
+                let newDy = startOffset.dy + deltaPctY;
+                newDx = Math.max(-40, Math.min(40, newDx));
+                newDy = Math.max(-40, Math.min(40, newDy));
+
+                const boardDots = mapDotsByBoard[activeBoard];
+                if (!boardDots.offsets) boardDots.offsets = DOT_POSITIONS.map(() => ({ dx: 0, dy: 0 }));
+                boardDots.offsets[index] = { dx: newDx, dy: newDy };
+
+                const base = DOT_POSITIONS[index];
+                el.style.left = (base.left + newDx) + '%';
+                el.style.top = (base.top + newDy) + '%';
+            });
+
+            const finishDrag = (e) => {
+                if (!pointerDownPos) return;
+                el.classList.remove('map-connector-dot--dragging');
+                if (didDrag) {
+                    saveMapDots(activeBoard);
+                } else {
+                    // Treated as a click/tap: cycle rotation as before.
+                    window.cycleConnectorDot(index);
+                }
+                pointerDownPos = null;
+                didDrag = false;
+            };
+
+            el.addEventListener('pointerup', finishDrag);
+            el.addEventListener('pointercancel', () => {
+                pointerDownPos = null;
+                didDrag = false;
+                el.classList.remove('map-connector-dot--dragging');
+            });
+
+            el.addEventListener('dblclick', (e) => {
+                e.stopPropagation();
+                const boardDots = mapDotsByBoard[activeBoard];
+                if (!boardDots.offsets) return;
+                boardDots.offsets[index] = { dx: 0, dy: 0 };
+                saveMapDots(activeBoard);
+                renderMapDiagram();
+            });
+        });
     }
 
     window.cycleConnectorDot = function(index) {
@@ -2489,6 +2622,7 @@
             slot: nextIndex,
             number: (nextIndex % MAX_PIN_NUMBER) + 1,
             groupNumber: nextIndex + 1,
+            name: '',
             color: DEFAULT_GROUP_COLORS[nextIndex % DEFAULT_GROUP_COLORS.length],
             roleRows: DEFAULT_ROLE_DEFS.map(r => ({ key: r.key, label: r.label, memberId: null }))
         };
@@ -2557,9 +2691,15 @@
                 ? memberEntries.map(e => e.isSub ? `<u>${escapeHtml(e.name)}</u>` : escapeHtml(e.name)).join(', ')
                 : 'Unassigned';
 
+            // The group's own custom name only appears here if one was set —
+            // the #number badge always shows either way.
+            const nameLabelHtml = team.name && team.name.trim()
+                ? ` · ${escapeHtml(team.name.trim())}`
+                : '';
+
             const chip = document.createElement('div');
             chip.style.cssText = `display:flex; align-items:center; gap:8px; padding:8px 16px; border-radius:20px; background:${team.color || '#966426'}; color:#ffffff; font-weight:800; font-size:13px; box-shadow:0 1px 3px rgba(0,0,0,0.2);`;
-            chip.innerHTML = `#${team.groupNumber} · ${namesHtml}`;
+            chip.innerHTML = `#${team.groupNumber}${nameLabelHtml} · ${namesHtml}`;
             namesRow.appendChild(chip);
         });
 
