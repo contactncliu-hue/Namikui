@@ -1295,11 +1295,14 @@
         const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         const FAKE_EMAIL_DOMAIN = '@loopysplaygroundapp.com';
 
-function usernameToEmailSafe(username) {
-    return username
-        .toLowerCase()
-        .replace(/[^a-z0-9]/g, '') // strip anything not a-z or 0-9
-        || 'user' + Date.now();     // fallback if nothing's left (e.g. all-CJK username)
+async function usernameToEmailSafe(username) {
+    const normalized = username.trim().toLowerCase();
+    const data = new TextEncoder().encode(normalized);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hex = Array.from(new Uint8Array(hashBuffer))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('');
+    return 'u' + hex.slice(0, 32); // deterministic, unique per-username, safe for any script
 }
 
 let currentUser = {
@@ -1603,7 +1606,7 @@ let currentUser = {
                 return;
             }
 
-            const fakeEmail = usernameToEmailSafe(uInput) + FAKE_EMAIL_DOMAIN;
+            const fakeEmail = await usernameToEmailSafe(uInput) + FAKE_EMAIL_DOMAIN;
             const { data: signInData, error: signInError } = await db.auth.signInWithPassword({
                 email: fakeEmail,
                 password: pInput
@@ -1656,7 +1659,7 @@ let currentUser = {
                 return;
             }
 
-            const fakeEmail = usernameToEmailSafe(newU) + FAKE_EMAIL_DOMAIN;
+            const fakeEmail = await usernameToEmailSafe(newU) + FAKE_EMAIL_DOMAIN;
             const { data, error } = await db.auth.signUp({
                 email: fakeEmail,
                 password: newP,
