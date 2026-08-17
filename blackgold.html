@@ -2767,6 +2767,18 @@
         }
     }
 
+    // Live sync: re-fetch from Supabase whenever any row in app_data changes,
+    // so edits made on another tab/page (e.g. members.html updating rankings)
+    // show up here without a manual refresh. Requires Realtime to be turned
+    // on for the app_data table in the Supabase dashboard (Database > Replication).
+    function subscribeToAppDataChanges() {
+        db.channel('app_data_changes')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'app_data' }, (payload) => {
+                loadData();
+            })
+            .subscribe();
+    }
+
     (async function initPage() {
         const ok = await loadCurrentUserAccount();
         if (!ok) {
@@ -2775,6 +2787,7 @@
         }
         renderSidebarUser();
         loadData();
+        subscribeToAppDataChanges();
         switchTab('map');
     })();
 </script>
