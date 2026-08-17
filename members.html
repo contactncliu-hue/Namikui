@@ -549,7 +549,6 @@
     let currentUser = { username: null, role: null };
     let isManagementOrAdmin = false;
     let isAdmin = false;
-
     async function loadCurrentUserAccount() {
         const { data: { session } } = await db.auth.getSession();
         if (!session) return false;
@@ -611,6 +610,21 @@
     let members = [];
     let showDiffMode = false;
     let currentStatusFilter = 'all';
+    // ===== Realtime sync: re-fetch the 'members' row whenever ANY row in app_data =====
+    // ===== changes (e.g. someone edits attendance on index.html, or edits members  =====
+    // ===== from another open tab), so this page updates without a manual refresh.  =====
+    // Requires Realtime to be enabled for the app_data table in the Supabase
+    // dashboard (Database > Replication).
+    let realtimeSubscribed = false;
+    function subscribeToAppDataChanges() {
+        if (realtimeSubscribed) return; // guard against double-subscribing
+        realtimeSubscribed = true;
+        db.channel('app_data_changes_members')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'app_data' }, (payload) => {
+                fetchMembersOnly();
+            })
+            .subscribe();
+    }
     // Frozen rank-group order used for the colored group separator bars.
     // R5 (top) -> R4 -> R3 -> R2 -> R1 (bottom).
     const RANK_GROUP_ORDER = { R5: 0, R4: 1, R3: 2, R2: 3, R1: 4 };
@@ -690,6 +704,32 @@
         // still update the live rank dot immediately, but will not move the row into
         // a different colored group section until the page is refreshed again.
         members.forEach(m => { m.frozenRank = m.rank; });
+        render();
+    }
+    // Lightweight refresh used by the Realtime subscription: re-pulls just the
+    // 'members' row (skips the login/session check and the first-run seed data)
+    // and re-renders, so edits made elsewhere show up here without a reload.
+    async function fetchMembersOnly() {
+        try {
+            const { data, error } = await db.from('app_data').select('*').eq('key', 'members').maybeSingle();
+            if (error) throw error;
+            if (data) members = data.value || [];
+        } catch (err) {
+            console.error('Error refreshing members:', err);
+            return;
+        }
+        members.forEach(m => {
+            const parsedCp = parseCpWithCommas(m.cp);
+            m.cp = parsedCp.formatted;
+            m.rawCp = parsedCp.raw;
+            const parsedF1 = parseCpToRaw(m.f1Cp || '0G');
+            m.f1Cp = parsedF1.formatted;
+            m.f1Raw = parsedF1.raw;
+            if (!m.f1History || !Array.isArray(m.f1History) || m.f1History.length === 0) {
+                m.f1History = [{ date: new Date().toISOString().split('T')[0], val: m.f1Cp }];
+            }
+            m.frozenRank = m.rank;
+        });
         render();
     }
     async function saveData() {
@@ -1104,6 +1144,7 @@
         }
         renderSidebarUser();
         loadDataFromCloud();
+        subscribeToAppDataChanges();
     });
 </script>
 <script>
