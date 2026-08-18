@@ -1011,6 +1011,27 @@
                         </table>
                     </div>
                 </div>
+
+                <div class="generic-view-card" style="margin-top: 18px;">
+                    <h2 style="font-size:16px; color:var(--color-text-dark);">🕐 Data Snapshots &amp; Restore</h2>
+                    <p style="margin-bottom: 16px; color: #62697b;">A snapshot of Event Attendance data (events + member attendance/votes) is captured automatically before every save. If a save ever overwrites or corrupts data, restore the most recent good snapshot below. Restoring itself creates a new snapshot first, so restores are also reversible.</p>
+                    <div class="table-wrapper">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Timestamp</th>
+                                    <th>Saved By</th>
+                                    <th>Events</th>
+                                    <th>Members</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="snapshotsTableBody">
+                                <tr><td colspan="5" style="text-align: center; color: #8c93a6;">No snapshots recorded yet.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </section>
 
             <div class="footer-info-bar" style="margin-top: 4px;">
@@ -1368,6 +1389,25 @@ let currentUser = {
         let currentLightboxPhotoId = null;
         let accounts = [];
 
+        // ===== Save concurrency + snapshot/restore system =====
+        // Problem this fixes: saveData() used to fire off writes to every app_data row in
+        // parallel every time *anything* changed, and a live Realtime subscription would
+        // immediately re-pull ALL rows the instant any row changed (including our own writes
+        // mid-flight, or another admin's save). If a refresh landed while our save was still
+        // in progress, or two saves overlapped, the in-memory state could get reassembled from
+        // a mix of old/new rows - e.g. new event dates paired with stale attendance arrays -
+        // and the next save would then write that mismatched combination back, corrupting
+        // unrelated columns/events.
+        // Fix: (1) serialize all saves through a single queue so they never run concurrently,
+        // (2) suppress realtime-triggered refreshes while a save is in flight (queue a single
+        // refresh for right after instead of firing mid-save), and (3) snapshot eventDates +
+        // members before every save so any bad write can be rolled back from the History tab.
+        let isSavingData = false;
+        let refreshPendingAfterSave = false;
+        let saveQueue = Promise.resolve();
+        let dataSnapshots = []; // [{ id, timestamp, user, eventDates, members }], newest first
+        const MAX_SNAPSHOTS = 20;
+
         window.getActiveMembers = function(memberList) {
             return memberList.filter(m => m.status !== 'removed');
         };
@@ -1451,6 +1491,7 @@ let currentUser = {
                         if (row.key === 'calendarEvents') calendarEvents = row.value || [];
                         if (row.key === 'noticeAnnouncements') noticeAnnouncements = row.value || [];
                         if (row.key === 'homePhotos') homePhotos = row.value || [];
+                        if (row.key === 'dataSnapshots') dataSnapshots = row.value || [];
                     });
                 }
            } catch (err) {
@@ -1491,6 +1532,7 @@ let currentUser = {
         // Lightweight refresh: re-pulls just the app_data rows (skips the login/session
         // check) and re-renders, so changes made on other pages (e.g. members.html)
         // show up here without a manual reload.
+        // NOTE: this must never run while a local save is in flight — see saveData().
         async function fetchAppDataOnly() {
             try {
                 const { data, error } = await db.from('app_data').select('*');
@@ -1507,6 +1549,7 @@ let currentUser = {
                         if (row.key === 'calendarEvents') calendarEvents = row.value || [];
                         if (row.key === 'noticeAnnouncements') noticeAnnouncements = row.value || [];
                         if (row.key === 'homePhotos') homePhotos = row.value || [];
+                        if (row.key === 'dataSnapshots') dataSnapshots = row.value || [];
                     });
                 }
             } catch (err) {
@@ -1533,41 +1576,149 @@ let currentUser = {
         // so edits made on another page (e.g. members.html updating rankings) show up
         // here without a manual refresh. Requires Realtime to be turned on for the
         // app_data table in the Supabase dashboard (Database > Replication).
+        //
+        // Guarded against the save race: while we're in the middle of writing our own
+        // change (isSavingData === true), a refresh here would read a half-written mix
+        // of old/new rows and could reassemble mismatched eventDates/members - which is
+        // exactly what was causing edits to "erase" or "mess up" unrelated columns. So
+        // during a save we just remember that a refresh is owed, and fetchAppDataOnly()
+        // runs once, right after the save finishes, instead of mid-save.
         let realtimeSubscribed = false;
         function subscribeToAppDataChanges() {
             if (realtimeSubscribed) return; // guard against double-subscribing
             realtimeSubscribed = true;
             db.channel('app_data_changes_index')
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'app_data' }, (payload) => {
+                    if (isSavingData) {
+                        refreshPendingAfterSave = true;
+                        return;
+                    }
                     fetchAppDataOnly();
                 })
                 .subscribe();
         }
 
-        async function saveData() {
+        // Records a point-in-time copy of the Event Attendance data (the data most prone
+        // to the "one edit messes up another column" bug) so it can be restored later from
+        // the Edit History & Audit tab. Called automatically at the start of every save.
+        // Deep-cloned via JSON so later in-memory mutations never leak into a stored snapshot.
+        function captureSnapshot() {
             try {
-                const results = await Promise.all([
-                    db.from('app_data').upsert({ id: 1, key: 'eventDates', value: eventDates }, { onConflict: 'id' }),
-                    db.from('app_data').upsert({ id: 2, key: 'members', value: members }, { onConflict: 'id' }),
-                    db.from('app_data').upsert({ id: 3, key: 'auditLogs', value: auditLogs }, { onConflict: 'id' }),
-                    db.from('app_data').upsert({ id: 10, key: 'vsData', value: vsData }, { onConflict: 'id' }),
-                    db.from('app_data').upsert({ id: 8, key: 'chatMessages', value: chatMessages }, { onConflict: 'id' }),
-                    db.from('app_data').upsert({ id: 9, key: 'polls', value: polls }, { onConflict: 'id' }),
-                    db.from('app_data').upsert({ id: 14, key: 'notices', value: notices }, { onConflict: 'id' }),
-                    db.from('app_data').upsert({ id: 11, key: 'calendarEvents', value: calendarEvents }, { onConflict: 'id' }),
-                    db.from('app_data').upsert({ id: 12, key: 'noticeAnnouncements', value: noticeAnnouncements }, { onConflict: 'id' }),
-                    db.from('app_data').upsert({ id: 13, key: 'homePhotos', value: homePhotos }, { onConflict: 'id' })
-                ]);
-                const failed = results.find(r => r && r.error);
-                if (failed) {
-                    console.error('Save error:', failed.error);
-                    return false;
+                const snapshot = {
+                    id: Date.now() + Math.floor(Math.random() * 1000),
+                    timestamp: new Date().toLocaleString(),
+                    user: currentUser.username || 'System',
+                    eventDates: JSON.parse(JSON.stringify(eventDates || [])),
+                    members: JSON.parse(JSON.stringify(members || []))
+                };
+                dataSnapshots.unshift(snapshot);
+                if (dataSnapshots.length > MAX_SNAPSHOTS) {
+                    dataSnapshots = dataSnapshots.slice(0, MAX_SNAPSHOTS);
                 }
-                return true;
             } catch (err) {
-                console.error('Save error:', err);
-                return false;
+                console.error('Could not capture snapshot:', err);
             }
+        }
+
+        // Restores eventDates + members from a stored snapshot. Admin-only. This itself
+        // goes through the normal saveData() path, which means the pre-restore state gets
+        // its own snapshot first - so a restore can always be undone too.
+        window.restoreSnapshot = function(snapshotId) {
+            if (currentUser.role !== 'admin') {
+                alert('Only Admin can restore snapshots.');
+                return;
+            }
+            const snap = dataSnapshots.find(s => s.id === snapshotId);
+            if (!snap) return;
+            if (!confirm(`Restore Event Attendance data to the snapshot from ${snap.timestamp}? Your current data will itself be saved as a new snapshot first, so this can be undone.`)) {
+                return;
+            }
+            eventDates = JSON.parse(JSON.stringify(snap.eventDates || []));
+            members = JSON.parse(JSON.stringify(snap.members || []));
+            eventDates.forEach(ev => { if (typeof ev.isWar !== 'boolean') ev.isWar = false; });
+            members.forEach(m => {
+                if (typeof m.attended !== 'number' || isNaN(m.attended)) m.attended = 0;
+                if (!Array.isArray(m.events)) m.events = [];
+                while (m.events.length < eventDates.length) m.events.push(false);
+                if (!Array.isArray(m.eventVotes)) m.eventVotes = [];
+                while (m.eventVotes.length < eventDates.length) m.eventVotes.push(null);
+                if (!m.rank) m.rank = 'R1';
+                m.frozenRank = m.rank;
+            });
+            logAction('RESTORE_SNAPSHOT', `Restored Event Attendance data to snapshot from ${snap.timestamp}`);
+            saveData();
+            render();
+        };
+
+        function renderSnapshotsTable() {
+            const body = document.getElementById('snapshotsTableBody');
+            if (!body) return;
+            const isAdmin = currentUser.role === 'admin';
+            if (!dataSnapshots || dataSnapshots.length === 0) {
+                body.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#8c93a6;">No snapshots recorded yet.</td></tr>`;
+                return;
+            }
+            body.innerHTML = dataSnapshots.map(snap => `
+                <tr>
+                    <td class="notranslate" style="font-size: var(--font-xs); color: #62697b;">${snap.timestamp}</td>
+                    <td class="notranslate" style="font-weight: 800; color: var(--color-primary);">${snap.user}</td>
+                    <td class="notranslate" style="text-align:center;">${(snap.eventDates || []).length}</td>
+                    <td class="notranslate" style="text-align:center;">${(snap.members || []).length}</td>
+                    <td>${isAdmin ? `<button class="btn-icon-action" style="color:var(--color-primary);" onclick="restoreSnapshot(${snap.id})">Restore</button>` : `<span style="color:#a0a6b5; font-size:var(--font-xs);">Admin only</span>`}</td>
+                </tr>
+            `).join('');
+        }
+
+        // All saves now funnel through here. Two protections on top of the old
+        // "write every row" behavior:
+        //  1. A snapshot of eventDates/members is captured first, so any bad write is
+        //     always recoverable from the History tab.
+        //  2. Saves are chained onto saveQueue so two saveData() calls can never run at
+        //     the same time - each one waits for the previous write to fully finish
+        //     before starting, which removes the interleaving that was corrupting data.
+        // isSavingData additionally tells the realtime listener to hold off refreshing
+        // mid-save (see subscribeToAppDataChanges above).
+        async function saveData() {
+            const runSave = async () => {
+                isSavingData = true;
+                captureSnapshot();
+                try {
+                    const results = await Promise.all([
+                        db.from('app_data').upsert({ id: 1, key: 'eventDates', value: eventDates }, { onConflict: 'id' }),
+                        db.from('app_data').upsert({ id: 2, key: 'members', value: members }, { onConflict: 'id' }),
+                        db.from('app_data').upsert({ id: 3, key: 'auditLogs', value: auditLogs }, { onConflict: 'id' }),
+                        db.from('app_data').upsert({ id: 10, key: 'vsData', value: vsData }, { onConflict: 'id' }),
+                        db.from('app_data').upsert({ id: 8, key: 'chatMessages', value: chatMessages }, { onConflict: 'id' }),
+                        db.from('app_data').upsert({ id: 9, key: 'polls', value: polls }, { onConflict: 'id' }),
+                        db.from('app_data').upsert({ id: 14, key: 'notices', value: notices }, { onConflict: 'id' }),
+                        db.from('app_data').upsert({ id: 11, key: 'calendarEvents', value: calendarEvents }, { onConflict: 'id' }),
+                        db.from('app_data').upsert({ id: 12, key: 'noticeAnnouncements', value: noticeAnnouncements }, { onConflict: 'id' }),
+                        db.from('app_data').upsert({ id: 13, key: 'homePhotos', value: homePhotos }, { onConflict: 'id' }),
+                        db.from('app_data').upsert({ id: 15, key: 'dataSnapshots', value: dataSnapshots }, { onConflict: 'id' })
+                    ]);
+                    const failed = results.find(r => r && r.error);
+                    if (failed) {
+                        console.error('Save error:', failed.error);
+                        return false;
+                    }
+                    return true;
+                } catch (err) {
+                    console.error('Save error:', err);
+                    return false;
+                } finally {
+                    isSavingData = false;
+                    if (refreshPendingAfterSave) {
+                        refreshPendingAfterSave = false;
+                        fetchAppDataOnly();
+                    }
+                }
+            };
+
+            const resultPromise = saveQueue.then(runSave, runSave);
+            // Keep the queue chained even if this particular save fails, so later saves
+            // still wait their turn instead of racing ahead.
+            saveQueue = resultPromise.then(() => {}, () => {});
+            return resultPromise;
         }
 
         function logAction(actionType, description) {
@@ -1960,6 +2111,7 @@ window.openRoleAssignModal = function() {
             renderVsPointsTable(isManagementOrAdmin);
             renderAuditTable();
             renderDiscussionRoom();
+            renderSnapshotsTable();
         }
 
         // Shared "default" ordering used by the Attendance tab, the Members tab, and as
