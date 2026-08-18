@@ -421,6 +421,34 @@
     }
     .archive-entry__delete-btn:hover { background: #fee2e2; }
 
+    /* ===== Archive date-selection rows ===== */
+    .archive-select-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 12px;
+        font-weight: 700;
+        padding: 8px 10px;
+        border: 1px solid var(--color-border-light);
+        border-radius: 4px;
+        cursor: pointer;
+    }
+    .archive-select-row:hover { background: #f7f8fb; }
+    .archive-select-row input[type="checkbox"] { width: 15px; height: 15px; cursor: pointer; }
+    .archive-select-row__type { color: var(--color-text-muted); font-weight: 600; }
+    .archive-select-toolbar {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 10px;
+        font-size: 11px;
+    }
+    .archive-select-toolbar span {
+        color: var(--color-primary);
+        font-weight: 800;
+        cursor: pointer;
+        text-decoration: underline;
+    }
+
     /* ===== Import Review Modal ===== */
     .import-review-row {
         display: flex;
@@ -716,7 +744,7 @@
             <input type="date" id="cycleStartDateInput" class="date-picker-input admin-only" style="display:none;" title="Cycle start date">
             <input type="date" id="cycleEndDateInput" class="date-picker-input admin-only" style="display:none;" title="Cycle end date">
             <button class="btn-action admin-only" style="display:none;" onclick="setCycleDates()">SET DATES</button>
-            <button class="btn-gold admin-only" id="btnArchiveCycle" style="display:none;" onclick="archiveCurrentCycle()">📦 ARCHIVE & RESET CYCLE</button>
+            <button class="btn-gold admin-only" id="btnArchiveCycle" style="display:none;" onclick="openArchiveSelectModal()">📦 ARCHIVE DATES</button>
             <button class="btn-action" onclick="openArchivesModal()">🗂 VIEW ARCHIVES (<span id="archiveCount">0</span>)</button>
         </div>
     </div>
@@ -761,6 +789,25 @@
         <div id="archivesListContainer"></div>
         <div style="display:flex; justify-content:flex-end; margin-top:8px;">
             <button class="btn-action" onclick="closeArchivesModal()">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- Archive Cycle - select dates modal -->
+<div class="modal-overlay" id="archiveSelectModal">
+    <div class="modal-card">
+        <h3>Select Dates to Archive <span class="modal-close-x" onclick="closeArchiveSelectModal()">✕</span></h3>
+        <div style="font-size:11px; color:var(--color-text-muted); font-weight:700; margin-bottom:10px;">
+            Choose which session dates to move into the archive. Their totals are saved to the archive, then those dates are removed from the live table — any dates you leave unchecked stay right where they are.
+        </div>
+        <div class="archive-select-toolbar">
+            <span onclick="setAllArchiveSelectChecks(true)">Select all</span>
+            <span onclick="setAllArchiveSelectChecks(false)">Select none</span>
+        </div>
+        <div id="archiveSelectRows" style="display:flex; flex-direction:column; gap:8px; margin-bottom:16px;"></div>
+        <div style="display:flex; justify-content:flex-end; gap:8px;">
+            <button class="btn-action" onclick="closeArchiveSelectModal()">Cancel</button>
+            <button class="btn-gold" onclick="confirmArchiveSelected()">📦 ARCHIVE SELECTED</button>
         </div>
     </div>
 </div>
@@ -1320,7 +1367,7 @@ async function loadCurrentUserAccount() {
             headerHTML += `
                 <th>
                     <div class="date-label notranslate" translate="no" id="dateLabel-${idx}" ${dateLabelAttrs}>${wkDate}</div>
-                    <div ${weekLabelAttrs} id="weekLabel-${idx}">Week ${idx + 1} · ${wkType === 'daily' ? 'Daily' : 'Weekly'}</div>
+                    <div ${weekLabelAttrs} id="weekLabel-${idx}">${wkType === 'daily' ? 'Daily' : 'Weekly'}</div>
                     ${deleteActionHTML}
                 </th>`;
         });
@@ -1497,7 +1544,8 @@ async function loadCurrentUserAccount() {
                 const clickAttrs = isManagementOrAdmin
                     ? `onclick="editVsScore('${m.id}', ${wIdx})" style="cursor:pointer;" title="Click to edit this score"`
                     : '';
-                weeksBreakdownHTML += `<span ${clickAttrs}>Wk ${wIdx + 1}: <strong style="color:${valColor};">${sVal.toLocaleString()}</strong></span>`;
+                const wkTypeLabel = getWeekType(wk) === 'daily' ? 'Day' : 'Wk';
+                weeksBreakdownHTML += `<span ${clickAttrs}>${wkTypeLabel} ${wIdx + 1}: <strong style="color:${valColor};">${sVal.toLocaleString()}</strong></span>`;
             });
             weeksBreakdownHTML += `</div>`;
 
@@ -1606,7 +1654,7 @@ async function loadCurrentUserAccount() {
 
     // Lets admin/management flip an already-created session between Weekly
     // and Daily (this changes which red-highlight threshold applies to that
-    // column) by clicking the "Week N · Weekly/Daily" label under the date.
+    // column) by clicking the "Weekly"/"Daily" label under the date.
     window.toggleWeekType = async function(weekIdx) {
         if (!isManagementOrAdmin) return;
         const wk = vsData.weeks[weekIdx];
@@ -1992,7 +2040,7 @@ async function loadCurrentUserAccount() {
         if (e.target === document.getElementById('vsImportReviewModal')) closeVsImportReviewModal();
     });
 
-    // --- 4-week counting cycle: set start date, archive & reset, view archives ---
+    // --- 4-week counting cycle: set start date, view archives ---
     window.setCycleStartDate = async function() {
         if (!isManagementOrAdmin) return;
         const input = document.getElementById('cycleStartDateInput');
@@ -2005,46 +2053,92 @@ async function loadCurrentUserAccount() {
         renderVsPoints();
     };
 
-    function isCycleReadyToArchive() {
-        return true;
-    }
-
-    window.archiveCurrentCycle = async function() {
+    // --- Archive: pick which session dates to archive, instead of always
+    // archiving everything currently on the table. Selected dates get their
+    // per-member totals saved to the archive, then removed from the live
+    // table; unselected dates are left alone. ---
+    window.openArchiveSelectModal = function() {
         if (!isManagementOrAdmin) return;
-        if (!isCycleReadyToArchive()) {
-            alert('The current cycle has not reached 4 weeks yet.');
-            return;
-        }
         if (vsData.weeks.length === 0) {
             alert('There is no session data to archive yet.');
             return;
         }
-        if (!confirm('Archive the current cycle? This resets the overall ranking totals and clears the session columns for a fresh cycle. Individual session data is saved to the archive first.')) return;
+        const container = document.getElementById('archiveSelectRows');
+        container.innerHTML = vsData.weeks.map((wk, idx) => {
+            const dateStr = getWeekDate(wk);
+            const typeStr = getWeekType(wk) === 'daily' ? 'Daily' : 'Weekly';
+            return `
+                <label class="archive-select-row">
+                    <input type="checkbox" class="archive-select-checkbox" data-idx="${idx}" checked>
+                    <span class="notranslate" translate="no">${dateStr}</span>
+                    <span class="archive-select-row__type">· ${typeStr}</span>
+                </label>
+            `;
+        }).join('');
+        document.getElementById('archiveSelectModal').style.display = 'flex';
+    };
+
+    window.setAllArchiveSelectChecks = function(checked) {
+        document.querySelectorAll('.archive-select-checkbox').forEach(c => { c.checked = checked; });
+    };
+
+    window.closeArchiveSelectModal = function() {
+        document.getElementById('archiveSelectModal').style.display = 'none';
+    };
+
+    window.confirmArchiveSelected = async function() {
+        if (!isManagementOrAdmin) return;
+        const checkboxes = document.querySelectorAll('.archive-select-checkbox');
+        const selectedIdxs = Array.from(checkboxes)
+            .filter(c => c.checked)
+            .map(c => parseInt(c.getAttribute('data-idx'), 10));
+
+        if (selectedIdxs.length === 0) {
+            alert('Please select at least one date to archive.');
+            return;
+        }
+        if (!confirm(`Archive ${selectedIdxs.length} selected date(s)? Their totals are saved to the archive, then they're removed from the live table.`)) return;
 
         const activeMembers = getActiveMembers();
         const activeMemberIds = new Set(activeMembers.map(m => String(m.id)));
+
+        const orderedSelected = selectedIdxs.slice().sort((a, b) => a - b);
+        const archivedWeeks = orderedSelected.map(i => ({ ...vsData.weeks[i] }));
         const membersTotals = vsData.membersScores
             .filter(m => activeMemberIds.has(String(m.id)))
             .map(m => ({
                 id: m.id,
                 name: m.name,
-                total: m.scores.reduce((a, b) => a + b, 0)
+                total: orderedSelected.reduce((sum, i) => sum + (m.scores[i] || 0), 0)
             }));
+
+        let minDate = null, maxDate = null;
+        archivedWeeks.forEach(w => {
+            const d = parseDateString(getWeekDate(w));
+            if (!minDate || d < minDate) minDate = d;
+            if (!maxDate || d > maxDate) maxDate = d;
+        });
 
         vsData.archives.push({
             cycleStartDate: vsData.cycleStartDate,
             cycleEndDate: new Date().toISOString().split('T')[0],
-            weeks: vsData.weeks.map(w => ({ ...w })),
+            weeks: archivedWeeks,
             membersTotals
         });
 
-        vsData.weeks = [];
-        vsData.membersScores.forEach(m => { m.scores = []; });
-        vsData.cycleStartDate = new Date().toISOString().split('T')[0];
+        // Remove selected weeks from the live table, highest index first so
+        // earlier indices in the loop stay valid as we splice.
+        selectedIdxs.slice().sort((a, b) => b - a).forEach(i => {
+            vsData.weeks.splice(i, 1);
+            vsData.membersScores.forEach(m => {
+                if (Array.isArray(m.scores)) m.scores.splice(i, 1);
+            });
+        });
 
         await saveData();
         renderVsPoints();
-        alert('Cycle archived. Overall totals have been reset for the new cycle.');
+        closeArchiveSelectModal();
+        alert(`Archived ${selectedIdxs.length} date(s).`);
     };
 
     window.openArchivesModal = function() {
@@ -2097,6 +2191,10 @@ async function loadCurrentUserAccount() {
 
     document.getElementById('archivesModal').addEventListener('click', (e) => {
         if (e.target === document.getElementById('archivesModal')) closeArchivesModal();
+    });
+
+    document.getElementById('archiveSelectModal').addEventListener('click', (e) => {
+        if (e.target === document.getElementById('archiveSelectModal')) closeArchiveSelectModal();
     });
 
     document.getElementById('vsSearchInput').addEventListener('input', renderVsPoints);
