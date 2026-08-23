@@ -1492,6 +1492,7 @@ let currentUser = {
                         if (row.key === 'noticeAnnouncements') noticeAnnouncements = row.value || [];
                         if (row.key === 'homePhotos') homePhotos = row.value || [];
                         if (row.key === 'dataSnapshots') dataSnapshots = row.value || [];
+                        if (row.key === 'scheduleData') scheduleData = row.value || { titleImageUrl: '', days: [] };
                     });
                 }
            } catch (err) {
@@ -1514,12 +1515,16 @@ let currentUser = {
         // Ensure event columns are always in chronological order, fixing any events
         // that were previously added/edited out of order.
         sortEventsByDate();
+        if (!scheduleData || typeof scheduleData !== 'object') scheduleData = { titleImageUrl: '', days: [] };
+        if (!Array.isArray(scheduleData.days)) scheduleData.days = [];
         saveData();
 
         pruneExpiredCalendarEvents();
 
             const { data: accountsData, error: accountsErr } = await db.from('accounts').select('*');
             if (!accountsErr && accountsData) accounts = accountsData;
+
+            loadScheduleIconLibrary();
 
             const isLoggedIn = await loadCurrentUserAccount();
             if (isLoggedIn) {
@@ -1550,6 +1555,7 @@ let currentUser = {
                         if (row.key === 'noticeAnnouncements') noticeAnnouncements = row.value || [];
                         if (row.key === 'homePhotos') homePhotos = row.value || [];
                         if (row.key === 'dataSnapshots') dataSnapshots = row.value || [];
+                        if (row.key === 'scheduleData') scheduleData = row.value || { titleImageUrl: '', days: [] };
                     });
                 }
             } catch (err) {
@@ -1568,6 +1574,8 @@ let currentUser = {
                 m.frozenRank = m.rank;
             });
             sortEventsByDate();
+            if (!scheduleData || typeof scheduleData !== 'object') scheduleData = { titleImageUrl: '', days: [] };
+            if (!Array.isArray(scheduleData.days)) scheduleData.days = [];
 
             if (appDashboard.style.display !== 'none') render();
         }
@@ -1694,7 +1702,8 @@ let currentUser = {
                         db.from('app_data').upsert({ id: 11, key: 'calendarEvents', value: calendarEvents }, { onConflict: 'id' }),
                         db.from('app_data').upsert({ id: 12, key: 'noticeAnnouncements', value: noticeAnnouncements }, { onConflict: 'id' }),
                         db.from('app_data').upsert({ id: 13, key: 'homePhotos', value: homePhotos }, { onConflict: 'id' }),
-                        db.from('app_data').upsert({ id: 15, key: 'dataSnapshots', value: dataSnapshots }, { onConflict: 'id' })
+                        db.from('app_data').upsert({ id: 15, key: 'dataSnapshots', value: dataSnapshots }, { onConflict: 'id' }),
+                        db.from('app_data').upsert({ id: 16, key: 'scheduleData', value: scheduleData }, { onConflict: 'id' })
                     ]);
                     const failed = results.find(r => r && r.error);
                     if (failed) {
@@ -1989,6 +1998,14 @@ window.openRoleAssignModal = function() {
             if (ganttLegend) ganttLegend.innerHTML = '';
             const ganttRangeLabel = document.getElementById('ganttRangeLabel');
             if (ganttRangeLabel) ganttRangeLabel.innerText = '';
+            const schedPreviewArea = document.getElementById('schedPreviewArea');
+            if (schedPreviewArea) schedPreviewArea.innerHTML = lockHtml;
+            const schedEditorArea = document.getElementById('schedEditorArea');
+            if (schedEditorArea) schedEditorArea.innerHTML = '';
+            const btnSchedAddDay = document.getElementById('btnSchedAddDay');
+            if (btnSchedAddDay) btnSchedAddDay.style.display = 'none';
+            const btnSchedExportPng = document.getElementById('btnSchedExportPng');
+            if (btnSchedExportPng) btnSchedExportPng.style.display = 'none';
 
             const membersDirectoryBody = document.getElementById('membersDirectoryBody');
             if (membersDirectoryBody) membersDirectoryBody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#8c93a6; padding:24px;">${lockMsg}</td></tr>`;
@@ -2098,6 +2115,7 @@ window.openRoleAssignModal = function() {
             renderHomePhotos();
             renderNoticeCalendar();
             renderNoticeAnnouncements();
+            renderScheduleMaker(isManagementOrAdmin);
 
             if (currentSubTab === 'attendance') {
                 renderAttendanceTable(filteredMembers, avgRate, isManagementOrAdmin, totalEvents, totalAttendedCount);
