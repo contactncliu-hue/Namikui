@@ -1549,7 +1549,7 @@ let currentUser = {
         async function loadDataFromCloud() {
         let loadSucceeded = false;
         try {
-                const { data, error } = await db.from('app_data').select('*');
+                const { data, error } = await db.from('app_data').select('*').neq('id', 15);
                 if (error) throw error;
                 if (data && data.length > 0) {
                     data.forEach(row => {
@@ -1615,7 +1615,7 @@ let currentUser = {
         // NOTE: this must never run while a local save is in flight — see saveData().
         async function fetchAppDataOnly() {
             try {
-                const { data, error } = await db.from('app_data').select('*');
+                const { data, error } = await db.from('app_data').select('*').neq('id', 15);
                 if (error) throw error;
                 if (data && data.length > 0) {
                     data.forEach(row => {
