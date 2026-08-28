@@ -1894,10 +1894,12 @@ function captureSnapshot() {
                     if(el) el.style.display = 'none';
                 });
 
-                const activeSectionId = views[targetView];
+                                const activeSectionId = views[targetView];
                 if (activeSectionId) {
                     document.getElementById(activeSectionId).style.display = activeSectionId === 'viewHome' ? 'flex' : 'flex';
                 }
+
+                if (targetView === 'history') fetchSnapshotsOnly();
 
                 document.getElementById('sidebar').classList.remove('sidebar--open');
                 document.getElementById('sidebarOverlay').classList.remove('sidebar-overlay--visible');
