@@ -1130,7 +1130,16 @@
                 }
             );
 
-            if (!response.ok) throw new Error(`Gemini API error: ${response.status}`);
+            if (!response.ok) {
+                let detail = '';
+                try {
+                    const errBody = await response.json();
+                    detail = errBody?.error?.message || JSON.stringify(errBody);
+                } catch (parseErr) {
+                    detail = await response.text().catch(() => '(no body)');
+                }
+                throw new Error(`Gemini API error ${response.status}: ${detail}`);
+            }
             const result = await response.json();
             let rawText = result.candidates[0].content.parts[0].text.trim();
             rawText = rawText.replace(/^```json\s*/i, '').replace(/```\s*$/, '');
