@@ -793,10 +793,9 @@ function renderAttendanceTable(evs, filteredMembers) {
     }
     const colSpan = 4 + visibleColCount;
     const sorted = [...filteredMembers].sort((a,b) => {
-        const ga = RANK_GROUP_ORDER[rankGroupOf(a)], gb = RANK_GROUP_ORDER[rankGroupOf(b)];
-        if (ga !== gb) return ga - gb;
-        return memberRate(b, evs) - memberRate(a, evs);
-    });
+    const ga = RANK_GROUP_ORDER[rankGroupOf(a)], gb = RANK_GROUP_ORDER[rankGroupOf(b)];
+    return ga - gb;
+});
 
     let html = '';
     let lastGroup = null;
@@ -851,7 +850,7 @@ function renderAttendanceTable(evs, filteredMembers) {
                 } else {
                     const attended = attendanceState(m, ev.id) === 'attended';
                     const clickAttrs = isManagementOrAdmin ? `onclick="toggleAttendance(${m.id},${ev.id})"` : '';
-                    html += `<td class="col-event"><span class="check-toggle" ${clickAttrs}>${attended ? '<span class="check-icon">✔</span>' : '<span class="cross-icon">✕</span>'}</span></td>`;
+              html += `<td class="col-event"><span class="check-toggle" ${clickAttrs}>${attended ? '<i class="fa-solid fa-check check-icon"></i>' : '<i class="fa-solid fa-xmark cross-icon"></i>'}</span></td>`;
                 }
             });
         });
