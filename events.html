@@ -106,6 +106,8 @@ body{font-family:'Open Sans',sans-serif;background:var(--color-bg-main);color:va
 .attend-pill{font-family:var(--font-family-ui);font-size:9px;font-weight:800;padding:3px 8px;border-radius:10px;cursor:pointer;text-transform:uppercase;white-space:nowrap;}
 .attend-pill--yes{background:#e6f4ea;color:#1f9d55;border:1px solid #1f9d55;}
 .attend-pill--no{background:#fce8e6;color:#d9381e;border:1px solid #d9381e;}
+.attend-pill--late{background:#fef9c3;color:#b89117;border:1px solid #b89117;}
+.attend-pill--readonly{cursor:default;}
 .war-cell{display:flex;flex-direction:column;align-items:center;gap:5px;padding:5px 4px;}
 .ranking-cards-list{display:flex;flex-direction:column;gap:12px;}
 .ranking-card{background:#fff;border:1px solid var(--color-border-light);border-radius:6px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;font-family:var(--font-family-ui);flex-wrap:wrap;gap:12px;}
@@ -126,8 +128,15 @@ body{font-family:'Open Sans',sans-serif;background:var(--color-bg-main);color:va
 .war-stat-card:nth-child(2),.war-stat-card:nth-child(4){background:#fdeceb;}
 .war-stat-card__label{font-family:var(--font-family-ui);font-size:11px;font-weight:800;color:var(--color-text-muted);text-transform:uppercase;margin-bottom:8px;}
 .war-stat-card__value{font-family:var(--font-family-ui);font-size:26px;font-weight:800;color:var(--color-not-attended);}
-.day-group-header{text-align:center;background:#e9ecf7;}
-.day-group-header__date{display:block;font-size:10px;font-weight:800;color:var(--color-text-muted);margin-top:4px;}
+.day-group-header-row th{padding:0;}
+.day-group-cell{text-align:center;background:#e9ecf7;padding:6px 8px;vertical-align:middle;border-bottom:2px solid var(--color-primary);}
+.day-collapse-btn{width:18px;height:18px;border:2px solid var(--color-primary);background:#fff;color:var(--color-primary);border-radius:4px;font-size:12px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0;line-height:1;font-family:var(--font-family-ui);}
+.day-collapse-btn:hover{background:var(--color-primary-light);}
+.day-collapse-btn--collapsed{background:var(--color-gold-bg);border-color:var(--color-gold);color:var(--color-gold);}
+.day-group-cell__date{display:block;font-size:10px;font-weight:800;color:var(--color-text-muted);margin-top:4px;}
+.day-collapsed-cell{text-align:center;cursor:pointer;font-weight:800;color:var(--color-primary);background:#f4f6fb;font-size:12px;}
+.day-collapsed-cell:hover{background:#eceff8;}
+.day-collapsed-cell__sub{display:block;font-size:9px;font-weight:700;color:var(--color-text-muted);margin-top:2px;text-transform:uppercase;letter-spacing:.3px;}
 .day-del-btn{background:none;border:none;color:#d9381e;font-weight:800;cursor:pointer;font-size:11px;margin-top:4px;}
 .page-footer{display:flex;justify-content:space-between;align-items:center;margin-top:4px;font-family:var(--font-family-base);font-size:10px;font-weight:700;color:var(--color-text-muted);text-transform:uppercase;letter-spacing:.5px;padding:0 4px;}
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:center;justify-content:center;z-index:1000;}
@@ -135,7 +144,6 @@ body{font-family:'Open Sans',sans-serif;background:var(--color-bg-main);color:va
 .modal-card h3{margin-bottom:16px;color:var(--color-primary-dark);font-size:16px;font-weight:800;text-transform:uppercase;}
 .modal-card input,.modal-card select{width:100%;padding:10px;margin-bottom:14px;border:1px solid #d1d5db;border-radius:4px;font-size:13px;outline:none;font-family:var(--font-family-base);}
 .modal-card-btns{display:flex;justify-content:flex-end;gap:8px;}
-/* ===== Rank-group colored divider bars (matches members.html R5->R1 grouping) ===== */
 .rank-group-bar-row td{padding:0;border-bottom:none;}
 .rank-group-bar{display:flex;align-items:center;padding:7px 20px;font-family:var(--font-family-ui);font-weight:800;font-size:11px;letter-spacing:1px;color:#ffffff;text-transform:uppercase;}
 .rank-group-bar--r5{background-color:#2563eb;}
@@ -145,6 +153,14 @@ body{font-family:'Open Sans',sans-serif;background:var(--color-bg-main);color:va
 .rank-group-bar--r1{background-color:#16a34a;}
 .rank-group-bar--card{border-radius:6px;margin-top:4px;}
 .sort-toggle-row{display:flex;justify-content:flex-start;}
+.import-review-row{display:flex;align-items:center;gap:10px;padding:10px 8px;border-bottom:1px solid var(--color-border-light);font-family:var(--font-family-ui);flex-wrap:wrap;}
+.import-review-row:last-child{border-bottom:none;}
+.import-review-row__raw{flex:1.1;font-size:11px;color:var(--color-text-muted);font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:100px;}
+.import-review-row select{flex:1;padding:6px 8px;border:1px solid #d1d5db;border-radius:4px;font-size:12px;font-family:var(--font-family-ui);font-weight:700;min-width:110px;}
+.import-review-row__conf{font-size:10px;font-weight:800;padding:2px 6px;border-radius:3px;white-space:nowrap;}
+.conf-high{background:#e6f4ea;color:#1f9d55;}
+.conf-low{background:#fce8e6;color:#d9381e;}
+.import-review-section-label{font-size:11px;font-weight:800;color:var(--color-text-muted);text-transform:uppercase;letter-spacing:.5px;margin:14px 0 6px;}
 @media (max-width:900px){.kpi-grid,.war-stat-grid{grid-template-columns:repeat(2,1fr);}}
 </style>
 </head>
@@ -203,13 +219,16 @@ body{font-family:'Open Sans',sans-serif;background:var(--color-bg-main);color:va
       </div>
       <div class="controls-right-group">
         <button class="btn-diff" id="btnToggleDiff">± DIFF</button>
-        <div id="adminPanel" style="display:none;gap:10px;align-items:center;">
+        <div id="adminPanel" style="display:none;gap:10px;align-items:center;flex-wrap:wrap;">
           <input type="text" class="admin-panel__input-text" id="newEventNameInput" placeholder="Event Name">
           <input type="date" class="admin-panel__input-date" id="newDateInput" title="Event Date">
           <label class="war-event-checkbox-label" for="newEventIsWarInput">
             <input type="checkbox" id="newEventIsWarInput"> WAR EVENT
           </label>
           <button class="btn-action-custom btn-action-custom--add" id="btnAddEvent">+ ADD EVENT</button>
+          <button class="btn-action-custom btn-action-custom--add" id="btnImportEvents">📥 IMPORT</button>
+          <input type="file" id="screenshotInput" accept="image/*" multiple
+            style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;">
         </div>
       </div>
     </section>
@@ -227,13 +246,16 @@ body{font-family:'Open Sans',sans-serif;background:var(--color-bg-main);color:va
       <span class="legend-pill-item"><span class="badge-rank r3">3</span> 3rd</span>
       <span class="legend-pill-item"><span class="badge-rank r4">4</span> 4th</span>
       <span class="legend-pill-item"><span class="badge-rank r5">5</span> 5th</span>
-      <span class="vs-hint" id="adminHelpText">· Admin/Mgmt: click any cell to toggle attendance. Click date header ✕ to delete a session.</span>
+      <span class="vs-hint" id="adminHelpText">· Admin/Mgmt: click any cell to toggle attendance. Click date header to edit a session. Click the square button above a day with multiple events to collapse/expand it.</span>
     </div>
 
     <div class="table-card" id="subViewAttendance">
       <div class="table-wrapper">
         <table class="data-table">
-          <thead><tr id="tableHeaderRow"></tr></thead>
+          <thead>
+            <tr id="dayGroupHeaderRow" class="day-group-header-row"></tr>
+            <tr id="tableHeaderRow"></tr>
+          </thead>
           <tbody id="memberTableBody"></tbody>
           <tfoot id="tableFooterRow"></tfoot>
         </table>
@@ -252,7 +274,7 @@ body{font-family:'Open Sans',sans-serif;background:var(--color-bg-main);color:va
 
     <section id="subViewViolators" style="display:none;flex-direction:column;gap:14px;">
       <div style="padding:4px 4px 0;">
-        <p style="font-size:12px;color:var(--color-text-muted);font-weight:600;">War-only participation. Members who voted Yes/Maybe (or didn't vote) and did not attend are flagged.</p>
+        <p style="font-size:12px;color:var(--color-text-muted);font-weight:600;">War-only participation. Members who voted Yes/Maybe (or didn't vote) and did not attend are flagged. Late attendance counts as 0.5 toward stats and is never flagged.</p>
       </div>
       <div class="sort-toggle-row">
         <div class="btn-group" id="warSortToggle">
@@ -301,6 +323,53 @@ body{font-family:'Open Sans',sans-serif;background:var(--color-bg-main);color:va
       <button class="btn-action-custom" style="color:#dc2626;border-color:#dc2626;" id="btnDeleteEventModal">Delete Event</button>
       <button class="btn-action-custom" onclick="document.getElementById('editEventNameModal').style.display='none'">Cancel</button>
       <button class="btn-action-custom" id="btnSaveEventModal" style="background:#3b52a4;color:#fff;">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="eventsImportReviewModal">
+  <div class="modal-card" style="max-width:700px;">
+    <h3>Review Import <span style="cursor:pointer;color:#dc2626;font-size:16px;float:right;" onclick="closeEventsImportReviewModal()">✕</span></h3>
+
+    <div style="background:var(--color-gold-bg);border:2px solid var(--color-gold);border-radius:6px;padding:12px;margin-bottom:14px;">
+      <label style="font-size:11px;font-weight:800;color:var(--color-text-muted);text-transform:uppercase;display:block;margin-bottom:8px;">Applying To</label>
+      <select id="eventsImportTargetSelect" style="margin-bottom:10px;" onchange="onEventsImportTargetChange()"></select>
+
+      <div id="eventsImportNewEventFields" style="display:none;">
+        <div style="display:flex;gap:10px;">
+          <input type="text" id="eventsImportNewNameInput" placeholder="Event Name" style="margin-bottom:10px;flex:1;">
+          <input type="date" id="eventsImportNewDateInput" style="margin-bottom:10px;flex:1;">
+        </div>
+        <label class="war-event-checkbox-label" for="eventsImportNewIsWarInput" style="margin-bottom:0;">
+          <input type="checkbox" id="eventsImportNewIsWarInput" onchange="onEventsImportWarToggle()"> WAR EVENT
+        </label>
+      </div>
+    </div>
+
+    <div style="font-size:11px;color:var(--color-text-muted);font-weight:700;margin-bottom:12px;">
+      This shows who OCR read from the screenshot(s), matched only by name — dates/scores from the screenshot are ignored. Pick the member on each row and set their attendance status, uncheck anyone wrong, then apply — nothing saves until you click Apply.
+    </div>
+
+    <div class="import-review-section-label">Matched Rows</div>
+    <div id="eventsImportReviewRows"></div>
+
+    <div id="eventsImportUnmatchedWrap" style="display:none;">
+      <div class="import-review-section-label">Unmatched Rows (pick a member or leave as Skip)</div>
+      <div id="eventsImportUnmatchedRows"></div>
+    </div>
+
+    <div style="margin-top:10px;">
+      <button class="btn-action-custom" style="font-size:11px;padding:8px 14px;" onclick="addManualEventsImportRow()">+ ADD ROW MANUALLY</button>
+    </div>
+
+    <details id="eventsImportRawTextWrap" style="display:none;margin-top:14px;">
+      <summary style="cursor:pointer;font-size:11px;font-weight:800;color:var(--color-text-muted);text-transform:uppercase;letter-spacing:.5px;">Raw OCR output</summary>
+      <pre id="eventsImportRawText" class="notranslate" style="white-space:pre-wrap;font-size:11px;background:#f7f6f0;border:1px solid var(--color-border-light);border-radius:4px;padding:10px;margin-top:8px;max-height:180px;overflow-y:auto;font-family:monospace;"></pre>
+    </details>
+
+    <div class="modal-card-btns" style="margin-top:16px;">
+      <button class="btn-action-custom" onclick="closeEventsImportReviewModal()">Cancel</button>
+      <button class="btn-action-custom" onclick="applyEventsImportReview()" style="background:#3b52a4;color:#fff;">✔ APPLY CHECKED ROWS</button>
     </div>
   </div>
 </div>
@@ -365,47 +434,35 @@ function showSaveStatus(kind, text) {
 
 // --- Data model ---
 // eventDates: [{ id, name, date, isWar }]
-// members[i].attendance: { [eventId]: true/false }
+// members[i].attendance: { [eventId]: true | 'late' } — absent members simply
+//   have no key for that eventId (delete on absent, never store false).
 // members[i].warVotes: { [eventId]: 'yes'|'no'|'maybe' }
 let members = [];
 let eventDates = [];
 let showDiffMode = false;
 let searchQuery = '';
-// Sort modes for Ranking / War tabs only. 'default' groups members by their
-// alliance rank (R5->R1) with the same colored divider bars used on the
-// Members page. 'rank' sorts purely by attendance performance (1st,2nd,...)
-// with medal styling for the top 5, tie-aware.
 let rankingSortMode = 'default';
 let warSortMode = 'default';
 
-// Same R5->R1 group ordering used on members.html, for the colored divider bars.
 const RANK_GROUP_ORDER = { R5: 0, R4: 1, R3: 2, R2: 3, R1: 4 };
 function rankGroupOf(m) {
     return (m.rank && RANK_GROUP_ORDER[m.rank] !== undefined) ? m.rank : 'R1';
 }
 
-// Medal colors/icons for the top 5 performance ranks (used only in "BY RANK" mode).
 const MEDAL_COLORS = { 1: '#f3a808', 2: '#a0aec0', 3: '#b7791f', 4: '#3182ce', 5: '#e53e3e' };
 const MEDAL_ICONS = { 1: '🥇', 2: '🥈', 3: '🥉', 4: '🏅', 5: '🎖️' };
 
-// Assigns competition-style ranks (ties share a rank, e.g. 1,1,3) to an array
-// already sorted descending by rateFn. Returns [{item, rank}], plus each entry
-// also knows if it's the first occurrence of its rank (for medal display).
 function assignCompetitionRanks(sortedArr, rateFn) {
     const out = [];
     let lastRate = null, lastRank = 0;
     sortedArr.forEach((item, idx) => {
         const rate = rateFn(item);
         let rank;
-        if (lastRate !== null && rate === lastRate) {
-            rank = lastRank;
-        } else {
-            rank = idx + 1;
-        }
-        out.push({ item, rank, isFirstOfTie: rank !== lastRank || idx === 0 ? rank !== lastRank || idx === 0 : false });
+        if (lastRate !== null && rate === lastRate) rank = lastRank;
+        else rank = idx + 1;
+        out.push({ item, rank });
         lastRate = rate; lastRank = rank;
     });
-    // Recompute isFirstOfTie cleanly (first entry with each distinct rank value in order)
     let seenRank = null;
     out.forEach(entry => {
         entry.isFirstOfTie = entry.rank !== seenRank;
@@ -413,6 +470,41 @@ function assignCompetitionRanks(sortedArr, rateFn) {
     });
     return out;
 }
+
+// --- Attendance state helpers ---
+// State per member/event: 'attended' (weight 1), 'late' (weight 0.5, war
+// events only), or 'absent' (weight 0, no key stored).
+function attendanceState(m, eventId) {
+    const v = m.attendance ? m.attendance[eventId] : undefined;
+    if (v === true) return 'attended';
+    if (v === 'late') return 'late';
+    return 'absent';
+}
+function attendanceWeight(m, eventId) {
+    const s = attendanceState(m, eventId);
+    if (s === 'attended') return 1;
+    if (s === 'late') return 0.5;
+    return 0;
+}
+// "Present" = attended OR late — showing up late still counts as showing up
+// for war red/yellow flagging purposes; only the rate is discounted.
+function isPresent(m, eventId) {
+    const s = attendanceState(m, eventId);
+    return s === 'attended' || s === 'late';
+}
+function formatWeightedCount(n) {
+    return Number.isInteger(n) ? String(n) : n.toFixed(1);
+}
+function getAttendedClassFromRate(rate) { return 'attended-' + rateClass(rate); }
+
+// Session-only UI state: which day-groups (same-date events) are collapsed.
+// Not persisted — purely a local display convenience.
+let collapsedEventDates = new Set();
+window.toggleDayCollapse = function(dateKey) {
+    if (collapsedEventDates.has(dateKey)) collapsedEventDates.delete(dateKey);
+    else collapsedEventDates.add(dateKey);
+    render();
+};
 
 let realtimeSubscribed = false;
 function subscribeToAppDataChanges() {
@@ -501,7 +593,6 @@ document.getElementById('btnToggleDiff').addEventListener('click', () => {
 });
 document.getElementById('searchInput').addEventListener('input', (e) => { searchQuery = e.target.value.toLowerCase(); render(); });
 
-// --- Ranking / War sort mode toggles ---
 window.setRankingSortMode = function(mode) {
     rankingSortMode = mode;
     document.querySelectorAll('#rankingSortToggle .btn-toggle').forEach(b => b.classList.toggle('btn-toggle--active', b.dataset.mode === mode));
@@ -564,12 +655,29 @@ document.getElementById('btnDeleteEventModal').addEventListener('click', async (
 });
 
 // --- Attendance / vote toggles ---
+// Normal (non-war) events: simple 2-state toggle (attended <-> absent).
 window.toggleAttendance = function(memberId, eventId) {
     if (!isManagementOrAdmin) return;
     const m = members.find(x => x.id === memberId);
     if (!m) return;
     if (!m.attendance) m.attendance = {};
-    m.attendance[eventId] = !m.attendance[eventId];
+    const state = attendanceState(m, eventId);
+    if (state === 'attended') delete m.attendance[eventId];
+    else m.attendance[eventId] = true;
+    saveMembers().then(render);
+};
+// War events: 3-state cycle absent -> attended -> late -> absent.
+window.cycleWarAttendance = function(memberId, eventId) {
+    if (!isManagementOrAdmin) return;
+    const m = members.find(x => x.id === memberId);
+    if (!m) return;
+    if (!m.attendance) m.attendance = {};
+    const order = ['absent', 'attended', 'late'];
+    const cur = attendanceState(m, eventId);
+    const next = order[(order.indexOf(cur) + 1) % order.length];
+    if (next === 'absent') delete m.attendance[eventId];
+    else if (next === 'attended') m.attendance[eventId] = true;
+    else m.attendance[eventId] = 'late';
     saveMembers().then(render);
 };
 window.cycleWarVote = function(memberId, eventId) {
@@ -589,7 +697,10 @@ window.cycleWarVote = function(memberId, eventId) {
 // --- Stat helpers ---
 function activeMembers() { return members.filter(m => m.status !== 'removed'); }
 function memberAttendedCount(m, events) {
-    return events.filter(ev => m.attendance && m.attendance[ev.id]).length;
+    // Weighted sum: attended=1, late=0.5, absent=0. Caller controls which
+    // events are included — Ranking tab passes ALL events, War tab passes
+    // only war events.
+    return events.reduce((sum, ev) => sum + attendanceWeight(m, ev.id), 0);
 }
 function memberRate(m, events) {
     if (events.length === 0) return 0;
@@ -610,7 +721,7 @@ function render() {
     document.getElementById('headerEventsCount').innerText = `${activeM.length} members · ${evs.length} sessions`;
     document.getElementById('footerMembersShown').innerText = `${filteredMembers.length} members shown`;
 
-    // KPIs
+    // KPIs (Ranking tab / header KPIs): counts ALL events, war + normal.
     const totalRatesSum = activeM.reduce((s,m) => s + memberRate(m, evs), 0);
     const totalAttendedSum = activeM.reduce((s,m) => s + memberAttendedCount(m, evs), 0);
     document.getElementById('kpiMembers').innerText = activeM.length;
@@ -626,33 +737,67 @@ function render() {
     renderWarTab(evs, activeM);
 }
 
-// Attendance tab: single fixed sort - grouped by alliance rank (R5->R1) with
-// colored divider bars, same arrangement as the Members page. Within each
-// group, members are ordered by attendance rate (highest first).
+// Attendance tab: grouped by alliance rank (R5->R1) with colored divider
+// bars. Same-date events are grouped into a collapsible "day group" with a
+// small square button above the date; collapsed cells show a weighted
+// X/Y "attended" summary (Y = that day's event count, always >= 1, so a
+// "0/0" can never render) and are read-only until expanded.
 function renderAttendanceTable(evs, filteredMembers) {
+    const dayGroups = [];
+    evs.forEach(ev => {
+        const key = ev.date || 'no-date';
+        let group = dayGroups.length ? dayGroups[dayGroups.length - 1] : null;
+        if (!group || group.key !== key) {
+            group = { key, events: [] };
+            dayGroups.push(group);
+        }
+        group.events.push(ev);
+    });
+
+    let dayHeaderHtml = `<th class="col-rank"></th><th></th><th></th><th></th>`;
+    dayGroups.forEach(group => {
+        const isCollapsed = collapsedEventDates.has(group.key);
+        if (isCollapsed) {
+            dayHeaderHtml += `
+                <th class="day-group-cell" rowspan="2">
+                    <button type="button" class="day-collapse-btn day-collapse-btn--collapsed" onclick="toggleDayCollapse('${group.key}')" title="Expand ${group.key}">+</button>
+                    <span class="day-group-cell__date notranslate">${group.key}</span>
+                </th>`;
+        } else {
+            dayHeaderHtml += `
+                <th class="day-group-cell" colspan="${group.events.length}">
+                    <button type="button" class="day-collapse-btn" onclick="toggleDayCollapse('${group.key}')" title="Collapse ${group.key}">−</button>
+                    <span class="day-group-cell__date notranslate">${group.key}</span>
+                </th>`;
+        }
+    });
+    document.getElementById('dayGroupHeaderRow').innerHTML = dayHeaderHtml;
+
     const headerRow = document.getElementById('tableHeaderRow');
     let headerHtml = `<th class="col-rank">#</th><th class="col-name">MEMBER</th><th class="col-attended">ATTENDED</th><th class="col-percentage">RATE</th>`;
-    evs.forEach(ev => {
-        const editAttr = isManagementOrAdmin ? `onclick="openEditEventModal(${ev.id})" style="cursor:pointer;"` : '';
-        headerHtml += `<th class="col-event ${ev.isWar ? 'col-event--war' : ''}" ${editAttr}>
-            <div class="notranslate">${ev.name}</div>
-            <div class="day-group-header__date">${ev.date}</div>
-        </th>`;
+    dayGroups.forEach(group => {
+        if (collapsedEventDates.has(group.key)) return;
+        group.events.forEach(ev => {
+            const editAttr = isManagementOrAdmin ? `onclick="openEditEventModal(${ev.id})" style="cursor:pointer;"` : '';
+            headerHtml += `<th class="col-event ${ev.isWar ? 'col-event--war' : ''}" ${editAttr}><div class="notranslate">${ev.name}</div></th>`;
+        });
     });
     headerRow.innerHTML = headerHtml;
 
     const tbody = document.getElementById('memberTableBody');
+    const visibleColCount = dayGroups.reduce((sum, g) => sum + (collapsedEventDates.has(g.key) ? 1 : g.events.length), 0);
     if (filteredMembers.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="${4 + evs.length}" style="text-align:center;padding:24px;color:var(--color-text-muted);">No members found.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="${4 + visibleColCount}" style="text-align:center;padding:24px;color:var(--color-text-muted);">No members found.</td></tr>`;
         document.getElementById('tableFooterRow').innerHTML = '';
         return;
     }
-    const colSpan = 4 + evs.length;
+    const colSpan = 4 + visibleColCount;
     const sorted = [...filteredMembers].sort((a,b) => {
         const ga = RANK_GROUP_ORDER[rankGroupOf(a)], gb = RANK_GROUP_ORDER[rankGroupOf(b)];
         if (ga !== gb) return ga - gb;
         return memberRate(b, evs) - memberRate(a, evs);
     });
+
     let html = '';
     let lastGroup = null;
     sorted.forEach((m, idx) => {
@@ -668,32 +813,49 @@ function renderAttendanceTable(evs, filteredMembers) {
         html += `<tr>
             <td class="col-rank">${rank}</td>
             <td class="col-name notranslate">${m.name}</td>
-            <td class="col-attended notranslate">${attendedCount}/${evs.length}</td>
+            <td class="col-attended notranslate">${formatWeightedCount(attendedCount)}/${evs.length}</td>
             <td class="col-percentage">
                 <div class="progress-bar-container">
                     <div class="progress-bar"><div class="progress-bar__fill ${rc}" style="width:${rate}%;"></div></div>
                     <span class="progress-text attended-${rc}">${rate.toFixed(0)}%</span>
                 </div>
             </td>`;
-        evs.forEach(ev => {
-            const attended = !!(m.attendance && m.attendance[ev.id]);
-            if (ev.isWar) {
-                const vote = (m.warVotes && m.warVotes[ev.id]) || 'none';
-                const voteClass = 'war-vote-badge--' + vote;
-                const voteLabel = vote === 'none' ? '—' : vote.toUpperCase();
-                const clickAttrs = isManagementOrAdmin ? `onclick="cycleWarVote(${m.id},${ev.id})"` : '';
-                const attendClickAttrs = isManagementOrAdmin ? `onclick="toggleAttendance(${m.id},${ev.id})"` : '';
-                html += `<td class="col-event col-event--war">
-                    <div class="war-cell">
-                        <span class="attend-pill ${attended ? 'attend-pill--yes' : 'attend-pill--no'} ${isManagementOrAdmin ? '' : 'attend-pill--readonly'}" ${attendClickAttrs}>${attended ? 'YES' : 'NO'}</span>
-                        <span class="war-vote-badge ${voteClass}" ${clickAttrs}>${voteLabel}</span>
-                    </div>
+
+        dayGroups.forEach(group => {
+            if (collapsedEventDates.has(group.key)) {
+                const dayWeighted = group.events.reduce((s, ev) => s + attendanceWeight(m, ev.id), 0);
+                const dayTotal = group.events.length;
+                const dayColorClass = getAttendedClassFromRate(dayTotal > 0 ? (dayWeighted / dayTotal) * 100 : 0);
+                html += `<td class="day-collapsed-cell" onclick="toggleDayCollapse('${group.key}')" title="Expand ${group.key} to edit individually">
+                    <span class="notranslate ${dayColorClass}">${formatWeightedCount(dayWeighted)}/${dayTotal}</span>
+                    <span class="day-collapsed-cell__sub">attended</span>
                 </td>`;
-            } else {
-                const clickAttrs = isManagementOrAdmin ? `onclick="toggleAttendance(${m.id},${ev.id})"` : '';
-                html += `<td class="col-event"><span class="check-toggle" ${clickAttrs}>${attended ? '<span class="check-icon">✔</span>' : '<span class="cross-icon">✕</span>'}</span></td>`;
+                return;
             }
+            group.events.forEach(ev => {
+                if (ev.isWar) {
+                    const state = attendanceState(m, ev.id);
+                    const vote = (m.warVotes && m.warVotes[ev.id]) || 'none';
+                    const voteClass = 'war-vote-badge--' + vote;
+                    const voteLabel = vote === 'none' ? '—' : vote.toUpperCase();
+                    const voteClickAttrs = isManagementOrAdmin ? `onclick="cycleWarVote(${m.id},${ev.id})"` : '';
+                    const attendClickAttrs = isManagementOrAdmin ? `onclick="cycleWarAttendance(${m.id},${ev.id})"` : '';
+                    const attendClass = state === 'attended' ? 'attend-pill--yes' : (state === 'late' ? 'attend-pill--late' : 'attend-pill--no');
+                    const attendLabel = state === 'attended' ? 'ATTENDED' : (state === 'late' ? 'LATE' : 'NOT ATTENDED');
+                    html += `<td class="col-event col-event--war">
+                        <div class="war-cell">
+                            <span class="attend-pill ${attendClass} ${isManagementOrAdmin ? '' : 'attend-pill--readonly'}" ${attendClickAttrs}>${attendLabel}</span>
+                            <span class="war-vote-badge ${voteClass}" ${voteClickAttrs}>${voteLabel}</span>
+                        </div>
+                    </td>`;
+                } else {
+                    const attended = attendanceState(m, ev.id) === 'attended';
+                    const clickAttrs = isManagementOrAdmin ? `onclick="toggleAttendance(${m.id},${ev.id})"` : '';
+                    html += `<td class="col-event"><span class="check-toggle" ${clickAttrs}>${attended ? '<span class="check-icon">✔</span>' : '<span class="cross-icon">✕</span>'}</span></td>`;
+                }
+            });
         });
+
         html += `</tr>`;
     });
     tbody.innerHTML = html;
@@ -703,15 +865,12 @@ function renderAttendanceTable(evs, filteredMembers) {
 function renderRanking(evs, activeM) {
     const list = document.getElementById('rankingCardsList');
     if (activeM.length === 0) { list.innerHTML = `<div style="text-align:center;color:var(--color-text-muted);padding:24px;">No members yet.</div>`; return; }
-    if (rankingSortMode === 'default') {
-        renderRankingDefault(evs, activeM, list);
-    } else {
-        renderRankingByRank(evs, activeM, list);
-    }
+    if (rankingSortMode === 'default') renderRankingDefault(evs, activeM, list);
+    else renderRankingByRank(evs, activeM, list);
 }
 
-// "DEFAULT" ranking mode: grouped by alliance rank (R5->R1), same colored
-// divider bars as Members page. Plain sequential position numbers, no medals.
+// "DEFAULT" ranking mode: grouped by alliance rank (R5->R1). Counts ALL
+// events (war + normal), same as the header KPIs.
 function renderRankingDefault(evs, activeM, list) {
     const sorted = [...activeM].sort((a,b) => {
         const ga = RANK_GROUP_ORDER[rankGroupOf(a)], gb = RANK_GROUP_ORDER[rankGroupOf(b)];
@@ -735,7 +894,7 @@ function renderRankingDefault(evs, activeM, list) {
                 <div class="ranking-card__badge">${rank}</div>
                 <div>
                     <div class="ranking-card__name notranslate">${m.name}</div>
-                    <div class="ranking-card__subtext notranslate">${attendedCount}/${evs.length} events attended</div>
+                    <div class="ranking-card__subtext notranslate">${formatWeightedCount(attendedCount)}/${evs.length} events attended</div>
                 </div>
             </div>
             <div class="ranking-card__right">
@@ -749,9 +908,8 @@ function renderRankingDefault(evs, activeM, list) {
     list.innerHTML = html;
 }
 
-// "BY RANK" ranking mode: sorted purely by attendance rate. Top 5 get medal
-// styling; ties share the same rank number + color, but only the first card
-// in each tied group shows the actual medal icon.
+// "BY RANK" ranking mode: sorted purely by attendance rate (all events).
+// Top 5 get medal styling; ties share the same rank + color.
 function renderRankingByRank(evs, activeM, list) {
     const sorted = [...activeM].sort((a,b) => memberRate(b, evs) - memberRate(a, evs));
     const ranked = assignCompetitionRanks(sorted, m => memberRate(m, evs));
@@ -769,7 +927,7 @@ function renderRankingByRank(evs, activeM, list) {
                 <div class="ranking-card__badge" style="background:${badgeColor};">${badgeContent}</div>
                 <div>
                     <div class="ranking-card__name notranslate">${m.name}</div>
-                    <div class="ranking-card__subtext notranslate">${attendedCount}/${evs.length} events attended</div>
+                    <div class="ranking-card__subtext notranslate">${formatWeightedCount(attendedCount)}/${evs.length} events attended</div>
                 </div>
             </div>
             <div class="ranking-card__right">
@@ -783,6 +941,7 @@ function renderRankingByRank(evs, activeM, list) {
     list.innerHTML = html;
 }
 
+// War tab: counts ONLY war events, independent of the Ranking/header KPIs.
 function renderWarTab(evs, activeM) {
     const warEvs = evs.filter(e => e.isWar);
     const tbody = document.getElementById('violatorsTableBody');
@@ -804,9 +963,9 @@ function renderWarTab(evs, activeM) {
         totalRateSum += rate;
         let red = 0, yellow = 0;
         warEvs.forEach(ev => {
-            const didAttend = !!(m.attendance && m.attendance[ev.id]);
+            const present = isPresent(m, ev.id); // attended OR late counts as "showed up"
             const vote = (m.warVotes && m.warVotes[ev.id]) || 'none';
-            if (!didAttend) {
+            if (!present) {
                 if (vote === 'yes') red++;
                 else if (vote === 'maybe' || vote === 'none') yellow++;
             }
@@ -820,7 +979,6 @@ function renderWarTab(evs, activeM) {
 
     let html = '';
     if (warSortMode === 'default') {
-        // Grouped by alliance rank (R5->R1), same colored divider bars as Members page.
         const sorted = [...statsArr].sort((a,b) => {
             const ga = RANK_GROUP_ORDER[rankGroupOf(a.m)], gb = RANK_GROUP_ORDER[rankGroupOf(b.m)];
             if (ga !== gb) return ga - gb;
@@ -838,7 +996,7 @@ function renderWarTab(evs, activeM) {
             html += `<tr>
                 <td class="col-rank">${rank}</td>
                 <td class="col-name notranslate">${r.m.name}</td>
-                <td style="text-align:center;" class="notranslate">${r.attended}/${warEvs.length}</td>
+                <td style="text-align:center;" class="notranslate">${formatWeightedCount(r.attended)}/${warEvs.length}</td>
                 <td style="text-align:center;color:#dc2626;" class="notranslate">${r.red}</td>
                 <td style="text-align:center;color:#b89117;" class="notranslate">${r.yellow}</td>
                 <td class="col-percentage">
@@ -850,7 +1008,6 @@ function renderWarTab(evs, activeM) {
             </tr>`;
         });
     } else {
-        // "BY RANK": sorted by war attendance rate, medal styling for top 5, tie-aware.
         const sorted = [...statsArr].sort((a,b) => b.rate - a.rate);
         const ranked = assignCompetitionRanks(sorted, r => r.rate);
         ranked.forEach(({ item: r, rank, isFirstOfTie }) => {
@@ -867,7 +1024,7 @@ function renderWarTab(evs, activeM) {
             html += `<tr>
                 <td class="col-rank notranslate">${rankCellContent}</td>
                 <td class="col-name notranslate">${r.m.name}</td>
-                <td style="text-align:center;" class="notranslate">${r.attended}/${warEvs.length}</td>
+                <td style="text-align:center;" class="notranslate">${formatWeightedCount(r.attended)}/${warEvs.length}</td>
                 <td style="text-align:center;color:#dc2626;" class="notranslate">${r.red}</td>
                 <td style="text-align:center;color:#b89117;" class="notranslate">${r.yellow}</td>
                 <td class="col-percentage">
@@ -881,6 +1038,349 @@ function renderWarTab(evs, activeM) {
     }
     tbody.innerHTML = html;
 }
+
+// ===== Screenshot OCR import (multi-file, review-before-apply) =====
+function levenshteinDistance(a, b) {
+    a = a || ''; b = b || '';
+    const matrix = Array.from({ length: a.length + 1 }, () => new Array(b.length + 1).fill(0));
+    for (let i = 0; i <= a.length; i++) matrix[i][0] = i;
+    for (let j = 0; j <= b.length; j++) matrix[0][j] = j;
+    for (let i = 1; i <= a.length; i++)
+        for (let j = 1; j <= b.length; j++) {
+            const cost = a[i-1] === b[j-1] ? 0 : 1;
+            matrix[i][j] = Math.min(matrix[i-1][j]+1, matrix[i][j-1]+1, matrix[i-1][j-1]+cost);
+        }
+    return matrix[a.length][b.length];
+}
+function normalizeForMatch(str) {
+    if (!str) return '';
+    return str.normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/[•°´˙‧·|›»«"'`]/g,'').replace(/\s+/g,' ').trim();
+}
+function nameSimilarity(a, b) {
+    const normA = normalizeForMatch(a).toLowerCase(), normB = normalizeForMatch(b).toLowerCase();
+    if (!normA || !normB) return 0;
+    if (normA === normB) return 1;
+    const dist = levenshteinDistance(normA, normB);
+    return 1 - (dist / Math.max(normA.length, normB.length));
+}
+function findBestMemberMatch(candidateName, memberList) {
+    let best = null, bestScore = 0;
+    memberList.forEach(m => {
+        const score = nameSimilarity(candidateName, m.name);
+        if (score > bestScore) { bestScore = score; best = m; }
+    });
+    return { member: best, score: bestScore };
+}
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
+
+let eventsImportStatusCallback = null;
+async function callEventsOcrImportWithRetry(imageBase64, mimeType, fileLabel, maxRetries = 3) {
+    let attempt = 0;
+    while (true) {
+        const resp = await fetch('/api/ocr-import', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ imageBase64, mimeType })
+        });
+        if (resp.ok) return await resp.json();
+        if (resp.status === 429 && attempt < maxRetries) {
+            attempt++;
+            const waitMs = 8000 * attempt;
+            if (eventsImportStatusCallback) eventsImportStatusCallback(`Rate limited, waiting ${waitMs/1000}s… (${attempt}/${maxRetries})`);
+            await sleep(waitMs);
+            continue;
+        }
+        const errBody = await resp.json().catch(() => ({}));
+        throw new Error(`${fileLabel}: ${errBody.error || (resp.status === 429 ? 'Rate limited — try fewer screenshots, or wait a minute.' : `Server returned ${resp.status}`)}`);
+    }
+}
+
+let pendingEventsImport = null;
+
+document.getElementById('btnImportEvents').addEventListener('click', () => {
+    document.getElementById('screenshotInput').click();
+});
+document.getElementById('screenshotInput').addEventListener('change', (e) => window.handleEventsScreenshotImport(e));
+window.handleEventsScreenshotImport = async function(event) {
+    if (!isManagementOrAdmin) return;
+    const files = Array.from(event.target.files || []);
+    if (files.length === 0) return;
+
+    const activeMembersList = activeMembers();
+    const importBtn = document.getElementById('btnImportEvents');
+    const originalBtnText = importBtn ? importBtn.innerText : '📥 IMPORT';
+    eventsImportStatusCallback = (msg) => { if (importBtn) importBtn.innerText = msg; };
+
+    try {
+        const allRows = [], rawTextParts = [], failedFiles = [];
+        const SPACING_MS = 7000;
+
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            if (importBtn) { importBtn.innerText = `READING ${i+1}/${files.length}…`; importBtn.disabled = true; }
+            try {
+                const imageBase64 = await fileToBase64(file);
+                const { rows, raw } = await callEventsOcrImportWithRetry(imageBase64, file.type || 'image/png', file.name);
+                if (rows && rows.length) allRows.push(...rows);
+                rawTextParts.push(`--- ${file.name} ---\n${raw || JSON.stringify(rows, null, 2)}`);
+            } catch (fileErr) {
+                const reason = fileErr.message || String(fileErr);
+                failedFiles.push({ name: file.name, reason });
+                rawTextParts.push(`--- ${file.name} ---\n(FAILED: ${reason})`);
+            }
+            if (i < files.length - 1) {
+                if (importBtn) importBtn.innerText = 'PAUSING…';
+                await sleep(SPACING_MS);
+            }
+        }
+
+        const rawText = rawTextParts.join('\n\n');
+
+        if (failedFiles.length > 0 && allRows.length === 0) {
+            alert(`All ${failedFiles.length} screenshot(s) failed:\n\n` + failedFiles.map(f => `${f.name}: ${f.reason}`).join('\n\n'));
+            openEventsImportReviewModal([], [], activeMembersList, rawText);
+            return;
+        }
+        if (failedFiles.length > 0) alert(`${failedFiles.length} screenshot(s) could not be read and were skipped. Continuing with the rest.`);
+        if (allRows.length === 0) { openEventsImportReviewModal([], [], activeMembersList, rawText); return; }
+
+        // Only NAME is used for matching here — never the score field, and
+        // dates from the screenshot are ignored (attendance uses the target
+        // event's date, chosen explicitly by the admin below).
+        const matchedRows = [], unmatchedRows = [], claimedMemberIds = new Set();
+        allRows.filter(r => r.name && r.name.trim().length > 0).forEach(r => {
+            const { member, score: matchScore } = findBestMemberMatch(r.name, activeMembersList);
+            const rawLabel = r.tag ? `${r.name} [${r.tag}]` : r.name;
+            if (member && matchScore >= 0.55 && !claimedMemberIds.has(String(member.id))) {
+                claimedMemberIds.add(String(member.id));
+                matchedRows.push({ rawText: rawLabel, memberId: String(member.id), status: 'attended', vote: 'yes', confidence: matchScore, include: true });
+            } else {
+                unmatchedRows.push({ rawText: rawLabel, memberId: member ? String(member.id) : '', status: 'attended', vote: 'yes', confidence: member ? matchScore : null, include: false });
+            }
+        });
+
+        openEventsImportReviewModal(matchedRows, unmatchedRows, activeMembersList, rawText);
+    } catch (err) {
+        console.error('Events OCR import error:', err);
+        alert('Could not read the screenshot(s): ' + (err.message || 'unknown error'));
+    } finally {
+        if (importBtn) { importBtn.innerText = originalBtnText; importBtn.disabled = false; }
+        eventsImportStatusCallback = null;
+        event.target.value = '';
+    }
+};
+
+function populateEventsImportTargetSelect() {
+    const sel = document.getElementById('eventsImportTargetSelect');
+    const evsSorted = [...eventDates].sort((a,b) => new Date(a.date) - new Date(b.date));
+    let opts = `<option value="new">+ Create New Event</option>`;
+    evsSorted.forEach(ev => { opts += `<option value="${ev.id}">${ev.name} — ${ev.date}${ev.isWar ? ' [WAR]' : ''}</option>`; });
+    sel.innerHTML = opts;
+    sel.value = evsSorted.length > 0 ? String(evsSorted[evsSorted.length - 1].id) : 'new';
+}
+
+window.onEventsImportTargetChange = function() {
+    const val = document.getElementById('eventsImportTargetSelect').value;
+    const newFields = document.getElementById('eventsImportNewEventFields');
+    if (val === 'new') {
+        newFields.style.display = 'block';
+        pendingEventsImport.targetMode = 'new';
+        pendingEventsImport.targetEventId = null;
+    } else {
+        newFields.style.display = 'none';
+        pendingEventsImport.targetMode = 'existing';
+        pendingEventsImport.targetEventId = parseInt(val, 10);
+    }
+    renderEventsImportReviewModal();
+};
+window.onEventsImportWarToggle = function() { renderEventsImportReviewModal(); };
+
+function isPendingImportTargetWar() {
+    if (!pendingEventsImport) return false;
+    if (pendingEventsImport.targetMode === 'existing') {
+        const ev = eventDates.find(e => e.id === pendingEventsImport.targetEventId);
+        return !!(ev && ev.isWar);
+    }
+    const el = document.getElementById('eventsImportNewIsWarInput');
+    return !!(el && el.checked);
+}
+
+function openEventsImportReviewModal(matchedRows, unmatchedRows, activeMembersList, rawOcrText) {
+    const evsSorted = [...eventDates].sort((a,b) => new Date(a.date) - new Date(b.date));
+    pendingEventsImport = {
+        targetMode: evsSorted.length > 0 ? 'existing' : 'new',
+        targetEventId: evsSorted.length > 0 ? evsSorted[evsSorted.length - 1].id : null,
+        rows: [...matchedRows, ...unmatchedRows],
+        matchedCount: matchedRows.length,
+        activeMembersList,
+        rawOcrText: rawOcrText || ''
+    };
+    populateEventsImportTargetSelect();
+    document.getElementById('eventsImportNewEventFields').style.display = evsSorted.length > 0 ? 'none' : 'block';
+    document.getElementById('eventsImportNewNameInput').value = '';
+    document.getElementById('eventsImportNewDateInput').value = new Date().toISOString().split('T')[0];
+    document.getElementById('eventsImportNewIsWarInput').checked = false;
+    renderEventsImportReviewModal();
+    document.getElementById('eventsImportReviewModal').style.display = 'flex';
+}
+
+function renderEventsImportReviewModal() {
+    if (!pendingEventsImport) return;
+    const { rows, activeMembersList, matchedCount, rawOcrText } = pendingEventsImport;
+    const isWarTarget = isPendingImportTargetWar();
+
+    const memberOptions = (selectedId, confidence) => {
+        const showSelected = confidence == null || confidence >= 0.5;
+        let opts = `<option value="">— Skip —</option>`;
+        activeMembersList.forEach(m => { opts += `<option value="${m.id}" ${showSelected && String(m.id) === String(selectedId) ? 'selected' : ''}>${m.name}</option>`; });
+        return opts;
+    };
+
+    const statusHtml = (idx, status) => {
+        if (isWarTarget) {
+            return `<select onchange="updateEventsImportRow(${idx}, 'status', this.value)">
+                <option value="attended" ${status === 'attended' ? 'selected' : ''}>ATTENDED</option>
+                <option value="absent" ${status === 'absent' ? 'selected' : ''}>NOT ATTENDED</option>
+                <option value="late" ${status === 'late' ? 'selected' : ''}>LATE</option>
+            </select>`;
+        }
+        const isChecked = status === 'attended';
+        return `<span style="cursor:pointer;padding:4px 10px;border:1px solid var(--color-border-light);border-radius:4px;" onclick="toggleEventsImportStatus(${idx})" title="Click to toggle attended / not attended">${isChecked ? '<span class="check-icon">✔</span>' : '<span class="cross-icon">✕</span>'}</span>`;
+    };
+
+    const voteHtml = (idx, vote) => {
+        if (!isWarTarget) return '';
+        return `<select onchange="updateEventsImportRow(${idx}, 'vote', this.value)">
+            <option value="yes" ${vote === 'yes' ? 'selected' : ''}>YES</option>
+            <option value="no" ${vote === 'no' ? 'selected' : ''}>NO</option>
+            <option value="maybe" ${vote === 'maybe' ? 'selected' : ''}>MAYBE</option>
+            <option value="none" ${(!vote || vote === 'none') ? 'selected' : ''}>—</option>
+        </select>`;
+    };
+
+    const rowHTML = (r, idx) => {
+        const confClass = (r.confidence != null && r.confidence >= 0.85) ? 'conf-high' : 'conf-low';
+        const confLabel = r.confidence != null ? `${Math.round(r.confidence * 100)}%` : (r.rawText ? 'no match' : 'manual');
+        return `
+            <div class="import-review-row">
+                <input type="checkbox" ${r.include ? 'checked' : ''} onchange="updateEventsImportRow(${idx}, 'include', this.checked)">
+                <span class="import-review-row__raw notranslate" title="${r.rawText}">${r.rawText || '(manually added)'}</span>
+                <select class="notranslate" onchange="updateEventsImportRow(${idx}, 'memberId', this.value)">${memberOptions(r.memberId, r.confidence)}</select>
+                ${statusHtml(idx, r.status)}
+                ${voteHtml(idx, r.vote)}
+                <span class="import-review-row__conf ${confClass} notranslate">${confLabel}</span>
+            </div>`;
+    };
+
+    document.getElementById('eventsImportReviewRows').innerHTML = rows.slice(0, matchedCount).map((r,i) => rowHTML(r,i)).join('')
+        || `<div style="font-size:12px;color:var(--color-text-muted);padding:8px;">No confidently matched rows.</div>`;
+
+    const unmatchedWrap = document.getElementById('eventsImportUnmatchedWrap');
+    const unmatchedRows = rows.slice(matchedCount);
+    if (unmatchedRows.length > 0) {
+        unmatchedWrap.style.display = 'block';
+        document.getElementById('eventsImportUnmatchedRows').innerHTML = unmatchedRows.map((r,i) => rowHTML(r, matchedCount + i)).join('');
+    } else {
+        unmatchedWrap.style.display = 'none';
+        document.getElementById('eventsImportUnmatchedRows').innerHTML = '';
+    }
+
+    document.getElementById('eventsImportRawTextWrap').style.display = 'block';
+    document.getElementById('eventsImportRawText').textContent = (rawOcrText && rawOcrText.trim()) ? rawOcrText : '(No rows returned for this image.)';
+}
+
+window.updateEventsImportRow = function(idx, field, value) {
+    if (!pendingEventsImport) return;
+    const row = pendingEventsImport.rows[idx];
+    if (!row) return;
+    if (field === 'include') row.include = value;
+    else if (field === 'memberId') row.memberId = value;
+    else if (field === 'status') row.status = value;
+    else if (field === 'vote') row.vote = value;
+};
+
+window.toggleEventsImportStatus = function(idx) {
+    if (!pendingEventsImport) return;
+    const row = pendingEventsImport.rows[idx];
+    if (!row) return;
+    row.status = (row.status === 'attended') ? 'absent' : 'attended';
+    renderEventsImportReviewModal();
+};
+
+window.addManualEventsImportRow = function() {
+    if (!pendingEventsImport) return;
+    pendingEventsImport.rows.push({ rawText: '', memberId: '', status: 'attended', vote: 'yes', confidence: null, include: true });
+    renderEventsImportReviewModal();
+};
+
+// Applying an import only ever: (a) appends one new eventDates entry when
+// creating a new event, and (b) sets/deletes attendance[targetEventId] and
+// warVotes[targetEventId] for included, member-matched rows. No other
+// event's data or any other field on any member is read or touched, so a
+// bad import can't silently overwrite or delete unrelated records.
+window.applyEventsImportReview = async function() {
+    if (!pendingEventsImport) return;
+    const { rows } = pendingEventsImport;
+
+    let targetEventId;
+    if (pendingEventsImport.targetMode === 'new') {
+        const name = document.getElementById('eventsImportNewNameInput').value.trim();
+        const dateVal = document.getElementById('eventsImportNewDateInput').value;
+        const isWar = document.getElementById('eventsImportNewIsWarInput').checked;
+        if (!name) { alert('Please enter an event name for the new event.'); return; }
+        if (!dateVal) { alert('Please select a date for the new event.'); return; }
+        targetEventId = Date.now();
+        eventDates.push({ id: targetEventId, name, date: dateVal, isWar });
+    } else {
+        targetEventId = pendingEventsImport.targetEventId;
+    }
+
+    const targetEvent = eventDates.find(e => e.id === targetEventId);
+    if (!targetEvent) { alert('Could not determine which event to apply to.'); return; }
+
+    let appliedCount = 0;
+    rows.forEach(r => {
+        if (!r.include || !r.memberId) return;
+        const member = members.find(m => String(m.id) === String(r.memberId));
+        if (!member) return;
+        if (!member.attendance) member.attendance = {};
+        if (!member.warVotes) member.warVotes = {};
+
+        if (r.status === 'attended') member.attendance[targetEventId] = true;
+        else if (r.status === 'late' && targetEvent.isWar) member.attendance[targetEventId] = 'late';
+        else delete member.attendance[targetEventId];
+
+        if (targetEvent.isWar) {
+            if (r.vote && r.vote !== 'none') member.warVotes[targetEventId] = r.vote;
+            else delete member.warVotes[targetEventId];
+        }
+        appliedCount++;
+    });
+
+    if (appliedCount === 0) { alert('No rows were checked with a member selected — nothing was applied.'); return; }
+
+    if (pendingEventsImport.targetMode === 'new') await saveEventDates();
+    await saveMembers();
+    render();
+    closeEventsImportReviewModal();
+    alert(`Applied ${appliedCount} record(s) to "${targetEvent.name}" (${targetEvent.date}).`);
+};
+
+window.closeEventsImportReviewModal = function() {
+    document.getElementById('eventsImportReviewModal').style.display = 'none';
+    pendingEventsImport = null;
+};
+
+document.getElementById('eventsImportReviewModal').addEventListener('click', (e) => {
+    if (e.target === document.getElementById('eventsImportReviewModal')) closeEventsImportReviewModal();
+});
 
 window.addEventListener('DOMContentLoaded', async () => {
     const ok = await loadCurrentUserAccount();
