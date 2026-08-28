@@ -645,7 +645,6 @@
                 <div id="google_translate_element"></div>
                 <a class="sidebar__item sidebar__item--logout" id="sidebarLogoutBtn"><span class="sidebar__icon">|</span> LOG OUT</a>
                                 <a class="sidebar__item" onclick="exportAllDataToExcel()"><span class="sidebar__icon">⬇</span> EXPORT BACKUP (.XLSX)</a>
-                <a class="sidebar__item sidebar__item--logout" id="sidebarLogoutBtn"><span class="sidebar__icon">|</span> LOG OUT</a>
             </div>
         </aside>
 
@@ -1318,7 +1317,6 @@
         const { createClient } = supabase;
         const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         const FAKE_EMAIL_DOMAIN = '@loopysplaygroundapp.com';
-                const FAKE_EMAIL_DOMAIN = '@loopysplaygroundapp.com';
 
         // Exports all current cloud data to a downloadable Excel file, one sheet per
         // data type, as a manual backup independent of Supabase.
