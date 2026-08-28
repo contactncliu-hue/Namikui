@@ -1556,7 +1556,7 @@ let currentUser = {
                     else if (row.key === 'calendarEvents') calendarEvents = row.value || [];
                     else if (row.key === 'noticeAnnouncements') noticeAnnouncements = row.value || [];
                     else if (row.key === 'homePhotos') homePhotos = row.value || [];
-                    else if (row.key === 'dataSnapshots') dataSnapshots = row.value || [];
+                    else if (row.key === 'dataSnapshots') { return; }
                     else { fetchAppDataOnly(); return; }
 
                     eventDates.forEach(ev => { if (typeof ev.isWar !== 'boolean') ev.isWar = false; });
@@ -1580,6 +1580,17 @@ let currentUser = {
         // to the "one edit messes up another column" bug) so it can be restored later from
         // the Edit History & Audit tab. Called automatically at the start of every save.
         // Deep-cloned via JSON so later in-memory mutations never leak into a stored snapshot.
+async function fetchSnapshotsOnly() {
+    try {
+        const { data, error } = await db.from('app_data').select('*').eq('id', 15).maybeSingle();
+        if (!error && data) dataSnapshots = data.value || [];
+    } catch (err) {
+        console.error('Error fetching snapshots:', err);
+    }
+    renderSnapshotsTable();
+}
+
+function captureSnapshot() {
         function captureSnapshot() {
             try {
                 const snapshot = {
@@ -1753,10 +1764,12 @@ let currentUser = {
                     if(el) el.style.display = 'none';
                 });
 
-                const activeSectionId = views[targetView];
+                                const activeSectionId = views[targetView];
                 if (activeSectionId) {
                     document.getElementById(activeSectionId).style.display = activeSectionId === 'viewHome' ? 'flex' : 'flex';
                 }
+
+                if (targetView === 'history') fetchSnapshotsOnly();
 
                 document.getElementById('sidebar').classList.remove('sidebar--open');
                 document.getElementById('sidebarOverlay').classList.remove('sidebar-overlay--visible');
