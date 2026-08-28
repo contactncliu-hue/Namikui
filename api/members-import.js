@@ -8,9 +8,9 @@
 //      members.html are UI-only and don't stop someone from hitting this
 //      endpoint directly, so this is the real enforcement point.
 //
-// SETUP:
-// 1. Reuse the same GEMINI_API_KEY env var already set for ocr-import.js
-//    (Project Settings -> Environment Variables). No new key needed.
+// 1. Set a GEMINI_API_KEY_MEMBERS env var (Project Settings -> Environment
+//    Variables) using your separate Gemini key, so Members and VS draw from
+//    independent free-tier quotas instead of sharing ocr-import.js's key.
 // 2. Deploy this file at /api/members-import.js in your repo (same folder
 //    as ocr-import.js).
 // 3. In members.html, remove the client-side GEMINI_API_KEY constant and
@@ -70,7 +70,7 @@ export default async function handler(req, res) {
     return res.status(403).json({ error: 'Only admin or management members can use screenshot import' });
   }
 
-const apiKey = process.env.GEMINI_API_KEY_MEMBERS;
+  const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     return res.status(500).json({ error: 'Server missing GEMINI_API_KEY' });
   }
