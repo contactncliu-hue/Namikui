@@ -604,7 +604,7 @@
                     <li><a class="sidebar__item" data-view="notice"><span class="sidebar__icon">✧</span> NOTICE</a></li>
                     <li><a class="sidebar__item" href="members.html"><span class="sidebar__icon">✧</span> MEMBERS</a></li>
                     <li><a class="sidebar__item" href="blackgold.html"><span class="sidebar__icon">✧</span> BLACK GOLD</a></li>
-                    <li><a class="sidebar__item" data-view="attendance"><span class="sidebar__icon">✧</span> EVENT ATTENDANCE</a></li>
+                    <li><a class="sidebar__item" href="events.html"><span class="sidebar__icon">✧</span> EVENT ATTENDANCE</a></li>
                     <li><a class="sidebar__item" href="vspoint.html"><span class="sidebar__icon">✧</span> VS POINTS</a></li>
                 </ul>
                 <div class="sidebar__section-title" id="adminSectionHeader" style="display: none;">MANAGEMENT & ADMIN</div>
@@ -785,119 +785,6 @@
                         </table>
                     </div>
                 </div>
-            </section>
-
-            <section id="viewAttendance" class="app-view" style="display: none; flex-direction: column; gap: 14px;">
-                <div class="page-header-top">
-                    <h1 class="page-header-top__title">Event Attendance</h1>
-                    <div class="page-header-top__subtext notranslate" id="headerEventsCount">0 members · 0 sessions</div>
-                </div>
-
-                <section class="controls-card">
-                    <div class="btn-group">
-                        <button class="btn-toggle btn-toggle--active" id="btnTabAttendance">ATTENDANCE</button>
-                        <button class="btn-toggle" id="btnTabRanking">RANKING</button>
-                        <button class="btn-toggle" id="btnTabViolators">⚠ WAR</button>
-                    </div>
-                    <div class="search-box">
-                        <span class="search-box__icon">🔍</span>
-                        <input type="text" class="search-box__input" id="searchInput" placeholder="Search member...">
-                    </div>
-
-                    <div class="controls-right-group">
-                        <button class="btn-diff" id="btnToggleDiff">± DIFF</button>
-                        <div class="date-input-wrapper" id="adminPanel" style="display: none;">
-                            <input type="text" class="admin-panel__input-text" id="newEventNameInput" placeholder="Event Name">
-                            <input type="date" class="admin-panel__input-date" id="newDateInput" title="Event Date">
-                            <label class="war-event-checkbox-label" for="newEventIsWarInput">
-                                <input type="checkbox" id="newEventIsWarInput"> WAR EVENT
-                            </label>
-                        </div>
-                        <input type="text" id="newSubtextInput" style="display: none;">
-                        <button class="btn-action-custom btn-action-custom--add" id="btnAddEvent" style="display: none;">+ ADD EVENT</button>
-                        <input type="file" id="screenshotInput" accept="image/*" style="display: none;">
-                        <button class="btn-action-custom btn-action-custom--import" id="importBtn" style="display: none;">📥 IMPORT</button>
-                    </div>
-                </section>
-
-                <section class="kpi-grid">
-                    <div class="kpi-card"><div class="kpi-card__label">Members</div><div class="kpi-card__value notranslate" id="kpiMembers">0</div></div>
-                    <div class="kpi-card"><div class="kpi-card__label">Avg Attendance</div><div class="kpi-card__value notranslate" id="kpiAvgAttendance">0.0</div></div>
-                    <div class="kpi-card"><div class="kpi-card__label">Avg Rate</div><div class="kpi-card__value notranslate" id="kpiAvgRate">0.0%</div></div>
-                    <div class="kpi-card"><div class="kpi-card__label">Pct Base</div><div class="kpi-card__value notranslate" id="kpiPctBase">0 events</div></div>
-                </section>
-
-                <div class="top-legend-bar" id="topLegendBar">
-                    <span class="top-legend-bar__title">TOP 5:</span>
-                    <span class="legend-pill-item"><span class="badge-rank r1">1</span> 1st</span>
-                    <span class="legend-pill-item"><span class="badge-rank r2">2</span> 2nd</span>
-                    <span class="legend-pill-item"><span class="badge-rank r3">3</span> 3rd</span>
-                    <span class="legend-pill-item"><span class="badge-rank r4">4</span> 4th</span>
-                    <span class="legend-pill-item"><span class="badge-rank r5">5</span> 5th</span>
-                    <span class="legend-pill-item"><span class="attend-pill attend-pill--yes attend-pill--readonly">Attended</span><span class="attend-pill attend-pill--no attend-pill--readonly">Not Attended</span><span class="war-vote-badge war-vote-badge--yes" style="cursor:default;">YES</span><span class="war-vote-badge war-vote-badge--no" style="cursor:default;">NO</span><span class="war-vote-badge war-vote-badge--maybe" style="cursor:default;">MAYBE</span> · War event attendance &amp; votes</span>
-                    <span class="vs-hint" id="adminHelpText">· Admin/Mgmt: Click any table cell, event name, or date to edit. Use ✕ under date columns to delete session.</span>
-                </div>
-
-                <div class="table-card" id="subViewAttendance">
-                    <div class="table-wrapper">
-                        <table class="data-table">
-                            <thead><tr id="dayGroupHeaderRow"></tr><tr id="tableHeaderRow"></tr></thead>
-                            <tbody id="memberTableBody"></tbody>
-                            <tfoot id="tableFooterRow"></tfoot>
-                        </table>
-                    </div>
-                </div>
-
-                <section id="subViewRanking" style="display: none; flex-direction: column; gap: 14px;">
-                    <div class="sort-mode-bar">
-                        <span class="sort-mode-bar__label">Sort Ranking By:</span>
-                        <div class="btn-group">
-                            <button class="btn-toggle btn-toggle--active" id="btnRankingSortDefault">DEFAULT</button>
-                            <button class="btn-toggle" id="btnRankingSortRank">BY PARTICIPATION</button>
-                        </div>
-                    </div>
-                    <div class="ranking-cards-list" id="rankingCardsList"></div>
-                </section>
-
-                <section id="subViewViolators" style="display: none; flex-direction: column; gap: 14px;">
-                    <div style="padding: 4px 4px 0 4px;">
-                        <h2 style="font-size: 14px; color: var(--color-text-dark); margin-bottom: 4px;">⚔ War</h2>
-                        <p style="font-size: 12px; color: var(--color-text-muted); font-weight: 600;">War-only participation. Participation % counts war events only. Members who voted Yes/Maybe (or did not vote at all) and did not attend are flagged red/yellow.</p>
-                    </div>
-
-                    <section class="war-stat-grid">
-                        <div class="war-stat-card"><div class="war-stat-card__label">Members</div><div class="war-stat-card__value notranslate" id="warKpiMembers">0</div></div>
-                        <div class="war-stat-card"><div class="war-stat-card__label">Avg War Attendance</div><div class="war-stat-card__value notranslate" id="warKpiAvgAttendance">0.0</div></div>
-                        <div class="war-stat-card"><div class="war-stat-card__label">Avg War Rate</div><div class="war-stat-card__value notranslate" id="warKpiAvgRate">0.0%</div></div>
-                        <div class="war-stat-card"><div class="war-stat-card__label">Pct Base</div><div class="war-stat-card__value notranslate" id="warKpiPctBase">0 war events</div></div>
-                    </section>
-
-                    <div class="sort-mode-bar">
-                        <span class="sort-mode-bar__label">Sort War Ranking By:</span>
-                        <div class="btn-group">
-                            <button class="btn-toggle btn-toggle--active" id="btnWarSortDefault">DEFAULT</button>
-                            <button class="btn-toggle" id="btnWarSortRank">BY PARTICIPATION</button>
-                        </div>
-                    </div>
-
-                    <div class="table-card">
-                        <div class="table-wrapper">
-                            <table class="data-table">
-                                <thead>
-                                    <tr>
-                                        <th class="col-rank">#</th>
-                                        <th>MEMBER</th>
-                                        <th style="text-align:center; color:#1f9d55;">🟢 ATTENDED</th>
-                                        <th style="text-align:center; color:#dc2626;">🔴 RED</th>
-                                        <th style="text-align:center; color:#b89117;">🟡 YELLOW</th>
-                                        <th class="col-percentage">PARTICIPATION %</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="violatorsTableBody"></tbody>
-                            </table>
-                        </div>
-                    </div>
-                </section>
             </section>
 
             <section id="viewVsPoints" class="app-view" style="display: none; flex-direction: column; gap: 20px;">
@@ -1421,23 +1308,6 @@ let currentUser = {
         let vsData = { weeks: [], membersScores: [] };
         // Mirrors members.html's group order so row order stays in sync across pages
         const RANK_GROUP_ORDER = { R5: 0, R4: 1, R3: 2, R2: 3, R1: 4 };
-        // Sort mode state for the Ranking tab and War tab: 'default' mirrors the Members
-        // tab order (frozen rank group + F1 power); 'rank' sorts by participation %.
-        let rankingSortMode = 'default';
-        let warSortMode = 'default';
-        // Dates (event columns) the person has collapsed via the small square button
-        // above the event name, so they don't have to scroll sideways past days they've
-        // already checked. Session-only UI state — not persisted to the cloud.
-        let collapsedEventDates = new Set();
-
-        window.toggleDayCollapse = function(dateKey) {
-            if (collapsedEventDates.has(dateKey)) {
-                collapsedEventDates.delete(dateKey);
-            } else {
-                collapsedEventDates.add(dateKey);
-            }
-            render();
-        };
         // Notice tab Gantt-style event timeline state (supports date ranges, weekly/biweekly/monthly repeats, start/end time, category, visibility)
         let calendarEvents = [];
         const CALENDAR_COLORS = ['#2563eb', '#dc2626', '#eab308', '#16a34a', '#ec4899']; // blue, red, yellow, green, pink
@@ -1610,8 +1480,8 @@ let currentUser = {
         }
 
         // Lightweight refresh: re-pulls just the app_data rows (skips the login/session
-        // check) and re-renders, so changes made on other pages (e.g. members.html)
-        // show up here without a manual reload.
+        // check) and re-renders, so changes made on other pages (e.g. members.html or
+        // events.html) show up here without a manual reload.
         // NOTE: this must never run while a local save is in flight — see saveData().
         async function fetchAppDataOnly() {
             try {
@@ -1653,9 +1523,10 @@ let currentUser = {
         }
 
         // Live sync: re-fetch from Supabase whenever any row in app_data changes,
-        // so edits made on another page (e.g. members.html updating rankings) show up
-        // here without a manual refresh. Requires Realtime to be turned on for the
-        // app_data table in the Supabase dashboard (Database > Replication).
+        // so edits made on another page (e.g. members.html or events.html updating
+        // rankings/attendance) show up here without a manual refresh. Requires Realtime
+        // to be turned on for the app_data table in the Supabase dashboard (Database >
+        // Replication).
         //
         // Guarded against the save race: while we're in the middle of writing our own
         // change (isSavingData === true), a refresh here would read a half-written mix
@@ -1872,7 +1743,6 @@ let currentUser = {
                     'home': 'viewHome',
                     'notice': 'viewNotice',
                     'members': 'viewMembers',
-                    'attendance': 'viewAttendance',
                     'vspoints': 'viewVsPoints',
                     'discussion': 'viewDiscussion',
                     'history': 'viewHistory'
@@ -2063,18 +1933,14 @@ window.openRoleAssignModal = function() {
         function renderRestrictedState() {
             const lockMsg = '🔒 This content is only available to Alliance Members and Staff. Ask an Admin to assign you the Alliance role.';
 
-            ['homeKpiMembers', 'homeKpiRate', 'kpiMembers', 'kpiAvgAttendance', 'kpiAvgRate', 'kpiPctBase', 'warKpiMembers', 'warKpiAvgAttendance', 'warKpiAvgRate', 'warKpiPctBase'].forEach(id => {
+            ['homeKpiMembers', 'homeKpiRate'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.innerText = '—';
             });
-            const kpiAvgRateEl = document.getElementById('kpiAvgRate');
-            if (kpiAvgRateEl) kpiAvgRateEl.classList.remove('attended-high', 'attended-mid', 'attended-low');
             const homeKpiMembersSub = document.getElementById('homeKpiMembersSub');
             if (homeKpiMembersSub) homeKpiMembersSub.innerText = '';
             const homeKpiEventsSub = document.getElementById('homeKpiEventsSub');
             if (homeKpiEventsSub) homeKpiEventsSub.innerText = '';
-            const headerEventsCount = document.getElementById('headerEventsCount');
-            if (headerEventsCount) headerEventsCount.innerText = '';
             const footerMembersShown = document.getElementById('footerMembersShown');
             if (footerMembersShown) footerMembersShown.innerText = '';
 
@@ -2100,17 +1966,6 @@ window.openRoleAssignModal = function() {
             const membersDirectoryBody = document.getElementById('membersDirectoryBody');
             if (membersDirectoryBody) membersDirectoryBody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#8c93a6; padding:24px;">${lockMsg}</td></tr>`;
 
-            const tableHeaderRow = document.getElementById('tableHeaderRow');
-            if (tableHeaderRow) tableHeaderRow.innerHTML = '';
-            const memberTableBody = document.getElementById('memberTableBody');
-            if (memberTableBody) memberTableBody.innerHTML = `<tr><td style="text-align:center; padding:24px; color:#8c93a6;">${lockMsg}</td></tr>`;
-            const tableFooterRow = document.getElementById('tableFooterRow');
-            if (tableFooterRow) tableFooterRow.innerHTML = '';
-            const rankingCardsList = document.getElementById('rankingCardsList');
-            if (rankingCardsList) rankingCardsList.innerHTML = `<div class="generic-view-card">${lockMsg}</div>`;
-            const violatorsTableBody = document.getElementById('violatorsTableBody');
-            if (violatorsTableBody) violatorsTableBody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:24px; color:#8c93a6;">${lockMsg}</td></tr>`;
-
             const vsTableHeaderRow = document.getElementById('vsTableHeaderRow');
             if (vsTableHeaderRow) vsTableHeaderRow.innerHTML = `<th>#</th><th>Fighter Name</th><th>Total Score</th>`;
             const vsTableBody = document.getElementById('vsTableBody');
@@ -2129,11 +1984,7 @@ window.openRoleAssignModal = function() {
             if (managementNoticesContainer) managementNoticesContainer.innerHTML = '';
 
             // Admin/management-only controls must stay hidden for restricted roles too.
-            document.getElementById('adminPanel').style.display = 'none';
-            document.getElementById('btnAddEvent').style.display = 'none';
             document.getElementById('vsAdminPanel').style.display = 'none';
-            document.getElementById('importBtn').style.display = 'none';
-            document.getElementById('adminHelpText').style.display = 'none';
             document.getElementById('adminSectionHeader').style.display = 'none';
             document.getElementById('navDiscussionLi').style.display = 'none';
             document.getElementById('navHistoryLi').style.display = 'none';
@@ -2149,17 +2000,10 @@ window.openRoleAssignModal = function() {
         }
 
         function render() {
-            const filterQuery = document.getElementById('searchInput').value.toLowerCase();
-
             const isAdmin = currentUser.role === 'admin';
             const isManagementOrAdmin = currentUser.role === 'admin' || currentUser.role === 'management';
-            const totalEvents = eventDates.length;
 
-            document.getElementById('adminPanel').style.display = isManagementOrAdmin ? 'flex' : 'none';
-            document.getElementById('btnAddEvent').style.display = isManagementOrAdmin ? 'inline-flex' : 'none';
             document.getElementById('vsAdminPanel').style.display = isManagementOrAdmin ? 'flex' : 'none';
-            document.getElementById('importBtn').style.display = isManagementOrAdmin ? 'inline-flex' : 'none';
-            document.getElementById('adminHelpText').style.display = isManagementOrAdmin ? 'inline' : 'none';
 
             const showManagementArea = isManagementOrAdmin;
             document.getElementById('adminSectionHeader').style.display = showManagementArea ? 'block' : 'none';
@@ -2179,23 +2023,15 @@ window.openRoleAssignModal = function() {
             let activeMembers = getActiveMembers(members);
             activeMembers = sortMembersDefaultOrder(activeMembers);
 
+            const totalEvents = eventDates.length;
             const totalAttendedCount = activeMembers.reduce((sum, m) => sum + m.attended, 0);
             const avgAttendance = activeMembers.length ? (totalAttendedCount / activeMembers.length) : 0;
             const avgRate = totalEvents > 0 ? (avgAttendance / totalEvents) * 100 : 0;
 
-            const filteredMembers = activeMembers.filter(m => m.name.toLowerCase().includes(filterQuery));
+            document.getElementById('footerMembersShown').innerText = `${activeMembers.length} members shown`;
 
-            document.getElementById('kpiMembers').innerText = `${activeMembers.length}/100`;
-            document.getElementById('kpiAvgAttendance').innerText = avgAttendance.toFixed(1);
-            const kpiAvgRateEl = document.getElementById('kpiAvgRate');
-            kpiAvgRateEl.innerText = `${avgRate.toFixed(1)}%`;
-            kpiAvgRateEl.classList.remove('attended-high', 'attended-mid', 'attended-low');
-            kpiAvgRateEl.classList.add(getAttendedColorClass(avgRate));
-            document.getElementById('kpiPctBase').innerText = `${totalEvents} events`;
-            document.getElementById('headerEventsCount').innerText = `${activeMembers.length} members · ${totalEvents} sessions`;
-            document.getElementById('footerMembersShown').innerText = `${filteredMembers.length} members shown`;
-
-            // On the home tab, use the avg rate calculated from the events tab
+            // On the home tab, use the avg rate calculated from event attendance data
+            // (managed on events.html, kept in sync here via the eventDates/members rows)
             document.getElementById('homeKpiMembers').innerText = `${activeMembers.length}/100`;
             document.getElementById('homeKpiRate').innerText = `${avgRate.toFixed(1)}%`;
 
@@ -2206,14 +2042,6 @@ window.openRoleAssignModal = function() {
             renderNoticeCalendar();
             renderNoticeAnnouncements();
 
-            if (currentSubTab === 'attendance') {
-                renderAttendanceTable(filteredMembers, avgRate, isManagementOrAdmin, totalEvents, totalAttendedCount);
-            } else if (currentSubTab === 'ranking') {
-                renderRankingCards(filteredMembers, avgRate, isManagementOrAdmin, totalEvents);
-            } else if (currentSubTab === 'violators') {
-                renderViolatorsTable(filteredMembers, isManagementOrAdmin);
-            }
-
             renderMembersDirectory();
             renderVsPointsTable(isManagementOrAdmin);
             renderAuditTable();
@@ -2221,8 +2049,7 @@ window.openRoleAssignModal = function() {
             renderSnapshotsTable();
         }
 
-        // Shared "default" ordering used by the Attendance tab, the Members tab, and as
-        // the Default sort mode for the Ranking/War tabs: frozen rank group first
+        // Shared "default" ordering used by the Members tab: frozen rank group first
         // (R5 -> R4 -> R3 -> R2 -> R1), then F1 power descending — identical to members.html.
         function sortMembersDefaultOrder(memberList) {
             const list = memberList.slice();
@@ -2233,193 +2060,6 @@ window.openRoleAssignModal = function() {
                 return (b.f1Raw || 0) - (a.f1Raw || 0);
             });
             return list;
-        }
-
-        // ===== Shared "competition ranking" helper (ties share a rank; only the first =====
-        // ===== occurrence of each rank gets a placement/medal, later ties are colored  =====
-        // ===== the same but show no numeral).                                          =====
-        // sortedDescList must already be sorted descending by valueGetter.
-        function computeCompetitionRanks(sortedDescList, valueGetter) {
-            let lastValue = null;
-            let lastRank = 0;
-            return sortedDescList.map((item, idx) => {
-                const val = valueGetter(item);
-                let rank;
-                if (lastValue !== null && val === lastValue) {
-                    rank = lastRank;
-                } else {
-                    rank = idx + 1;
-                }
-                const isFirstOfRank = (rank === idx + 1);
-                lastValue = val;
-                lastRank = rank;
-                return { item, rank, isFirstOfRank, value: val };
-            });
-        }
-
-        function getRankTierClassSuffix(rank) {
-            if (rank >= 1 && rank <= 5) return String(rank);
-            return null;
-        }
-
-        // ===== War Event helpers: vote status + red/yellow violation classification =====
-        // Rules (war events only):
-        //  - Voted No                          -> never flagged, regardless of attendance
-        //  - Voted Yes, or never voted at all, and not attended -> RED violation
-        //  - Voted Maybe + not attended         -> YELLOW violation
-        //  - Attended (any vote)                -> never flagged
-        function getWarCellStatus(member, evIdx) {
-            const vote = (member.eventVotes && member.eventVotes[evIdx]) ? member.eventVotes[evIdx] : null;
-            const attended = !!(member.events && member.events[evIdx]);
-            let flag = null; // 'red' | 'yellow' | null
-            if (!attended) {
-                if (vote === 'yes' || vote === null) flag = 'red';
-                else if (vote === 'maybe') flag = 'yellow';
-            }
-            return { vote, attended, flag };
-        }
-
-        window.cycleWarVote = function(memberId, evIdx) {
-            const member = members.find(m => m.id === memberId);
-            if (!member) return;
-            if (!Array.isArray(member.eventVotes)) member.eventVotes = [];
-            while (member.eventVotes.length < eventDates.length) member.eventVotes.push(null);
-            const current = member.eventVotes[evIdx];
-            const order = [null, 'yes', 'no', 'maybe'];
-            const nextIdx = (order.indexOf(current) + 1) % order.length;
-            member.eventVotes[evIdx] = order[nextIdx];
-            logAction('WAR_VOTE', `Set war event vote for [${member.name}] on event index ${evIdx} to ${member.eventVotes[evIdx] || 'none'}`);
-            saveData(); render();
-        };
-
-        function computeWarViolationCounts(member) {
-            let red = 0, yellow = 0, attended = 0;
-            eventDates.forEach((ev, evIdx) => {
-                if (!ev.isWar) return;
-                const status = getWarCellStatus(member, evIdx);
-                if (status.attended) attended++;
-                if (status.flag === 'red') red++;
-                else if (status.flag === 'yellow') yellow++;
-            });
-            return { red, yellow, attended };
-        }
-
-        function getTotalWarEventsCount() {
-            return eventDates.filter(ev => ev.isWar).length;
-        }
-
-        window.setRankingSortMode = function(mode) {
-            rankingSortMode = mode;
-            document.getElementById('btnRankingSortDefault').classList.toggle('btn-toggle--active', mode === 'default');
-            document.getElementById('btnRankingSortRank').classList.toggle('btn-toggle--active', mode === 'rank');
-            render();
-        };
-
-        window.setWarSortMode = function(mode) {
-            warSortMode = mode;
-            document.getElementById('btnWarSortDefault').classList.toggle('btn-toggle--active', mode === 'default');
-            document.getElementById('btnWarSortRank').classList.toggle('btn-toggle--active', mode === 'rank');
-            render();
-        };
-
-        // Builds the colored rank-group divider markup (mirrors members.html) for a table
-        // body, given a list already in default (frozen-rank-grouped) order.
-        function buildRankGroupTableRows(orderedList, colSpan, rowRendererFn) {
-            let html = '';
-            let lastGroupKey = null;
-            orderedList.forEach((entry, idx) => {
-                const groupKey = (entry.frozenRank || entry.member && entry.member.frozenRank || 'R1');
-                const key = entry.frozenRank ? entry.frozenRank : (entry.member ? (entry.member.frozenRank || 'R1') : 'R1');
-                if (key !== lastGroupKey) {
-                    lastGroupKey = key;
-                    html += `
-                        <tr class="rank-group-bar-row">
-                            <td colspan="${colSpan}">
-                                <div class="rank-group-bar rank-group-bar--${key.toLowerCase()}">${key}</div>
-                            </td>
-                        </tr>
-                    `;
-                }
-                html += rowRendererFn(entry, idx);
-            });
-            return html;
-        }
-
-        function renderViolatorsTable(filteredMembers, isManagementOrAdmin) {
-            const body = document.getElementById('violatorsTableBody');
-            if (!body) return;
-
-            const totalWarEvents = getTotalWarEventsCount();
-
-            document.getElementById('warKpiMembers').innerText = `${filteredMembers.length}`;
-            document.getElementById('warKpiPctBase').innerText = `${totalWarEvents} war events`;
-
-            const withCounts = filteredMembers.map(m => {
-                const counts = computeWarViolationCounts(m);
-                const rateNum = totalWarEvents > 0 ? parseFloat(((counts.attended / totalWarEvents) * 100).toFixed(1)) : 0;
-                return { member: m, ...counts, rateNum, frozenRank: m.frozenRank };
-            });
-
-            const totalWarAttended = withCounts.reduce((sum, x) => sum + x.attended, 0);
-            const avgWarAttendance = withCounts.length ? (totalWarAttended / withCounts.length) : 0;
-            const avgWarRate = totalWarEvents > 0 ? (avgWarAttendance / totalWarEvents) * 100 : 0;
-            document.getElementById('warKpiAvgAttendance').innerText = avgWarAttendance.toFixed(1);
-            const warKpiAvgRateEl = document.getElementById('warKpiAvgRate');
-            warKpiAvgRateEl.innerText = `${avgWarRate.toFixed(1)}%`;
-
-            if (withCounts.length === 0) {
-                body.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#8c93a6; padding: 24px;">No members found.</td></tr>`;
-                return;
-            }
-
-            // Medal ranking is always computed by war-attended count descending, regardless
-            // of the current display sort mode, so Default mode still shows correct medals.
-            const medalSourceSorted = withCounts.slice().sort((a, b) => b.attended - a.attended);
-            const medalRanked = computeCompetitionRanks(medalSourceSorted, x => x.attended);
-            const medalMap = new Map();
-            medalRanked.forEach(r => medalMap.set(r.item.member.id, r));
-
-            let displayList;
-            if (warSortMode === 'rank') {
-                displayList = medalRanked.map(r => r.item);
-            } else {
-                displayList = sortMembersDefaultOrder(withCounts.map(x => x.member)).map(m => withCounts.find(x => x.member.id === m.id));
-            }
-
-            function rowHtml(x, positionalIdx) {
-                const medalInfo = medalMap.get(x.member.id);
-                const tier = medalInfo ? getRankTierClassSuffix(medalInfo.rank) : null;
-                const showMedalNumber = medalInfo && medalInfo.isFirstOfRank && tier;
-                const rankClass = tier ? `rank-${tier}` : '';
-                const rankCellContent = showMedalNumber ? medalInfo.rank : (positionalIdx + 1);
-                const colorClass = getProgressBarColorClass(x.rateNum);
-                const attendedColorClass = getAttendedColorClass(x.rateNum);
-                return `
-                    <tr class="${rankClass}">
-                        <td class="col-rank notranslate">${rankCellContent}</td>
-                        <td class="col-name notranslate">${x.member.name}</td>
-                        <td style="text-align:center; font-weight:800;" class="notranslate"><span style="color:#1f9d55;">${x.attended}</span></td>
-                        <td style="text-align:center; font-weight:800;" class="notranslate"><span style="color:#dc2626;">${x.red}</span></td>
-                        <td style="text-align:center; font-weight:800;" class="notranslate"><span style="color:#b89117;">${x.yellow}</span></td>
-                        <td class="col-percentage">
-                            <div style="display: flex; flex-direction: column; gap: 4px;">
-                                <div style="display: flex; justify-content: flex-end; align-items: center; font-size: 12px;">
-                                    <span style="font-weight: 800;" class="notranslate ${attendedColorClass}">${x.rateNum}%</span>
-                                </div>
-                                <div class="progress-bar">
-                                    <div class="progress-bar__fill ${colorClass}" style="width: ${x.rateNum}%;"></div>
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
-                `;
-            }
-
-            if (warSortMode === 'default') {
-                body.innerHTML = buildRankGroupTableRows(displayList.map(x => Object.assign({ frozenRank: x.member.frozenRank }, x)), 6, (entry, idx) => rowHtml(entry, idx));
-            } else {
-                body.innerHTML = displayList.map((x, idx) => rowHtml(x, idx)).join('');
-            }
         }
 
         // ===== Home dashboard: Notices card (linked to the Notice tab's Notice Board) =====
@@ -3573,12 +3213,6 @@ window.openRoleAssignModal = function() {
             }).join('');
         }
 
-        function getProgressBarColorClass(rateNum) {
-            if (rateNum >= 75) return 'high'; // 75-100 blue
-            if (rateNum >= 50) return 'mid';  // 50-74 yellow
-            return 'low';                      // 0-49 red
-        }
-
         function getAttendedColorClass(rateNum) {
             if (rateNum >= 75) return 'attended-high';
             if (rateNum >= 50) return 'attended-mid';
@@ -3722,317 +3356,6 @@ window.openRoleAssignModal = function() {
             });
         }
 
-        function renderAttendanceTable(filteredMembers, avgRate, isManagementOrAdmin, totalEvents, totalAttendedCount) {
-            const dayGroupHeaderRow = document.getElementById('dayGroupHeaderRow');
-            const tableHeaderRow = document.getElementById('tableHeaderRow');
-            const tableBody = document.getElementById('memberTableBody');
-            const tableFooterRow = document.getElementById('tableFooterRow');
-
-            // Group event columns by date so a whole day can be mass-collapsed into a
-            // single narrow column via the small square button, instead of scrolling
-            // sideways past every event to re-check a name/date/checklist.
-            // eventDates is kept chronologically sorted, so same-date events are adjacent.
-            const dayGroups = [];
-            eventDates.forEach((ev, evIdx) => {
-                const key = ev.date || 'no-date';
-                let group = dayGroups.length ? dayGroups[dayGroups.length - 1] : null;
-                if (!group || group.key !== key) {
-                    group = { key, indices: [] };
-                    dayGroups.push(group);
-                }
-                group.indices.push(evIdx);
-            });
-
-            let dayHeaderHTML = `<th class="col-rank"></th><th></th><th></th><th></th>`;
-            if (showDiffMode) dayHeaderHTML += `<th></th>`;
-
-            dayGroups.forEach(group => {
-                const isCollapsed = collapsedEventDates.has(group.key);
-                if (isCollapsed) {
-                    dayHeaderHTML += `
-                        <th class="day-group-header" rowspan="2">
-                            <button type="button" class="day-collapse-btn day-collapse-btn--collapsed" onclick="toggleDayCollapse('${group.key}')" title="Expand ${group.key}">+</button>
-                            <span class="day-group-header__date notranslate">${group.key}</span>
-                        </th>`;
-                } else {
-                    dayHeaderHTML += `
-                        <th class="day-group-header" colspan="${group.indices.length}">
-                            <button type="button" class="day-collapse-btn" onclick="toggleDayCollapse('${group.key}')" title="Collapse ${group.key}">−</button>
-                            <span class="day-group-header__date notranslate">${group.key}</span>
-                        </th>`;
-                }
-            });
-            dayGroupHeaderRow.innerHTML = dayHeaderHTML;
-
-            let headerHTML = `<th class="col-rank">#</th><th>MEMBER</th><th class="col-attended">ATTENDED</th><th class="col-percentage">PARTICIPATION %</th>`;
-            if (showDiffMode) headerHTML += `<th>VS AVG</th>`;
-
-            eventDates.forEach((ev, evIdx) => {
-                if (collapsedEventDates.has(ev.date)) return; // covered by the rowspan cell above
-                const isWar = !!ev.isWar;
-                headerHTML += `
-                    <th class="col-event ${isWar ? 'col-event--war' : ''}">
-                        <div style="display: flex; flex-direction: column; align-items: center;">
-                            ${isWar ? `<span style="font-size:9px; font-weight:800; color:#dc2626; letter-spacing:0.5px; margin-bottom:2px;">⚔ WAR</span>` : ''}
-                            <span class="${isManagementOrAdmin ? 'editable-num' : ''} notranslate" style="font-weight: 800; color: ${isWar ? '#dc2626' : 'var(--color-primary)'};" onclick="${isManagementOrAdmin ? `editEventName(${evIdx})` : ''}">${ev.name || 'Event'}</span>
-                            <span class="${isManagementOrAdmin ? 'editable-num' : ''} notranslate" id="eventDateLabel-${evIdx}" style="font-size: 11px; color: #a0a6b5;" onclick="${isManagementOrAdmin ? `startEditEventDate(${evIdx})` : ''}">${ev.date}</span>
-                            ${isManagementOrAdmin ? `<span style="color:#d9381e; cursor:pointer; font-size:var(--font-xs);" onclick="removeEvent(${evIdx})">x</span>` : ''}
-                        </div>
-                    </th>`;
-            });
-
-            tableHeaderRow.innerHTML = headerHTML;
-            tableBody.innerHTML = '';
-
-            if (filteredMembers.length === 0) {
-                tableBody.innerHTML = `<tr><td colspan="12" style="text-align:center; padding: 24px; color: #8c93a6;">No players found.</td></tr>`;
-                tableFooterRow.innerHTML = '';
-                return;
-            }
-
-            // Total column count, used for the colored rank-group divider rows below
-            // (mirrors members.html's group bars): rank, name, attended, percentage,
-            // optional VS AVG column, then one column per visible event (collapsed
-            // day-groups count as a single column).
-            const visibleEventColumnCount = dayGroups.reduce((sum, g) => sum + (collapsedEventDates.has(g.key) ? 1 : g.indices.length), 0);
-            const attendanceColSpan = 4 + (showDiffMode ? 1 : 0) + visibleEventColumnCount;
-            let lastGroupKey = null;
-
-            filteredMembers.forEach((member, index) => {
-                const rank = index + 1;
-                const rateNum = totalEvents > 0 ? parseFloat(((member.attended / totalEvents) * 100).toFixed(1)) : 0;
-                const colorClass = getProgressBarColorClass(rateNum);
-                const vsAvgDiff = parseFloat((rateNum - avgRate).toFixed(1));
-                const vsAvgString = (vsAvgDiff >= 0 ? `+` : ``) + vsAvgDiff.toFixed(1) + `%`;
-                const vsAvgClass = vsAvgDiff >= 0 ? 'vs-avg-pos' : 'vs-avg-neg';
-                const rankClass = rank === 1 ? 'rank-1' : (rank === 2 ? 'rank-2' : (rank === 3 ? 'rank-3' : ''));
-
-                const groupKey = member.frozenRank || 'R1';
-                if (groupKey !== lastGroupKey) {
-                    lastGroupKey = groupKey;
-                    tableBody.insertAdjacentHTML('beforeend', `
-                        <tr class="rank-group-bar-row">
-                            <td colspan="${attendanceColSpan}">
-                                <div class="rank-group-bar rank-group-bar--${groupKey.toLowerCase()}">${groupKey}</div>
-                            </td>
-                        </tr>
-                    `);
-                }
-
-                let rowHTML = `
-                    <tr class="${rankClass}">
-                        <td class="col-rank notranslate">${rank}</td>
-                        <td class="col-name notranslate">${member.name}</td>
-                        <td class="col-attended notranslate" style="text-align: center; font-weight: 800;">${member.attended}</td>
-                        <td class="col-percentage">
-                            <div style="display: flex; flex-direction: column; gap: 4px;">
-                                <div style="display: flex; justify-content: flex-end; align-items: center; font-size: 12px;">
-                                    <span style="font-weight: 800;" class="notranslate ${colorClass === 'high' ? 'attended-high' : (colorClass === 'mid' ? 'attended-mid' : 'attended-low')}">${rateNum}%</span>
-                                </div>
-                                <div class="progress-bar">
-                                    <div class="progress-bar__fill ${colorClass}" style="width: ${rateNum}%;"></div>
-                                </div>
-                            </div>
-                        </td>`;
-                
-                if (showDiffMode) {
-                    rowHTML += `<td><span class="${vsAvgClass} notranslate">${vsAvgString}</span></td>`;
-                }
-
-                dayGroups.forEach(group => {
-                    if (collapsedEventDates.has(group.key)) {
-                        const attendedThatDay = group.indices.reduce((sum, i) => sum + ((member.events && member.events[i]) ? 1 : 0), 0);
-                        const totalThatDay = group.indices.length;
-                        const dayColorClass = getAttendedColorClass(totalThatDay > 0 ? (attendedThatDay / totalThatDay) * 100 : 0);
-                        rowHTML += `
-                            <td class="day-collapsed-cell" onclick="toggleDayCollapse('${group.key}')" title="Expand ${group.key}">
-                                <span class="notranslate ${dayColorClass}">${attendedThatDay}/${totalThatDay}</span>
-                                <span class="day-collapsed-cell__sub">attended</span>
-                            </td>`;
-                        return;
-                    }
-                    group.indices.forEach(evIdx => {
-                        rowHTML += renderAttendanceEventCell(member, evIdx, isManagementOrAdmin);
-                    });
-                });
-
-                rowHTML += `</tr>`;
-                tableBody.insertAdjacentHTML('beforeend', rowHTML);
-            });
-
-            let footerHTML = `<tr><td colspan="3" style="font-weight: 800;">TOTAL ATTENDANCE</td><td></td>`;
-            if (showDiffMode) footerHTML += `<td></td>`;
-            dayGroups.forEach(group => {
-                if (collapsedEventDates.has(group.key)) {
-                    const dayTotal = group.indices.reduce((sum, evIdx) => sum + filteredMembers.reduce((s, m) => s + ((m.events && m.events[evIdx]) ? 1 : 0), 0), 0);
-                    footerHTML += `<td class="day-collapsed-cell notranslate" style="font-weight: 800; color: var(--color-primary);">${dayTotal}</td>`;
-                    return;
-                }
-                group.indices.forEach(evIdx => {
-                    const eventTotal = filteredMembers.reduce((sum, m) => sum + ((m.events && m.events[evIdx]) ? 1 : 0), 0);
-                    footerHTML += `<td class="col-event notranslate" style="font-weight: 800; color: var(--color-primary);">${eventTotal}</td>`;
-                });
-            });
-            footerHTML += `</tr>`;
-            tableFooterRow.innerHTML = footerHTML;
-        }
-
-        // Renders one event <td> for a member row in the (non-collapsed) attendance table —
-        // extracted so both the normal render path and any future callers share identical markup.
-        function renderAttendanceEventCell(member, evIdx, isManagementOrAdmin) {
-            const ev = eventDates[evIdx];
-            const isChecked = member.events && member.events[evIdx];
-
-            if (ev.isWar) {
-                // War events: attend/not-attend pill on top, Yes/No/Maybe vote pill below,
-                // colored red/yellow per the violation rules (voted Yes/Maybe/never-voted but absent).
-                // No checkmarks are used in the war column.
-                const status = getWarCellStatus(member, evIdx);
-                const voteClass = status.vote === 'yes' ? 'war-vote-badge--yes' : status.vote === 'no' ? 'war-vote-badge--no' : status.vote === 'maybe' ? 'war-vote-badge--maybe' : 'war-vote-badge--none';
-                const voteLabel = status.vote === 'yes' ? 'YES' : status.vote === 'no' ? 'NO' : status.vote === 'maybe' ? 'MAYBE' : '—';
-                const cellFlagClass = status.flag === 'red' ? 'war-cell--red' : (status.flag === 'yellow' ? 'war-cell--yellow' : '');
-                const attendClass = status.attended ? 'attend-pill--yes' : 'attend-pill--no';
-                const attendLabel = status.attended ? 'ATTENDED' : 'NOT ATTENDED';
-
-                return `
-                    <td class="col-event col-event--war">
-                        <div class="war-cell ${cellFlagClass}">
-                            <span class="attend-pill ${attendClass} ${isManagementOrAdmin ? '' : 'attend-pill--readonly'}" onclick="${isManagementOrAdmin ? `toggleAttendance(${member.id}, ${evIdx})` : ''}">${attendLabel}</span>
-                            <span class="war-vote-badge ${voteClass}" onclick="${isManagementOrAdmin ? `cycleWarVote(${member.id}, ${evIdx})` : ''}">${voteLabel}</span>
-                        </div>
-                    </td>`;
-            }
-
-            let changeBadgeHTML = '';
-            if (showDiffMode) {
-                if (evIdx > 0) {
-                    const prevChecked = member.events && member.events[evIdx - 1];
-                    if (!prevChecked && isChecked) {
-                        changeBadgeHTML = `<div style="font-size: var(--font-xs); margin-top: 2px;"><span class="diff-green">▲</span></div>`;
-                    } else if (prevChecked && !isChecked) {
-                        changeBadgeHTML = `<div style="font-size: var(--font-xs); margin-top: 2px;"><span class="diff-red">▼</span></div>`;
-                    } else {
-                        changeBadgeHTML = `<div style="font-size: var(--font-xs); margin-top: 2px;"><span class="diff-yellow">▬</span></div>`;
-                    }
-                } else {
-                    if (isChecked) {
-                        changeBadgeHTML = `<div style="font-size: var(--font-xs); margin-top: 2px;"><span class="diff-green">▲</span></div>`;
-                    } else {
-                        changeBadgeHTML = `<div style="font-size: var(--font-xs); margin-top: 2px;"><span class="diff-yellow">▬</span></div>`;
-                    }
-                }
-            }
-
-            return `
-                <td class="col-event">
-                    <div style="display: flex; flex-direction: column; align-items: center;">
-                        <span class="check-toggle" onclick="${isManagementOrAdmin ? `toggleAttendance(${member.id}, ${evIdx})` : ''}">${isChecked ? '<span class="check-icon">✓</span>' : '<span class="cross-icon">—</span>'}</span>
-                        ${changeBadgeHTML}
-                    </div>
-                </td>`;
-        }
-
-        function renderRankingCards(filteredMembers, avgRate, isManagementOrAdmin, totalEvents) {
-            const rankingView = document.getElementById('rankingCardsList');
-            if (!rankingView) return;
-            rankingView.innerHTML = '';
-
-            const withMetric = filteredMembers.map(m => {
-                const rateNum = totalEvents > 0 ? parseFloat(((m.attended / totalEvents) * 100).toFixed(1)) : 0;
-                return { member: m, rateNum, frozenRank: m.frozenRank };
-            });
-
-            // Medal ranking always computed by events-attended count descending, regardless
-            // of the current display sort mode, so Default mode still shows correct medals.
-            const medalSourceSorted = withMetric.slice().sort((a, b) => b.member.attended - a.member.attended);
-            const medalRanked = computeCompetitionRanks(medalSourceSorted, x => x.member.attended);
-            const medalMap = new Map();
-            medalRanked.forEach(r => medalMap.set(r.item.member.id, r));
-
-            let displayList;
-            if (rankingSortMode === 'rank') {
-                displayList = medalRanked.map(r => r.item);
-            } else {
-                displayList = sortMembersDefaultOrder(withMetric.map(x => x.member)).map(m => withMetric.find(x => x.member.id === m.id));
-            }
-
-            function cardHtml(x) {
-                const member = x.member;
-                const rateNum = x.rateNum;
-                const colorClass = getProgressBarColorClass(rateNum);
-                const attendedColorClass = getAttendedColorClass(rateNum);
-                const vsAvgDiff = parseFloat((rateNum - avgRate).toFixed(1));
-                const vsAvgString = (vsAvgDiff >= 0 ? `+` : ``) + vsAvgDiff.toFixed(1) + `%`;
-                const vsAvgClass = vsAvgDiff >= 0 ? 'vs-avg-pos' : 'vs-avg-neg';
-
-                const medalInfo = medalMap.get(member.id);
-                const tier = medalInfo ? getRankTierClassSuffix(medalInfo.rank) : null;
-                const showMedalNumber = medalInfo && medalInfo.isFirstOfRank && tier;
-                const cardClass = tier ? `ranking-card--rank-${tier}` : '';
-                const badgeClass = (tier && !showMedalNumber) ? 'ranking-card__badge--blank' : '';
-                const badgeText = showMedalNumber ? medalInfo.rank : '';
-
-                let diffVal = 0;
-                if (member.events && member.events.length >= 2) {
-                    const lastVal = member.events[member.events.length - 1] ? 1 : 0;
-                    const prevVal = member.events[member.events.length - 2] ? 1 : 0;
-                    diffVal = lastVal - prevVal;
-                } else if (member.events && member.events.length === 1) {
-                    diffVal = member.events[0] ? 1 : 0;
-                }
-
-                let diffHtml = '';
-                if (showDiffMode) {
-                    if (diffVal > 0) {
-                        diffHtml = `<span class="diff-green">▲</span>`;
-                    } else if (diffVal < 0) {
-                        diffHtml = `<span class="diff-red">▼</span>`;
-                    } else {
-                        diffHtml = `<span class="diff-yellow">▬</span>`;
-                    }
-                }
-
-                return `
-                    <div class="ranking-card ${cardClass}">
-                        <div class="ranking-card__left">
-                            <div class="ranking-card__badge ${badgeClass} notranslate">${badgeText}</div>
-                            <div>
-                                <div class="ranking-card__name notranslate">${member.name}</div>
-                                <div class="ranking-card__subtext"><span class="${attendedColorClass} notranslate" style="font-weight:800;">${member.attended}</span> events attended</div>
-                            </div>
-                        </div>
-                        <div class="ranking-card__right">
-                            <div class="ranking-card__bar-wrapper">
-                                <div class="progress-bar-container">
-                                    <div class="progress-bar">
-                                        <div class="progress-bar__fill ${colorClass}" style="width: ${rateNum}%;"></div>
-                                    </div>
-                                    <span class="progress-text notranslate ${attendedColorClass}">${rateNum}%</span>
-                                </div>
-                            </div>
-                            <div style="width: 80px; text-align: center;">${diffHtml}</div>
-                            ${showDiffMode ? `<div style="width: 75px; text-align: right;"><span class="${vsAvgClass} notranslate">${vsAvgString}</span></div>` : ''}
-                        </div>
-                    </div>`;
-            }
-
-            if (rankingSortMode === 'default') {
-                let html = '';
-                let lastGroupKey = null;
-                displayList.forEach(x => {
-                    const groupKey = x.member.frozenRank || 'R1';
-                    if (groupKey !== lastGroupKey) {
-                        lastGroupKey = groupKey;
-                        html += `<div class="rank-group-bar-card rank-group-bar--${groupKey.toLowerCase()}">${groupKey}</div>`;
-                    }
-                    html += cardHtml(x);
-                });
-                rankingView.innerHTML = html;
-            } else {
-                rankingView.innerHTML = displayList.map(x => cardHtml(x)).join('');
-            }
-        }
-
         function renderAuditTable() {
             const auditBody = document.getElementById('auditTableBody');
             if(!auditBody) return;
@@ -4049,205 +3372,6 @@ window.openRoleAssignModal = function() {
                 </tr>
             `).join('');
         }
-
-        window.toggleAttendance = function(memberId, eventIndex) {
-            const member = members.find(m => m.id === memberId);
-            if (!member) return;
-            if (!member.events) member.events = new Array(eventDates.length).fill(false);
-            const state = !!member.events[eventIndex];
-            member.events[eventIndex] = !state;
-            if (!state) member.attended += 1; else if (member.attended > 0) member.attended -= 1;
-            
-            logAction('UPDATE_ATTENDANCE', `Toggled attendance for [${member.name}] on event index ${eventIndex}`);
-            saveData(); render();
-        };
-
-        window.editEventName = function(i) {
-            const s = prompt('Edit event name:', eventDates[i].name);
-            if (s !== null) {
-                const trimmed = s.trim();
-                if (trimmed) {
-                    eventDates[i].name = trimmed;
-                    logAction('EDIT_EVENT', `Updated event name index ${i} to ${trimmed}`);
-                    saveData(); 
-                    render();
-                }
-            }
-        };
-
-        // Click-to-edit event date via a native calendar picker (replaces the old MM-DD text prompt).
-        // eventDates store dates as "MM-DD" with no year, so the picker is seeded with the current
-        // year purely for display/selection — only MM-DD is written back to eventDates[i].date.
-        window.startEditEventDate = function(i) {
-            const labelEl = document.getElementById(`eventDateLabel-${i}`);
-            const ev = eventDates[i];
-            if (!labelEl || !ev) return;
-            const currentYear = new Date().getFullYear();
-            let inputValue = '';
-            const match = (ev.date || '').match(/^(\d{1,2})-(\d{1,2})$/);
-            if (match) {
-                const mm = match[1].padStart(2, '0');
-                const dd = match[2].padStart(2, '0');
-                inputValue = `${currentYear}-${mm}-${dd}`;
-            }
-            labelEl.innerHTML = `<input type="date" value="${inputValue}"
-                style="font-size:11px; font-family:var(--font-family-ui); font-weight:800; padding:2px 4px; border:1px solid var(--color-primary); border-radius:3px; background:white; color:var(--color-text-dark);"
-                onchange="commitEventDateEdit(${i}, this.value)"
-                onclick="event.stopPropagation()">`;
-            const inputEl = labelEl.querySelector('input');
-            if (inputEl) inputEl.focus();
-        };
-
-        window.commitEventDateEdit = function(i, yyyyMmDd) {
-            if (!yyyyMmDd) { render(); return; }
-            const parts = yyyyMmDd.split('-');
-            if (parts.length === 3) {
-                eventDates[i].date = `${parts[1]}-${parts[2]}`;
-                logAction('EDIT_EVENT', `Updated event date index ${i} to ${eventDates[i].date}`);
-                sortEventsByDate();
-                saveData();
-            }
-            render();
-        };
-
-        document.getElementById('btnAddEvent').addEventListener('click', () => {
-            const eventNameInput = document.getElementById('newEventNameInput');
-            const dateInput = document.getElementById('newDateInput');
-            const isWarInput = document.getElementById('newEventIsWarInput');
-            
-            const eventName = eventNameInput.value.trim();
-            if (!eventName) {
-                alert('Please enter an event name before adding it.');
-                eventNameInput.focus();
-                return;
-            }
-            if (!dateInput.value) {
-                alert('Please select an event date.');
-                dateInput.focus();
-                return;
-            }
-
-            const parts = dateInput.value.split('-');
-            const formattedDate = parts.length === 3 ? `${parts[1]}-${parts[2]}` : dateInput.value;
-            const isWar = !!(isWarInput && isWarInput.checked);
-
-            eventDates.push({ 
-                id: Date.now(), 
-                name: eventName, 
-                date: formattedDate, 
-                subtext: eventName,
-                isWar: isWar
-            });
-
-            members.forEach(m => {
-                if (!m.events) m.events = new Array(eventDates.length).fill(false);
-                if (!Array.isArray(m.eventVotes)) m.eventVotes = [];
-                while (m.eventVotes.length < eventDates.length) m.eventVotes.push(null);
-            });
-            logAction('ADD_EVENT', `Added event column: ${eventName} (${formattedDate})${isWar ? ' [WAR EVENT]' : ''}`);
-            
-            eventNameInput.value = '';
-            dateInput.value = '';
-            if (isWarInput) isWarInput.checked = false;
-            sortEventsByDate();
-            saveData(); 
-            render();
-        });
-
-        window.removeEvent = function(i) {
-            if (confirm('Remove event column?')) {
-                const ev = eventDates[i];
-                logAction('DELETE_EVENT', `Removed event column: ${ev ? ev.name : i}`);
-                
-                members.forEach(m => {
-                    if (m.events && m.events[i]) {
-                        if (m.attended > 0) m.attended -= 1;
-                    }
-                    if (m.events) {
-                        m.events.splice(i, 1);
-                    }
-                    if (Array.isArray(m.eventVotes)) {
-                        m.eventVotes.splice(i, 1);
-                    }
-                });
-
-                eventDates.splice(i, 1);
-                saveData(); 
-                render();
-            }
-        };
-
-        document.getElementById('btnToggleDiff').addEventListener('click', () => {
-            showDiffMode = !showDiffMode;
-            document.getElementById('btnToggleDiff').classList.toggle('active', showDiffMode);
-            render();
-        });
-
-        document.getElementById('btnTabAttendance').addEventListener('click', () => {
-            currentSubTab = 'attendance';
-            document.getElementById('btnTabAttendance').classList.add('btn-toggle--active');
-            document.getElementById('btnTabRanking').classList.remove('btn-toggle--active');
-            document.getElementById('btnTabViolators').classList.remove('btn-toggle--active');
-            document.getElementById('subViewAttendance').style.display = 'flex';
-            document.getElementById('subViewRanking').style.display = 'none';
-            document.getElementById('subViewViolators').style.display = 'none';
-            render();
-        });
-
-        document.getElementById('btnTabRanking').addEventListener('click', () => {
-            currentSubTab = 'ranking';
-            document.getElementById('btnTabRanking').classList.add('btn-toggle--active');
-            document.getElementById('btnTabAttendance').classList.remove('btn-toggle--active');
-            document.getElementById('btnTabViolators').classList.remove('btn-toggle--active');
-            document.getElementById('subViewAttendance').style.display = 'none';
-            document.getElementById('subViewRanking').style.display = 'flex';
-            document.getElementById('subViewViolators').style.display = 'none';
-            render();
-        });
-
-        document.getElementById('btnTabViolators').addEventListener('click', () => {
-            currentSubTab = 'violators';
-            document.getElementById('btnTabViolators').classList.add('btn-toggle--active');
-            document.getElementById('btnTabAttendance').classList.remove('btn-toggle--active');
-            document.getElementById('btnTabRanking').classList.remove('btn-toggle--active');
-            document.getElementById('subViewAttendance').style.display = 'none';
-            document.getElementById('subViewRanking').style.display = 'none';
-            document.getElementById('subViewViolators').style.display = 'flex';
-            render();
-        });
-
-        document.getElementById('btnRankingSortDefault').addEventListener('click', () => setRankingSortMode('default'));
-        document.getElementById('btnRankingSortRank').addEventListener('click', () => setRankingSortMode('rank'));
-        document.getElementById('btnWarSortDefault').addEventListener('click', () => setWarSortMode('default'));
-        document.getElementById('btnWarSortRank').addEventListener('click', () => setWarSortMode('rank'));
-
-        document.getElementById('searchInput').addEventListener('input', render);
-
-        const importBtn = document.getElementById('importBtn');
-        const screenshotInput = document.getElementById('screenshotInput');
-        importBtn.addEventListener('click', () => screenshotInput.click());
-        screenshotInput.addEventListener('change', async (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            importBtn.innerText = 'PROCESSING...'; importBtn.disabled = true;
-            try {
-                const { data: { text } } = await Tesseract.recognize(file, 'eng');
-                let addedCount = 0;
-                text.split('\n').forEach(line => {
-                    const match = line.match(/([a-zA-Z0-9•\s]+)\s+(\d{1,2})/);
-                    if (match && match[1].trim().length > 2) {
-                        const name = match[1].trim(); const att = parseInt(match[2], 10);
-                        const existing = members.find(m => m.name.toLowerCase() === name.toLowerCase());
-                        if (existing) existing.attended = att;
-                        else members.push({ id: Date.now() + Math.random(), name, attended: att, hasPlus: false, events: new Array(eventDates.length).fill(false), eventVotes: new Array(eventDates.length).fill(null), rank: 'R1' });
-                        addedCount++;
-                    }
-                });
-                logAction('OCR_IMPORT', `Imported / parsed ${addedCount} entries via Tesseract OCR screenshot scan.`);
-                saveData(); render(); alert('OCR import completed successfully!');
-            } catch (err) { alert('OCR Error during processing'); }
-            finally { importBtn.innerText = '📥 IMPORT'; importBtn.disabled = false; screenshotInput.value = ''; }
-        });
 
         document.getElementById('hamburgerBtn').addEventListener('click', () => {
             const sidebarEl = document.getElementById('sidebar');
