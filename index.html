@@ -1476,7 +1476,8 @@ let currentUser = {
         }
 
         async function loadDataFromCloud() {
-            try {
+        let loadSucceeded = false;
+        try {
                 const { data, error } = await db.from('app_data').select('*');
                 if (error) throw error;
                 if (data && data.length > 0) {
@@ -1494,8 +1495,15 @@ let currentUser = {
                         if (row.key === 'dataSnapshots') dataSnapshots = row.value || [];
                     });
                 }
+           loadSucceeded = true;
            } catch (err) {
             console.error('Error loading from cloud:', err);
+            loadSucceeded = false;
+        }
+
+        if (!loadSucceeded) {
+            alert('Could not load data from the server. Please check your connection and reload the page. (Data was NOT modified.)');
+            return;
         }
 
         // Members created via members.html don't include `attended`/`events` —
@@ -1517,6 +1525,7 @@ let currentUser = {
         saveData();
 
         pruneExpiredCalendarEvents();
+
 
             const { data: accountsData, error: accountsErr } = await db.from('accounts').select('*');
             if (!accountsErr && accountsData) accounts = accountsData;
@@ -1583,7 +1592,7 @@ let currentUser = {
         // exactly what was causing edits to "erase" or "mess up" unrelated columns. So
         // during a save we just remember that a refresh is owed, and fetchAppDataOnly()
         // runs once, right after the save finishes, instead of mid-save.
-        let realtimeSubscribed = false;
+                let realtimeSubscribed = false;
         function subscribeToAppDataChanges() {
             if (realtimeSubscribed) return; // guard against double-subscribing
             realtimeSubscribed = true;
@@ -1593,10 +1602,37 @@ let currentUser = {
                         refreshPendingAfterSave = true;
                         return;
                     }
-                    fetchAppDataOnly();
+                    const row = payload.new;
+                    if (!row || !row.key) { fetchAppDataOnly(); return; }
+                    if (row.key === 'eventDates') eventDates = row.value || [];
+                    else if (row.key === 'members') members = row.value || [];
+                    else if (row.key === 'auditLogs') auditLogs = row.value || [];
+                    else if (row.key === 'vsData') vsData = row.value || { weeks: [], membersScores: [] };
+                    else if (row.key === 'chatMessages') chatMessages = row.value || [];
+                    else if (row.key === 'polls') polls = row.value || [];
+                    else if (row.key === 'notices') notices = row.value || [];
+                    else if (row.key === 'calendarEvents') calendarEvents = row.value || [];
+                    else if (row.key === 'noticeAnnouncements') noticeAnnouncements = row.value || [];
+                    else if (row.key === 'homePhotos') homePhotos = row.value || [];
+                    else if (row.key === 'dataSnapshots') dataSnapshots = row.value || [];
+                    else { fetchAppDataOnly(); return; }
+
+                    eventDates.forEach(ev => { if (typeof ev.isWar !== 'boolean') ev.isWar = false; });
+                    members.forEach(m => {
+                        if (typeof m.attended !== 'number' || isNaN(m.attended)) m.attended = 0;
+                        if (!Array.isArray(m.events)) m.events = [];
+                        while (m.events.length < eventDates.length) m.events.push(false);
+                        if (!Array.isArray(m.eventVotes)) m.eventVotes = [];
+                        while (m.eventVotes.length < eventDates.length) m.eventVotes.push(null);
+                        if (!m.rank) m.rank = 'R1';
+                        m.frozenRank = m.rank;
+                    });
+                    sortEventsByDate();
+                    if (appDashboard.style.display !== 'none') render();
                 })
                 .subscribe();
         }
+
 
         // Records a point-in-time copy of the Event Attendance data (the data most prone
         // to the "one edit messes up another column" bug) so it can be restored later from
