@@ -70,7 +70,7 @@ export default async function handler(req, res) {
     return res.status(403).json({ error: 'Only admin or management members can use screenshot import' });
   }
 
-  const apiKey = process.env.GEMINI_API_KEY;
+const apiKey = process.env.GEMINI_API_KEY_MEMBERS;
   if (!apiKey) {
     return res.status(500).json({ error: 'Server missing GEMINI_API_KEY' });
   }
