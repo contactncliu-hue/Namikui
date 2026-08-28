@@ -1685,7 +1685,7 @@ let currentUser = {
                     else if (row.key === 'calendarEvents') calendarEvents = row.value || [];
                     else if (row.key === 'noticeAnnouncements') noticeAnnouncements = row.value || [];
                     else if (row.key === 'homePhotos') homePhotos = row.value || [];
-                    else if (row.key === 'dataSnapshots') dataSnapshots = row.value || [];
+                    else if (row.key === 'dataSnapshots') { return; }
                     else { fetchAppDataOnly(); return; }
 
                     eventDates.forEach(ev => { if (typeof ev.isWar !== 'boolean') ev.isWar = false; });
