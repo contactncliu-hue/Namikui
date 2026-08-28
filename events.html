@@ -112,10 +112,10 @@ body{font-family:'Open Sans',sans-serif;background:var(--color-bg-main);color:va
 .ranking-card--rank-1{border:2px solid #f3a808;background:var(--color-gold-bg);}
 .ranking-card--rank-2{border:2px solid #a0aec0;}
 .ranking-card--rank-3{border:2px solid #b7791f;background:#fffaf5;}
+.ranking-card--rank-4{border:2px solid #3182ce;}
+.ranking-card--rank-5{border:2px solid #e53e3e;}
 .ranking-card__left{display:flex;align-items:center;gap:18px;min-width:200px;}
-.ranking-card__badge{font-size:10px;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-weight:800;border-radius:50%;color:#fff;background:#a0aec0;}
-.ranking-card--rank-1 .ranking-card__badge{background:#f3a808;}
-.ranking-card--rank-3 .ranking-card__badge{background:#b7791f;}
+.ranking-card__badge{font-size:10px;min-width:22px;height:22px;padding:0 6px;display:flex;align-items:center;justify-content:center;font-weight:800;border-radius:11px;color:#fff;background:#a0aec0;white-space:nowrap;}
 .ranking-card__name{font-weight:800;font-size:15px;}
 .ranking-card__subtext{font-size:11px;color:var(--color-text-muted);font-weight:600;}
 .ranking-card__right{display:flex;align-items:center;gap:20px;flex-grow:1;justify-content:flex-end;max-width:500px;}
@@ -135,6 +135,16 @@ body{font-family:'Open Sans',sans-serif;background:var(--color-bg-main);color:va
 .modal-card h3{margin-bottom:16px;color:var(--color-primary-dark);font-size:16px;font-weight:800;text-transform:uppercase;}
 .modal-card input,.modal-card select{width:100%;padding:10px;margin-bottom:14px;border:1px solid #d1d5db;border-radius:4px;font-size:13px;outline:none;font-family:var(--font-family-base);}
 .modal-card-btns{display:flex;justify-content:flex-end;gap:8px;}
+/* ===== Rank-group colored divider bars (matches members.html R5->R1 grouping) ===== */
+.rank-group-bar-row td{padding:0;border-bottom:none;}
+.rank-group-bar{display:flex;align-items:center;padding:7px 20px;font-family:var(--font-family-ui);font-weight:800;font-size:11px;letter-spacing:1px;color:#ffffff;text-transform:uppercase;}
+.rank-group-bar--r5{background-color:#2563eb;}
+.rank-group-bar--r4{background-color:#dc2626;}
+.rank-group-bar--r3{background-color:#ea580c;}
+.rank-group-bar--r2{background-color:#eab308;}
+.rank-group-bar--r1{background-color:#16a34a;}
+.rank-group-bar--card{border-radius:6px;margin-top:4px;}
+.sort-toggle-row{display:flex;justify-content:flex-start;}
 @media (max-width:900px){.kpi-grid,.war-stat-grid{grid-template-columns:repeat(2,1fr);}}
 </style>
 </head>
@@ -215,6 +225,8 @@ body{font-family:'Open Sans',sans-serif;background:var(--color-bg-main);color:va
       <span class="legend-pill-item"><span class="badge-rank r1">1</span> 1st</span>
       <span class="legend-pill-item"><span class="badge-rank r2">2</span> 2nd</span>
       <span class="legend-pill-item"><span class="badge-rank r3">3</span> 3rd</span>
+      <span class="legend-pill-item"><span class="badge-rank r4">4</span> 4th</span>
+      <span class="legend-pill-item"><span class="badge-rank r5">5</span> 5th</span>
       <span class="vs-hint" id="adminHelpText">· Admin/Mgmt: click any cell to toggle attendance. Click date header ✕ to delete a session.</span>
     </div>
 
@@ -229,12 +241,24 @@ body{font-family:'Open Sans',sans-serif;background:var(--color-bg-main);color:va
     </div>
 
     <section id="subViewRanking" style="display:none;flex-direction:column;gap:14px;">
+      <div class="sort-toggle-row">
+        <div class="btn-group" id="rankingSortToggle">
+          <button class="btn-toggle btn-toggle--active" data-mode="default" onclick="setRankingSortMode('default')">DEFAULT</button>
+          <button class="btn-toggle" data-mode="rank" onclick="setRankingSortMode('rank')">BY RANK</button>
+        </div>
+      </div>
       <div class="ranking-cards-list" id="rankingCardsList"></div>
     </section>
 
     <section id="subViewViolators" style="display:none;flex-direction:column;gap:14px;">
       <div style="padding:4px 4px 0;">
         <p style="font-size:12px;color:var(--color-text-muted);font-weight:600;">War-only participation. Members who voted Yes/Maybe (or didn't vote) and did not attend are flagged.</p>
+      </div>
+      <div class="sort-toggle-row">
+        <div class="btn-group" id="warSortToggle">
+          <button class="btn-toggle btn-toggle--active" data-mode="default" onclick="setWarSortMode('default')">DEFAULT</button>
+          <button class="btn-toggle" data-mode="rank" onclick="setWarSortMode('rank')">BY RANK</button>
+        </div>
       </div>
       <section class="war-stat-grid">
         <div class="war-stat-card"><div class="war-stat-card__label">Members</div><div class="war-stat-card__value notranslate" id="warKpiMembers">0</div></div>
@@ -347,8 +371,48 @@ let members = [];
 let eventDates = [];
 let showDiffMode = false;
 let searchQuery = '';
+// Sort modes for Ranking / War tabs only. 'default' groups members by their
+// alliance rank (R5->R1) with the same colored divider bars used on the
+// Members page. 'rank' sorts purely by attendance performance (1st,2nd,...)
+// with medal styling for the top 5, tie-aware.
 let rankingSortMode = 'default';
 let warSortMode = 'default';
+
+// Same R5->R1 group ordering used on members.html, for the colored divider bars.
+const RANK_GROUP_ORDER = { R5: 0, R4: 1, R3: 2, R2: 3, R1: 4 };
+function rankGroupOf(m) {
+    return (m.rank && RANK_GROUP_ORDER[m.rank] !== undefined) ? m.rank : 'R1';
+}
+
+// Medal colors/icons for the top 5 performance ranks (used only in "BY RANK" mode).
+const MEDAL_COLORS = { 1: '#f3a808', 2: '#a0aec0', 3: '#b7791f', 4: '#3182ce', 5: '#e53e3e' };
+const MEDAL_ICONS = { 1: '🥇', 2: '🥈', 3: '🥉', 4: '🏅', 5: '🎖️' };
+
+// Assigns competition-style ranks (ties share a rank, e.g. 1,1,3) to an array
+// already sorted descending by rateFn. Returns [{item, rank}], plus each entry
+// also knows if it's the first occurrence of its rank (for medal display).
+function assignCompetitionRanks(sortedArr, rateFn) {
+    const out = [];
+    let lastRate = null, lastRank = 0;
+    sortedArr.forEach((item, idx) => {
+        const rate = rateFn(item);
+        let rank;
+        if (lastRate !== null && rate === lastRate) {
+            rank = lastRank;
+        } else {
+            rank = idx + 1;
+        }
+        out.push({ item, rank, isFirstOfTie: rank !== lastRank || idx === 0 ? rank !== lastRank || idx === 0 : false });
+        lastRate = rate; lastRank = rank;
+    });
+    // Recompute isFirstOfTie cleanly (first entry with each distinct rank value in order)
+    let seenRank = null;
+    out.forEach(entry => {
+        entry.isFirstOfTie = entry.rank !== seenRank;
+        seenRank = entry.rank;
+    });
+    return out;
+}
 
 let realtimeSubscribed = false;
 function subscribeToAppDataChanges() {
@@ -436,6 +500,18 @@ document.getElementById('btnToggleDiff').addEventListener('click', () => {
     render();
 });
 document.getElementById('searchInput').addEventListener('input', (e) => { searchQuery = e.target.value.toLowerCase(); render(); });
+
+// --- Ranking / War sort mode toggles ---
+window.setRankingSortMode = function(mode) {
+    rankingSortMode = mode;
+    document.querySelectorAll('#rankingSortToggle .btn-toggle').forEach(b => b.classList.toggle('btn-toggle--active', b.dataset.mode === mode));
+    render();
+};
+window.setWarSortMode = function(mode) {
+    warSortMode = mode;
+    document.querySelectorAll('#warSortToggle .btn-toggle').forEach(b => b.classList.toggle('btn-toggle--active', b.dataset.mode === mode));
+    render();
+};
 
 // --- Add event ---
 document.getElementById('btnAddEvent').addEventListener('click', async () => {
@@ -550,6 +626,9 @@ function render() {
     renderWarTab(evs, activeM);
 }
 
+// Attendance tab: single fixed sort - grouped by alliance rank (R5->R1) with
+// colored divider bars, same arrangement as the Members page. Within each
+// group, members are ordered by attendance rate (highest first).
 function renderAttendanceTable(evs, filteredMembers) {
     const headerRow = document.getElementById('tableHeaderRow');
     let headerHtml = `<th class="col-rank">#</th><th class="col-name">MEMBER</th><th class="col-attended">ATTENDED</th><th class="col-percentage">RATE</th>`;
@@ -568,9 +647,20 @@ function renderAttendanceTable(evs, filteredMembers) {
         document.getElementById('tableFooterRow').innerHTML = '';
         return;
     }
-    const sorted = [...filteredMembers].sort((a,b) => memberRate(b, evs) - memberRate(a, evs));
+    const colSpan = 4 + evs.length;
+    const sorted = [...filteredMembers].sort((a,b) => {
+        const ga = RANK_GROUP_ORDER[rankGroupOf(a)], gb = RANK_GROUP_ORDER[rankGroupOf(b)];
+        if (ga !== gb) return ga - gb;
+        return memberRate(b, evs) - memberRate(a, evs);
+    });
     let html = '';
+    let lastGroup = null;
     sorted.forEach((m, idx) => {
+        const group = rankGroupOf(m);
+        if (group !== lastGroup) {
+            lastGroup = group;
+            html += `<tr class="rank-group-bar-row"><td colspan="${colSpan}"><div class="rank-group-bar rank-group-bar--${group.toLowerCase()}">${group}</div></td></tr>`;
+        }
         const rank = idx + 1;
         const attendedCount = memberAttendedCount(m, evs);
         const rate = memberRate(m, evs);
@@ -607,23 +697,76 @@ function renderAttendanceTable(evs, filteredMembers) {
         html += `</tr>`;
     });
     tbody.innerHTML = html;
-    document.getElementById('tableFooterRow').innerHTML = `<tr><td colspan="${4 + evs.length}" style="padding:12px;font-size:11px;font-weight:800;color:var(--color-text-muted);">Showing ${sorted.length} of ${filteredMembers.length} members</td></tr>`;
+    document.getElementById('tableFooterRow').innerHTML = `<tr><td colspan="${colSpan}" style="padding:12px;font-size:11px;font-weight:800;color:var(--color-text-muted);">Showing ${sorted.length} of ${filteredMembers.length} members</td></tr>`;
 }
 
 function renderRanking(evs, activeM) {
     const list = document.getElementById('rankingCardsList');
     if (activeM.length === 0) { list.innerHTML = `<div style="text-align:center;color:var(--color-text-muted);padding:24px;">No members yet.</div>`; return; }
-    const sorted = [...activeM].sort((a,b) => memberRate(b, evs) - memberRate(a, evs));
+    if (rankingSortMode === 'default') {
+        renderRankingDefault(evs, activeM, list);
+    } else {
+        renderRankingByRank(evs, activeM, list);
+    }
+}
+
+// "DEFAULT" ranking mode: grouped by alliance rank (R5->R1), same colored
+// divider bars as Members page. Plain sequential position numbers, no medals.
+function renderRankingDefault(evs, activeM, list) {
+    const sorted = [...activeM].sort((a,b) => {
+        const ga = RANK_GROUP_ORDER[rankGroupOf(a)], gb = RANK_GROUP_ORDER[rankGroupOf(b)];
+        if (ga !== gb) return ga - gb;
+        return memberRate(b, evs) - memberRate(a, evs);
+    });
     let html = '';
+    let lastGroup = null;
     sorted.forEach((m, idx) => {
+        const group = rankGroupOf(m);
+        if (group !== lastGroup) {
+            lastGroup = group;
+            html += `<div class="rank-group-bar rank-group-bar--card rank-group-bar--${group.toLowerCase()}">${group}</div>`;
+        }
         const rank = idx + 1;
         const attendedCount = memberAttendedCount(m, evs);
         const rate = memberRate(m, evs);
         const rc = rateClass(rate);
-        const rankCardClass = rank <= 3 ? `ranking-card--rank-${rank}` : '';
-        html += `<div class="ranking-card ${rankCardClass}">
+        html += `<div class="ranking-card">
             <div class="ranking-card__left">
                 <div class="ranking-card__badge">${rank}</div>
+                <div>
+                    <div class="ranking-card__name notranslate">${m.name}</div>
+                    <div class="ranking-card__subtext notranslate">${attendedCount}/${evs.length} events attended</div>
+                </div>
+            </div>
+            <div class="ranking-card__right">
+                <div class="ranking-card__bar-wrapper">
+                    <div class="progress-bar"><div class="progress-bar__fill ${rc}" style="width:${rate}%;"></div></div>
+                </div>
+                <span class="progress-text attended-${rc}">${rate.toFixed(0)}%</span>
+            </div>
+        </div>`;
+    });
+    list.innerHTML = html;
+}
+
+// "BY RANK" ranking mode: sorted purely by attendance rate. Top 5 get medal
+// styling; ties share the same rank number + color, but only the first card
+// in each tied group shows the actual medal icon.
+function renderRankingByRank(evs, activeM, list) {
+    const sorted = [...activeM].sort((a,b) => memberRate(b, evs) - memberRate(a, evs));
+    const ranked = assignCompetitionRanks(sorted, m => memberRate(m, evs));
+    let html = '';
+    ranked.forEach(({ item: m, rank, isFirstOfTie }) => {
+        const attendedCount = memberAttendedCount(m, evs);
+        const rate = memberRate(m, evs);
+        const rc = rateClass(rate);
+        const isMedal = rank >= 1 && rank <= 5;
+        const rankCardClass = isMedal ? `ranking-card--rank-${rank}` : '';
+        const badgeColor = isMedal ? MEDAL_COLORS[rank] : '#a0aec0';
+        const badgeContent = isMedal && isFirstOfTie ? `${MEDAL_ICONS[rank]} ${rank}` : `${rank}`;
+        html += `<div class="ranking-card ${rankCardClass}">
+            <div class="ranking-card__left">
+                <div class="ranking-card__badge" style="background:${badgeColor};">${badgeContent}</div>
                 <div>
                     <div class="ranking-card__name notranslate">${m.name}</div>
                     <div class="ranking-card__subtext notranslate">${attendedCount}/${evs.length} events attended</div>
@@ -653,8 +796,8 @@ function renderWarTab(evs, activeM) {
         return;
     }
 
-    let redCount = 0, yellowCount = 0, totalAttended = 0, totalRateSum = 0;
-    const rows = activeM.map(m => {
+    let totalAttended = 0, totalRateSum = 0;
+    const statsArr = activeM.map(m => {
         const attended = memberAttendedCount(m, warEvs);
         const rate = memberRate(m, warEvs);
         totalAttended += attended;
@@ -668,31 +811,74 @@ function renderWarTab(evs, activeM) {
                 else if (vote === 'maybe' || vote === 'none') yellow++;
             }
         });
-        redCount += red; yellowCount += yellow;
         return { m, attended, rate, red, yellow };
-    }).sort((a,b) => b.rate - a.rate);
+    });
 
     document.getElementById('warKpiMembers').innerText = activeM.length;
     document.getElementById('warKpiAvgAttendance').innerText = activeM.length ? (totalAttended / activeM.length).toFixed(1) : '0.0';
     document.getElementById('warKpiAvgRate').innerText = activeM.length ? (totalRateSum / activeM.length).toFixed(1) + '%' : '0.0%';
 
     let html = '';
-    rows.forEach((r, idx) => {
-        const rc = rateClass(r.rate);
-        html += `<tr>
-            <td class="col-rank">${idx+1}</td>
-            <td class="col-name notranslate">${r.m.name}</td>
-            <td style="text-align:center;" class="notranslate">${r.attended}/${warEvs.length}</td>
-            <td style="text-align:center;color:#dc2626;" class="notranslate">${r.red}</td>
-            <td style="text-align:center;color:#b89117;" class="notranslate">${r.yellow}</td>
-            <td class="col-percentage">
-                <div class="progress-bar-container">
-                    <div class="progress-bar"><div class="progress-bar__fill ${rc}" style="width:${r.rate}%;"></div></div>
-                    <span class="progress-text attended-${rc}">${r.rate.toFixed(0)}%</span>
-                </div>
-            </td>
-        </tr>`;
-    });
+    if (warSortMode === 'default') {
+        // Grouped by alliance rank (R5->R1), same colored divider bars as Members page.
+        const sorted = [...statsArr].sort((a,b) => {
+            const ga = RANK_GROUP_ORDER[rankGroupOf(a.m)], gb = RANK_GROUP_ORDER[rankGroupOf(b.m)];
+            if (ga !== gb) return ga - gb;
+            return b.rate - a.rate;
+        });
+        let lastGroup = null;
+        sorted.forEach((r, idx) => {
+            const group = rankGroupOf(r.m);
+            if (group !== lastGroup) {
+                lastGroup = group;
+                html += `<tr class="rank-group-bar-row"><td colspan="6"><div class="rank-group-bar rank-group-bar--${group.toLowerCase()}">${group}</div></td></tr>`;
+            }
+            const rank = idx + 1;
+            const rc = rateClass(r.rate);
+            html += `<tr>
+                <td class="col-rank">${rank}</td>
+                <td class="col-name notranslate">${r.m.name}</td>
+                <td style="text-align:center;" class="notranslate">${r.attended}/${warEvs.length}</td>
+                <td style="text-align:center;color:#dc2626;" class="notranslate">${r.red}</td>
+                <td style="text-align:center;color:#b89117;" class="notranslate">${r.yellow}</td>
+                <td class="col-percentage">
+                    <div class="progress-bar-container">
+                        <div class="progress-bar"><div class="progress-bar__fill ${rc}" style="width:${r.rate}%;"></div></div>
+                        <span class="progress-text attended-${rc}">${r.rate.toFixed(0)}%</span>
+                    </div>
+                </td>
+            </tr>`;
+        });
+    } else {
+        // "BY RANK": sorted by war attendance rate, medal styling for top 5, tie-aware.
+        const sorted = [...statsArr].sort((a,b) => b.rate - a.rate);
+        const ranked = assignCompetitionRanks(sorted, r => r.rate);
+        ranked.forEach(({ item: r, rank, isFirstOfTie }) => {
+            const rc = rateClass(r.rate);
+            const isMedal = rank >= 1 && rank <= 5;
+            let rankCellContent;
+            if (isMedal) {
+                const badgeColor = MEDAL_COLORS[rank];
+                const content = isFirstOfTie ? MEDAL_ICONS[rank] : rank;
+                rankCellContent = `<span style="display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:24px;padding:0 4px;border-radius:12px;background:${badgeColor};color:#fff;font-weight:800;font-size:11px;">${content}</span>`;
+            } else {
+                rankCellContent = `${rank}`;
+            }
+            html += `<tr>
+                <td class="col-rank notranslate">${rankCellContent}</td>
+                <td class="col-name notranslate">${r.m.name}</td>
+                <td style="text-align:center;" class="notranslate">${r.attended}/${warEvs.length}</td>
+                <td style="text-align:center;color:#dc2626;" class="notranslate">${r.red}</td>
+                <td style="text-align:center;color:#b89117;" class="notranslate">${r.yellow}</td>
+                <td class="col-percentage">
+                    <div class="progress-bar-container">
+                        <div class="progress-bar"><div class="progress-bar__fill ${rc}" style="width:${r.rate}%;"></div></div>
+                        <span class="progress-text attended-${rc}">${r.rate.toFixed(0)}%</span>
+                    </div>
+                </td>
+            </tr>`;
+        });
+    }
     tbody.innerHTML = html;
 }
 
