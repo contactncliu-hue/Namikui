@@ -1477,7 +1477,7 @@ let currentUser = {
         let refreshPendingAfterSave = false;
         let saveQueue = Promise.resolve();
         let dataSnapshots = []; // [{ id, timestamp, user, eventDates, members }], newest first
-        const MAX_SNAPSHOTS = 20;
+        const MAX_SNAPSHOTS = 15;
 
         window.getActiveMembers = function(memberList) {
             return memberList.filter(m => m.status !== 'removed');
