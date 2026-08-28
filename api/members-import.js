@@ -70,9 +70,9 @@ export default async function handler(req, res) {
     return res.status(403).json({ error: 'Only admin or management members can use screenshot import' });
   }
 
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY_MEMBERS;
   if (!apiKey) {
-    return res.status(500).json({ error: 'Server missing GEMINI_API_KEY' });
+    return res.status(500).json({ error: 'Server missing GEMINI_API_KEY_MEMBERS' });
   }
 
   const { imageBase64, mimeType } = req.body || {};
@@ -84,6 +84,7 @@ export default async function handler(req, res) {
 Extract every row you can see into a JSON array. Each row has:
 - "name": the player/member in-game name, exactly as shown (may be Chinese, Korean, Vietnamese, English, or a mix, possibly with decorative symbols like • or °)
 - "cp": the Combat Power value as a plain string exactly as displayed (e.g. "5,390,000,000" or "5.39B"), do not convert units yourself
+- "f1Cp": the F1 Power value as a plain string exactly as displayed (e.g. "13.2G" or "850M"), if a separate F1 Power column/value is visible for that row. If there is no F1 Power shown anywhere in the image, use null for every row.
 
 Rules:
 - Include every row visible, even partially cut-off ones at the top/bottom of the image.
@@ -92,7 +93,7 @@ Rules:
 - Return ONLY a raw JSON array, no markdown fences, no commentary, no explanation.
 
 Example output:
-[{"name":"Airon-小兽","cp":"5,390,000,000"},{"name":"继国缘一","cp":"2.1B"}]`;
+[{"name":"Airon-小兽","cp":"5,390,000,000","f1Cp":"13.2G"},{"name":"继国缘一","cp":"2.1B","f1Cp":null}]`;
 
   try {
     const geminiRes = await fetch(
@@ -145,7 +146,8 @@ Example output:
       .filter(r => r && typeof r === 'object')
       .map(r => ({
         name: typeof r.name === 'string' ? r.name.trim() : '',
-        cp: typeof r.cp === 'string' ? r.cp.trim() : (r.cp != null ? String(r.cp) : '')
+        cp: typeof r.cp === 'string' ? r.cp.trim() : (r.cp != null ? String(r.cp) : ''),
+        f1Cp: typeof r.f1Cp === 'string' ? r.f1Cp.trim() : (r.f1Cp != null ? String(r.f1Cp) : '')
       }))
       .filter(r => r.name);
 
