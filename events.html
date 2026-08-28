@@ -1317,13 +1317,66 @@
         const { createClient } = supabase;
         const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         const FAKE_EMAIL_DOMAIN = '@loopysplaygroundapp.com';
+async function usernameToEmailSafe(username) {
+    const normalized = username.trim().toLowerCase();
+    const data = new TextEncoder().encode(normalized);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hex = Array.from(new Uint8Array(hashBuffer))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('');
+    return 'u' + hex.slice(0, 32);
+}
+
+async function loadCurrentUserAccount() {
+    const { data: { session } } = await db.auth.getSession();
+    if (!session) {
+        currentUser.username = null;
+        currentUser.role = null;
+        return false;
+    }
+    const { data: acc, error } = await db.from('accounts')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .maybeSingle();
+    if (error || !acc) {
+        currentUser.username = null;
+        currentUser.role = null;
+        return false;
+    }
+    currentUser.username = acc.username;
+    currentUser.role = acc.role;
+    return true;
+}
+
+async function checkSessionOnLoad() {
+    const isLoggedIn = await loadCurrentUserAccount();
+    if (isLoggedIn) {
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('appDashboard').style.display = 'flex';
+        document.getElementById('userRoleDisplay').textContent = currentUser.username.toUpperCase();
+        document.getElementById('userPermissionBadge').textContent = 'Role: ' + currentUser.role.toUpperCase();
+        document.getElementById('userAvatarIcon').textContent = currentUser.username.charAt(0).toUpperCase();
+        const isManagementOrAdmin = currentUser.role === 'admin' || currentUser.role === 'management';
+        document.getElementById('adminSectionHeader').style.display = isManagementOrAdmin ? 'block' : 'none';
+        document.getElementById('adminPanel').style.display = isManagementOrAdmin ? 'flex' : 'none';
+        document.getElementById('btnAddEvent').style.display = isManagementOrAdmin ? 'inline-flex' : 'none';
+        document.getElementById('importBtn').style.display = isManagementOrAdmin ? 'inline-flex' : 'none';
+        document.getElementById('navDiscussionLi').style.display = isManagementOrAdmin ? 'block' : 'none';
+        document.getElementById('navHistoryLi').style.display = currentUser.role === 'admin' ? 'block' : 'none';
+        document.getElementById('assignRolesNavLi').style.display = currentUser.role === 'admin' ? 'block' : 'none';
+    } else {
+        document.getElementById('appDashboard').style.display = 'none';
+        document.getElementById('loginScreen').style.display = 'flex';
+    }
+}
+window.addEventListener('DOMContentLoaded', checkSessionOnLoad);
 
         let members = [];
         let eventDates = [];
         let chatMessages = [];
         let polls = [];
         let notices = [];
-        let currentUser = null;
+        let currentUser = { username: null, role: null };
 
         // Exports all current cloud data to a downloadable Excel file, one sheet per
         // data type, as a manual backup independent of Supabase.
@@ -1420,35 +1473,35 @@
             document.getElementById('createAccountModal').style.display = 'flex';
         });
 
-        document.getElementById('sidebarLogoutBtn')?.addEventListener('click', () => {
-            document.getElementById('appDashboard').style.display = 'none';
-            document.getElementById('loginScreen').style.display = 'flex';
-            currentUser = null;
-        });
+        document.getElementById('sidebarLogoutBtn')?.addEventListener('click', async () => {
+    await db.auth.signOut();
+    currentUser.username = null;
+    currentUser.role = null;
+    document.getElementById('appDashboard').style.display = 'none';
+    document.getElementById('loginScreen').style.display = 'flex';
+});
+        document.getElementById('btnSubmitLogin')?.addEventListener('click', async () => {
+    const uInput = document.getElementById('loginUsername').value.trim();
+    const pInput = document.getElementById('loginPassword').value;
+    if (!uInput || !pInput) return;
 
-        // Basic login handler stub
-        document.getElementById('btnSubmitLogin')?.addEventListener('click', () => {
-            const userVal = document.getElementById('loginUsername').value.trim();
-            if (userVal) {
-                currentUser = { name: userVal, role: 'admin' };
-                document.getElementById('userRoleDisplay').textContent = userVal.toUpperCase();
-                document.getElementById('userPermissionBadge').textContent = 'Admin';
-                document.getElementById('userAvatarIcon').textContent = userVal.charAt(0).toUpperCase();
-                
-                document.getElementById('loginModal').style.display = 'none';
-                document.getElementById('loginScreen').style.display = 'none';
-                document.getElementById('appDashboard').style.display = 'flex';
-                
-                // Show Admin Controls
-                document.getElementById('adminSectionHeader').style.display = 'block';
-                document.getElementById('adminPanel').style.display = 'flex';
-                document.getElementById('btnAddEvent').style.display = 'inline-flex';
-                document.getElementById('importBtn').style.display = 'inline-flex';
-                document.getElementById('navDiscussionLi').style.display = 'block';
-                document.getElementById('navHistoryLi').style.display = 'block';
-                document.getElementById('assignRolesNavLi').style.display = 'block';
-            }
-        });
+    const fakeEmail = await usernameToEmailSafe(uInput) + FAKE_EMAIL_DOMAIN;
+    const { data: signInData, error: signInError } = await db.auth.signInWithPassword({
+        email: fakeEmail,
+        password: pInput
+    });
+
+    if (signInError || !signInData.session) {
+        alert('Invalid credentials! Check your username and password.');
+        return;
+    }
+
+    document.getElementById('loginModal').style.display = 'none';
+    document.getElementById('loginUsername').value = '';
+    document.getElementById('loginPassword').value = '';
+    await checkSessionOnLoad();
+});
+
 
         // Sub-Tab Switchers for Event Attendance
         document.getElementById('btnTabAttendance')?.addEventListener('click', function() {
