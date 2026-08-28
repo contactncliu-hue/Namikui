@@ -7,6 +7,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Fredoka+One&family=Montserrat:wght@600;700;800&family=Noto+Sans+SC:wght@900&family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
         :root {
             --login-bg: #ffffff;
@@ -642,6 +643,8 @@
                     </div>
                 </div>
                 <div id="google_translate_element"></div>
+                <a class="sidebar__item sidebar__item--logout" id="sidebarLogoutBtn"><span class="sidebar__icon">|</span> LOG OUT</a>
+                                <a class="sidebar__item" onclick="exportAllDataToExcel()"><span class="sidebar__icon">⬇</span> EXPORT BACKUP (.XLSX)</a>
                 <a class="sidebar__item sidebar__item--logout" id="sidebarLogoutBtn"><span class="sidebar__icon">|</span> LOG OUT</a>
             </div>
         </aside>
@@ -1315,6 +1318,76 @@
         const { createClient } = supabase;
         const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         const FAKE_EMAIL_DOMAIN = '@loopysplaygroundapp.com';
+                const FAKE_EMAIL_DOMAIN = '@loopysplaygroundapp.com';
+
+        // Exports all current cloud data to a downloadable Excel file, one sheet per
+        // data type, as a manual backup independent of Supabase.
+        window.exportAllDataToExcel = function() {
+            try {
+                const wb = XLSX.utils.book_new();
+
+                const membersSheet = (members || []).map(m => ({
+                    Name: m.name, Attended: m.attended, Rank: m.rank,
+                    Events: (m.events || []).map(e => e ? 'Y' : 'N').join(','),
+                    Votes: (m.eventVotes || []).join(',')
+                }));
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(membersSheet.length ? membersSheet : [{Note:'No members'}]), 'Members');
+
+                const eventsSheet = (eventDates || []).map(ev => ({
+                    Name: ev.name, Date: ev.date, IsWar: ev.isWar ? 'Yes' : 'No'
+                }));
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(eventsSheet.length ? eventsSheet : [{Note:'No events'}]), 'EventDates');
+
+                const chatSheet = (chatMessages || []).map(m => ({
+                    User: m.user, Role: m.role, Time: m.timestamp, Message: m.text
+                }));
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(chatSheet.length ? chatSheet : [{Note:'No messages'}]), 'ChatMessages');
+
+                const pollsSheet = (polls || []).map(p => ({
+                    Question: p.question,
+                    Options: p.options.map(o => `${o.text} (${o.votes.length} votes)`).join(' | '),
+                    ExpiresAt: new Date(p.expiresAt).toLocaleString()
+                }));
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(pollsSheet.length ? pollsSheet : [{Note:'No polls'}]), 'Polls');
+
+                const noticesSheet = (notices || []).map(n => ({
+                    Title: n.title, Content: n.content, Date: n.date, Author: n.author
+                }));
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(noticesSheet.length ? noticesSheet : [{Note:'No notices'}]), 'Notices');
+
+                const noticeAnnSheet = (noticeAnnouncements || []).map(n => ({
+                    Title: n.title, Content: n.content, Date: n.date, Visibility: n.visibility
+                }));
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(noticeAnnSheet.length ? noticeAnnSheet : [{Note:'No announcements'}]), 'NoticeBoard');
+
+                const vsWeeks = (vsData && vsData.weeks) || [];
+                const vsSheet = ((vsData && vsData.membersScores) || []).map(ms => {
+                    const row = { Name: ms.name };
+                    vsWeeks.forEach((wk, i) => { row[wk] = (ms.scores && ms.scores[i]) || 0; });
+                    return row;
+                });
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(vsSheet.length ? vsSheet : [{Note:'No VS data'}]), 'VSPoints');
+
+                const calSheet = (calendarEvents || []).map(ev => ({
+                    Name: ev.name, Category: ev.category, Type: ev.type,
+                    Date: ev.date || '', EndDate: ev.endDate || '',
+                    DayOfWeek: ev.dayOfWeek !== undefined ? ev.dayOfWeek : '',
+                    DayOfMonth: ev.dayOfMonth || '', Visibility: ev.visibility
+                }));
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(calSheet.length ? calSheet : [{Note:'No calendar events'}]), 'CalendarEvents');
+
+                const auditSheet = (auditLogs || []).map(a => ({
+                    Timestamp: a.timestamp, User: a.user, Role: a.role, Type: a.type, Details: a.details
+                }));
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(auditSheet.length ? auditSheet : [{Note:'No audit logs'}]), 'AuditLog');
+
+                const dateStr = new Date().toISOString().slice(0, 10);
+                XLSX.writeFile(wb, `LoopysPlayground_Backup_${dateStr}.xlsx`);
+            } catch (err) {
+                console.error('Export failed:', err);
+                alert('Export failed. Please try again.');
+            }
+        };
 
 async function usernameToEmailSafe(username) {
     const normalized = username.trim().toLowerCase();
