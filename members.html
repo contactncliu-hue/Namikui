@@ -1143,21 +1143,29 @@
                 const name = (entry.name || '').trim();
                 if (!name) return;
                 const parsedCp = parseCpWithCommas(entry.cp || '0');
+                const hasF1 = entry.f1Cp && entry.f1Cp.trim() !== '';
+                const parsedF1 = hasF1 ? parseCpToRaw(entry.f1Cp) : null;
 
                 const existing = members.find(m => m.name.toLowerCase() === name.toLowerCase());
                 if (existing) {
                     existing.cp = parsedCp.formatted;
                     existing.rawCp = parsedCp.raw;
+                    if (parsedF1) {
+                        if (!existing.f1History || !Array.isArray(existing.f1History)) existing.f1History = [];
+                        existing.f1History.push({ date: nowStr, val: parsedF1.formatted });
+                        existing.f1Cp = parsedF1.formatted;
+                        existing.f1Raw = parsedF1.raw;
+                    }
                 } else {
-                    const defaultF1 = parseCpToRaw('0G');
+                    const f1ToUse = parsedF1 || parseCpToRaw('0G');
                     members.push({
                         id: Date.now() + Math.random(),
                         name,
                         cp: parsedCp.formatted,
                         rawCp: parsedCp.raw,
-                        f1Cp: defaultF1.formatted,
-                        f1Raw: defaultF1.raw,
-                        f1History: [{ date: nowStr, val: defaultF1.formatted }],
+                        f1Cp: f1ToUse.formatted,
+                        f1Raw: f1ToUse.raw,
+                        f1History: [{ date: nowStr, val: f1ToUse.formatted }],
                         faction: 'F',
                         level: '1',
                         rank: 'R1',
