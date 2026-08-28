@@ -1,1578 +1,711 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Loopy's Playground - Alliance Management</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Fredoka+One&family=Montserrat:wght@600;700;800&family=Noto+Sans+SC:wght@900&family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <style>
-        :root {
-            --login-bg: #ffffff;
-            --login-primary-blue: #324796;
-            --login-light-blue: #c3d2f8;
-            --login-text-title: #2d4187;
-            --login-text-guest: #4f63a8;
-            --login-btn-bg: #f3a808;
-            --login-btn-hover: #e29a00;
-            --login-btn-text: #ffffff;
-            --login-star: #f3a808;
-
-            --color-bg-main: #f5f4ef;
-            --color-bg-card: #ffffff;
-            --color-bg-sidebar: #ffffff;
-            --color-primary: #3b52a4;
-            --color-primary-dark: #2d3a91;
-            --color-primary-light: #eceff8;
-            --color-text-dark: #2b3044;
-            --color-text-muted: #8c93a6;
-            --color-text-light: #a0a6b5;
-            --color-border: #3b52a4;
-            --color-border-light: #e2e5ed;
-            --color-yellow-bg: #fffdf0;
-            --color-yellow-border: #e2cb6b;
-            --color-yellow-text: #b89117;
-            --color-gold: #f3a808;
-            --color-gold-bg: #fffdf0;
-            --color-not-attended: #d9381e;
-
-            --font-family-base: 'Open Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            --font-family-ui: 'Montserrat', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            --font-family-title: 'Cinzel', serif;
-            --font-family-logo: 'Noto Sans SC', sans-serif;
-
-            --font-xs: 12px;
-            --font-sm: 14px;
-            --font-md: 16px;
-            --font-lg: 20px;
-            --font-xl: 24px;
-            --font-xxl: 32px;
-        }
-
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: var(--font-family-base); background-color: var(--color-bg-main); color: var(--color-text-dark); min-height: 100vh; font-size: var(--font-sm); }
-
-        /* LOGIN SCREEN */
-        .login-page { display: flex; flex-direction: column; min-height: 100vh; background-color: var(--login-bg); font-family: var(--font-family-base); }
-        .login-header { width: 100%; padding: 18px 28px; display: flex; justify-content: flex-end; align-items: center; }
-        .login-main { flex: 1; display: flex; align-items: center; justify-content: center; padding: 28px; }
-        .login-card { display: flex; flex-direction: column; align-items: center; text-align: center; max-width: 520px; width: 100%; }
-        .login-card__logo-wrapper { position: relative; width: 200px; height: 200px; margin-bottom: 36px; display: flex; justify-content: center; align-items: center; }
-        .login-card__logo-circle { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; position: relative; }
-        .login-card__logo-text { font-family: var(--font-family-logo); font-size: 96px; font-weight: 900; color: var(--login-primary-blue); line-height: 1; letter-spacing: -4px; user-select: none; }
-        .login-card__logo-star { position: absolute; bottom: -6px; left: 50%; transform: translateX(-50%); color: var(--login-star); font-size: 44px; line-height: 1; z-index: 2; }
-        .login-card__title { font-family: var(--font-family-title); font-size: var(--font-xxl); font-weight: 700; color: var(--login-text-title); letter-spacing: 1.5px; margin-bottom: 36px; text-transform: uppercase; }
-        .login-card__button { background-color: var(--login-btn-bg); color: var(--login-btn-text); border: none; border-radius: 12px; padding: 18px 0; width: 220px; font-family: var(--font-family-base); font-size: var(--font-md); font-weight: 800; cursor: pointer; margin-bottom: 18px; transition: background 0.2s; }
-        .login-card__button:hover { background-color: var(--login-btn-hover); }
-        .login-card__guest-link { background: none; border: none; color: var(--login-text-guest); font-family: var(--font-family-base); font-size: var(--font-sm); font-weight: 700; cursor: pointer; text-transform: uppercase; margin-bottom: 14px; }
-        .login-card__guest-link:hover { text-decoration: underline; }
-
-        /* MODAL */
-        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.4); display: none; align-items: center; justify-content: center; z-index: 1000; }
-        .modal-card { background: white; padding: 32px; border-radius: 10px; width: 100%; max-width: 420px; border: 2px solid var(--color-primary); }
-        .modal-card h3 { margin-bottom: 16px; color: var(--color-text-dark); font-size: 16px; font-family: var(--font-family-title); }
-        .modal-card input, .modal-card select, .modal-card textarea { width: 100%; padding: 14px; margin-bottom: 16px; border: 1px solid #ccc; border-radius: 6px; font-size: var(--font-sm); font-family: var(--font-family-base); outline: none; }
-        .modal-card-btns { display: flex; justify-content: flex-end; gap: 12px; }
-        .login-error-msg { color: #dc2626; font-size: var(--font-xs); font-weight: 700; margin-bottom: 12px; display: none; text-align: left; }
-
-        /* DASHBOARD */
-        .app { display: none; width: 100%; min-height: 100vh; }
-        .sidebar { width: 300px; background-color: var(--color-bg-sidebar); border-right: 2px solid var(--color-border); display: flex; flex-direction: column; flex-shrink: 0; transition: transform 0.3s ease; z-index: 150; position: fixed; top: 0; left: 0; height: 100vh; transform: translateX(-100%); }
-        .sidebar--open { transform: translateX(0); }
-        .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(15, 17, 26, 0.45); z-index: 140; }
-        .sidebar-overlay--visible { display: block; }
-        .sidebar__logo { width: 85px; height: 85px; display: flex; align-items: center; justify-content: center; }
-        .sidebar__header { padding: 24px; display: flex; justify-content: center; align-items: center; border-bottom: 2px solid var(--color-border); }
-        .sidebar__user { padding: 18px 24px; display: flex; align-items: center; gap: 14px; font-weight: 700; font-size: var(--font-sm); color: #62697b; border-bottom: 1px solid var(--color-border-light); }
-        .sidebar__user-avatar { width: 42px; height: 42px; border-radius: 50%; background-color: var(--color-primary); color: white; display: flex; align-items: center; justify-content: center; font-size: var(--font-sm); font-weight: 800; }
-        .sidebar__nav { display: flex; flex-direction: column; gap: 6px; overflow-y: auto; padding-bottom: 24px; flex-grow: 1; }
-        .sidebar__footer { padding: 14px 24px; border-top: 1px solid var(--color-border-light); margin-top: auto; }
-        .sidebar__menu { list-style: none; }
-        .sidebar__section-title { font-size: var(--font-xs); font-weight: 800; color: #8c93a6; padding: 18px 24px 8px 24px; text-transform: uppercase; letter-spacing: 0.5px; }
-        .sidebar__item { display: flex; align-items: center; padding: 14px 24px; color: #555b6e; font-weight: 700; font-size: var(--font-xs); text-decoration: none; gap: 14px; cursor: pointer; transition: background 0.2s; }
-        .sidebar__item:hover { background-color: #f0f2f8; }
-        .sidebar__item--active { background-color: var(--color-primary); color: white; }
-        .sidebar__item--logout { color: #d9381e; }
-        .sidebar__item--logout:hover { background-color: #fce8e6; }
-        .sidebar__icon { width: 18px; text-align: center; }
-
-        .main { flex-grow: 1; padding: 28px; display: flex; flex-direction: column; gap: 18px; max-width: 1320px; width: 100%; margin: 0 auto; }
-        .mobile-header { display: flex; justify-content: flex-end; align-items: center; padding: 10px 14px; background: transparent; border: none; margin-bottom: 8px; }
-        .hamburger { background: none; border: none; cursor: pointer; display: flex; flex-direction: column; gap: 5px; padding: 5px; }
-        .hamburger__line { width: 26px; height: 3px; background-color: var(--color-primary); border-radius: 2px; }
-
-        /* Unified Match with VS Tab Controls Style */
-        .page-header-top { display: flex; flex-direction: column; gap: 4px; margin-bottom: 2px; }
-        .page-header-top__back { font-family: var(--font-family-ui); font-size: 12px; font-weight: 800; color: var(--color-primary); text-decoration: none; margin-bottom: 2px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
-        .page-header-top__back:hover { text-decoration: underline; }
-        .page-header-top__title { font-family: var(--font-family-ui); font-weight: 800; font-size: 34px; letter-spacing: -1px; color: var(--color-primary-dark); text-transform: uppercase; line-height: 1.1; }
-        .page-header-top__subtext { font-family: var(--font-family-ui); font-size: 14px; font-weight: 700; color: var(--color-text-muted); margin-top: 4px; }
-
-        /* Controls Card matching VS tab reference styling */
-        .controls-card { background: white; border: 2px solid var(--color-border); border-radius: 6px; padding: 16px 20px; display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
-
-        .btn-group { display: flex; background: #edf2f7; padding: 3px; border-radius: 4px; }
-        .btn-toggle { padding: 8px 16px; font-weight: 800; font-size: 11px; border: none; background: transparent; color: var(--color-text-muted); cursor: pointer; display: flex; align-items: center; gap: 8px; font-family: var(--font-family-ui); border-radius: 3px; transition: all 0.15s; }
-        .btn-toggle--active { background-color: var(--color-primary-dark); color: white; }
-
-        .search-box { flex-grow: 1; max-width: 280px; position: relative; }
-        .search-box__input { width: 100%; padding: 9px 12px 9px 32px; border: 1px solid #d1d5db; background-color: #f7f6f0; border-radius: 4px; font-size: 13px; outline: none; font-family: var(--font-family-ui); color: var(--color-text-dark); font-weight: 600; }
-        .search-box__input::placeholder { color: #9ca3af; font-weight: 600; }
-        .search-box__icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #9ca3af; font-size: 13px; }
-
-        .controls-right-group { display: flex; gap: 12px; align-items: center; margin-left: auto; flex-wrap: wrap; }
-
-        .date-input-wrapper { display: flex; align-items: center; gap: 8px; }
-        .admin-panel__input-date { padding: 8px 12px; border: 2px solid var(--color-gold); background-color: var(--color-gold-bg); border-radius: 4px; font-size: 12px; outline: none; font-family: var(--font-family-ui); font-weight: 800; color: var(--color-text-dark); cursor: pointer; }
-        .admin-panel__input-text { padding: 8px 12px; border: 2px solid var(--color-gold); background-color: var(--color-gold-bg); border-radius: 4px; font-size: 12px; outline: none; font-family: var(--font-family-ui); font-weight: 800; color: var(--color-text-dark); width: 140px; }
-        .admin-panel__input-text::placeholder { color: #b89117; font-weight: 700; }
-        .war-event-checkbox-label { display: flex; align-items: center; gap: 6px; font-family: var(--font-family-ui); font-size: 11px; font-weight: 800; color: var(--color-not-attended); cursor: pointer; padding: 8px 10px; border: 2px solid var(--color-not-attended); border-radius: 4px; background: #fdeceb; user-select: none; }
-        .war-event-checkbox-label input { width: 15px; height: 15px; cursor: pointer; accent-color: var(--color-not-attended); }
-
-        .btn-action-custom { background: white; border: 2px solid var(--color-primary); color: var(--color-primary); font-weight: 800; font-size: 12px; padding: 10px 18px; border-radius: 4px; cursor: pointer; font-family: var(--font-family-ui); display: inline-flex; align-items: center; gap: 8px; transition: all 0.15s; }
-        .btn-action-custom--add, .btn-action-custom--import { border: 2px solid var(--color-gold); color: var(--color-gold); background: var(--color-gold-bg); letter-spacing: 0.5px; }
-        .btn-action-custom--add:hover, .btn-action-custom--import:hover { background-color: var(--color-gold); color: white; }
-        .btn-diff { background: var(--color-gold-bg); border: 2px solid var(--color-gold); color: var(--color-gold); font-weight: 800; font-size: 12px; padding: 10px 16px; border-radius: 4px; cursor: pointer; font-family: var(--font-family-ui); letter-spacing: 0.5px; transition: all 0.15s; }
-        .btn-diff:hover { background-color: var(--color-gold); color: white; }
-        .btn-diff.active { background-color: var(--color-primary-dark); border-color: var(--color-primary-dark); color: white; }
-
-        /* Top 5 Legend & Info Bar */
-        .top-legend-bar { display: flex; align-items: center; gap: 16px; font-family: var(--font-family-ui); font-size: 12px; font-weight: 700; color: var(--color-text-dark); flex-wrap: wrap; margin-top: 4px; padding: 0 4px; }
-        .top-legend-bar__title { font-weight: 800; color: var(--color-text-dark); text-transform: uppercase; }
-        .legend-pill-item { display: flex; align-items: center; gap: 4px; }
-        .badge-rank { width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 10px; font-weight: 800; color: white; }
-        .badge-rank.r1, .top-pill--1 { background-color: #f3a808; }
-        .badge-rank.r2, .top-pill--2 { background-color: #a0aec0; }
-        .badge-rank.r3, .top-pill--3 { background-color: #b7791f; }
-        .badge-rank.r4, .top-pill--4 { background-color: #3182ce; }
-        .badge-rank.r5, .top-pill--5 { background-color: #e53e3e; }
-        .vs-hint { color: var(--color-text-muted); font-weight: 600; font-size: 11px; font-style: italic; }
-
-        .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); border: 2px solid var(--color-border); border-radius: 8px; background: white; overflow: hidden; }
-        .kpi-card { padding: 20px 24px; border-right: 1px solid var(--color-border-light); background: var(--color-bg-card); }
-        .kpi-card:last-child { border-right: none; }
-        .kpi-card:nth-child(2) { background-color: var(--color-primary-light); }
-        .kpi-card:nth-child(4) { background-color: var(--color-gold-bg); }
-        .kpi-card__label { font-family: var(--font-family-ui); font-size: 11px; font-weight: 800; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
-        .kpi-card__value { font-family: var(--font-family-ui); font-size: var(--font-xxl); font-weight: 800; color: var(--color-primary-dark); }
-        #kpiAvgRate.attended-high { color: #2563eb; }
-        #kpiAvgRate.attended-mid { color: #b89117; }
-        #kpiAvgRate.attended-low { color: #dc2626; }
-        #kpiPctBase { font-family: var(--font-family-ui); font-size: var(--font-xxl); font-weight: 800; color: var(--color-gold); }
-
-        .table-card { background: white; border: 2px solid var(--color-border); border-radius: 6px; overflow: hidden; display: flex; flex-direction: column; }
-        .table-wrapper { overflow-x: auto; }
-        .data-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; font-family: var(--font-family-ui); }
-        .data-table th { background-color: #e9ecf7; padding: 14px 12px; font-size: 11px; font-weight: 800; color: var(--color-primary-dark); text-transform: uppercase; border-bottom: 2px solid var(--color-primary); white-space: nowrap; }
-        .data-table td { padding: 12px; border-bottom: 1px solid var(--color-border-light); vertical-align: middle; font-weight: 700; color: var(--color-text-dark); }
-        .data-table tfoot td { background-color: #f8f9fa; border-top: 2px solid var(--color-border-light); padding: 12px; font-size: 11px; font-weight: 800; color: var(--color-text-muted); }
-
-        .data-table tr.rank-1 { background-color: #fffdf5; }
-        .data-table tr.rank-2 { background-color: #faf9f5; }
-        .data-table tr.rank-3 { background-color: #fcfbf7; }
-
-        .col-rank { width: 40px; text-align: center; color: var(--color-text-muted); font-weight: 700; }
-        .col-name { font-weight: 800; color: var(--color-text-dark); }
-        .col-attended { width: 110px; text-align: center; font-size: var(--font-sm); font-weight: 800; }
-        .col-percentage { width: 130px; text-align: center; font-size: var(--font-sm); font-weight: 800; }
-        .col-event { width: 110px; text-align: center; }
-        .col-event--war { background-color: #fdeceb !important; border-bottom: 3px solid var(--color-not-attended) !important; }
-        .col-actions { width: 80px; text-align: center; }
-
-        /* ===== Per-day event column collapse (mass-hide a day's events) ===== */
-        .day-group-header { text-align: center; background-color: #e9ecf7; vertical-align: middle; }
-        .day-group-header__date { display: block; font-size: 10px; font-weight: 800; color: var(--color-text-muted); margin-top: 4px; }
-        .day-collapse-btn { width: 18px; height: 18px; border: 2px solid var(--color-primary); background: white; color: var(--color-primary); border-radius: 4px; font-size: 12px; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 0; line-height: 1; font-family: var(--font-family-ui); }
-        .day-collapse-btn:hover { background: var(--color-primary-light); }
-        .day-collapse-btn--collapsed { background: var(--color-gold-bg); border-color: var(--color-gold); color: var(--color-gold); }
-        .day-collapsed-cell { text-align: center; cursor: pointer; font-weight: 800; color: var(--color-primary); background: #f4f6fb; font-size: 12px; }
-        .day-collapsed-cell:hover { background: #eceff8; }
-        .day-collapsed-cell__sub { display: block; font-size: 9px; font-weight: 700; color: var(--color-text-muted); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.3px; }
-
-        .attended-high { color: #2563eb; }
-        .attended-mid { color: #b89117; }
-        .attended-low { color: #dc2626; }
-
-        .vs-avg-pos { color: #2563eb; font-weight: 800; }
-        .vs-avg-neg { color: #dc2626; font-weight: 800; }
-
-        .diff-green { color: #16a34a; font-weight: 850; font-size: var(--font-xs); display: inline-flex; align-items: center; gap: 4px; }
-        .diff-red { color: #dc2626; font-weight: 850; font-size: var(--font-xs); display: inline-flex; align-items: center; gap: 4px; }
-        .diff-yellow { color: #ca8a04; font-weight: 850; font-size: var(--font-xs); display: inline-flex; align-items: center; gap: 4px; }
-
-        .check-toggle { cursor: pointer; padding: 6px 10px; border-radius: 6px; user-select: none; }
-        .check-icon { color: var(--color-primary); font-weight: 800; font-size: var(--font-md); }
-        .cross-icon { color: #ccc; font-weight: bold; }
-        .editable-num { cursor: pointer; border-bottom: 1px dashed var(--color-primary); }
-
-        /* War event vote + attendance cell */
-        .war-cell { display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 5px 4px; border-radius: 6px; }
-        .war-cell--red { background-color: #fbdcda; }
-        .war-cell--yellow { background-color: #fdf1c7; }
-        .war-vote-badge { font-family: var(--font-family-ui); font-size: 10px; font-weight: 800; padding: 3px 9px; border-radius: 12px; cursor: pointer; letter-spacing: 0.4px; white-space: nowrap; }
-        .war-vote-badge--yes { background: #dcfce7; color: #16a34a; }
-        .war-vote-badge--no { background: #e9ecf1; color: #6b7280; }
-        .war-vote-badge--maybe { background: #fef9c3; color: #b89117; }
-        .war-vote-badge--none { background: #eef0f5; color: #a0a6b5; }
-
-        /* Attended / Not attended pill (top of war column) - mirrors blackgold.html's attend-pill */
-        .attend-pill { font-family: var(--font-family-ui); font-size: 9px; font-weight: 800; letter-spacing: 0.3px; padding: 3px 8px; border-radius: 10px; cursor: pointer; user-select: none; text-transform: uppercase; white-space: nowrap; }
-        .attend-pill--yes { background: #e6f4ea; color: #1f9d55; border: 1px solid #1f9d55; }
-        .attend-pill--no { background: #fce8e6; color: #d9381e; border: 1px solid #d9381e; }
-        .attend-pill--readonly { cursor: default; }
-
-        .progress-bar-container { display: flex; align-items: center; gap: 8px; width: 100%; min-width: 140px; }
-        .progress-bar { height: 10px; flex-grow: 1; background-color: #eef0f5; border-radius: 5px; overflow: hidden; }
-        .progress-bar__fill { height: 100%; border-radius: 5px; }
-        .progress-bar__fill.high { background-color: #2563eb; } /* 75-100 blue */
-        .progress-bar__fill.mid { background-color: #eab308; }   /* 50-74 yellow */
-        .progress-bar__fill.low { background-color: #dc2626; }   /* 0-49 red */
-        .progress-text { font-size: 12px; font-weight: 800; min-width: 42px; text-align: right; }
-
-        .ranking-cards-list { display: flex; flex-direction: column; gap: 12px; }
-        .ranking-card { background-color: #ffffff; border: 1px solid var(--color-border-light); border-radius: 6px; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; font-family: var(--font-family-ui); }
-        .ranking-card--rank-1 { border: 2px solid #f3a808; background-color: var(--color-gold-bg); }
-        .ranking-card--rank-2 { border: 2px solid #a0aec0; background-color: #ffffff; }
-        .ranking-card--rank-3 { border: 2px solid #b7791f; background-color: #fffaf5; }
-        .ranking-card--rank-4 { border: 2px solid #3182ce; background-color: #f7fafc; }
-        .ranking-card--rank-5 { border: 2px solid #e53e3e; background-color: #fff5f5; }
-        
-        .ranking-card__left { display: flex; align-items: center; gap: 18px; min-width: 240px; }
-        .ranking-card__badge { font-size: 10px; font-family: var(--font-family-ui); width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; font-weight: 800; border-radius: 50%; color: #ffffff; }
-        .ranking-card--rank-1 .ranking-card__badge { background: #f3a808; }
-        .ranking-card--rank-2 .ranking-card__badge { background: #a0aec0; }
-        .ranking-card--rank-3 .ranking-card__badge { background: #b7791f; }
-        .ranking-card--rank-4 .ranking-card__badge { background: #3182ce; }
-        .ranking-card--rank-5 .ranking-card__badge { background: #e53e3e; }
-        .ranking-card__badge--blank { background: transparent !important; border: 2px solid rgba(255,255,255,0.6); }
-        
-        .ranking-card__name { font-weight: 800; font-size: 15px; color: var(--color-text-dark); }
-        .ranking-card__subtext { font-size: 11px; color: var(--color-text-muted); font-weight: 600; }
-        .ranking-card__right { display: flex; align-items: center; gap: 24px; flex-grow: 1; justify-content: flex-end; max-width: 620px; }
-        .ranking-card__bar-wrapper { flex-grow: 1; max-width: 180px; }
-
-        .btn-icon-action { background: none; border: none; cursor: pointer; padding: 6px 8px; font-size: var(--font-xs); font-weight: 800; color: #dc2626; font-family: var(--font-family-ui); }
-        .btn-icon-action:hover { opacity: 0.8; }
-
-        .generic-view-card { background: white; border: 2px solid var(--color-border); border-radius: 8px; padding: 32px; }
-        .generic-view-card h2 { color: var(--color-text-dark); font-family: var(--font-family-ui); font-weight: 800; font-size: 16px; margin-bottom: 12px; }
-        .generic-view-card p { font-size: var(--font-sm); line-height: 1.6; }
-
-        /* ===== Rank group divider bars (reference: members.html) ===== */
-        .rank-group-bar-row td { padding: 0; border-bottom: none; }
-        .rank-group-bar {
-            display: flex;
-            align-items: center;
-            padding: 7px 20px;
-            font-family: var(--font-family-ui);
-            font-weight: 800;
-            font-size: 11px;
-            letter-spacing: 1px;
-            color: #ffffff;
-            text-transform: uppercase;
-        }
-        .rank-group-bar--r5 { background-color: #2563eb; }
-        .rank-group-bar--r4 { background-color: #dc2626; }
-        .rank-group-bar--r3 { background-color: #ea580c; }
-        .rank-group-bar--r2 { background-color: #eab308; }
-        .rank-group-bar--r1 { background-color: #16a34a; }
-        .rank-group-bar-card {
-            display: flex; align-items: center;
-            padding: 7px 16px;
-            font-family: var(--font-family-ui);
-            font-weight: 800;
-            font-size: 11px;
-            letter-spacing: 1px;
-            color: #ffffff;
-            text-transform: uppercase;
-            border-radius: 6px;
-            margin-top: 4px;
-        }
-
-        /* ===== Ranking / War tab sort mode toolbar ===== */
-        .sort-mode-bar { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; background: white; border: 2px solid var(--color-border); border-radius: 6px; padding: 12px 16px; }
-        .sort-mode-bar__label { font-family: var(--font-family-ui); font-size: 11px; font-weight: 800; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
-
-        /* ===== War tab own stat row ===== */
-        .war-stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); border: 2px solid var(--color-not-attended); border-radius: 8px; background: white; overflow: hidden; }
-        .war-stat-card { padding: 18px 22px; border-right: 1px solid var(--color-border-light); background: var(--color-bg-card); }
-        .war-stat-card:last-child { border-right: none; }
-        .war-stat-card:nth-child(2) { background-color: #fdeceb; }
-        .war-stat-card:nth-child(4) { background-color: #fdeceb; }
-        .war-stat-card__label { font-family: var(--font-family-ui); font-size: 11px; font-weight: 800; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
-        .war-stat-card__value { font-family: var(--font-family-ui); font-size: 28px; font-weight: 800; color: var(--color-not-attended); }
-
-        /* ===== Home Dashboard Layout ===== */
-        .home-card { background: white; border: 2px solid var(--color-border); border-radius: 8px; padding: 24px; position: relative; overflow: hidden; }
-        .home-card--accent-gold::after,
-        .home-card--accent-red::after {
-            content: '';
-            position: absolute;
-            top: 0; right: 0;
-            width: 0; height: 0;
-            border-style: solid;
-            border-width: 0 42px 42px 0;
-        }
-        .home-card--accent-gold::after { border-color: transparent var(--color-gold) transparent transparent; }
-        .home-card--accent-red::after { border-color: transparent #b6432e transparent transparent; }
-
-        .home-card__header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 10px; }
-        .home-card__header-title { font-family: var(--font-family-ui); font-weight: 800; font-size: 16px; color: var(--color-text-dark); text-transform: uppercase; display: flex; align-items: center; gap: 10px; letter-spacing: 0.3px; }
-        .home-card__header-actions { display: flex; align-items: center; gap: 14px; }
-        .home-btn-outline { background: white; border: 2px solid var(--color-gold); color: var(--color-gold); font-family: var(--font-family-ui); font-weight: 800; font-size: 11px; padding: 8px 14px; border-radius: 6px; cursor: pointer; letter-spacing: 0.5px; }
-        .home-btn-outline:hover { background-color: var(--color-gold); color: white; }
-        .home-view-all { font-family: var(--font-family-ui); font-weight: 700; font-size: 12px; color: var(--color-text-muted); cursor: pointer; }
-        .home-view-all:hover { color: var(--color-primary); }
-
-        .home-quad-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        @media (max-width: 900px) { .home-quad-grid { grid-template-columns: 1fr; } }
-
-        .home-stat-block__label { font-family: var(--font-family-ui); font-size: 11px; font-weight: 800; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
-        .home-stat-block__row { display: flex; align-items: center; justify-content: space-between; }
-        .home-stat-block__value { font-family: var(--font-family-ui); font-size: 38px; font-weight: 800; color: var(--color-primary-dark); letter-spacing: 0.5px; }
-        .home-stat-block__value--gold { color: var(--color-gold); }
-        .home-stat-block__icon { width: 52px; height: 52px; border-radius: 8px; background: var(--color-primary-light); display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
-        .home-stat-block__sub { font-family: var(--font-family-ui); font-size: 12px; font-weight: 600; color: var(--color-text-muted); margin-top: 8px; }
-
-        .home-list { display: flex; flex-direction: column; }
-        .home-list-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--color-border-light); font-family: var(--font-family-ui); }
-        .home-list-row:last-child { border-bottom: none; padding-bottom: 0; }
-        .home-list-row:first-child { padding-top: 0; }
-        .home-list-row__left { display: flex; align-items: center; gap: 12px; }
-        .home-list-row__medal { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; color: white; flex-shrink: 0; }
-        .home-list-row__name { font-weight: 800; font-size: 14px; color: var(--color-text-dark); }
-        .home-list-row__value { font-weight: 800; font-size: 14px; color: var(--color-text-dark); }
-        .home-list-row__value-unit { font-weight: 600; font-size: 11px; color: var(--color-text-muted); margin-left: 2px; }
-
-        .home-event-row__left { display: flex; flex-direction: column; }
-        .home-event-row__name { font-weight: 800; font-size: 14px; color: var(--color-text-dark); }
-        .home-event-row__date { font-weight: 600; font-size: 11px; color: var(--color-text-muted); margin-top: 2px; }
-        .home-event-row__rate { font-weight: 800; font-size: 13px; color: var(--color-not-attended); }
-
-        .home-empty-state { text-align: center; padding: 32px 0; color: var(--color-text-muted); font-family: var(--font-family-ui); font-weight: 600; font-size: 13px; }
-
-        .footer-info-bar { display: flex; justify-content: space-between; align-items: center; font-family: var(--font-family-ui); font-size: 10px; font-weight: 700; color: var(--color-text-muted); padding: 0 4px; text-transform: uppercase; letter-spacing: 0.5px; }
-
-        /* ===== HOME: NOTICE ROW WITH DESCRIPTION ===== */
-        .home-notice-row { padding: 12px 0; border-bottom: 1px solid var(--color-border-light); font-family: var(--font-family-ui); }
-        .home-notice-row:last-child { border-bottom: none; padding-bottom: 0; }
-        .home-notice-row:first-child { padding-top: 0; }
-        .home-notice-row__top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 4px; }
-        .home-notice-row__name { font-weight: 800; font-size: 14px; color: var(--color-text-dark); }
-        .home-notice-row__date { font-weight: 600; font-size: 11px; color: var(--color-text-muted); white-space: nowrap; flex-shrink: 0; margin-top: 2px; }
-        .home-notice-row__desc { font-size: 12px; color: var(--color-text-muted); line-height: 1.5; font-weight: 600; }
-
-        /* ===== HOME: PHOTO/VIDEO GALLERY ===== */
-        .photo-thumb { position: relative; width: 110px; height: 110px; border-radius: 6px; overflow: hidden; border: 1px solid var(--color-border-light); cursor: pointer; flex-shrink: 0; }
-        .photo-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.15s; }
-        .photo-thumb:hover img { transform: scale(1.06); }
-        .photo-thumb__overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.0); display: flex; align-items: center; justify-content: center; transition: background 0.15s; }
-        .photo-thumb:hover .photo-thumb__overlay { background: rgba(0,0,0,0.35); }
-        .photo-thumb__expand-icon { color: white; font-size: 22px; opacity: 0; transition: opacity 0.15s; }
-        .photo-thumb:hover .photo-thumb__expand-icon { opacity: 1; }
-        .photo-thumb__badge { position: absolute; bottom: 4px; left: 4px; font-family: var(--font-family-ui); font-size: 9px; font-weight: 800; padding: 2px 6px; border-radius: 10px; text-transform: uppercase; background: rgba(0,0,0,0.55); color: white; letter-spacing: 0.3px; }
-
-        .photo-gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 14px; }
-        .photo-gallery-grid .photo-thumb { width: 100%; height: 140px; }
-
-        .lightbox-overlay { position: fixed; inset: 0; background: rgba(15,17,26,0.86); display: none; align-items: center; justify-content: center; z-index: 1200; padding: 24px; }
-        .lightbox-card { max-width: 720px; width: 100%; background: white; border-radius: 10px; overflow: hidden; display: flex; flex-direction: column; max-height: 90vh; }
-        .lightbox-card__img-wrap { background: #000; display: flex; align-items: center; justify-content: center; max-height: 60vh; overflow: hidden; }
-        .lightbox-card__img-wrap img { width: 100%; max-height: 60vh; object-fit: contain; display: block; }
-        .lightbox-card__body { padding: 18px 20px; display: flex; flex-direction: column; gap: 10px; }
-        .lightbox-card__meta-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; font-family: var(--font-family-ui); }
-        .lightbox-card__meta { font-size: 12px; color: var(--color-text-muted); font-weight: 700; }
-        .lightbox-card__btns { display: flex; justify-content: flex-end; gap: 10px; }
-
-        .gallery-modal-card { background: white; border-radius: 10px; width: 100%; max-width: 900px; max-height: 85vh; display: flex; flex-direction: column; border: 2px solid var(--color-primary); }
-        .gallery-modal-card__header { display: flex; justify-content: space-between; align-items: center; padding: 20px 24px; border-bottom: 2px solid var(--color-border-light); }
-        .gallery-modal-card__header h3 { margin-bottom: 0; }
-        .gallery-modal-card__body { padding: 20px 24px; overflow-y: auto; }
-        .gallery-modal-close { background: none; border: none; font-size: 22px; color: var(--color-text-muted); cursor: pointer; line-height: 1; }
-        .gallery-modal-close:hover { color: var(--color-text-dark); }
-
-        /* ===== NOTICE TAB: GANTT-STYLE EVENT TIMELINE ===== */
-        .gantt-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
-        .gantt-toolbar__range { font-family: var(--font-family-ui); font-size: 12px; font-weight: 800; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.4px; }
-        .gantt-legend { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-        .gantt-legend__item { display: flex; align-items: center; gap: 6px; font-family: var(--font-family-ui); font-size: 11px; font-weight: 700; color: var(--color-text-muted); }
-        .gantt-legend__dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
-
-        .gantt-wrapper { border: 2px solid var(--color-border); border-radius: 6px; background: white; overflow: hidden; }
-        .gantt-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-        .gantt-grid { min-width: max-content; }
-
-        .gantt-body-wrapper { position: relative; }
-        .gantt-today-stripe { position: absolute; top: 0; bottom: 0; background-color: rgba(243, 168, 8, 0.10); border-left: 2px solid var(--color-gold); border-right: 2px solid var(--color-gold); z-index: 0; pointer-events: none; }
-
-        .gantt-group-header { font-family: var(--font-family-ui); font-size: 12px; font-weight: 800; color: var(--color-primary-dark); text-transform: uppercase; letter-spacing: 0.5px; padding: 10px 14px; background-color: #eceff8; border-bottom: 2px solid var(--color-primary); border-top: 1px solid var(--color-border-light); position: relative; z-index: 1; width: calc(var(--gantt-days) * var(--gantt-col-w)); }
-
-        .gantt-header-row { display: flex; width: calc(var(--gantt-days) * var(--gantt-col-w)); border-bottom: 2px solid var(--color-primary); background-color: #e9ecf7; position: sticky; top: 0; z-index: 2; }
-        .gantt-header-cell { flex: 0 0 var(--gantt-col-w); width: var(--gantt-col-w); padding: 8px 4px; text-align: center; font-family: var(--font-family-ui); border-right: 1px solid var(--color-border-light); }
-        .gantt-header-cell__dow { font-size: 10px; font-weight: 800; color: var(--color-text-muted); text-transform: uppercase; }
-        .gantt-header-cell__num { font-size: 14px; font-weight: 800; color: var(--color-text-dark); }
-        .gantt-header-cell--today { background-color: var(--color-gold-bg); }
-        .gantt-header-cell--today .gantt-header-cell__num { color: var(--color-gold); }
-        .gantt-header-cell--weekend { background-color: #f7f7f4; }
-
-        .gantt-row { position: relative; width: calc(var(--gantt-days) * var(--gantt-col-w)); min-height: 54px; border-bottom: 1px solid var(--color-border-light); }
-        .gantt-row:nth-child(even) { background-color: #fafbfd; }
-
-        .gantt-bar { position: absolute; top: 6px; height: 42px; border-radius: 7px; display: flex; flex-direction: column; justify-content: center; gap: 1px; padding: 5px 10px; font-family: var(--font-family-ui); color: #ffffff; white-space: nowrap; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.18); }
-        .gantt-bar--clickable { cursor: pointer; transition: box-shadow 0.15s, transform 0.15s; }
-        .gantt-bar--clickable:hover { box-shadow: 0 3px 9px rgba(0,0,0,0.3); transform: translateY(-1px); }
-        .gantt-bar__name { font-size: 12px; font-weight: 800; overflow: hidden; text-overflow: ellipsis; }
-        .gantt-bar__date { font-size: 10px; font-weight: 700; opacity: 0.92; overflow: hidden; text-overflow: ellipsis; }
-
-        .gantt-empty-state { padding: 40px 20px; text-align: center; font-family: var(--font-family-ui); font-weight: 700; font-size: 13px; color: var(--color-text-muted); }
-        .gantt-nav-btn { background: white; border: 2px solid var(--color-border); color: var(--color-primary); font-size: 16px; font-weight: 800; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
-        .gantt-nav-btn:hover { background: var(--color-primary-light); }
-        .gantt-nav-group { display: flex; align-items: center; gap: 8px; }
-
-        .cal-field-label { font-size: 11px; font-weight: 800; color: var(--color-text-muted); margin-bottom: 6px; text-transform: uppercase; display: block; }
-        .cal-field-row { display: flex; gap: 10px; }
-        .cal-field-row > * { flex: 1; }
-        .color-swatch-row { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
-        .color-swatch { width: 28px; height: 28px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; }
-        .color-swatch--selected { border-color: var(--color-text-dark); box-shadow: 0 0 0 2px white inset; }
-
-        .visibility-badge { display: inline-flex; align-items: center; font-family: var(--font-family-ui); font-size: 10px; font-weight: 800; padding: 3px 9px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.3px; }
-        .visibility-badge--everyone { background: var(--color-primary-light); color: var(--color-primary-dark); }
-        .visibility-badge--members { background: #eafaf0; color: #16a34a; }
-        .visibility-badge--alliance { background: var(--color-gold-bg); color: var(--color-gold); }
-
-        .announcement-card { background: white; border: 1px solid var(--color-border-light); border-radius: 6px; padding: 16px; }
-        .announcement-card__top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
-        .announcement-card__title { font-weight: 800; font-size: 14px; color: var(--color-primary); font-family: var(--font-family-ui); }
-        .announcement-card__meta { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--color-text-muted); font-family: var(--font-family-ui); }
-        .announcement-card__body { font-size: 13px; color: var(--color-text-dark); line-height: 1.5; white-space: pre-wrap; }
-
-        @media (max-width: 1024px) {
-            .app { flex-direction: column; }
-        }
-
-        /* ===== LANGUAGE DROPDOWN (drives a hidden Google Translate widget) ===== */
-        .lang-dropdown { position: relative; margin-bottom: 14px; font-family: var(--font-family-ui); }
-        .lang-dropdown__label { font-size: 10px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; color: var(--color-text-muted); margin-bottom: 6px; }
-        .lang-dropdown__trigger {
-            width: 100%;
-            display: flex; align-items: center; justify-content: space-between;
-            background: #ffffff;
-            border: 1px solid var(--color-border-light);
-            border-radius: 8px;
-            padding: 10px 12px;
-            font-family: var(--font-family-ui);
-            font-weight: 700;
-            font-size: 13px;
-            color: var(--color-text-dark);
-            cursor: pointer;
-            transition: border-color 0.15s, box-shadow 0.15s;
-        }
-        .lang-dropdown__trigger:hover { border-color: var(--color-primary); }
-        .lang-dropdown--open .lang-dropdown__trigger { border-color: var(--color-primary); box-shadow: 0 0 0 3px var(--color-primary-light); }
-        .lang-dropdown__trigger-content { display: flex; align-items: center; gap: 10px; }
-        .lang-dropdown__flag { font-size: 16px; line-height: 1; }
-        .lang-dropdown__chevron { font-size: 11px; color: var(--color-text-muted); transition: transform 0.15s; }
-        .lang-dropdown--open .lang-dropdown__chevron { transform: rotate(180deg); }
-
-        .lang-dropdown__menu {
-            display: none;
-            position: absolute;
-            bottom: calc(100% + 6px);
-            left: 0; right: 0;
-            background: #ffffff;
-            border: 1px solid var(--color-border-light);
-            border-radius: 8px;
-            box-shadow: 0 8px 24px rgba(43, 48, 68, 0.14);
-            padding: 6px;
-            z-index: 400;
-            max-height: 260px;
-            overflow-y: auto;
-        }
-        .lang-dropdown--open .lang-dropdown__menu { display: block; }
-        .lang-dropdown__option {
-            display: flex; align-items: center; gap: 10px;
-            padding: 9px 10px;
-            border-radius: 6px;
-            font-weight: 600;
-            font-size: 13px;
-            color: var(--color-text-dark);
-            cursor: pointer;
-        }
-        .lang-dropdown__option:hover { background: var(--color-primary-light); }
-        .lang-dropdown__option--active { background: var(--color-primary-light); font-weight: 800; color: var(--color-primary-dark); }
-
-        #google_translate_element {
-            position: absolute !important;
-            width: 1px !important;
-            height: 1px !important;
-            overflow: hidden !important;
-            clip: rect(0 0 0 0) !important;
-            clip-path: inset(50%) !important;
-            white-space: nowrap !important;
-        }
-        .goog-te-banner-frame,
-        iframe.goog-te-banner-frame,
-        .skiptranslate iframe {
-            display: none !important;
-            visibility: hidden !important;
-            height: 0 !important;
-        }
-        body, html { top: 0px !important; position: static !important; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Event Attendance - Loopy's Playground</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Montserrat:wght@600;700;800&family=Noto+Sans+SC:wght@900&family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+:root {
+  --color-bg-main:#f5f4ef; --color-bg-sidebar:#ffffff;
+  --color-primary:#3b52a4; --color-primary-dark:#2d3a91; --color-primary-light:#eceff8;
+  --color-text-dark:#2b3044; --color-text-muted:#8c93a6;
+  --color-border:#3b52a4; --color-border-light:#e2e5ed;
+  --color-gold:#f3a808; --color-gold-bg:#fffdf0;
+  --color-not-attended:#d9381e;
+  --font-family-base:'Montserrat',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  --font-family-ui:'Montserrat',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Open Sans',sans-serif;background:var(--color-bg-main);color:var(--color-text-dark);min-height:100vh;}
+.top-accent-bar{position:fixed;top:0;left:0;right:0;height:6px;background:var(--color-primary-dark);z-index:200;}
+.save-status{position:fixed;top:14px;right:14px;z-index:300;font-family:var(--font-family-base);font-weight:800;font-size:11px;padding:6px 12px;border-radius:4px;display:none;}
+.save-status--saving{display:block;background:#eef2f9;color:var(--color-primary);border:1px solid var(--color-primary);}
+.save-status--error{display:block;background:#fce8e6;color:#d9381e;border:1px solid #d9381e;}
+.save-status--ok{display:block;background:#e6f4ea;color:#1f9d55;border:1px solid #1f9d55;}
+.app{display:flex;width:100%;min-height:100vh;padding-top:6px;flex-direction:column;}
+.sidebar{width:300px;background:var(--color-bg-sidebar);border-right:2px solid var(--color-border);display:flex;flex-direction:column;flex-shrink:0;transition:transform .3s ease;z-index:150;position:fixed;top:0;left:0;height:100vh;transform:translateX(-100%);}
+.sidebar--open{transform:translateX(0);}
+.sidebar__header{padding:24px;display:flex;justify-content:center;align-items:center;border-bottom:2px solid var(--color-border);}
+.sidebar__logo{width:85px;height:85px;display:flex;align-items:center;justify-content:center;}
+.sidebar__user{padding:18px 24px;display:flex;align-items:center;gap:14px;font-weight:700;font-size:14px;color:#62697b;border-bottom:1px solid var(--color-border-light);}
+.sidebar__user-avatar{width:42px;height:42px;border-radius:50%;background:var(--color-primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;}
+.sidebar__nav{display:flex;flex-direction:column;gap:6px;overflow-y:auto;padding-bottom:24px;flex-grow:1;}
+.sidebar__footer{padding:14px 24px;border-top:1px solid var(--color-border-light);margin-top:auto;}
+.sidebar__menu{list-style:none;}
+.sidebar__section-title{font-size:12px;font-weight:800;color:#8c93a6;padding:18px 24px 8px;text-transform:uppercase;letter-spacing:.5px;}
+.sidebar__item{display:flex;align-items:center;padding:14px 24px;color:#555b6e;font-weight:700;font-size:12px;text-decoration:none;gap:14px;cursor:pointer;transition:background .2s;}
+.sidebar__item:hover{background:#f0f2f8;}
+.sidebar__item--active{background:var(--color-primary);color:#fff;}
+.sidebar__item--logout{color:#d9381e;}
+.sidebar__item--logout:hover{background:#fce8e6;}
+.sidebar__icon{width:18px;text-align:center;}
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:140;}
+.sidebar-overlay--visible{display:block;}
+.main{flex-grow:1;padding:28px;display:flex;flex-direction:column;gap:18px;max-width:1450px;width:100%;margin:0 auto;box-sizing:border-box;}
+.mobile-header{display:flex;justify-content:flex-end;align-items:center;padding:10px 14px;margin-bottom:8px;}
+.hamburger{background:none;border:none;cursor:pointer;display:flex;flex-direction:column;gap:5px;padding:5px;}
+.hamburger__line{width:26px;height:3px;background:var(--color-primary);border-radius:2px;}
+.page-header{margin-bottom:4px;}
+.page-header__title{font-family:var(--font-family-base);font-weight:800;font-size:34px;letter-spacing:-1px;color:var(--color-primary-dark);text-transform:uppercase;}
+.page-header__subtitle{font-family:var(--font-family-base);font-weight:700;font-size:14px;color:var(--color-text-muted);margin-top:4px;}
+.controls-card{background:#fff;border:2px solid var(--color-primary);border-radius:6px;padding:16px 20px;display:flex;gap:16px;align-items:center;flex-wrap:wrap;}
+.btn-group{display:flex;background:#edf2f7;padding:3px;border-radius:4px;}
+.btn-toggle{padding:8px 16px;font-weight:800;font-size:11px;border:none;background:transparent;color:var(--color-text-muted);cursor:pointer;display:flex;align-items:center;gap:8px;font-family:var(--font-family-ui);border-radius:3px;}
+.btn-toggle--active{background:var(--color-primary-dark);color:#fff;}
+.search-box{flex-grow:1;max-width:280px;position:relative;}
+.search-box__input{width:100%;padding:9px 12px 9px 32px;border:1px solid #d1d5db;background:#f7f6f0;border-radius:4px;font-size:13px;outline:none;font-family:var(--font-family-ui);font-weight:600;}
+.search-box__icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#9ca3af;font-size:13px;}
+.controls-right-group{display:flex;gap:12px;align-items:center;margin-left:auto;flex-wrap:wrap;}
+.admin-panel__input-date,.admin-panel__input-text{padding:8px 12px;border:2px solid var(--color-gold);background:var(--color-gold-bg);border-radius:4px;font-size:12px;outline:none;font-family:var(--font-family-ui);font-weight:800;color:var(--color-text-dark);}
+.admin-panel__input-text{width:140px;}
+.war-event-checkbox-label{display:flex;align-items:center;gap:6px;font-family:var(--font-family-ui);font-size:11px;font-weight:800;color:var(--color-not-attended);cursor:pointer;padding:8px 10px;border:2px solid var(--color-not-attended);border-radius:4px;background:#fdeceb;}
+.war-event-checkbox-label input{width:15px;height:15px;cursor:pointer;accent-color:var(--color-not-attended);}
+.btn-action-custom{background:#fff;border:2px solid var(--color-primary);color:var(--color-primary);font-weight:800;font-size:12px;padding:10px 18px;border-radius:4px;cursor:pointer;font-family:var(--font-family-ui);display:inline-flex;align-items:center;gap:8px;}
+.btn-action-custom--add{border:2px solid var(--color-gold);color:var(--color-gold);background:var(--color-gold-bg);}
+.btn-action-custom--add:hover{background:var(--color-gold);color:#fff;}
+.btn-diff{background:var(--color-gold-bg);border:2px solid var(--color-gold);color:var(--color-gold);font-weight:800;font-size:12px;padding:10px 16px;border-radius:4px;cursor:pointer;font-family:var(--font-family-ui);}
+.btn-diff.active{background:var(--color-primary-dark);border-color:var(--color-primary-dark);color:#fff;}
+.top-legend-bar{display:flex;align-items:center;gap:16px;font-family:var(--font-family-ui);font-size:12px;font-weight:700;flex-wrap:wrap;padding:0 4px;}
+.legend-pill-item{display:flex;align-items:center;gap:4px;}
+.badge-rank{width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;font-size:10px;font-weight:800;color:#fff;}
+.badge-rank.r1{background:#f3a808;} .badge-rank.r2{background:#a0aec0;} .badge-rank.r3{background:#b7791f;} .badge-rank.r4{background:#3182ce;} .badge-rank.r5{background:#e53e3e;}
+.vs-hint{color:var(--color-text-muted);font-weight:600;font-size:11px;font-style:italic;}
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);border:2px solid var(--color-border);border-radius:8px;background:#fff;overflow:hidden;}
+.kpi-card{padding:20px 24px;border-right:1px solid var(--color-border-light);}
+.kpi-card:last-child{border-right:none;}
+.kpi-card:nth-child(2){background:var(--color-primary-light);}
+.kpi-card:nth-child(4){background:var(--color-gold-bg);}
+.kpi-card__label{font-family:var(--font-family-ui);font-size:11px;font-weight:800;color:var(--color-text-muted);text-transform:uppercase;margin-bottom:10px;}
+.kpi-card__value{font-family:var(--font-family-ui);font-size:32px;font-weight:800;color:var(--color-primary-dark);}
+#kpiPctBase{color:var(--color-gold);}
+.table-card{background:#fff;border:2px solid var(--color-border);border-radius:6px;overflow:hidden;display:flex;flex-direction:column;}
+.table-wrapper{overflow-x:auto;}
+.data-table{width:100%;border-collapse:collapse;text-align:left;font-size:13px;font-family:var(--font-family-ui);}
+.data-table th{background:#e9ecf7;padding:14px 12px;font-size:11px;font-weight:800;color:var(--color-primary-dark);text-transform:uppercase;border-bottom:2px solid var(--color-primary);white-space:nowrap;}
+.data-table td{padding:12px;border-bottom:1px solid var(--color-border-light);vertical-align:middle;font-weight:700;}
+.col-rank{width:40px;text-align:center;color:var(--color-text-muted);}
+.col-name{font-weight:800;}
+.col-attended{width:100px;text-align:center;font-weight:800;}
+.col-percentage{width:130px;text-align:center;}
+.col-event{width:90px;text-align:center;}
+.col-event--war{background:#fdeceb !important;border-bottom:3px solid var(--color-not-attended) !important;}
+.check-toggle{cursor:pointer;padding:6px 10px;border-radius:6px;display:inline-block;}
+.check-icon{color:var(--color-primary);font-weight:800;font-size:16px;}
+.cross-icon{color:#ccc;font-weight:bold;font-size:16px;}
+.attended-high{color:#2563eb;} .attended-mid{color:#b89117;} .attended-low{color:#dc2626;}
+.progress-bar-container{display:flex;align-items:center;gap:8px;width:100%;min-width:130px;}
+.progress-bar{height:10px;flex-grow:1;background:#eef0f5;border-radius:5px;overflow:hidden;}
+.progress-bar__fill{height:100%;border-radius:5px;}
+.progress-bar__fill.high{background:#2563eb;} .progress-bar__fill.mid{background:#eab308;} .progress-bar__fill.low{background:#dc2626;}
+.progress-text{font-size:12px;font-weight:800;min-width:40px;text-align:right;}
+.war-vote-badge{font-family:var(--font-family-ui);font-size:10px;font-weight:800;padding:3px 9px;border-radius:12px;cursor:pointer;white-space:nowrap;}
+.war-vote-badge--yes{background:#dcfce7;color:#16a34a;} .war-vote-badge--no{background:#e9ecf1;color:#6b7280;} .war-vote-badge--maybe{background:#fef9c3;color:#b89117;} .war-vote-badge--none{background:#eef0f5;color:#a0a6b5;}
+.attend-pill{font-family:var(--font-family-ui);font-size:9px;font-weight:800;padding:3px 8px;border-radius:10px;cursor:pointer;text-transform:uppercase;white-space:nowrap;}
+.attend-pill--yes{background:#e6f4ea;color:#1f9d55;border:1px solid #1f9d55;}
+.attend-pill--no{background:#fce8e6;color:#d9381e;border:1px solid #d9381e;}
+.war-cell{display:flex;flex-direction:column;align-items:center;gap:5px;padding:5px 4px;}
+.ranking-cards-list{display:flex;flex-direction:column;gap:12px;}
+.ranking-card{background:#fff;border:1px solid var(--color-border-light);border-radius:6px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;font-family:var(--font-family-ui);flex-wrap:wrap;gap:12px;}
+.ranking-card--rank-1{border:2px solid #f3a808;background:var(--color-gold-bg);}
+.ranking-card--rank-2{border:2px solid #a0aec0;}
+.ranking-card--rank-3{border:2px solid #b7791f;background:#fffaf5;}
+.ranking-card__left{display:flex;align-items:center;gap:18px;min-width:200px;}
+.ranking-card__badge{font-size:10px;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-weight:800;border-radius:50%;color:#fff;background:#a0aec0;}
+.ranking-card--rank-1 .ranking-card__badge{background:#f3a808;}
+.ranking-card--rank-3 .ranking-card__badge{background:#b7791f;}
+.ranking-card__name{font-weight:800;font-size:15px;}
+.ranking-card__subtext{font-size:11px;color:var(--color-text-muted);font-weight:600;}
+.ranking-card__right{display:flex;align-items:center;gap:20px;flex-grow:1;justify-content:flex-end;max-width:500px;}
+.ranking-card__bar-wrapper{flex-grow:1;max-width:160px;}
+.war-stat-grid{display:grid;grid-template-columns:repeat(4,1fr);border:2px solid var(--color-not-attended);border-radius:8px;background:#fff;overflow:hidden;}
+.war-stat-card{padding:18px 22px;border-right:1px solid var(--color-border-light);}
+.war-stat-card:last-child{border-right:none;}
+.war-stat-card:nth-child(2),.war-stat-card:nth-child(4){background:#fdeceb;}
+.war-stat-card__label{font-family:var(--font-family-ui);font-size:11px;font-weight:800;color:var(--color-text-muted);text-transform:uppercase;margin-bottom:8px;}
+.war-stat-card__value{font-family:var(--font-family-ui);font-size:26px;font-weight:800;color:var(--color-not-attended);}
+.day-group-header{text-align:center;background:#e9ecf7;}
+.day-group-header__date{display:block;font-size:10px;font-weight:800;color:var(--color-text-muted);margin-top:4px;}
+.day-del-btn{background:none;border:none;color:#d9381e;font-weight:800;cursor:pointer;font-size:11px;margin-top:4px;}
+.page-footer{display:flex;justify-content:space-between;align-items:center;margin-top:4px;font-family:var(--font-family-base);font-size:10px;font-weight:700;color:var(--color-text-muted);text-transform:uppercase;letter-spacing:.5px;padding:0 4px;}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:center;justify-content:center;z-index:1000;}
+.modal-card{background:#fff;padding:24px;border-radius:6px;width:100%;max-width:420px;border:2px solid var(--color-primary);font-family:var(--font-family-base);}
+.modal-card h3{margin-bottom:16px;color:var(--color-primary-dark);font-size:16px;font-weight:800;text-transform:uppercase;}
+.modal-card input,.modal-card select{width:100%;padding:10px;margin-bottom:14px;border:1px solid #d1d5db;border-radius:4px;font-size:13px;outline:none;font-family:var(--font-family-base);}
+.modal-card-btns{display:flex;justify-content:flex-end;gap:8px;}
+@media (max-width:900px){.kpi-grid,.war-stat-grid{grid-template-columns:repeat(2,1fr);}}
+</style>
 </head>
 <body>
-
-    <div class="login-page" id="loginScreen">
-        <header class="login-header"></header>
-        <main class="login-main">
-            <section class="login-card">
-                <div class="login-card__logo-wrapper">
-                    <div class="login-card__logo-circle">
-                        <img src="https://sqrrfslqwcgpsmzdovru.supabase.co/storage/v1/object/public/assets/IMG_6300.png" alt="logo" style="width:100%;height:100%;object-fit:contain;">
-                    </div>
-                </div>
-                <h1 class="login-card__title">Alliance Management Tool</h1>
-                <button type="button" class="login-card__button" id="btnOpenLoginModal">LOG IN</button>
-                <button type="button" class="login-card__guest-link" id="btnOpenCreateAccountModal">Create Account</button>
-            </section>
-        </main>
+<div class="top-accent-bar"></div>
+<div class="save-status" id="saveStatus"></div>
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar__header"><div class="sidebar__logo"><img src="https://sqrrfslqwcgpsmzdovru.supabase.co/storage/v1/object/public/assets/IMG_6300.png" alt="logo" style="width:100%;height:100%;object-fit:contain;"></div></div>
+    <div class="sidebar__user">
+      <div class="sidebar__user-avatar" id="userAvatarIcon">U</div>
+      <div>
+        <div id="userRoleDisplay" class="notranslate" style="font-size:12px;text-transform:uppercase;">USERNAME</div>
+        <div id="userPermissionBadge" style="font-size:12px;color:#8c93a6;">Role</div>
+      </div>
+    </div>
+    <nav class="sidebar__nav">
+      <ul class="sidebar__menu">
+        <li><a class="sidebar__item" href="index.html"><span class="sidebar__icon">✧</span> HOMEPAGE</a></li>
+        <li><a class="sidebar__item" href="index.html#notice"><span class="sidebar__icon">✧</span> NOTICE</a></li>
+        <li><a class="sidebar__item" href="members.html"><span class="sidebar__icon">✧</span> MEMBERS</a></li>
+        <li><a class="sidebar__item" href="blackgold.html"><span class="sidebar__icon">✧</span> BLACK GOLD</a></li>
+        <li><a class="sidebar__item sidebar__item--active" href="events.html"><span class="sidebar__icon">✧</span> EVENT ATTENDANCE</a></li>
+        <li><a class="sidebar__item" href="vspoint.html"><span class="sidebar__icon">✧</span> VS POINTS</a></li>
+      </ul>
+      <div class="sidebar__section-title" id="adminSectionHeader" style="display:none;">MANAGEMENT &amp; ADMIN</div>
+      <ul class="sidebar__menu" id="adminMenuContainer">
+        <li id="navDiscussionLi" style="display:none;"><a class="sidebar__item" href="index.html#discussion"><span class="sidebar__icon">|</span> DISCUSSION ROOM</a></li>
+        <li id="navHistoryLi" style="display:none;"><a class="sidebar__item" href="index.html#history"><span class="sidebar__icon">|</span> EDIT HISTORY &amp; AUDIT</a></li>
+      </ul>
+    </nav>
+    <div class="sidebar__footer">
+      <a class="sidebar__item sidebar__item--logout" id="sidebarLogoutBtn"><span class="sidebar__icon">|</span> LOG OUT</a>
+    </div>
+  </aside>
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+  <main class="main">
+    <div class="mobile-header">
+      <button class="hamburger" id="hamburgerBtn"><span class="hamburger__line"></span><span class="hamburger__line"></span><span class="hamburger__line"></span></button>
     </div>
 
-    <div class="modal-overlay" id="loginModal">
-        <div class="modal-card">
-            <h3>System Login</h3>
-            <div id="loginErrorMsg" class="login-error-msg"></div>
-            <input type="text" id="loginUsername" placeholder="Username (admin, manager, member...)">
-            <input type="password" id="loginPassword" placeholder="Password">
-            <div class="modal-card-btns">
-                <button class="btn-action-custom" id="btnCancelModal">Cancel</button>
-                <button class="btn-action-custom" id="btnSubmitLogin" style="background:#3b52a4; color:white;">Login</button>
-            </div>
+    <div class="page-header">
+      <div class="page-header__title">Event Attendance</div>
+      <div class="page-header__subtitle notranslate" id="headerEventsCount">0 members · 0 sessions</div>
+    </div>
+
+    <section class="controls-card">
+      <div class="btn-group">
+        <button class="btn-toggle btn-toggle--active" id="btnTabAttendance">ATTENDANCE</button>
+        <button class="btn-toggle" id="btnTabRanking">RANKING</button>
+        <button class="btn-toggle" id="btnTabViolators">⚠ WAR</button>
+      </div>
+      <div class="search-box">
+        <span class="search-box__icon"><i class="fa-solid fa-magnifying-glass"></i></span>
+        <input type="text" class="search-box__input" id="searchInput" placeholder="Search member...">
+      </div>
+      <div class="controls-right-group">
+        <button class="btn-diff" id="btnToggleDiff">± DIFF</button>
+        <div id="adminPanel" style="display:none;gap:10px;align-items:center;">
+          <input type="text" class="admin-panel__input-text" id="newEventNameInput" placeholder="Event Name">
+          <input type="date" class="admin-panel__input-date" id="newDateInput" title="Event Date">
+          <label class="war-event-checkbox-label" for="newEventIsWarInput">
+            <input type="checkbox" id="newEventIsWarInput"> WAR EVENT
+          </label>
+          <button class="btn-action-custom btn-action-custom--add" id="btnAddEvent">+ ADD EVENT</button>
         </div>
+      </div>
+    </section>
+
+    <section class="kpi-grid">
+      <div class="kpi-card"><div class="kpi-card__label">Members</div><div class="kpi-card__value notranslate" id="kpiMembers">0</div></div>
+      <div class="kpi-card"><div class="kpi-card__label">Avg Attendance</div><div class="kpi-card__value notranslate" id="kpiAvgAttendance">0.0</div></div>
+      <div class="kpi-card"><div class="kpi-card__label">Avg Rate</div><div class="kpi-card__value notranslate" id="kpiAvgRate">0.0%</div></div>
+      <div class="kpi-card"><div class="kpi-card__label">Pct Base</div><div class="kpi-card__value notranslate" id="kpiPctBase">0 events</div></div>
+    </section>
+
+    <div class="top-legend-bar">
+      <span class="legend-pill-item"><span class="badge-rank r1">1</span> 1st</span>
+      <span class="legend-pill-item"><span class="badge-rank r2">2</span> 2nd</span>
+      <span class="legend-pill-item"><span class="badge-rank r3">3</span> 3rd</span>
+      <span class="vs-hint" id="adminHelpText">· Admin/Mgmt: click any cell to toggle attendance. Click date header ✕ to delete a session.</span>
     </div>
 
-    <div class="modal-overlay" id="createAccountModal">
-        <div class="modal-card">
-            <h3>Create New Account</h3>
-            <input type="text" id="newAccUser" placeholder="Choose Username">
-            <input type="password" id="newAccPass" placeholder="Choose Password">
-            <div id="newAccRoleInfo" style="font-size: var(--font-xs); color: #62697b; margin-bottom: 16px; font-weight: 600;">
-                New accounts are registered as Members by default. Only you as Admin can assign roles after logging in.
-            </div>
-            <div class="modal-card-btns">
-                <button class="btn-action-custom" onclick="document.getElementById('createAccountModal').style.display='none'">Cancel</button>
-                <button class="btn-action-custom" id="btnSubmitCreateAccount" style="background:#3b52a4; color:white;">Register</button>
-            </div>
+    <div class="table-card" id="subViewAttendance">
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead><tr id="tableHeaderRow"></tr></thead>
+          <tbody id="memberTableBody"></tbody>
+          <tfoot id="tableFooterRow"></tfoot>
+        </table>
+      </div>
+    </div>
+
+    <section id="subViewRanking" style="display:none;flex-direction:column;gap:14px;">
+      <div class="ranking-cards-list" id="rankingCardsList"></div>
+    </section>
+
+    <section id="subViewViolators" style="display:none;flex-direction:column;gap:14px;">
+      <div style="padding:4px 4px 0;">
+        <p style="font-size:12px;color:var(--color-text-muted);font-weight:600;">War-only participation. Members who voted Yes/Maybe (or didn't vote) and did not attend are flagged.</p>
+      </div>
+      <section class="war-stat-grid">
+        <div class="war-stat-card"><div class="war-stat-card__label">Members</div><div class="war-stat-card__value notranslate" id="warKpiMembers">0</div></div>
+        <div class="war-stat-card"><div class="war-stat-card__label">Avg War Attendance</div><div class="war-stat-card__value notranslate" id="warKpiAvgAttendance">0.0</div></div>
+        <div class="war-stat-card"><div class="war-stat-card__label">Avg War Rate</div><div class="war-stat-card__value notranslate" id="warKpiAvgRate">0.0%</div></div>
+        <div class="war-stat-card"><div class="war-stat-card__label">Pct Base</div><div class="war-stat-card__value notranslate" id="warKpiPctBase">0 war events</div></div>
+      </section>
+      <div class="table-card">
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead><tr>
+              <th class="col-rank">#</th><th>MEMBER</th>
+              <th style="text-align:center;color:#1f9d55;">🟢 ATTENDED</th>
+              <th style="text-align:center;color:#dc2626;">🔴 RED</th>
+              <th style="text-align:center;color:#b89117;">🟡 YELLOW</th>
+              <th class="col-percentage">PARTICIPATION %</th>
+            </tr></thead>
+            <tbody id="violatorsTableBody"></tbody>
+          </table>
         </div>
+      </div>
+    </section>
+
+    <div class="page-footer">
+      <span>♦ Loopy's Playground · Alliance Management Tool</span>
+      <span id="footerMembersShown" class="notranslate">0 members shown</span>
     </div>
+  </main>
+</div>
 
-    <div class="modal-overlay" id="roleAssignModal">
-        <div class="modal-card">
-            <h3>Manage User Roles</h3>
-            <div style="font-size: var(--font-xs); color: #62697b; margin-bottom: 12px;">Select a user account to modify their system clearance:</div>
-            <select id="targetAccountSelect" style="margin-bottom: 16px;" onchange="onTargetAccountChange()"></select>
-            <select id="targetRoleSelect" style="margin-bottom: 16px;" onchange="onTargetRoleChange()">
-                <option value="member">Member</option>
-                <option value="alliance">Alliance Member</option>
-                <option value="management">Management</option>
-                <option value="admin">Admin</option>
-            </select>
-            <div class="modal-card-btns">
-                <button class="btn-action-custom" onclick="document.getElementById('roleAssignModal').style.display='none'">Cancel</button>
-                <button class="btn-action-custom" id="btnSubmitRoleAssign" style="background:#3b52a4; color:white;">Save Changes</button>
-            </div>
-        </div>
+<div class="modal-overlay" id="editEventNameModal">
+  <div class="modal-card">
+    <h3>Edit Event</h3>
+    <input type="text" id="editEventNameInput" placeholder="Event Name">
+    <input type="date" id="editEventDateInput">
+    <label class="war-event-checkbox-label" for="editEventIsWarInput" style="margin-bottom:14px;">
+      <input type="checkbox" id="editEventIsWarInput"> WAR EVENT
+    </label>
+    <div class="modal-card-btns">
+      <button class="btn-action-custom" style="color:#dc2626;border-color:#dc2626;" id="btnDeleteEventModal">Delete Event</button>
+      <button class="btn-action-custom" onclick="document.getElementById('editEventNameModal').style.display='none'">Cancel</button>
+      <button class="btn-action-custom" id="btnSaveEventModal" style="background:#3b52a4;color:#fff;">Save</button>
     </div>
+  </div>
+</div>
 
-    <div class="app" id="appDashboard">
-        <div class="sidebar-overlay" id="sidebarOverlay"></div>
-        <aside class="sidebar" id="sidebar">
-            <div class="sidebar__logo"><img src="https://sqrrfslqwcgpsmzdovru.supabase.co/storage/v1/object/public/assets/IMG_6300.png" alt="logo" style="width:100%;height:100%;object-fit:contain;"></div>
-            <div class="sidebar__user">
-                <div class="sidebar__user-avatar notranslate" id="userAvatarIcon">U</div>
-                <div>
-                    <div id="userRoleDisplay" class="notranslate" style="font-size: var(--font-xs); text-transform: uppercase;">USERNAME</div>
-                    <div id="userPermissionBadge" style="font-size: var(--font-xs); color: #8c93a6;">Role</div>
-                </div>
-            </div>
-            <nav class="sidebar__nav">
-                <ul class="sidebar__menu">
-                    <li><a class="sidebar__item sidebar__item--active" data-view="home"><span class="sidebar__icon">✧</span> HOMEPAGE</a></li>
-                    <li><a class="sidebar__item" data-view="notice"><span class="sidebar__icon">✧</span> NOTICE</a></li>
-                    <li><a class="sidebar__item" href="members.html"><span class="sidebar__icon">✧</span> MEMBERS</a></li>
-                    <li><a class="sidebar__item" href="blackgold.html"><span class="sidebar__icon">✧</span> BLACK GOLD</a></li>
-                    <li><a class="sidebar__item" href="events.html"><span class="sidebar__icon">✧</span> EVENT ATTENDANCE</a></li>
-                    <li><a class="sidebar__item" href="vspoint.html"><span class="sidebar__icon">✧</span> VS POINTS</a></li>
-                </ul>
-                <div class="sidebar__section-title" id="adminSectionHeader" style="display: none;">MANAGEMENT & ADMIN</div>
-                <ul class="sidebar__menu" id="adminMenuContainer">
-                    <li id="navDiscussionLi" style="display: none;"><a class="sidebar__item" data-view="discussion"><span class="sidebar__icon">|</span> DISCUSSION ROOM</a></li>
-                    <li id="navHistoryLi" style="display: none;"><a class="sidebar__item" data-view="history"><span class="sidebar__icon">|</span> EDIT HISTORY & AUDIT</a></li>
-                    <li id="assignRolesNavLi" style="display: none;"><a class="sidebar__item" onclick="openRoleAssignModal()"><span class="sidebar__icon">|</span> ASSIGN USER ROLES</a></li>
-                </ul>
-            </nav>
-            <div class="sidebar__footer" style="margin-top: auto;">
-                <div class="lang-dropdown" id="langDropdown">
-                    <div class="lang-dropdown__label">Language</div>
-                    <button class="lang-dropdown__trigger" id="langTrigger" type="button">
-                        <span class="lang-dropdown__trigger-content">
-                            <span class="lang-dropdown__flag" id="langTriggerFlag">🇺🇸</span>
-                            <span id="langTriggerName">English</span>
-                        </span>
-                        <span class="lang-dropdown__chevron">▾</span>
-                    </button>
-                    <div class="lang-dropdown__menu" id="langMenu">
-                        <div class="lang-dropdown__option" data-lang="zh-CN" data-flag="🇨🇳" data-name="简体中文">
-                            <span class="lang-dropdown__flag">🇨🇳</span> 简体中文
-                        </div>
-                        <div class="lang-dropdown__option" data-lang="en" data-flag="🇺🇸" data-name="English">
-                            <span class="lang-dropdown__flag">🇺🇸</span> English
-                        </div>
-                        <div class="lang-dropdown__option" data-lang="vi" data-flag="🇻🇳" data-name="Tiếng Việt">
-                            <span class="lang-dropdown__flag">🇻🇳</span> Tiếng Việt
-                        </div>
-                        <div class="lang-dropdown__option" data-lang="pt" data-flag="🇧🇷" data-name="Português">
-                            <span class="lang-dropdown__flag">🇧🇷</span> Português
-                        </div>
-                        <div class="lang-dropdown__option" data-lang="ko" data-flag="🇰🇷" data-name="한국어">
-                            <span class="lang-dropdown__flag">🇰🇷</span> 한국어
-                        </div>
-                    </div>
-                </div>
-                <div id="google_translate_element"></div>
-                <a class="sidebar__item sidebar__item--logout" id="sidebarLogoutBtn"><span class="sidebar__icon">|</span> LOG OUT</a>
-                <a class="sidebar__item" onclick="exportAllDataToExcel()"><span class="sidebar__icon">⬇</span> EXPORT BACKUP (.XLSX)</a>
-            </div>
-        </aside>
+<script>
+const SUPABASE_URL = 'https://xqzyncgtzybuclgxfzoi.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_dy0l_clzR9nOP6LKGqGA0w_bAkPPA7B';
+const { createClient } = supabase;
+const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        <main class="main">
-            <div class="mobile-header">
-                <button class="hamburger" id="hamburgerBtn"><span class="hamburger__line"></span><span class="hamburger__line"></span><span class="hamburger__line"></span></button>
-            </div>
-
-            <section id="viewHome" class="app-view" style="display: flex; flex-direction: column; gap: 20px;">
-                <div class="page-header-top">
-                    <h1 class="page-header-top__title">Home Dashboard</h1>
-                    <div class="page-header-top__subtext">Welcome to Loopy's Playground Alliance Management Dashboard</div>
-                </div>
-
-                <div class="home-card home-card--accent-gold">
-                    <div class="home-card__header">
-                        <div class="home-card__header-title">🖼️ RECENT PHOTOS / VIDEOS</div>
-                        <div class="home-card__header-actions">
-                            <button type="button" class="home-btn-outline" id="btnHomeUploadPhoto" style="display:none;">+ UPLOAD</button>
-                            <input type="file" id="homePhotoInput" accept="image/*" style="display:none;">
-                            <span class="home-view-all" id="homePhotosViewAll">VIEW ALL ›</span>
-                        </div>
-                    </div>
-                    <div id="homePhotosContainer">
-                        <div class="home-empty-state">No photos or videos yet.</div>
-                    </div>
-                </div>
-
-                <div class="home-quad-grid">
-                    <div class="home-card">
-                        <div class="home-stat-block__label">TOTAL MEMBERS</div>
-                        <div class="home-stat-block__row">
-                            <div class="home-stat-block__value notranslate" id="homeKpiMembers">0/100</div>
-                            <div class="home-stat-block__icon">👥</div>
-                        </div>
-                        <div class="home-stat-block__sub notranslate" id="homeKpiMembersSub">0 slots available</div>
-                    </div>
-                    <div class="home-card">
-                        <div class="home-stat-block__label">EVENT ATTENDANCE</div>
-                        <div class="home-stat-block__row">
-                            <div class="home-stat-block__value home-stat-block__value--gold notranslate" id="homeKpiRate">0%</div>
-                            <div class="home-stat-block__icon">📅</div>
-                        </div>
-                        <div class="home-stat-block__sub notranslate" id="homeKpiEventsSub">0 recent events</div>
-                    </div>
-                </div>
-
-                <div class="home-quad-grid">
-                    <div class="home-card">
-                        <div class="home-card__header-title" style="margin-bottom: 18px;">⚔️ TOP 5 CONTRIBUTORS</div>
-                        <div class="home-list" id="homeTopContributors">
-                            <div class="home-empty-state">No VS points recorded yet.</div>
-                        </div>
-                    </div>
-                    <div class="home-card">
-                        <div class="home-card__header-title" style="margin-bottom: 18px;">📅 RECENT EVENTS</div>
-                        <div class="home-list" id="homeRecentEvents">
-                            <div class="home-empty-state">No events recorded yet.</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="home-card home-card--accent-red">
-                    <div class="home-card__header">
-                        <div class="home-card__header-title">📣 NOTICES</div>
-                        <div class="home-card__header-actions">
-                            <button type="button" class="home-btn-outline" id="btnHomePostNotice" style="display:none;">+ POST</button>
-                            <span class="home-view-all" id="homeNoticesViewAll">VIEW ALL ›</span>
-                        </div>
-                    </div>
-                    <div id="homeNoticesContainer">
-                        <div class="home-empty-state">No notices yet.</div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- NOTICE TAB (Gantt-style event timeline, multiple events/day + time, admin/mgmt only editing) -->
-            <section id="viewNotice" class="app-view" style="display: none; flex-direction: column; gap: 18px;">
-                <div class="page-header-top">
-                    <h1 class="page-header-top__title">Notices</h1>
-                    <div class="page-header-top__subtext">Alliance notices and the event timeline</div>
-                </div>
-
-                <div class="generic-view-card" style="padding: 24px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:16px;">
-                        <h2 style="margin-bottom:0; font-size:16px; color:var(--color-text-dark);">📅 EVENT TIMELINE</h2>
-                        <div style="display:flex; align-items:center; gap:10px;">
-                            <div class="gantt-nav-group">
-                                <button class="gantt-nav-btn" id="ganttNavLeft" aria-label="Earlier">‹</button>
-                                <button class="gantt-nav-btn" id="ganttNavRight" aria-label="Later">›</button>
-                            </div>
-                            <button class="btn-action-custom btn-action-custom--add" id="btnAddCalendarEvent" style="display:none;">+ ADD EVENT</button>
-                        </div>
-                    </div>
-                    <div class="gantt-toolbar">
-                        <span class="gantt-toolbar__range notranslate" id="ganttRangeLabel"></span>
-                        <span class="gantt-toolbar__range" style="color: var(--color-text-muted); font-weight: 700; text-transform: none;">· Times shown in 24h Server Time</span>
-                        <div class="gantt-legend" id="ganttLegend"></div>
-                    </div>
-                    <div class="gantt-wrapper">
-                        <div class="gantt-scroll">
-                            <div class="gantt-grid" id="ganttGrid"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="home-card home-card--accent-red">
-                    <div class="home-card__header">
-                        <div class="home-card__header-title">📣 NOTICE BOARD</div>
-                        <div class="home-card__header-actions">
-                            <button type="button" class="home-btn-outline" id="btnAddNoticeAnnouncement" style="display:none;">+ ADD ANNOUNCEMENT</button>
-                        </div>
-                    </div>
-                    <p style="font-size:12px; font-weight:600; color:var(--color-text-muted); margin-top:-10px; margin-bottom:16px;">Clan updates, upcoming schedules, and main notices posted by management tier staff.</p>
-                    <div id="noticeAnnouncementsContainer" style="display:flex; flex-direction:column; gap:12px;">
-                        <div class="home-empty-state">No notices yet.</div>
-                    </div>
-                </div>
-            </section>
-
-            <section id="viewMembers" class="app-view" style="display: none; flex-direction: column; gap: 18px;">
-                <div class="generic-view-card">
-                    <h2>Members Management Directory</h2>
-                    <p style="margin-bottom: 18px;">Comprehensive register of active alliance fighters and player specifications.</p>
-                    <div class="table-wrapper">
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th>#</th>
-                                    <th>Fighter Name</th>
-                                    <th>Attended Count</th>
-                                    <th>Overall Rate</th>
-                                </tr>
-                            </thead>
-                            <tbody id="membersDirectoryBody">
-                                <tr><td colspan="4" style="text-align: center; color: #8c93a6;">Loading roster...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </section>
-
-            <section id="viewAttendance" class="app-view" style="display: none; flex-direction: column; gap: 14px;">
-                <div class="page-header-top">
-                    <h1 class="page-header-top__title">Event Attendance</h1>
-                    <div class="page-header-top__subtext notranslate" id="headerEventsCount">0 members · 0 sessions</div>
-                </div>
-
-                <section class="controls-card">
-                    <div class="btn-group">
-                        <button class="btn-toggle btn-toggle--active" id="btnTabAttendance">ATTENDANCE</button>
-                        <button class="btn-toggle" id="btnTabRanking">RANKING</button>
-                        <button class="btn-toggle" id="btnTabViolators">⚠ WAR</button>
-                    </div>
-                    <div class="search-box">
-                        <span class="search-box__icon">🔍</span>
-                        <input type="text" class="search-box__input" id="searchInput" placeholder="Search member...">
-                    </div>
-
-                    <div class="controls-right-group">
-                        <button class="btn-diff" id="btnToggleDiff">± DIFF</button>
-                        <div class="date-input-wrapper" id="adminPanel" style="display: none;">
-                            <input type="text" class="admin-panel__input-text" id="newEventNameInput" placeholder="Event Name">
-                            <input type="date" class="admin-panel__input-date" id="newDateInput" title="Event Date">
-                            <label class="war-event-checkbox-label" for="newEventIsWarInput">
-                                <input type="checkbox" id="newEventIsWarInput"> WAR EVENT
-                            </label>
-                        </div>
-                        <input type="text" id="newSubtextInput" style="display: none;">
-                        <button class="btn-action-custom btn-action-custom--add" id="btnAddEvent" style="display: none;">+ ADD EVENT</button>
-                        <input type="file" id="screenshotInput" accept="image/*" style="display: none;">
-                        <button class="btn-action-custom btn-action-custom--import" id="importBtn" style="display: none;">📥 IMPORT</button>
-                    </div>
-                </section>
-
-                <section class="kpi-grid">
-                    <div class="kpi-card"><div class="kpi-card__label">Members</div><div class="kpi-card__value notranslate" id="kpiMembers">0</div></div>
-                    <div class="kpi-card"><div class="kpi-card__label">Avg Attendance</div><div class="kpi-card__value notranslate" id="kpiAvgAttendance">0.0</div></div>
-                    <div class="kpi-card"><div class="kpi-card__label">Avg Rate</div><div class="kpi-card__value notranslate" id="kpiAvgRate">0.0%</div></div>
-                    <div class="kpi-card"><div class="kpi-card__label">Pct Base</div><div class="kpi-card__value notranslate" id="kpiPctBase">0 events</div></div>
-                </section>
-
-                <div class="top-legend-bar" id="topLegendBar">
-                    <span class="top-legend-bar__title">TOP 5:</span>
-                    <span class="legend-pill-item"><span class="badge-rank r1">1</span> 1st</span>
-                    <span class="legend-pill-item"><span class="badge-rank r2">2</span> 2nd</span>
-                    <span class="legend-pill-item"><span class="badge-rank r3">3</span> 3rd</span>
-                    <span class="legend-pill-item"><span class="badge-rank r4">4</span> 4th</span>
-                    <span class="legend-pill-item"><span class="badge-rank r5">5</span> 5th</span>
-                    <span class="legend-pill-item"><span class="attend-pill attend-pill--yes attend-pill--readonly">Attended</span><span class="attend-pill attend-pill--no attend-pill--readonly">Not Attended</span><span class="war-vote-badge war-vote-badge--yes" style="cursor:default;">YES</span><span class="war-vote-badge war-vote-badge--no" style="cursor:default;">NO</span><span class="war-vote-badge war-vote-badge--maybe" style="cursor:default;">MAYBE</span> · War event attendance &amp; votes</span>
-                    <span class="vs-hint" id="adminHelpText">· Admin/Mgmt: Click any table cell, event name, or date to edit. Use ✕ under date columns to delete session.</span>
-                </div>
-
-                <div class="table-card" id="subViewAttendance">
-                    <div class="table-wrapper">
-                        <table class="data-table">
-                            <thead><tr id="dayGroupHeaderRow"></tr><tr id="tableHeaderRow"></tr></thead>
-                            <tbody id="memberTableBody"></tbody>
-                            <tfoot id="tableFooterRow"></tfoot>
-                        </table>
-                    </div>
-                </div>
-
-                <section id="subViewRanking" style="display: none; flex-direction: column; gap: 14px;">
-                    <div class="sort-mode-bar">
-                        <span class="sort-mode-bar__label">Sort Ranking By:</span>
-                        <div class="btn-group">
-                            <button class="btn-toggle btn-toggle--active" id="btnRankingSortDefault">DEFAULT</button>
-                            <button class="btn-toggle" id="btnRankingSortRank">BY PARTICIPATION</button>
-                        </div>
-                    </div>
-                    <div class="ranking-cards-list" id="rankingCardsList"></div>
-                </section>
-
-                <section id="subViewViolators" style="display: none; flex-direction: column; gap: 14px;">
-                    <div style="padding: 4px 4px 0 4px;">
-                        <h2 style="font-size: 14px; color: var(--color-text-dark); margin-bottom: 4px;">⚔ War</h2>
-                        <p style="font-size: 12px; color: var(--color-text-muted); font-weight: 600;">War-only participation. Participation % counts war events only. Members who voted Yes/Maybe (or did not vote at all) and did not attend are flagged red/yellow.</p>
-                    </div>
-
-                    <section class="war-stat-grid">
-                        <div class="war-stat-card"><div class="war-stat-card__label">Members</div><div class="war-stat-card__value notranslate" id="warKpiMembers">0</div></div>
-                        <div class="war-stat-card"><div class="war-stat-card__label">Avg War Attendance</div><div class="war-stat-card__value notranslate" id="warKpiAvgAttendance">0.0</div></div>
-                        <div class="war-stat-card"><div class="war-stat-card__label">Avg War Rate</div><div class="war-stat-card__value notranslate" id="warKpiAvgRate">0.0%</div></div>
-                        <div class="war-stat-card"><div class="war-stat-card__label">Pct Base</div><div class="war-stat-card__value notranslate" id="warKpiPctBase">0 war events</div></div>
-                    </section>
-
-                    <div class="sort-mode-bar">
-                        <span class="sort-mode-bar__label">Sort War Ranking By:</span>
-                        <div class="btn-group">
-                            <button class="btn-toggle btn-toggle--active" id="btnWarSortDefault">DEFAULT</button>
-                            <button class="btn-toggle" id="btnWarSortRank">BY PARTICIPATION</button>
-                        </div>
-                    </div>
-
-                    <div class="table-card">
-                        <div class="table-wrapper">
-                            <table class="data-table">
-                                <thead>
-                                    <tr>
-                                        <th class="col-rank">#</th>
-                                        <th>MEMBER</th>
-                                        <th style="text-align:center; color:#1f9d55;">🟢 ATTENDED</th>
-                                        <th style="text-align:center; color:#dc2626;">🔴 RED</th>
-                                        <th style="text-align:center; color:#b89117;">🟡 YELLOW</th>
-                                        <th class="col-percentage">PARTICIPATION %</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="violatorsTableBody"></tbody>
-                            </table>
-                        </div>
-                    </div>
-                </section>
-            </section>
-
-            <section id="viewVsPoints" class="app-view" style="display: none; flex-direction: column; gap: 20px;">
-                <div class="generic-view-card" style="margin-bottom: 0;">
-                    <h2>VS Points Breakdown</h2>
-                    <p style="margin-bottom: 16px;">VS Point tracker interface logs and high-score rankings.</p>
-                </div>
-
-                <div id="vsAdminPanel" class="admin-panel" style="display: none;">
-                    <div class="admin-panel__title">VS Points Management Tools</div>
-                    <div class="admin-panel__form">
-                        <input type="text" class="admin-panel__input" id="newVsWeekInput" placeholder="Week Label (e.g. Sun 07-06)">
-                        <button class="btn-action-custom" id="btnAddVsWeek" style="background:#3b52a4; color:white;">Add Week Column</button>
-                    </div>
-                </div>
-
-                <div class="table-card">
-                    <div class="table-wrapper">
-                        <table class="data-table">
-                            <thead>
-                                <tr id="vsTableHeaderRow">
-                                    <th>#</th>
-                                    <th>Fighter Name</th>
-                                    <th>Total Score</th>
-                                </tr>
-                            </thead>
-                            <tbody id="vsTableBody">
-                                <tr><td colspan="3" style="text-align: center; color: #8c93a6;">Loading VS points...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </section>
-
-            <section id="viewDiscussion" class="app-view" style="display: none; flex-direction: column; gap: 16px;">
-                <div class="page-header-top">
-                    <h1 class="page-header-top__title">Discussion Room</h1>
-                    <div class="page-header-top__subtext">Alliance communication and active member polls</div>
-                </div>
-
-                <div class="controls-card" style="display: flex; justify-content: space-between; align-items: center;">
-                    <div class="btn-group">
-                        <button class="btn-toggle btn-toggle--active" id="btnDiscTabChat" onclick="switchDiscussionTab('chat')">💬 CHAT</button>
-                        <button class="btn-toggle" id="btnDiscTabAnnounce" onclick="switchDiscussionTab('announcement')">📣 ANNOUNCEMENTS & NOTICES</button>
-                    </div>
-                    <div id="discActionControls"></div>
-                </div>
-
-                <!-- Chat Sub-View -->
-                <div id="discSubChat" class="generic-view-card" style="display: flex; flex-direction: column; height: 500px;">
-                    <h2 style="margin-bottom: 8px; font-size:16px; color:var(--color-text-dark);">MANAGEMENT CHAT ROOM</h2>
-                    <p style="margin-bottom: 16px; font-size: 12px; color: var(--color-text-muted);">Confidential communication channel restricted strictly to Management and Admin personnel.</p>
-                    <div id="chatMessagesContainer" style="flex-grow: 1; overflow-y: auto; border: 1px solid var(--color-border-light); border-radius: 6px; padding: 12px; display: flex; flex-direction: column; gap: 10px; background: #fafafa; margin-bottom: 12px;">
-                        <div class="home-empty-state">No messages sent yet. Start the conversation!</div>
-                    </div>
-                    <div style="display: flex; gap: 10px;">
-                        <input type="text" id="chatMessageInput" placeholder="Type message..." style="flex-grow: 1; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-family: var(--font-family-base);" onkeydown="if(event.key==='Enter') sendChatMessage()">
-                        <button class="btn-action-custom" onclick="sendChatMessage()" style="background:#3b52a4; color:white;">Send</button>
-                    </div>
-                </div>
-
-                <!-- Announcement & Notice Sub-View -->
-                <div id="discSubAnnounce" class="generic-view-card" style="display: none; flex-direction: column; gap: 20px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-                        <div>
-                            <h2 style="font-size:16px; color:var(--color-text-dark);">ANNOUNCEMENT, POLLS & NOTICES</h2>
-                            <p style="font-size: 12px; color: var(--color-text-muted);">Create time-bounded polls, official management notices, and view archived polls.</p>
-                        </div>
-                        <div style="display: flex; gap: 10px;">
-                            <button class="btn-action-custom btn-action-custom--add" onclick="openCreateNoticeModal()">+ ADD NOTICE</button>
-                            <button class="btn-action-custom btn-action-custom--add" onclick="openCreatePollModal()">+ CREATE POLL</button>
-                        </div>
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;" id="announcementGridContainer">
-                        <div>
-                            <h3 style="font-size: 14px; text-transform: uppercase; color: var(--color-primary); margin-bottom: 10px; border-bottom: 2px solid var(--color-primary); padding-bottom: 6px;">Active Polls</h3>
-                            <div id="activePollsContainer" style="display: flex; flex-direction: column; gap: 12px;">
-                                <div class="home-empty-state">No active polls.</div>
-                            </div>
-                            <h3 style="font-size: 14px; text-transform: uppercase; color: var(--color-text-muted); margin: 20px 0 10px 0; border-bottom: 2px solid var(--color-border-light); padding-bottom: 6px;">Archived Polls (Closed)</h3>
-                            <div id="archivedPollsContainer" style="display: flex; flex-direction: column; gap: 12px;">
-                                <div class="home-empty-state">No archived polls.</div>
-                            </div>
-                        </div>
-                        <div>
-                            <h3 style="font-size: 14px; text-transform: uppercase; color: var(--color-primary); margin-bottom: 10px; border-bottom: 2px solid var(--color-primary); padding-bottom: 6px;">Official Notices</h3>
-                            <div id="managementNoticesContainer" style="display: flex; flex-direction: column; gap: 12px;">
-                                <div class="home-empty-state">No notices posted.</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <section id="viewHistory" class="app-view" style="display: none;">
-                <div class="generic-view-card">
-                    <h2 style="font-size:16px; color:var(--color-text-dark);">Audit Logs & Edit History</h2>
-                    <p style="margin-bottom: 16px; color: #62697b;">Detailed accountability log showing who added data, modified records, or deleted parameters across the workspace.</p>
-                    <div class="table-wrapper">
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th>Timestamp</th>
-                                    <th>User Account</th>
-                                    <th>Action Type</th>
-                                    <th>Description Details</th>
-                                </tr>
-                            </thead>
-                            <tbody id="auditTableBody">
-                                <tr><td colspan="4" style="text-align: center; color: #8c93a6;">No actions recorded yet.</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <div class="generic-view-card" style="margin-top: 18px;">
-                    <h2 style="font-size:16px; color:var(--color-text-dark);">🕐 Data Snapshots &amp; Restore</h2>
-                    <p style="margin-bottom: 16px; color: #62697b;">A snapshot of Event Attendance data (events + member attendance/votes) is captured automatically before every save. If a save ever overwrites or corrupts data, restore the most recent good snapshot below. Restoring itself creates a new snapshot first, so restores are also reversible.</p>
-                    <div class="table-wrapper">
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th>Timestamp</th>
-                                    <th>Saved By</th>
-                                    <th>Events</th>
-                                    <th>Members</th>
-                                    <th>Action</th>
-                                </tr>
-                            </thead>
-                            <tbody id="snapshotsTableBody">
-                                <tr><td colspan="5" style="text-align: center; color: #8c93a6;">No snapshots recorded yet.</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </section>
-
-            <div class="footer-info-bar" style="margin-top: 4px;">
-                <span>♦ Loopy's Playground · Alliance Management Tool</span>
-                <span id="footerMembersShown" class="notranslate">0 members shown</span>
-            </div>
-        </main>
-    </div>
-
-    <!-- Modals for Polls and Notices -->
-    <div class="modal-overlay" id="createPollModal">
-        <div class="modal-card" style="max-width: 500px;">
-            <h3 id="pollModalTitle">Create New Poll</h3>
-            <input type="text" id="pollQuestionInput" placeholder="Poll Question (e.g. Next Guild Event Timing?)">
-            <div style="font-size: 11px; font-weight: 800; color: var(--color-text-muted); margin-bottom: 6px; text-transform: uppercase;">Poll Options:</div>
-            <div id="pollOptionsContainer"></div>
-            <button type="button" class="btn-action-custom" id="btnAddPollOption" onclick="addPollOptionDraft()" style="margin-bottom: 16px;">+ Add Option</button>
-            <div id="pollTimerGroup">
-                <div style="font-size: 11px; font-weight: 800; color: var(--color-text-muted); margin-bottom: 6px; text-transform: uppercase;">Timer Option:</div>
-                <select id="pollTimerSelect" style="margin-bottom: 16px;">
-                    <option value="86400">24 Hours</option>
-                    <option value="259200">3 Days</option>
-                    <option value="604800">1 Week</option>
-                </select>
-            </div>
-            <div class="modal-card-btns">
-                <button class="btn-action-custom" id="btnDeletePollModal" style="display:none; color:#dc2626; border-color:#dc2626;" onclick="adminDeletePollFromModal()">Delete Poll</button>
-                <button class="btn-action-custom" onclick="document.getElementById('createPollModal').style.display='none'">Cancel</button>
-                <button class="btn-action-custom" onclick="submitPollModal()" style="background:#3b52a4; color:white;">Publish Poll</button>
-            </div>
-        </div>
-    </div>
-
-    <div class="modal-overlay" id="createNoticeModal">
-        <div class="modal-card" style="max-width: 500px;">
-            <h3 id="createNoticeModalTitle">Add Management Notice</h3>
-            <input type="text" id="noticeTitleInput" placeholder="Notice Title">
-            <textarea id="noticeContentInput" placeholder="Notice Details..." rows="4" style="width: 100%; padding: 14px; margin-bottom: 16px; border: 1px solid #ccc; border-radius: 6px; font-family: var(--font-family-base); outline: none; resize: vertical;"></textarea>
-            <div class="modal-card-btns">
-                <button class="btn-action-custom" id="btnDeleteNotice" style="display:none; color:#dc2626; border-color:#dc2626;" onclick="deleteManagementNotice()">Delete</button>
-                <button class="btn-action-custom" onclick="document.getElementById('createNoticeModal').style.display='none'">Cancel</button>
-                <button class="btn-action-custom" onclick="submitCreateNotice()" style="background:#3b52a4; color:white;">Post Notice</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Calendar event add/edit modal for the Notice tab Gantt timeline (name + category + repeat + time + visibility + color) -->
-    <div class="modal-overlay" id="calendarEventModal">
-        <div class="modal-card" style="max-width: 420px;">
-            <h3 id="calendarEventModalTitle">Add Calendar Event</h3>
-            <input type="text" id="calEventNameInput" placeholder="Event Name">
-
-            <label class="cal-field-label">Category</label>
-            <select id="calEventCategorySelect" style="margin-bottom: 16px;">
-                <option value="alliance">Alliance Event</option>
-                <option value="war">War Event</option>
-            </select>
-
-            <label class="cal-field-label">Repeats</label>
-            <select id="calEventTypeSelect" onchange="toggleCalEventTypeFields()" style="margin-bottom: 16px;">
-                <option value="custom">One-Time / Date Range</option>
-                <option value="weekly">Weekly</option>
-                <option value="biweekly">Every 2 Weeks</option>
-                <option value="monthly">Monthly</option>
-            </select>
-
-            <div id="calCustomFields">
-                <label class="cal-field-label">Start Date &amp; End Date (max 7 days)</label>
-                <div class="cal-field-row" style="margin-bottom: 16px;">
-                    <input type="date" id="calEventDateInput" style="margin-bottom: 0;">
-                    <input type="date" id="calEventEndDateInput" style="margin-bottom: 0;">
-                </div>
-            </div>
-
-            <div id="calWeeklyFields" style="display:none;">
-                <label class="cal-field-label">Day of Week</label>
-                <select id="calEventWeekdaySelect" style="margin-bottom: 16px;">
-                    <option value="0">Sunday</option>
-                    <option value="1">Monday</option>
-                    <option value="2">Tuesday</option>
-                    <option value="3">Wednesday</option>
-                    <option value="4">Thursday</option>
-                    <option value="5">Friday</option>
-                    <option value="6">Saturday</option>
-                </select>
-            </div>
-
-            <div id="calBiweeklyFields" style="display:none;">
-                <label class="cal-field-label">Day of Week</label>
-                <select id="calEventBiweeklyWeekdaySelect" style="margin-bottom: 16px;">
-                    <option value="0">Sunday</option>
-                    <option value="1">Monday</option>
-                    <option value="2">Tuesday</option>
-                    <option value="3">Wednesday</option>
-                    <option value="4">Thursday</option>
-                    <option value="5">Friday</option>
-                    <option value="6">Saturday</option>
-                </select>
-                <label class="cal-field-label">Starting From</label>
-                <input type="date" id="calEventBiweeklyAnchorInput" style="margin-bottom: 16px;">
-            </div>
-
-            <div id="calMonthlyFields" style="display:none;">
-                <label class="cal-field-label">Day of Month</label>
-                <input type="number" id="calEventDayOfMonthInput" min="1" max="31" placeholder="e.g. 15" style="margin-bottom: 16px;">
-            </div>
-
-            <label class="cal-field-label">Start Time &amp; End Time — Server Time, 24h (optional)</label>
-            <div class="cal-field-row">
-                <input type="time" id="calEventTimeInput" title="Start Time (Server Time, 24h)">
-                <input type="time" id="calEventEndTimeInput" title="End Time (Server Time, 24h)">
-            </div>
-
-            <label class="cal-field-label" style="margin-top: 16px;">Visible To</label>
-            <select id="calEventVisibilitySelect" style="margin-bottom: 16px;">
-                <option value="everyone">Everyone</option>
-                <option value="alliance">Alliance Members + Staff Only</option>
-            </select>
-
-            <div style="font-size: 11px; font-weight: 800; color: var(--color-text-muted); margin-bottom: 6px; text-transform: uppercase;">Color:</div>
-            <div class="color-swatch-row" id="calEventColorSwatches"></div>
-            <div class="modal-card-btns">
-                <button class="btn-action-custom" id="btnDeleteCalEvent" style="display:none; color:#dc2626; border-color:#dc2626;" onclick="deleteCalendarEvent()">Delete</button>
-                <button class="btn-action-custom" onclick="document.getElementById('calendarEventModal').style.display='none'">Cancel</button>
-                <button class="btn-action-custom" onclick="submitCalendarEvent()" style="background:#3b52a4; color:white;">Save</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Notice Board announcement modal (admin/management only) with audience visibility control -->
-    <div class="modal-overlay" id="noticeAnnouncementModal">
-        <div class="modal-card" style="max-width: 460px;">
-            <h3 id="noticeAnnouncementModalTitle">Add Announcement</h3>
-            <input type="text" id="noticeAnnTitleInput" placeholder="Announcement Title">
-            <textarea id="noticeAnnContentInput" placeholder="Announcement Details..." rows="4" style="width: 100%; padding: 14px; margin-bottom: 16px; border: 1px solid #ccc; border-radius: 6px; font-family: var(--font-family-base); outline: none; resize: vertical;"></textarea>
-            <label class="cal-field-label">Visible To</label>
-            <select id="noticeAnnVisibilitySelect" style="margin-bottom: 16px;">
-                <option value="everyone">Everyone</option>
-                <option value="alliance">Alliance Members + Staff Only</option>
-            </select>
-            <div class="modal-card-btns">
-                <button class="btn-action-custom" id="btnDeleteNoticeAnn" style="display:none; color:#dc2626; border-color:#dc2626;" onclick="deleteNoticeAnnouncement()">Delete</button>
-                <button class="btn-action-custom" onclick="document.getElementById('noticeAnnouncementModal').style.display='none'">Cancel</button>
-                <button class="btn-action-custom" onclick="submitNoticeAnnouncement()" style="background:#3b52a4; color:white;">Post</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Photo/Video upload visibility modal (admin/management only) -->
-    <div class="modal-overlay" id="photoUploadVisibilityModal">
-        <div class="modal-card" style="max-width: 420px;">
-            <h3>Upload Photo / Video</h3>
-            <div id="photoUploadPreviewWrap" style="margin-bottom: 16px; border-radius: 6px; overflow: hidden; border: 1px solid var(--color-border-light); max-height: 220px; display:flex; align-items:center; justify-content:center; background:#f5f4ef;">
-                <img id="photoUploadPreviewImg" style="width:100%; max-height:220px; object-fit:contain;" alt="preview">
-            </div>
-            <label class="cal-field-label">Visible To</label>
-            <select id="photoUploadVisibilitySelect" style="margin-bottom: 16px;">
-                <option value="everyone">Everyone</option>
-                <option value="alliance">Alliance Members + Staff Only</option>
-            </select>
-            <div class="modal-card-btns">
-                <button class="btn-action-custom" onclick="cancelPhotoUpload()">Cancel</button>
-                <button class="btn-action-custom" onclick="confirmPhotoUpload()" style="background:#3b52a4; color:white;">Upload</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Photo/Video lightbox (expanded view) -->
-    <div class="lightbox-overlay" id="photoLightboxOverlay">
-        <div class="lightbox-card">
-            <div class="lightbox-card__img-wrap">
-                <img id="lightboxImg" src="" alt="photo">
-            </div>
-            <div class="lightbox-card__body">
-                <div class="lightbox-card__meta-row">
-                    <span class="lightbox-card__meta notranslate" id="lightboxMeta"></span>
-                    <span class="visibility-badge" id="lightboxVisibilityBadge"></span>
-                </div>
-                <div id="lightboxVisibilityEditRow" style="display:none;">
-                    <label class="cal-field-label">Visible To</label>
-                    <select id="lightboxVisibilitySelect" style="margin-bottom: 0;"></select>
-                </div>
-                <div class="lightbox-card__btns">
-                    <button class="btn-action-custom" id="btnLightboxSaveVisibility" style="display:none;" onclick="saveLightboxVisibility()">Save Visibility</button>
-                    <button class="btn-action-custom" id="btnLightboxDelete" style="display:none; color:#dc2626; border-color:#dc2626;" onclick="deleteLightboxPhoto()">Delete</button>
-                    <button class="btn-action-custom" onclick="closePhotoLightbox()" style="background:#3b52a4; color:white;">Close</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Photo/Video gallery popup (VIEW ALL) -->
-    <div class="modal-overlay" id="photoGalleryModal">
-        <div class="gallery-modal-card">
-            <div class="gallery-modal-card__header">
-                <h3>🖼️ Photo &amp; Video Gallery</h3>
-                <button class="gallery-modal-close" onclick="closePhotoGalleryModal()">✕</button>
-            </div>
-            <div class="gallery-modal-card__body">
-                <div class="photo-gallery-grid" id="photoGalleryGrid"></div>
-            </div>
-        </div>
-    </div>
-
-    <script type="text/javascript">
-        function googleTranslateElementInit() {
-            new google.translate.TranslateElement({
-                pageLanguage: 'en',
-                includedLanguages: 'zh-CN,en,vi,pt,ko',
-                layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
-                autoDisplay: false
-            }, 'google_translate_element');
-        }
-    </script>
-    <script type="text/javascript" src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
-    <script>
-        (function() {
-            const dropdownEl = document.getElementById('langDropdown');
-            const triggerEl = document.getElementById('langTrigger');
-            const menuEl = document.getElementById('langMenu');
-            const triggerFlagEl = document.getElementById('langTriggerFlag');
-            const triggerNameEl = document.getElementById('langTriggerName');
-            if (!dropdownEl || !triggerEl || !menuEl) return;
-            const optionEls = menuEl.querySelectorAll('.lang-dropdown__option');
-            function closeDropdown() { dropdownEl.classList.remove('lang-dropdown--open'); }
-            function toggleDropdown() { dropdownEl.classList.toggle('lang-dropdown--open'); }
-            triggerEl.addEventListener('click', (e) => {
-                e.stopPropagation();
-                toggleDropdown();
-            });
-            document.addEventListener('click', (e) => {
-                if (!dropdownEl.contains(e.target)) closeDropdown();
-            });
-            function setGoogleCookie(lang) {
-                document.cookie = `googtrans=/en/${lang}; path=/; domain=${window.location.hostname}`;
-                document.cookie = `googtrans=/en/${lang}; path=/`;
-            }
-            window.setGoogleTranslateLanguage = function(lang) {
-                setGoogleCookie(lang);
-                const select = document.querySelector('#google_translate_element select.goog-te-combo');
-                if (select) {
-                    select.value = lang;
-                    select.dispatchEvent(new Event('change'));
-                    return true;
-                }
-                return false;
-            };
-            function selectLanguage(optionEl) {
-                const lang = optionEl.getAttribute('data-lang');
-                const flag = optionEl.getAttribute('data-flag');
-                const name = optionEl.getAttribute('data-name');
-                triggerFlagEl.textContent = flag;
-                triggerNameEl.textContent = name;
-                optionEls.forEach(o => o.classList.toggle('lang-dropdown__option--active', o === optionEl));
-                localStorage.setItem('amt_lang', lang);
-                closeDropdown();
-                setGoogleCookie(lang);
-                if (!window.setGoogleTranslateLanguage(lang)) {
-                    window.location.reload();
-                }
-            }
-            optionEls.forEach(optionEl => {
-                optionEl.addEventListener('click', () => selectLanguage(optionEl));
-            });
-            const savedLang = localStorage.getItem('amt_lang');
-            if (savedLang && savedLang !== 'en') {
-                const match = Array.from(optionEls).find(o => o.getAttribute('data-lang') === savedLang);
-                if (match) {
-                    triggerFlagEl.textContent = match.getAttribute('data-flag');
-                    triggerNameEl.textContent = match.getAttribute('data-name');
-                    optionEls.forEach(o => o.classList.toggle('lang-dropdown__option--active', o === match));
-                }
-                setGoogleCookie(savedLang);
-            }
-        })();
-    </script>
-
-    <script>
-        const SUPABASE_URL = 'https://xqzyncgtzybuclgxfzoi.supabase.co';
-        const SUPABASE_ANON_KEY = 'sb_publishable_dy0l_clzR9nOP6LKGqGA0w_bAkPPA7B';
-        const { createClient } = supabase;
-        const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        const FAKE_EMAIL_DOMAIN = '@loopysplaygroundapp.com';
-async function usernameToEmailSafe(username) {
-    const normalized = username.trim().toLowerCase();
-    const data = new TextEncoder().encode(normalized);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const hex = Array.from(new Uint8Array(hashBuffer))
-        .map(b => b.toString(16).padStart(2, '0'))
-        .join('');
-    return 'u' + hex.slice(0, 32);
-}
+let currentUser = { username: null, role: null };
+let isManagementOrAdmin = false;
+let isAdmin = false;
 
 async function loadCurrentUserAccount() {
     const { data: { session } } = await db.auth.getSession();
-    if (!session) {
-        currentUser.username = null;
-        currentUser.role = null;
-        return false;
-    }
+    if (!session) return false;
     const { data: acc, error } = await db.from('accounts')
         .select('*')
         .eq('user_id', session.user.id)
         .maybeSingle();
-    if (error || !acc) {
-        currentUser.username = null;
-        currentUser.role = null;
-        return false;
-    }
+    if (error || !acc) return false;
     currentUser.username = acc.username;
     currentUser.role = acc.role;
+    isManagementOrAdmin = (acc.role === 'admin' || acc.role === 'management');
+    isAdmin = (acc.role === 'admin');
     return true;
 }
 
-async function checkSessionOnLoad() {
-    const isLoggedIn = await loadCurrentUserAccount();
-    if (isLoggedIn) {
-        document.getElementById('loginScreen').style.display = 'none';
-        document.getElementById('appDashboard').style.display = 'flex';
-        document.getElementById('userRoleDisplay').textContent = currentUser.username.toUpperCase();
-        document.getElementById('userPermissionBadge').textContent = 'Role: ' + currentUser.role.toUpperCase();
-        document.getElementById('userAvatarIcon').textContent = currentUser.username.charAt(0).toUpperCase();
-        const isManagementOrAdmin = currentUser.role === 'admin' || currentUser.role === 'management';
-        document.getElementById('adminSectionHeader').style.display = isManagementOrAdmin ? 'block' : 'none';
-        document.getElementById('adminPanel').style.display = isManagementOrAdmin ? 'flex' : 'none';
-        document.getElementById('btnAddEvent').style.display = isManagementOrAdmin ? 'inline-flex' : 'none';
-        document.getElementById('importBtn').style.display = isManagementOrAdmin ? 'inline-flex' : 'none';
-        document.getElementById('navDiscussionLi').style.display = isManagementOrAdmin ? 'block' : 'none';
-        document.getElementById('navHistoryLi').style.display = currentUser.role === 'admin' ? 'block' : 'none';
-        document.getElementById('assignRolesNavLi').style.display = currentUser.role === 'admin' ? 'block' : 'none';
-    } else {
-        document.getElementById('appDashboard').style.display = 'none';
-        document.getElementById('loginScreen').style.display = 'flex';
-    }
-}
-window.addEventListener('DOMContentLoaded', checkSessionOnLoad);
-
-        let members = [];
-        let eventDates = [];
-        let chatMessages = [];
-        let polls = [];
-        let notices = [];
-        let currentUser = { username: null, role: null };
-
-        // Exports all current cloud data to a downloadable Excel file, one sheet per
-        // data type, as a manual backup independent of Supabase.
-        window.exportAllDataToExcel = function() {
-            try {
-                const wb = XLSX.utils.book_new();
-
-                const membersSheet = (members || []).map(m => ({
-                    Name: m.name, Attended: m.attended, Rank: m.rank,
-                    Events: (m.events || []).map(e => e ? 'Y' : 'N').join(','),
-                    Votes: (m.eventVotes || []).join(',')
-                }));
-                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(membersSheet.length ? membersSheet : [{Note:'No members'}]), 'Members');
-
-                const eventsSheet = (eventDates || []).map(ev => ({
-                    Name: ev.name, Date: ev.date, IsWar: ev.isWar ? 'Yes' : 'No'
-                }));
-                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(eventsSheet.length ? eventsSheet : [{Note:'No events'}]), 'EventDates');
-
-                const chatSheet = (chatMessages || []).map(m => ({
-                    User: m.user, Role: m.role, Time: m.timestamp, Message: m.text
-                }));
-                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(chatSheet.length ? chatSheet : [{Note:'No messages'}]), 'ChatMessages');
-
-                const pollsSheet = (polls || []).map(p => ({
-                    Question: p.question,
-                    Options: p.options ? p.options.map(o => `${o.text} (${o.votes ? o.votes.length : 0} votes)`).join(' | ') : '',
-                    ExpiresAt: p.expiresAt ? new Date(p.expiresAt).toLocaleString() : ''
-                }));
-                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(pollsSheet.length ? pollsSheet : [{Note:'No polls'}]), 'Polls');
-
-                const noticesSheet = (notices || []).map(n => ({
-                    Title: n.title, Details: n.details, Author: n.author, Date: n.date
-                }));
-                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(noticesSheet.length ? noticesSheet : [{Note:'No notices'}]), 'Notices');
-
-                XLSX.writeFile(wb, `Loopys_Playground_Backup_${new Date().toISOString().split('T')[0]}.xlsx`);
-            } catch (err) {
-                console.error('Error exporting Excel:', err);
-                alert('Export failed: ' + err.message);
-            }
-        };
-
-        // Navigation & View Switching
-        document.querySelectorAll('.sidebar__item[data-view]').forEach(item => {
-            item.addEventListener('click', (e) => {
-                e.preventDefault();
-                const targetView = item.getAttribute('data-view');
-                
-                document.querySelectorAll('.sidebar__item').forEach(i => i.classList.remove('sidebar__item--active'));
-                item.classList.add('sidebar__item--active');
-
-                document.querySelectorAll('.app-view').forEach(v => v.style.display = 'none');
-                const activeView = document.getElementById(`view${targetView.charAt(0).toUpperCase() + targetView.slice(1)}`);
-                if (activeView) {
-                    activeView.style.display = 'flex';
-                }
-
-                // Close mobile sidebar if open
-                document.getElementById('sidebar').classList.remove('sidebar--open');
-                document.getElementById('sidebarOverlay').classList.remove('sidebar-overlay--visible');
-            });
-        });
-
-        // Hamburger Mobile Menu
-        const hamburgerBtn = document.getElementById('hamburgerBtn');
-        const sidebar = document.getElementById('sidebar');
-        const sidebarOverlay = document.getElementById('sidebarOverlay');
-
-        if (hamburgerBtn) {
-            hamburgerBtn.addEventListener('click', () => {
-                sidebar.classList.toggle('sidebar--open');
-                sidebarOverlay.classList.toggle('sidebar-overlay--visible');
-            });
-        }
-
-        if (sidebarOverlay) {
-            sidebarOverlay.addEventListener('click', () => {
-                sidebar.classList.remove('sidebar--open');
-                sidebarOverlay.classList.remove('sidebar-overlay--visible');
-            });
-        }
-
-        // Login Modal Controls
-        document.getElementById('btnOpenLoginModal')?.addEventListener('click', () => {
-            document.getElementById('loginModal').style.display = 'flex';
-        });
-
-        document.getElementById('btnCancelModal')?.addEventListener('click', () => {
-            document.getElementById('loginModal').style.display = 'none';
-        });
-
-        document.getElementById('btnOpenCreateAccountModal')?.addEventListener('click', () => {
-            document.getElementById('createAccountModal').style.display = 'flex';
-        });
-
-        document.getElementById('sidebarLogoutBtn')?.addEventListener('click', async () => {
-    await db.auth.signOut();
-    currentUser.username = null;
-    currentUser.role = null;
-    document.getElementById('appDashboard').style.display = 'none';
-    document.getElementById('loginScreen').style.display = 'flex';
+// --- Sidebar ---
+const sidebarEl = document.getElementById('sidebar');
+const sidebarOverlayEl = document.getElementById('sidebarOverlay');
+function openSidebar(){ sidebarEl.classList.add('sidebar--open'); sidebarOverlayEl.classList.add('sidebar-overlay--visible'); }
+function closeSidebar(){ sidebarEl.classList.remove('sidebar--open'); sidebarOverlayEl.classList.remove('sidebar-overlay--visible'); }
+document.getElementById('hamburgerBtn').addEventListener('click', () => {
+    sidebarEl.classList.contains('sidebar--open') ? closeSidebar() : openSidebar();
 });
-        document.getElementById('btnSubmitLogin')?.addEventListener('click', async () => {
-    const uInput = document.getElementById('loginUsername').value.trim();
-    const pInput = document.getElementById('loginPassword').value;
-    if (!uInput || !pInput) return;
+sidebarOverlayEl.addEventListener('click', closeSidebar);
+document.getElementById('sidebarLogoutBtn').addEventListener('click', async () => {
+    await db.auth.signOut();
+    window.location.href = 'index.html';
+});
+function renderSidebarUser() {
+    document.getElementById('userRoleDisplay').innerText = (currentUser.username || 'Guest').toUpperCase();
+    document.getElementById('userPermissionBadge').innerText = `Role: ${(currentUser.role || 'guest').toUpperCase()}`;
+    document.getElementById('userAvatarIcon').innerText = (currentUser.username || 'G').charAt(0).toUpperCase();
+    document.getElementById('adminSectionHeader').style.display = isManagementOrAdmin ? 'block' : 'none';
+    document.getElementById('navDiscussionLi').style.display = isManagementOrAdmin ? 'block' : 'none';
+    document.getElementById('navHistoryLi').style.display = isAdmin ? 'block' : 'none';
+    document.getElementById('adminPanel').style.display = isManagementOrAdmin ? 'flex' : 'none';
+    document.getElementById('adminHelpText').style.display = isManagementOrAdmin ? 'inline' : 'none';
+}
 
-    const fakeEmail = await usernameToEmailSafe(uInput) + FAKE_EMAIL_DOMAIN;
-    const { data: signInData, error: signInError } = await db.auth.signInWithPassword({
-        email: fakeEmail,
-        password: pInput
+const saveStatusEl = document.getElementById('saveStatus');
+let saveStatusTimer = null;
+function showSaveStatus(kind, text) {
+    clearTimeout(saveStatusTimer);
+    saveStatusEl.className = 'save-status save-status--' + kind;
+    saveStatusEl.innerText = text;
+    if (kind !== 'error') saveStatusTimer = setTimeout(() => { saveStatusEl.className = 'save-status'; }, 1500);
+}
+
+// --- Data model ---
+// eventDates: [{ id, name, date, isWar }]
+// members[i].attendance: { [eventId]: true/false }
+// members[i].warVotes: { [eventId]: 'yes'|'no'|'maybe' }
+let members = [];
+let eventDates = [];
+let showDiffMode = false;
+let searchQuery = '';
+let rankingSortMode = 'default';
+let warSortMode = 'default';
+
+let realtimeSubscribed = false;
+function subscribeToAppDataChanges() {
+    if (realtimeSubscribed) return;
+    realtimeSubscribed = true;
+    db.channel('app_data_changes_events')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'app_data' }, () => {
+            fetchDataOnly();
+        })
+        .subscribe();
+}
+
+async function loadDataFromCloud() {
+    try {
+        const { data, error } = await db.from('app_data').select('*');
+        if (error) throw error;
+        (data || []).forEach(row => {
+            if (row.key === 'members') members = row.value || [];
+            if (row.key === 'eventDates') eventDates = row.value || [];
+        });
+    } catch (err) {
+        console.error('Error loading data:', err);
+        alert('Could not load event data from the server. Please check your connection and reload.');
+        return;
+    }
+    members.forEach(m => {
+        if (!m.attendance || typeof m.attendance !== 'object') m.attendance = {};
+        if (!m.warVotes || typeof m.warVotes !== 'object') m.warVotes = {};
     });
+    render();
+}
 
-    if (signInError || !signInData.session) {
-        alert('Invalid credentials! Check your username and password.');
+async function fetchDataOnly() {
+    try {
+        const { data, error } = await db.from('app_data').select('*').in('key', ['members','eventDates']);
+        if (error) throw error;
+        (data || []).forEach(row => {
+            if (row.key === 'members') members = row.value || [];
+            if (row.key === 'eventDates') eventDates = row.value || [];
+        });
+    } catch (err) {
+        console.error('Error refreshing event data:', err);
+        return;
+    }
+    members.forEach(m => {
+        if (!m.attendance || typeof m.attendance !== 'object') m.attendance = {};
+        if (!m.warVotes || typeof m.warVotes !== 'object') m.warVotes = {};
+    });
+    render();
+}
+
+async function saveMembers() {
+    showSaveStatus('saving', 'Saving…');
+    try {
+        const { error } = await db.from('app_data').upsert({ id: 2, key: 'members', value: members }, { onConflict: 'id' });
+        if (error) { showSaveStatus('error', 'Save failed'); return; }
+        showSaveStatus('ok', 'Saved');
+    } catch (err) { showSaveStatus('error', 'Save failed'); }
+}
+
+async function saveEventDates() {
+    showSaveStatus('saving', 'Saving…');
+    try {
+        const { error } = await db.from('app_data').upsert({ id: 3, key: 'eventDates', value: eventDates }, { onConflict: 'id' });
+        if (error) { showSaveStatus('error', 'Save failed'); return; }
+        showSaveStatus('ok', 'Saved');
+    } catch (err) { showSaveStatus('error', 'Save failed'); }
+}
+
+// --- Tab switching ---
+function setAttendanceTab(tabName) {
+    ['Attendance','Ranking','Violators'].forEach(t => {
+        const btn = document.getElementById(`btnTab${t}`);
+        const subView = document.getElementById(`subView${t}`);
+        if (btn) btn.classList.toggle('btn-toggle--active', t === tabName);
+        if (subView) subView.style.display = (t === tabName) ? (t === 'Attendance' ? 'block' : 'flex') : 'none';
+    });
+}
+document.getElementById('btnTabAttendance').addEventListener('click', () => setAttendanceTab('Attendance'));
+document.getElementById('btnTabRanking').addEventListener('click', () => setAttendanceTab('Ranking'));
+document.getElementById('btnTabViolators').addEventListener('click', () => setAttendanceTab('Violators'));
+document.getElementById('btnToggleDiff').addEventListener('click', () => {
+    showDiffMode = !showDiffMode;
+    document.getElementById('btnToggleDiff').classList.toggle('active', showDiffMode);
+    render();
+});
+document.getElementById('searchInput').addEventListener('input', (e) => { searchQuery = e.target.value.toLowerCase(); render(); });
+
+// --- Add event ---
+document.getElementById('btnAddEvent').addEventListener('click', async () => {
+    if (!isManagementOrAdmin) return;
+    const name = document.getElementById('newEventNameInput').value.trim();
+    const date = document.getElementById('newDateInput').value;
+    const isWar = document.getElementById('newEventIsWarInput').checked;
+    if (!name || !date) { alert('Please enter an event name and date.'); return; }
+    const newEvent = { id: Date.now(), name, date, isWar };
+    eventDates.push(newEvent);
+    document.getElementById('newEventNameInput').value = '';
+    document.getElementById('newDateInput').value = '';
+    document.getElementById('newEventIsWarInput').checked = false;
+    await saveEventDates();
+    render();
+});
+
+let editingEventId = null;
+window.openEditEventModal = function(eventId) {
+    if (!isManagementOrAdmin) return;
+    const ev = eventDates.find(e => e.id === eventId);
+    if (!ev) return;
+    editingEventId = eventId;
+    document.getElementById('editEventNameInput').value = ev.name;
+    document.getElementById('editEventDateInput').value = ev.date;
+    document.getElementById('editEventIsWarInput').checked = !!ev.isWar;
+    document.getElementById('editEventNameModal').style.display = 'flex';
+};
+document.getElementById('btnSaveEventModal').addEventListener('click', async () => {
+    const ev = eventDates.find(e => e.id === editingEventId);
+    if (!ev) return;
+    ev.name = document.getElementById('editEventNameInput').value.trim() || ev.name;
+    ev.date = document.getElementById('editEventDateInput').value || ev.date;
+    ev.isWar = document.getElementById('editEventIsWarInput').checked;
+    await saveEventDates();
+    document.getElementById('editEventNameModal').style.display = 'none';
+    render();
+});
+document.getElementById('btnDeleteEventModal').addEventListener('click', async () => {
+    if (!confirm('Delete this event? This removes it for all members.')) return;
+    eventDates = eventDates.filter(e => e.id !== editingEventId);
+    members.forEach(m => {
+        if (m.attendance) delete m.attendance[editingEventId];
+        if (m.warVotes) delete m.warVotes[editingEventId];
+    });
+    await saveEventDates();
+    await saveMembers();
+    document.getElementById('editEventNameModal').style.display = 'none';
+    render();
+});
+
+// --- Attendance / vote toggles ---
+window.toggleAttendance = function(memberId, eventId) {
+    if (!isManagementOrAdmin) return;
+    const m = members.find(x => x.id === memberId);
+    if (!m) return;
+    if (!m.attendance) m.attendance = {};
+    m.attendance[eventId] = !m.attendance[eventId];
+    saveMembers().then(render);
+};
+window.cycleWarVote = function(memberId, eventId) {
+    if (!isManagementOrAdmin) return;
+    const m = members.find(x => x.id === memberId);
+    if (!m) return;
+    if (!m.warVotes) m.warVotes = {};
+    const order = [undefined, 'yes', 'maybe', 'no'];
+    const cur = m.warVotes[eventId];
+    const idx = order.indexOf(cur);
+    const next = order[(idx + 1) % order.length];
+    if (next === undefined) delete m.warVotes[eventId];
+    else m.warVotes[eventId] = next;
+    saveMembers().then(render);
+};
+
+// --- Stat helpers ---
+function activeMembers() { return members.filter(m => m.status !== 'removed'); }
+function memberAttendedCount(m, events) {
+    return events.filter(ev => m.attendance && m.attendance[ev.id]).length;
+}
+function memberRate(m, events) {
+    if (events.length === 0) return 0;
+    return (memberAttendedCount(m, events) / events.length) * 100;
+}
+function rateClass(rate) {
+    if (rate >= 75) return 'high';
+    if (rate >= 50) return 'mid';
+    return 'low';
+}
+
+// --- Render ---
+function render() {
+    const evs = [...eventDates].sort((a,b) => new Date(a.date) - new Date(b.date));
+    const activeM = activeMembers();
+    const filteredMembers = activeM.filter(m => m.name.toLowerCase().includes(searchQuery));
+
+    document.getElementById('headerEventsCount').innerText = `${activeM.length} members · ${evs.length} sessions`;
+    document.getElementById('footerMembersShown').innerText = `${filteredMembers.length} members shown`;
+
+    // KPIs
+    const totalRatesSum = activeM.reduce((s,m) => s + memberRate(m, evs), 0);
+    const totalAttendedSum = activeM.reduce((s,m) => s + memberAttendedCount(m, evs), 0);
+    document.getElementById('kpiMembers').innerText = activeM.length;
+    document.getElementById('kpiAvgAttendance').innerText = activeM.length ? (totalAttendedSum / activeM.length).toFixed(1) : '0.0';
+    const avgRate = activeM.length ? (totalRatesSum / activeM.length) : 0;
+    const kpiRateEl = document.getElementById('kpiAvgRate');
+    kpiRateEl.innerText = avgRate.toFixed(1) + '%';
+    kpiRateEl.className = 'kpi-card__value notranslate attended-' + rateClass(avgRate);
+    document.getElementById('kpiPctBase').innerText = evs.length + ' events';
+
+    renderAttendanceTable(evs, filteredMembers);
+    renderRanking(evs, activeM);
+    renderWarTab(evs, activeM);
+}
+
+function renderAttendanceTable(evs, filteredMembers) {
+    const headerRow = document.getElementById('tableHeaderRow');
+    let headerHtml = `<th class="col-rank">#</th><th class="col-name">MEMBER</th><th class="col-attended">ATTENDED</th><th class="col-percentage">RATE</th>`;
+    evs.forEach(ev => {
+        const editAttr = isManagementOrAdmin ? `onclick="openEditEventModal(${ev.id})" style="cursor:pointer;"` : '';
+        headerHtml += `<th class="col-event ${ev.isWar ? 'col-event--war' : ''}" ${editAttr}>
+            <div class="notranslate">${ev.name}</div>
+            <div class="day-group-header__date">${ev.date}</div>
+        </th>`;
+    });
+    headerRow.innerHTML = headerHtml;
+
+    const tbody = document.getElementById('memberTableBody');
+    if (filteredMembers.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="${4 + evs.length}" style="text-align:center;padding:24px;color:var(--color-text-muted);">No members found.</td></tr>`;
+        document.getElementById('tableFooterRow').innerHTML = '';
+        return;
+    }
+    const sorted = [...filteredMembers].sort((a,b) => memberRate(b, evs) - memberRate(a, evs));
+    let html = '';
+    sorted.forEach((m, idx) => {
+        const rank = idx + 1;
+        const attendedCount = memberAttendedCount(m, evs);
+        const rate = memberRate(m, evs);
+        const rc = rateClass(rate);
+        html += `<tr>
+            <td class="col-rank">${rank}</td>
+            <td class="col-name notranslate">${m.name}</td>
+            <td class="col-attended notranslate">${attendedCount}/${evs.length}</td>
+            <td class="col-percentage">
+                <div class="progress-bar-container">
+                    <div class="progress-bar"><div class="progress-bar__fill ${rc}" style="width:${rate}%;"></div></div>
+                    <span class="progress-text attended-${rc}">${rate.toFixed(0)}%</span>
+                </div>
+            </td>`;
+        evs.forEach(ev => {
+            const attended = !!(m.attendance && m.attendance[ev.id]);
+            if (ev.isWar) {
+                const vote = (m.warVotes && m.warVotes[ev.id]) || 'none';
+                const voteClass = 'war-vote-badge--' + vote;
+                const voteLabel = vote === 'none' ? '—' : vote.toUpperCase();
+                const clickAttrs = isManagementOrAdmin ? `onclick="cycleWarVote(${m.id},${ev.id})"` : '';
+                const attendClickAttrs = isManagementOrAdmin ? `onclick="toggleAttendance(${m.id},${ev.id})"` : '';
+                html += `<td class="col-event col-event--war">
+                    <div class="war-cell">
+                        <span class="attend-pill ${attended ? 'attend-pill--yes' : 'attend-pill--no'} ${isManagementOrAdmin ? '' : 'attend-pill--readonly'}" ${attendClickAttrs}>${attended ? 'YES' : 'NO'}</span>
+                        <span class="war-vote-badge ${voteClass}" ${clickAttrs}>${voteLabel}</span>
+                    </div>
+                </td>`;
+            } else {
+                const clickAttrs = isManagementOrAdmin ? `onclick="toggleAttendance(${m.id},${ev.id})"` : '';
+                html += `<td class="col-event"><span class="check-toggle" ${clickAttrs}>${attended ? '<span class="check-icon">✔</span>' : '<span class="cross-icon">✕</span>'}</span></td>`;
+            }
+        });
+        html += `</tr>`;
+    });
+    tbody.innerHTML = html;
+    document.getElementById('tableFooterRow').innerHTML = `<tr><td colspan="${4 + evs.length}" style="padding:12px;font-size:11px;font-weight:800;color:var(--color-text-muted);">Showing ${sorted.length} of ${filteredMembers.length} members</td></tr>`;
+}
+
+function renderRanking(evs, activeM) {
+    const list = document.getElementById('rankingCardsList');
+    if (activeM.length === 0) { list.innerHTML = `<div style="text-align:center;color:var(--color-text-muted);padding:24px;">No members yet.</div>`; return; }
+    const sorted = [...activeM].sort((a,b) => memberRate(b, evs) - memberRate(a, evs));
+    let html = '';
+    sorted.forEach((m, idx) => {
+        const rank = idx + 1;
+        const attendedCount = memberAttendedCount(m, evs);
+        const rate = memberRate(m, evs);
+        const rc = rateClass(rate);
+        const rankCardClass = rank <= 3 ? `ranking-card--rank-${rank}` : '';
+        html += `<div class="ranking-card ${rankCardClass}">
+            <div class="ranking-card__left">
+                <div class="ranking-card__badge">${rank}</div>
+                <div>
+                    <div class="ranking-card__name notranslate">${m.name}</div>
+                    <div class="ranking-card__subtext notranslate">${attendedCount}/${evs.length} events attended</div>
+                </div>
+            </div>
+            <div class="ranking-card__right">
+                <div class="ranking-card__bar-wrapper">
+                    <div class="progress-bar"><div class="progress-bar__fill ${rc}" style="width:${rate}%;"></div></div>
+                </div>
+                <span class="progress-text attended-${rc}">${rate.toFixed(0)}%</span>
+            </div>
+        </div>`;
+    });
+    list.innerHTML = html;
+}
+
+function renderWarTab(evs, activeM) {
+    const warEvs = evs.filter(e => e.isWar);
+    const tbody = document.getElementById('violatorsTableBody');
+    document.getElementById('warKpiPctBase').innerText = warEvs.length + ' war events';
+
+    if (warEvs.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--color-text-muted);">No war events recorded yet.</td></tr>`;
+        document.getElementById('warKpiMembers').innerText = activeM.length;
+        document.getElementById('warKpiAvgAttendance').innerText = '0.0';
+        document.getElementById('warKpiAvgRate').innerText = '0.0%';
         return;
     }
 
-    document.getElementById('loginModal').style.display = 'none';
-    document.getElementById('loginUsername').value = '';
-    document.getElementById('loginPassword').value = '';
-    await checkSessionOnLoad();
-});
-
-
-        // Sub-Tab Switchers for Event Attendance
-        document.getElementById('btnTabAttendance')?.addEventListener('click', function() {
-            setAttendanceTab('Attendance');
-        });
-        document.getElementById('btnTabRanking')?.addEventListener('click', function() {
-            setAttendanceTab('Ranking');
-        });
-        document.getElementById('btnTabViolators')?.addEventListener('click', function() {
-            setAttendanceTab('Violators');
-        });
-
-        function setAttendanceTab(tabName) {
-            ['Attendance', 'Ranking', 'Violators'].forEach(t => {
-                const btn = document.getElementById(`btnTab${t}`);
-                const subView = document.getElementById(`subView${t}`);
-                if (btn) btn.classList.toggle('btn-toggle--active', t === tabName);
-                if (subView) subView.style.display = (t === tabName) ? 'flex' : 'none';
-            });
-        }
-
-        // Discussion Room Sub-Tabs
-        window.switchDiscussionTab = function(tab) {
-            const btnChat = document.getElementById('btnDiscTabChat');
-            const btnAnnounce = document.getElementById('btnDiscTabAnnounce');
-            const viewChat = document.getElementById('discSubChat');
-            const viewAnnounce = document.getElementById('discSubAnnounce');
-
-            if (tab === 'chat') {
-                btnChat.classList.add('btn-toggle--active');
-                btnAnnounce.classList.remove('btn-toggle--active');
-                viewChat.style.display = 'flex';
-                viewAnnounce.style.display = 'none';
-            } else {
-                btnAnnounce.classList.add('btn-toggle--active');
-                btnChat.classList.remove('btn-toggle--active');
-                viewAnnounce.style.display = 'flex';
-                viewChat.style.display = 'none';
+    let redCount = 0, yellowCount = 0, totalAttended = 0, totalRateSum = 0;
+    const rows = activeM.map(m => {
+        const attended = memberAttendedCount(m, warEvs);
+        const rate = memberRate(m, warEvs);
+        totalAttended += attended;
+        totalRateSum += rate;
+        let red = 0, yellow = 0;
+        warEvs.forEach(ev => {
+            const didAttend = !!(m.attendance && m.attendance[ev.id]);
+            const vote = (m.warVotes && m.warVotes[ev.id]) || 'none';
+            if (!didAttend) {
+                if (vote === 'yes') red++;
+                else if (vote === 'maybe' || vote === 'none') yellow++;
             }
-        };
+        });
+        redCount += red; yellowCount += yellow;
+        return { m, attended, rate, red, yellow };
+    }).sort((a,b) => b.rate - a.rate);
 
-        // Modal Helpers
-        window.openRoleAssignModal = function() {
-            document.getElementById('roleAssignModal').style.display = 'flex';
-        };
-        window.openCreateNoticeModal = function() {
-            document.getElementById('createNoticeModal').style.display = 'flex';
-        };
-        window.openCreatePollModal = function() {
-            document.getElementById('createPollModal').style.display = 'flex';
-        };
+    document.getElementById('warKpiMembers').innerText = activeM.length;
+    document.getElementById('warKpiAvgAttendance').innerText = activeM.length ? (totalAttended / activeM.length).toFixed(1) : '0.0';
+    document.getElementById('warKpiAvgRate').innerText = activeM.length ? (totalRateSum / activeM.length).toFixed(1) + '%' : '0.0%';
 
-        window.onTargetAccountChange = function() {};
-        window.onTargetRoleChange = function() {};
-        window.sendChatMessage = function() {};
-        window.addPollOptionDraft = function() {};
-        window.submitPollModal = function() {};
-        window.adminDeletePollFromModal = function() {};
-        window.submitCreateNotice = function() {};
-        window.deleteManagementNotice = function() {};
-        window.toggleCalEventTypeFields = function() {};
-        window.deleteCalendarEvent = function() {};
-        window.submitCalendarEvent = function() {};
-        window.deleteNoticeAnnouncement = function() {};
-        window.submitNoticeAnnouncement = function() {};
-        window.cancelPhotoUpload = function() {};
-        window.confirmPhotoUpload = function() {};
-        window.closePhotoLightbox = function() {};
-        window.saveLightboxVisibility = function() {};
-        window.deleteLightboxPhoto = function() {};
-        window.closePhotoGalleryModal = function() {};
-    </script>
+    let html = '';
+    rows.forEach((r, idx) => {
+        const rc = rateClass(r.rate);
+        html += `<tr>
+            <td class="col-rank">${idx+1}</td>
+            <td class="col-name notranslate">${r.m.name}</td>
+            <td style="text-align:center;" class="notranslate">${r.attended}/${warEvs.length}</td>
+            <td style="text-align:center;color:#dc2626;" class="notranslate">${r.red}</td>
+            <td style="text-align:center;color:#b89117;" class="notranslate">${r.yellow}</td>
+            <td class="col-percentage">
+                <div class="progress-bar-container">
+                    <div class="progress-bar"><div class="progress-bar__fill ${rc}" style="width:${r.rate}%;"></div></div>
+                    <span class="progress-text attended-${rc}">${r.rate.toFixed(0)}%</span>
+                </div>
+            </td>
+        </tr>`;
+    });
+    tbody.innerHTML = html;
+}
+
+window.addEventListener('DOMContentLoaded', async () => {
+    const ok = await loadCurrentUserAccount();
+    if (!ok) {
+        window.location.href = 'index.html';
+        return;
+    }
+    renderSidebarUser();
+    await loadDataFromCloud();
+    subscribeToAppDataChanges();
+});
+</script>
 </body>
 </html>
