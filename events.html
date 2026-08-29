@@ -911,8 +911,30 @@ function renderAttendanceTable(evs, filteredMembers) {
 
         html += `</tr>`;
     });
-    tbody.innerHTML = html;
-    document.getElementById('tableFooterRow').innerHTML = `<tr><td colspan="${colSpan}" style="padding:12px;font-size:11px;font-weight:800;color:var(--color-text-muted);">Showing ${sorted.length} of ${filteredMembers.length} members</td></tr>`;
+        tbody.innerHTML = html;
+    document.getElementById('tableFooterRow').innerHTML = `<tr><td colspan="${colSpan}" style="padding:12px;font-size:11px;font-weight:800;color:var(--color-text-muted);">Showing ${sorted.length} of ${filteredMembers.length} members</td></tr>` + buildEventTotalsRow(dayGroups, filteredMembers);
+}
+
+// Builds a footer row showing, per visible event column, how many of the
+// currently-filtered members attended (weighted: late = 0.5). Mirrors the
+// header's day-group collapse/expand logic so columns line up correctly.
+function buildEventTotalsRow(dayGroups, filteredMembers) {
+    let html = `<tr style="background:#f4f6fb;">
+        <td colspan="4" style="padding:10px 12px;font-size:11px;font-weight:800;color:var(--color-primary-dark);text-align:right;">TOTAL ATTENDED →</td>`;
+    dayGroups.forEach(group => {
+        if (collapsedEventDates.has(group.key)) {
+            const dayTotal = group.events.reduce((sum, ev) =>
+                sum + filteredMembers.reduce((s, m) => s + attendanceWeight(m, ev.id), 0), 0);
+            html += `<td class="notranslate" style="text-align:center;font-weight:800;color:var(--color-primary-dark);padding:10px;">${formatWeightedCount(dayTotal)}</td>`;
+            return;
+        }
+        group.events.forEach(ev => {
+            const total = filteredMembers.reduce((s, m) => s + attendanceWeight(m, ev.id), 0);
+            html += `<td class="notranslate" style="text-align:center;font-weight:800;color:var(--color-primary-dark);padding:10px;">${formatWeightedCount(total)}</td>`;
+        });
+    });
+    html += `</tr>`;
+    return html;
 }
 
 function renderRanking(evs, activeM) {
