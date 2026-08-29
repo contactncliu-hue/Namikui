@@ -350,22 +350,24 @@ body{font-family:'Open Sans',sans-serif;background:var(--color-bg-main);color:va
       This shows who OCR read from the screenshot(s), matched only by name — dates/scores from the screenshot are ignored. Pick the member on each row and set their attendance status, uncheck anyone wrong, then apply — nothing saves until you click Apply.
     </div>
 
-    <div class="import-review-section-label">Matched Rows</div>
-    <div id="eventsImportReviewRows"></div>
+    <div style="overflow-y:auto;flex:1;min-height:0;">
+        <div class="import-review-section-label">Matched Rows</div>
+        <div id="eventsImportReviewRows"></div>
 
-    <div id="eventsImportUnmatchedWrap" style="display:none;">
-      <div class="import-review-section-label">Unmatched Rows (pick a member or leave as Skip)</div>
-      <div id="eventsImportUnmatchedRows"></div>
+        <div id="eventsImportUnmatchedWrap" style="display:none;">
+            <div class="import-review-section-label">Unmatched Rows (pick a member or leave as Skip)</div>
+            <div id="eventsImportUnmatchedRows"></div>
+        </div>
+
+        <div style="margin-top:10px;">
+            <button class="btn-action-custom" style="font-size:11px;padding:8px 14px;" onclick="addManualEventsImportRow()">+ ADD ROW MANUALLY</button>
+        </div>
+
+        <details id="eventsImportRawTextWrap" style="display:none;margin-top:14px;">
+            <summary style="cursor:pointer;font-size:11px;font-weight:800;color:var(--color-text-muted);text-transform:uppercase;letter-spacing:.5px;">Raw OCR output</summary>
+            <pre id="eventsImportRawText" class="notranslate" style="white-space:pre-wrap;font-size:11px;background:#f7f6f0;border:1px solid var(--color-border-light);border-radius:4px;padding:10px;margin-top:8px;max-height:180px;overflow-y:auto;font-family:monospace;"></pre>
+        </details>
     </div>
-
-    <div style="margin-top:10px;">
-      <button class="btn-action-custom" style="font-size:11px;padding:8px 14px;" onclick="addManualEventsImportRow()">+ ADD ROW MANUALLY</button>
-    </div>
-
-    <details id="eventsImportRawTextWrap" style="display:none;margin-top:14px;">
-      <summary style="cursor:pointer;font-size:11px;font-weight:800;color:var(--color-text-muted);text-transform:uppercase;letter-spacing:.5px;">Raw OCR output</summary>
-      <pre id="eventsImportRawText" class="notranslate" style="white-space:pre-wrap;font-size:11px;background:#f7f6f0;border:1px solid var(--color-border-light);border-radius:4px;padding:10px;margin-top:8px;max-height:180px;overflow-y:auto;font-family:monospace;"></pre>
-    </details>
 
     <div class="modal-card-btns" style="margin-top:16px;">
       <button class="btn-action-custom" onclick="closeEventsImportReviewModal()">Cancel</button>
@@ -434,15 +436,23 @@ function showSaveStatus(kind, text) {
 
 // --- Data model ---
 // eventDates: [{ id, name, date, isWar }]
-// members[i].attendance: { [eventId]: true | 'late' } — absent members simply
-//   have no key for that eventId (delete on absent, never store false).
+// attendance: { [memberId]: { [eventId]: true | 'late' } } — its own row so
+//   marking attendance never has to rewrite the (large) members blob.
+//   Absent members simply have no key for that eventId (delete on absent,
+//   never store false).
 // members[i].warVotes: { [eventId]: 'yes'|'no'|'maybe' }
 let members = [];
 let eventDates = [];
+const ATTENDANCE_ROW_ID = 11; // dedicated row, separate from members (id=2) and eventDates (id=3)
+let attendance = {};
 let showDiffMode = false;
 let searchQuery = '';
 let rankingSortMode = 'default';
 let warSortMode = 'default';
+
+// Guards the realtime listener from clobbering an in-flight save with a
+// stale re-fetch — see fetchDataOnly() below.
+let saveInFlight = 0;
 
 const RANK_GROUP_ORDER = { R5: 0, R4: 1, R3: 2, R2: 3, R1: 4 };
 function rankGroupOf(m) {
@@ -473,9 +483,12 @@ function assignCompetitionRanks(sortedArr, rateFn) {
 
 // --- Attendance state helpers ---
 // State per member/event: 'attended' (weight 1), 'late' (weight 0.5, war
-// events only), or 'absent' (weight 0, no key stored).
+// events only), or 'absent' (weight 0, no key stored). Reads from the
+// dedicated `attendance` object (keyed by member id), not from the member
+// record itself.
 function attendanceState(m, eventId) {
-    const v = m.attendance ? m.attendance[eventId] : undefined;
+    const memAtt = attendance[m.id];
+    const v = memAtt ? memAtt[eventId] : undefined;
     if (v === true) return 'attended';
     if (v === 'late') return 'late';
     return 'absent';
@@ -517,6 +530,23 @@ function subscribeToAppDataChanges() {
         .subscribe();
 }
 
+// One-time cleanup: if attendance is still sitting on old member records
+// (from before it moved to its own row), pull it into the dedicated
+// `attendance` row and strip it off members so that row shrinks back down.
+async function migrateAttendanceIfNeeded() {
+    const hasOldData = members.some(m => m.attendance && Object.keys(m.attendance).length > 0);
+    const alreadyMigrated = attendance && Object.keys(attendance).length > 0;
+    if (!hasOldData || alreadyMigrated) return;
+    members.forEach(m => {
+        if (m.attendance && Object.keys(m.attendance).length > 0) {
+            attendance[m.id] = { ...m.attendance };
+        }
+        delete m.attendance;
+    });
+    await saveAttendance();
+    await saveMembers();
+}
+
 async function loadDataFromCloud() {
     try {
         const { data, error } = await db.from('app_data').select('*');
@@ -524,6 +554,7 @@ async function loadDataFromCloud() {
         (data || []).forEach(row => {
             if (row.key === 'members') members = row.value || [];
             if (row.key === 'eventDates') eventDates = row.value || [];
+            if (row.key === 'attendance') attendance = row.value || {};
         });
     } catch (err) {
         console.error('Error loading data:', err);
@@ -531,26 +562,27 @@ async function loadDataFromCloud() {
         return;
     }
     members.forEach(m => {
-        if (!m.attendance || typeof m.attendance !== 'object') m.attendance = {};
         if (!m.warVotes || typeof m.warVotes !== 'object') m.warVotes = {};
     });
+    await migrateAttendanceIfNeeded();
     render();
 }
 
 async function fetchDataOnly() {
+    if (saveInFlight > 0) return; // don't let a realtime re-fetch clobber a save in progress
     try {
-        const { data, error } = await db.from('app_data').select('*').in('key', ['members','eventDates']);
+        const { data, error } = await db.from('app_data').select('*').in('key', ['members','eventDates','attendance']);
         if (error) throw error;
         (data || []).forEach(row => {
             if (row.key === 'members') members = row.value || [];
             if (row.key === 'eventDates') eventDates = row.value || [];
+            if (row.key === 'attendance') attendance = row.value || {};
         });
     } catch (err) {
         console.error('Error refreshing event data:', err);
         return;
     }
     members.forEach(m => {
-        if (!m.attendance || typeof m.attendance !== 'object') m.attendance = {};
         if (!m.warVotes || typeof m.warVotes !== 'object') m.warVotes = {};
     });
     render();
@@ -558,20 +590,35 @@ async function fetchDataOnly() {
 
 async function saveMembers() {
     showSaveStatus('saving', 'Saving…');
+    saveInFlight++;
     try {
         const { error } = await db.from('app_data').upsert({ id: 2, key: 'members', value: members }, { onConflict: 'id' });
         if (error) { showSaveStatus('error', 'Save failed'); return; }
         showSaveStatus('ok', 'Saved');
     } catch (err) { showSaveStatus('error', 'Save failed'); }
+    finally { saveInFlight--; }
 }
 
 async function saveEventDates() {
     showSaveStatus('saving', 'Saving…');
+    saveInFlight++;
     try {
         const { error } = await db.from('app_data').upsert({ id: 3, key: 'eventDates', value: eventDates }, { onConflict: 'id' });
         if (error) { showSaveStatus('error', 'Save failed'); return; }
         showSaveStatus('ok', 'Saved');
     } catch (err) { showSaveStatus('error', 'Save failed'); }
+    finally { saveInFlight--; }
+}
+
+async function saveAttendance() {
+    showSaveStatus('saving', 'Saving…');
+    saveInFlight++;
+    try {
+        const { error } = await db.from('app_data').upsert({ id: ATTENDANCE_ROW_ID, key: 'attendance', value: attendance }, { onConflict: 'id' });
+        if (error) { showSaveStatus('error', 'Save failed'); return; }
+        showSaveStatus('ok', 'Saved');
+    } catch (err) { showSaveStatus('error', 'Save failed'); }
+    finally { saveInFlight--; }
 }
 
 // --- Tab switching ---
@@ -644,11 +691,14 @@ document.getElementById('btnSaveEventModal').addEventListener('click', async () 
 document.getElementById('btnDeleteEventModal').addEventListener('click', async () => {
     if (!confirm('Delete this event? This removes it for all members.')) return;
     eventDates = eventDates.filter(e => e.id !== editingEventId);
+    Object.keys(attendance).forEach(memberId => {
+        if (attendance[memberId]) delete attendance[memberId][editingEventId];
+    });
     members.forEach(m => {
-        if (m.attendance) delete m.attendance[editingEventId];
         if (m.warVotes) delete m.warVotes[editingEventId];
     });
     await saveEventDates();
+    await saveAttendance();
     await saveMembers();
     document.getElementById('editEventNameModal').style.display = 'none';
     render();
@@ -660,25 +710,25 @@ window.toggleAttendance = function(memberId, eventId) {
     if (!isManagementOrAdmin) return;
     const m = members.find(x => x.id === memberId);
     if (!m) return;
-    if (!m.attendance) m.attendance = {};
+    if (!attendance[memberId]) attendance[memberId] = {};
     const state = attendanceState(m, eventId);
-    if (state === 'attended') delete m.attendance[eventId];
-    else m.attendance[eventId] = true;
-    saveMembers().then(render);
+    if (state === 'attended') delete attendance[memberId][eventId];
+    else attendance[memberId][eventId] = true;
+    saveAttendance().then(render);
 };
 // War events: 3-state cycle absent -> attended -> late -> absent.
 window.cycleWarAttendance = function(memberId, eventId) {
     if (!isManagementOrAdmin) return;
     const m = members.find(x => x.id === memberId);
     if (!m) return;
-    if (!m.attendance) m.attendance = {};
+    if (!attendance[memberId]) attendance[memberId] = {};
     const order = ['absent', 'attended', 'late'];
     const cur = attendanceState(m, eventId);
     const next = order[(order.indexOf(cur) + 1) % order.length];
-    if (next === 'absent') delete m.attendance[eventId];
-    else if (next === 'attended') m.attendance[eventId] = true;
-    else m.attendance[eventId] = 'late';
-    saveMembers().then(render);
+    if (next === 'absent') delete attendance[memberId][eventId];
+    else if (next === 'attended') attendance[memberId][eventId] = true;
+    else attendance[memberId][eventId] = 'late';
+    saveAttendance().then(render);
 };
 window.cycleWarVote = function(memberId, eventId) {
     if (!isManagementOrAdmin) return;
@@ -792,10 +842,14 @@ function renderAttendanceTable(evs, filteredMembers) {
         return;
     }
     const colSpan = 4 + visibleColCount;
+    // Grouped by rank tier (R5->R1) only. No secondary sort by attendance
+    // rate here — sort() is stable, so members keep the same relative order
+    // (matching the Members tab) whether or not you've toggled attendance,
+    // instead of jumping around every time a checkbox is clicked.
     const sorted = [...filteredMembers].sort((a,b) => {
-    const ga = RANK_GROUP_ORDER[rankGroupOf(a)], gb = RANK_GROUP_ORDER[rankGroupOf(b)];
-    return ga - gb;
-});
+        const ga = RANK_GROUP_ORDER[rankGroupOf(a)], gb = RANK_GROUP_ORDER[rankGroupOf(b)];
+        return ga - gb;
+    });
 
     let html = '';
     let lastGroup = null;
@@ -812,7 +866,7 @@ function renderAttendanceTable(evs, filteredMembers) {
         html += `<tr>
             <td class="col-rank">${rank}</td>
             <td class="col-name notranslate">${m.name}</td>
-                       <td class="col-attended notranslate">${formatWeightedCount(attendedCount)}</td>
+            <td class="col-attended notranslate">${formatWeightedCount(attendedCount)}</td>
             <td class="col-percentage">
                 <div class="progress-bar-container">
                     <div class="progress-bar"><div class="progress-bar__fill ${rc}" style="width:${rate}%;"></div></div>
@@ -850,7 +904,7 @@ function renderAttendanceTable(evs, filteredMembers) {
                 } else {
                     const attended = attendanceState(m, ev.id) === 'attended';
                     const clickAttrs = isManagementOrAdmin ? `onclick="toggleAttendance(${m.id},${ev.id})"` : '';
-              html += `<td class="col-event"><span class="check-toggle" ${clickAttrs}>${attended ? '<i class="fa-solid fa-check check-icon"></i>' : '<i class="fa-solid fa-xmark cross-icon"></i>'}</span></td>`;
+                    html += `<td class="col-event"><span class="check-toggle" ${clickAttrs}>${attended ? '<i class="fa-solid fa-check check-icon"></i>' : '<i class="fa-solid fa-xmark cross-icon"></i>'}</span></td>`;
                 }
             });
         });
@@ -1107,6 +1161,7 @@ document.getElementById('btnImportEvents').addEventListener('click', () => {
     document.getElementById('screenshotInput').click();
 });
 document.getElementById('screenshotInput').addEventListener('change', (e) => window.handleEventsScreenshotImport(e));
+
 window.handleEventsScreenshotImport = async function(event) {
     if (!isManagementOrAdmin) return;
     const files = Array.from(event.target.files || []);
@@ -1251,7 +1306,7 @@ function renderEventsImportReviewModal() {
             </select>`;
         }
         const isChecked = status === 'attended';
-        return `<span style="cursor:pointer;padding:4px 10px;border:1px solid var(--color-border-light);border-radius:4px;" onclick="toggleEventsImportStatus(${idx})" title="Click to toggle attended / not attended">${isChecked ? '<span class="check-icon">✔</span>' : '<span class="cross-icon">✕</span>'}</span>`;
+        return `<span style="cursor:pointer;padding:4px 10px;border:1px solid var(--color-border-light);border-radius:4px;" onclick="toggleEventsImportStatus(${idx})" title="Click to toggle attended / not attended">${isChecked ? '<i class="fa-solid fa-check check-icon"></i>' : '<i class="fa-solid fa-xmark cross-icon"></i>'}</span>`;
     };
 
     const voteHtml = (idx, vote) => {
@@ -1320,10 +1375,10 @@ window.addManualEventsImportRow = function() {
 };
 
 // Applying an import only ever: (a) appends one new eventDates entry when
-// creating a new event, and (b) sets/deletes attendance[targetEventId] and
-// warVotes[targetEventId] for included, member-matched rows. No other
-// event's data or any other field on any member is read or touched, so a
-// bad import can't silently overwrite or delete unrelated records.
+// creating a new event, and (b) sets/deletes attendance[memberId][targetEventId]
+// and warVotes[targetEventId] on the member for included, member-matched rows.
+// No other event's data or any other field on any member is read or touched,
+// so a bad import can't silently overwrite or delete unrelated records.
 window.applyEventsImportReview = async function() {
     if (!pendingEventsImport) return;
     const { rows } = pendingEventsImport;
@@ -1349,12 +1404,12 @@ window.applyEventsImportReview = async function() {
         if (!r.include || !r.memberId) return;
         const member = members.find(m => String(m.id) === String(r.memberId));
         if (!member) return;
-        if (!member.attendance) member.attendance = {};
+        if (!attendance[r.memberId]) attendance[r.memberId] = {};
         if (!member.warVotes) member.warVotes = {};
 
-        if (r.status === 'attended') member.attendance[targetEventId] = true;
-        else if (r.status === 'late' && targetEvent.isWar) member.attendance[targetEventId] = 'late';
-        else delete member.attendance[targetEventId];
+        if (r.status === 'attended') attendance[r.memberId][targetEventId] = true;
+        else if (r.status === 'late' && targetEvent.isWar) attendance[r.memberId][targetEventId] = 'late';
+        else delete attendance[r.memberId][targetEventId];
 
         if (targetEvent.isWar) {
             if (r.vote && r.vote !== 'none') member.warVotes[targetEventId] = r.vote;
@@ -1366,6 +1421,7 @@ window.applyEventsImportReview = async function() {
     if (appliedCount === 0) { alert('No rows were checked with a member selected — nothing was applied.'); return; }
 
     if (pendingEventsImport.targetMode === 'new') await saveEventDates();
+    await saveAttendance();
     await saveMembers();
     render();
     closeEventsImportReviewModal();
