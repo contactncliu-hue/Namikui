@@ -189,7 +189,7 @@ body{font-family:'Open Sans',sans-serif;background:var(--color-bg-main);color:va
       <div class="sidebar__section-title" id="adminSectionHeader" style="display:none;">MANAGEMENT &amp; ADMIN</div>
       <ul class="sidebar__menu" id="adminMenuContainer">
         <li id="navDiscussionLi" style="display:none;"><a class="sidebar__item" href="index.html#discussion"><span class="sidebar__icon">|</span> DISCUSSION ROOM</a></li>
-        <li id="navHistoryLi" style="display:none;"><a class="sidebar__item" href="index.html#history"><span class="sidebar__icon">|</span> EDIT HISTORY &amp; AUDIT</a></li>
+        <li id="navHistoryLi" style="display:none;"><a class="sidebar__item" id="navHistoryLink"><span class="sidebar__icon">|</span> EDIT HISTORY &amp; AUDIT</a></li>
       </ul>
     </nav>
     <div class="sidebar__footer">
@@ -376,6 +376,19 @@ body{font-family:'Open Sans',sans-serif;background:var(--color-bg-main);color:va
   </div>
 </div>
 
+<div class="modal-overlay" id="historyModal">
+  <div class="modal-card" style="max-width:640px;">
+    <h3>Version History <span style="cursor:pointer;color:#dc2626;font-size:16px;float:right;" onclick="closeHistoryModal()">✕</span></h3>
+    <p style="font-size:11px;color:var(--color-text-muted);font-weight:700;margin-bottom:12px;">Every save is kept here. Restoring a version snapshots the current state first, so nothing is ever truly lost.</p>
+    <div class="btn-group" style="margin-bottom:14px;">
+      <button class="btn-toggle btn-toggle--active" data-histkey="attendance" onclick="loadHistoryFor('attendance')">ATTENDANCE</button>
+      <button class="btn-toggle" data-histkey="members" onclick="loadHistoryFor('members')">MEMBERS</button>
+      <button class="btn-toggle" data-histkey="eventDates" onclick="loadHistoryFor('eventDates')">EVENTS</button>
+    </div>
+    <div id="historyList" style="max-height:420px;overflow-y:auto;"></div>
+  </div>
+</div>
+
 <script>
 const SUPABASE_URL = 'https://xqzyncgtzybuclgxfzoi.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_dy0l_clzR9nOP6LKGqGA0w_bAkPPA7B';
@@ -413,6 +426,10 @@ sidebarOverlayEl.addEventListener('click', closeSidebar);
 document.getElementById('sidebarLogoutBtn').addEventListener('click', async () => {
     await db.auth.signOut();
     window.location.href = 'index.html';
+});
+document.getElementById('navHistoryLink').addEventListener('click', (e) => {
+    e.preventDefault();
+    openHistoryModal();
 });
 function renderSidebarUser() {
     document.getElementById('userRoleDisplay').innerText = (currentUser.username || 'Guest').toUpperCase();
@@ -453,6 +470,11 @@ let warSortMode = 'default';
 // Guards the realtime listener from clobbering an in-flight save with a
 // stale re-fetch — see fetchDataOnly() below.
 let saveInFlight = 0;
+
+// Timestamp of each row as last loaded from the server. Used by
+// saveKeyWithLock() to detect "someone else saved this since I loaded it"
+// before we blindly overwrite with our (possibly stale) local copy.
+let lastLoadedAt = { members: null, eventDates: null, attendance: null };
 
 const RANK_GROUP_ORDER = { R5: 0, R4: 1, R3: 2, R2: 3, R1: 4 };
 function rankGroupOf(m) {
@@ -549,12 +571,12 @@ async function migrateAttendanceIfNeeded() {
 
 async function loadDataFromCloud() {
     try {
-        const { data, error } = await db.from('app_data').select('*');
+        const { data, error } = await db.from('app_data').select('id,key,value,updated_at');
         if (error) throw error;
         (data || []).forEach(row => {
-            if (row.key === 'members') members = row.value || [];
-            if (row.key === 'eventDates') eventDates = row.value || [];
-            if (row.key === 'attendance') attendance = row.value || {};
+            if (row.key === 'members') { members = row.value || []; lastLoadedAt.members = row.updated_at; }
+            if (row.key === 'eventDates') { eventDates = row.value || []; lastLoadedAt.eventDates = row.updated_at; }
+            if (row.key === 'attendance') { attendance = row.value || {}; lastLoadedAt.attendance = row.updated_at; }
         });
     } catch (err) {
         console.error('Error loading data:', err);
@@ -568,15 +590,15 @@ async function loadDataFromCloud() {
     render();
 }
 
-async function fetchDataOnly() {
-    if (saveInFlight > 0) return; // don't let a realtime re-fetch clobber a save in progress
+async function fetchDataOnly(force = false) {
+    if (saveInFlight > 0 && !force) return; // don't let a realtime re-fetch clobber a save in progress
     try {
-        const { data, error } = await db.from('app_data').select('*').in('key', ['members','eventDates','attendance']);
+        const { data, error } = await db.from('app_data').select('id,key,value,updated_at').in('key', ['members','eventDates','attendance']);
         if (error) throw error;
         (data || []).forEach(row => {
-            if (row.key === 'members') members = row.value || [];
-            if (row.key === 'eventDates') eventDates = row.value || [];
-            if (row.key === 'attendance') attendance = row.value || {};
+            if (row.key === 'members') { members = row.value || []; lastLoadedAt.members = row.updated_at; }
+            if (row.key === 'eventDates') { eventDates = row.value || []; lastLoadedAt.eventDates = row.updated_at; }
+            if (row.key === 'attendance') { attendance = row.value || {}; lastLoadedAt.attendance = row.updated_at; }
         });
     } catch (err) {
         console.error('Error refreshing event data:', err);
@@ -588,38 +610,97 @@ async function fetchDataOnly() {
     render();
 }
 
-async function saveMembers() {
+// Shared save path for members / eventDates / attendance. Before writing,
+// confirms nobody else has saved this key since we last loaded it
+// (optimistic lock) and snapshots the new value into app_data_history so it
+// can always be restored later.
+async function saveKeyWithLock(id, key, value) {
     showSaveStatus('saving', 'Saving…');
     saveInFlight++;
     try {
-        const { error } = await db.from('app_data').upsert({ id: 2, key: 'members', value: members }, { onConflict: 'id' });
-        if (error) { showSaveStatus('error', 'Save failed'); return; }
+        const { data: current, error: checkErr } = await db
+            .from('app_data').select('updated_at').eq('id', id).maybeSingle();
+        if (checkErr) { showSaveStatus('error', 'Save failed'); return false; }
+        if (current && lastLoadedAt[key] && current.updated_at !== lastLoadedAt[key]) {
+            showSaveStatus('error', 'Out of date — refreshing');
+            alert(`Someone else just saved changes to "${key}". Your view will refresh now — please redo your last edit.`);
+            await fetchDataOnly(true);
+            return false;
+        }
+
+        // Snapshot BEFORE overwriting so this write is always recoverable.
+        const { error: histErr } = await db.from('app_data_history').insert({
+            data_key: key, value, saved_by: currentUser.username || 'unknown'
+        });
+        if (histErr) console.error('History snapshot failed:', histErr);
+
+        const { data: updated, error } = await db.from('app_data')
+            .upsert({ id, key, value }, { onConflict: 'id' })
+            .select('updated_at').single();
+        if (error) { showSaveStatus('error', 'Save failed'); return false; }
+        lastLoadedAt[key] = updated.updated_at;
         showSaveStatus('ok', 'Saved');
-    } catch (err) { showSaveStatus('error', 'Save failed'); }
-    finally { saveInFlight--; }
+        return true;
+    } catch (err) {
+        showSaveStatus('error', 'Save failed');
+        return false;
+    } finally {
+        saveInFlight--;
+    }
+}
+
+async function saveMembers() {
+    return saveKeyWithLock(2, 'members', members);
 }
 
 async function saveEventDates() {
-    showSaveStatus('saving', 'Saving…');
-    saveInFlight++;
-    try {
-        const { error } = await db.from('app_data').upsert({ id: 3, key: 'eventDates', value: eventDates }, { onConflict: 'id' });
-        if (error) { showSaveStatus('error', 'Save failed'); return; }
-        showSaveStatus('ok', 'Saved');
-    } catch (err) { showSaveStatus('error', 'Save failed'); }
-    finally { saveInFlight--; }
+    return saveKeyWithLock(3, 'eventDates', eventDates);
 }
 
 async function saveAttendance() {
-    showSaveStatus('saving', 'Saving…');
-    saveInFlight++;
-    try {
-        const { error } = await db.from('app_data').upsert({ id: ATTENDANCE_ROW_ID, key: 'attendance', value: attendance }, { onConflict: 'id' });
-        if (error) { showSaveStatus('error', 'Save failed'); return; }
-        showSaveStatus('ok', 'Saved');
-    } catch (err) { showSaveStatus('error', 'Save failed'); }
-    finally { saveInFlight--; }
+    return saveKeyWithLock(ATTENDANCE_ROW_ID, 'attendance', attendance);
 }
+
+// --- History / restore panel ---
+window.openHistoryModal = function() {
+    if (!isAdmin) return;
+    document.getElementById('historyModal').style.display = 'flex';
+    document.querySelectorAll('#historyModal .btn-toggle').forEach(b => b.classList.toggle('btn-toggle--active', b.dataset.histkey === 'attendance'));
+    loadHistoryFor('attendance');
+};
+window.closeHistoryModal = function() {
+    document.getElementById('historyModal').style.display = 'none';
+};
+window.loadHistoryFor = async function(key) {
+    document.querySelectorAll('#historyModal .btn-toggle').forEach(b => b.classList.toggle('btn-toggle--active', b.dataset.histkey === key));
+    const listEl = document.getElementById('historyList');
+    listEl.innerHTML = '<div style="color:var(--color-text-muted);font-size:12px;">Loading…</div>';
+    const { data, error } = await db.from('app_data_history')
+        .select('id,value,saved_by,created_at')
+        .eq('data_key', key)
+        .order('created_at', { ascending: false })
+        .limit(30);
+    if (error) { listEl.innerHTML = '<div style="color:#dc2626;font-size:12px;">Failed to load history.</div>'; return; }
+    if (!data || data.length === 0) { listEl.innerHTML = '<div style="color:var(--color-text-muted);font-size:12px;">No history yet for this table.</div>'; return; }
+    listEl.innerHTML = data.map(row => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 4px;border-bottom:1px solid var(--color-border-light);font-size:12px;font-family:var(--font-family-ui);font-weight:700;">
+            <span class="notranslate">${new Date(row.created_at).toLocaleString()} — ${row.saved_by || 'unknown'}</span>
+            <button class="btn-action-custom" style="padding:5px 12px;font-size:11px;" onclick="restoreHistoryRow('${key}', ${row.id})">Restore</button>
+        </div>`).join('');
+};
+window.restoreHistoryRow = async function(key, historyId) {
+    if (!confirm('Restore this version? The current state will be snapshotted first, so nothing is lost.')) return;
+    const { data: row, error } = await db.from('app_data_history').select('value').eq('id', historyId).single();
+    if (error || !row) { alert('Could not load that version.'); return; }
+    let ok = false;
+    if (key === 'members') { members = row.value || []; ok = await saveMembers(); }
+    if (key === 'eventDates') { eventDates = row.value || []; ok = await saveEventDates(); }
+    if (key === 'attendance') { attendance = row.value || {}; ok = await saveAttendance(); }
+    if (ok) {
+        closeHistoryModal();
+        render();
+    }
+};
 
 // --- Tab switching ---
 function setAttendanceTab(tabName) {
