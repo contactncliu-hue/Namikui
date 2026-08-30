@@ -460,7 +460,14 @@ function showSaveStatus(kind, text) {
 // members[i].warVotes: { [eventId]: 'yes'|'no'|'maybe' }
 let members = [];
 let eventDates = [];
-const ATTENDANCE_ROW_ID = 11; // dedicated row, separate from members (id=2) and eventDates (id=3)
+const ATTENDANCE_ROW_ID = 4; // moved off id 11 — that id was already used
+// by an unrelated "calendarEvents" feature elsewhere on this site, and every
+// time that feature saved, it silently overwrote this page's attendance
+// data. IDs 1-24 are all claimed by other features on this site (confirmed
+// via `select id, key from app_data order by id`); 4 and 7 were the only
+// unused gaps, so attendance now lives at 4. If you ever add new shared
+// features to this site, check that table first before hardcoding a new id
+// anywhere.
 let attendance = {};
 let showDiffMode = false;
 let searchQuery = '';
@@ -669,13 +676,19 @@ async function mutateAndSave(key, id, mutateFn, maxRetries = 5) {
                     .update({ value: newValue }).eq('id', id).eq('updated_at', current.updated_at)
                     .select('updated_at'));
             } else {
-                // Row doesn't exist yet — create it. If two admins race to
-                // create it at the same instant, one insert wins and the
-                // other's insert errors; that other admin's next loop
-                // iteration will then see `current` populated and update
-                // normally instead.
-                ({ data: updatedRows, error: updateErr } = await db.from('app_data')
-                    .insert({ id, key, value: newValue }).select('updated_at'));
+                // The fixed rows (members=2, eventDates=3, attendance=11)
+                // should already exist in this table. If `current` came back
+                // null it is far more likely a transient read hiccup than a
+                // genuinely missing row — and since this table does not
+                // enforce a unique constraint on `id`, blindly inserting here
+                // risks creating a SECOND row with the same id. That's what
+                // produced the "attendance reset to 0" bug: a stray blank
+                // duplicate got created, and later got picked up as the
+                // "current" copy on load. So instead of inserting, we retry
+                // the read a few times, and only give up with an error — we
+                // never guess-create a row for these three fixed ids.
+                await new Promise(r => setTimeout(r, 400));
+                continue;
             }
 
             if (updateErr || !updatedRows || updatedRows.length === 0) {
