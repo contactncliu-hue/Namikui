@@ -610,22 +610,60 @@ async function fetchDataOnly(force = false) {
     render();
 }
 
+// Refetches ONLY the single row that lost a save-conflict, instead of
+// clobbering all three (members/eventDates/attendance) globals. This is the
+// key fix: previously a conflict on ANY one key triggered a full refetch of
+// ALL keys via fetchDataOnly(true), which could silently discard unsaved
+// local edits sitting in the other two globals mid-way through a chained
+// save (e.g. delete-event, or apply-import).
+async function fetchSingleKey(key, id) {
+    try {
+        const { data, error } = await db.from('app_data').select('key,value,updated_at').eq('id', id).maybeSingle();
+        if (error || !data) return;
+        if (key === 'members') {
+            members = data.value || [];
+            lastLoadedAt.members = data.updated_at;
+            members.forEach(m => { if (!m.warVotes || typeof m.warVotes !== 'object') m.warVotes = {}; });
+        }
+        if (key === 'eventDates') { eventDates = data.value || []; lastLoadedAt.eventDates = data.updated_at; }
+        if (key === 'attendance') { attendance = data.value || {}; lastLoadedAt.attendance = data.updated_at; }
+    } catch (err) {
+        console.error('Error refreshing ' + key + ':', err);
+    }
+}
+
 // Shared save path for members / eventDates / attendance. Before writing,
 // confirms nobody else has saved this key since we last loaded it
 // (optimistic lock) and snapshots the new value into app_data_history so it
 // can always be restored later.
+//
+// Also runs a "drastic shrink" sanity check on array-type keys (members,
+// eventDates): if a save would cut the row's entry count by more than half,
+// it's far more likely to be a bug (a stale/reset local array being saved
+// over good server data) than an intentional bulk-delete, so it pauses and
+// asks for confirmation instead of silently overwriting.
 async function saveKeyWithLock(id, key, value) {
     showSaveStatus('saving', 'Saving…');
     saveInFlight++;
     try {
         const { data: current, error: checkErr } = await db
-            .from('app_data').select('updated_at').eq('id', id).maybeSingle();
+            .from('app_data').select('updated_at,value').eq('id', id).maybeSingle();
         if (checkErr) { showSaveStatus('error', 'Save failed'); return false; }
+
         if (current && lastLoadedAt[key] && current.updated_at !== lastLoadedAt[key]) {
             showSaveStatus('error', 'Out of date — refreshing');
             alert(`Someone else just saved changes to "${key}". Your view will refresh now — please redo your last edit.`);
-            await fetchDataOnly(true);
+            await fetchSingleKey(key, id);
+            render();
             return false;
+        }
+
+        if (current && Array.isArray(current.value) && Array.isArray(value)) {
+            const oldLen = current.value.length, newLen = value.length;
+            if (oldLen >= 4 && newLen < oldLen * 0.5) {
+                const proceed = confirm(`Warning: saving "${key}" would drop it from ${oldLen} to ${newLen} entries. This looks like an accidental bulk deletion.\n\nClick OK to save anyway, or Cancel to abort and keep the existing ${oldLen} entries.`);
+                if (!proceed) { showSaveStatus('error', 'Save cancelled'); return false; }
+            }
         }
 
         // Snapshot BEFORE overwriting so this write is always recoverable.
@@ -740,11 +778,13 @@ document.getElementById('btnAddEvent').addEventListener('click', async () => {
     const isWar = document.getElementById('newEventIsWarInput').checked;
     if (!name || !date) { alert('Please enter an event name and date.'); return; }
     const newEvent = { id: Date.now(), name, date, isWar };
-    eventDates.push(newEvent);
+    const prevEventDates = eventDates;
+    eventDates = [...eventDates, newEvent];
+    const ok = await saveEventDates();
+    if (!ok) { eventDates = prevEventDates; render(); return; }
     document.getElementById('newEventNameInput').value = '';
     document.getElementById('newDateInput').value = '';
     document.getElementById('newEventIsWarInput').checked = false;
-    await saveEventDates();
     render();
 });
 
@@ -762,25 +802,60 @@ window.openEditEventModal = function(eventId) {
 document.getElementById('btnSaveEventModal').addEventListener('click', async () => {
     const ev = eventDates.find(e => e.id === editingEventId);
     if (!ev) return;
+    const prevName = ev.name, prevDate = ev.date, prevIsWar = ev.isWar;
     ev.name = document.getElementById('editEventNameInput').value.trim() || ev.name;
     ev.date = document.getElementById('editEventDateInput').value || ev.date;
     ev.isWar = document.getElementById('editEventIsWarInput').checked;
-    await saveEventDates();
+    const ok = await saveEventDates();
+    if (!ok) { ev.name = prevName; ev.date = prevDate; ev.isWar = prevIsWar; render(); return; }
     document.getElementById('editEventNameModal').style.display = 'none';
     render();
 });
 document.getElementById('btnDeleteEventModal').addEventListener('click', async () => {
     if (!confirm('Delete this event? This removes it for all members.')) return;
-    eventDates = eventDates.filter(e => e.id !== editingEventId);
+    const deletedId = editingEventId;
+    const prevEventDates = eventDates;
+
+    // Step 1: remove the event itself. If this save fails or is cancelled
+    // (e.g. the drastic-shrink guard), stop here — nothing else is touched.
+    eventDates = eventDates.filter(e => e.id !== deletedId);
+    const okEvents = await saveEventDates();
+    if (!okEvents) {
+        eventDates = prevEventDates;
+        alert('Could not delete the event — please try again.');
+        render();
+        return;
+    }
+
+    // Step 2: clean up attendance for the deleted event. Only proceed to
+    // step 3 if this actually saved — previously these ran unconditionally
+    // in sequence, so a conflict on this save could reset `members` via a
+    // full refetch and then have the next save silently overwrite it with
+    // stale data.
+    const prevAttendance = JSON.parse(JSON.stringify(attendance));
     Object.keys(attendance).forEach(memberId => {
-        if (attendance[memberId]) delete attendance[memberId][editingEventId];
+        if (attendance[memberId]) delete attendance[memberId][deletedId];
     });
+    const okAttendance = await saveAttendance();
+    if (!okAttendance) {
+        attendance = prevAttendance;
+        alert('Event was deleted, but attendance records for it could not be cleaned up. Please retry, or check Edit History.');
+        document.getElementById('editEventNameModal').style.display = 'none';
+        render();
+        return;
+    }
+
+    // Step 3: clean up war votes for the deleted event.
+    const prevMembers = JSON.parse(JSON.stringify(members));
     members.forEach(m => {
-        if (m.warVotes) delete m.warVotes[editingEventId];
+        if (m.warVotes) delete m.warVotes[deletedId];
     });
-    await saveEventDates();
-    await saveAttendance();
-    await saveMembers();
+    const okMembers = await saveMembers();
+    if (!okMembers) {
+        members = prevMembers;
+        alert('Event was deleted, but war votes for it could not be cleaned up. Please retry, or check Edit History.');
+    }
+
     document.getElementById('editEventNameModal').style.display = 'none';
     render();
 });
@@ -1482,6 +1557,13 @@ window.addManualEventsImportRow = function() {
 // and warVotes[targetEventId] on the member for included, member-matched rows.
 // No other event's data or any other field on any member is read or touched,
 // so a bad import can't silently overwrite or delete unrelated records.
+//
+// Each save in this chain now checks its own success before the next step
+// runs. Previously the three saves fired unconditionally back-to-back; if
+// the first one hit a conflict, the resulting refetch could reset the
+// `members`/`attendance` globals mid-function, and the following save(s)
+// would then silently persist that (now stale, possibly emptied) state —
+// this is very likely what caused rows/records to appear to vanish.
 window.applyEventsImportReview = async function() {
     if (!pendingEventsImport) return;
     const { rows } = pendingEventsImport;
@@ -1494,13 +1576,23 @@ window.applyEventsImportReview = async function() {
         if (!name) { alert('Please enter an event name for the new event.'); return; }
         if (!dateVal) { alert('Please select a date for the new event.'); return; }
         targetEventId = Date.now();
-        eventDates.push({ id: targetEventId, name, date: dateVal, isWar });
+        const prevEventDates = eventDates;
+        eventDates = [...eventDates, { id: targetEventId, name, date: dateVal, isWar }];
+        const okEvents = await saveEventDates();
+        if (!okEvents) {
+            eventDates = prevEventDates;
+            alert('Could not save the new event — please try again.');
+            return;
+        }
     } else {
         targetEventId = pendingEventsImport.targetEventId;
     }
 
     const targetEvent = eventDates.find(e => e.id === targetEventId);
     if (!targetEvent) { alert('Could not determine which event to apply to.'); return; }
+
+    const prevAttendance = JSON.parse(JSON.stringify(attendance));
+    const prevMembers = JSON.parse(JSON.stringify(members));
 
     let appliedCount = 0;
     rows.forEach(r => {
@@ -1521,11 +1613,28 @@ window.applyEventsImportReview = async function() {
         appliedCount++;
     });
 
-    if (appliedCount === 0) { alert('No rows were checked with a member selected — nothing was applied.'); return; }
+    if (appliedCount === 0) {
+        attendance = prevAttendance;
+        members = prevMembers;
+        alert('No rows were checked with a member selected — nothing was applied.');
+        return;
+    }
 
-    if (pendingEventsImport.targetMode === 'new') await saveEventDates();
-    await saveAttendance();
-    await saveMembers();
+    const okAttendance = await saveAttendance();
+    if (!okAttendance) {
+        attendance = prevAttendance;
+        members = prevMembers;
+        alert('Could not save attendance changes — please try again. Nothing was applied.');
+        render();
+        return;
+    }
+
+    const okMembers = await saveMembers();
+    if (!okMembers) {
+        members = prevMembers;
+        alert('Attendance was saved, but war-vote updates could not be saved. Please retry the import for war votes.');
+    }
+
     render();
     closeEventsImportReviewModal();
     alert(`Applied ${appliedCount} record(s) to "${targetEvent.name}" (${targetEvent.date}).`);
