@@ -571,7 +571,14 @@ async function migrateAttendanceIfNeeded() {
 
 async function loadDataFromCloud() {
     try {
-        const { data, error } = await db.from('app_data').select('id,key,value,updated_at');
+        // Ordered oldest-first so that if duplicate rows ever exist for the
+        // same key (e.g. leftover from an earlier bug), the forEach below —
+        // which just overwrites on each match — ends up keeping the row
+        // with the LATEST updated_at, not an arbitrary one. This is what
+        // was causing events to "flap" between an old count and a new count
+        // on refresh: whichever duplicate row Postgres happened to return
+        // last was winning, regardless of which was actually newest.
+        const { data, error } = await db.from('app_data').select('id,key,value,updated_at').order('updated_at', { ascending: true });
         if (error) throw error;
         (data || []).forEach(row => {
             if (row.key === 'members') { members = row.value || []; lastLoadedAt.members = row.updated_at; }
@@ -593,7 +600,7 @@ async function loadDataFromCloud() {
 async function fetchDataOnly(force = false) {
     if (saveInFlight > 0 && !force) return; // don't let a realtime re-fetch clobber a save in progress
     try {
-        const { data, error } = await db.from('app_data').select('id,key,value,updated_at').in('key', ['members','eventDates','attendance']);
+        const { data, error } = await db.from('app_data').select('id,key,value,updated_at').in('key', ['members','eventDates','attendance']).order('updated_at', { ascending: true });
         if (error) throw error;
         (data || []).forEach(row => {
             if (row.key === 'members') { members = row.value || []; lastLoadedAt.members = row.updated_at; }
