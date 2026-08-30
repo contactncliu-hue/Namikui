@@ -460,14 +460,6 @@ function showSaveStatus(kind, text) {
 // members[i].warVotes: { [eventId]: 'yes'|'no'|'maybe' }
 let members = [];
 let eventDates = [];
-const ATTENDANCE_ROW_ID = 4; // moved off id 11 — that id was already used
-// by an unrelated "calendarEvents" feature elsewhere on this site, and every
-// time that feature saved, it silently overwrote this page's attendance
-// data. IDs 1-24 are all claimed by other features on this site (confirmed
-// via `select id, key from app_data order by id`); 4 and 7 were the only
-// unused gaps, so attendance now lives at 4. If you ever add new shared
-// features to this site, check that table first before hardcoding a new id
-// anywhere.
 let attendance = {};
 let showDiffMode = false;
 let searchQuery = '';
@@ -624,30 +616,43 @@ async function fetchDataOnly(force = false) {
     render();
 }
 
-// Core save path for members / eventDates / attendance. Unlike the old
-// "compare my stale local copy against the server, and reject if anyone
-// else has saved since" approach, this ALWAYS fetches the freshest server
-// value immediately before writing, applies `mutateFn` to that fresh value,
-// and writes with a conditional update keyed on the exact updated_at it just
-// read (a compare-and-swap). If another save lands in the tiny window
-// between the fetch and the write, the conditional update simply matches
-// zero rows and we transparently retry — fetch fresh again, re-apply the
-// same small mutation, try again — instead of surfacing an alert and
-// discarding the user's edit. With many concurrent admins, this is what
-// actually fixes the constant "someone else just saved" interruptions: most
-// conflicts were never about the same data, just a stale in-memory copy.
+// Core save path for members / eventDates / attendance. Looks up and writes
+// the row by its `key` text column — NOT by a fixed numeric `id` — because
+// numeric ids on this table are shared across many unrelated features on
+// this site, apparently hand-picked independently by whoever built each
+// page, with no central coordination. Several turned out to be squatting on
+// the same ids as this page (attendance vs. a "calendarEvents" feature at
+// id 11, eventDates vs. an "auditLogs" feature at id 3), silently
+// overwriting each other on every save. Reserving a fresh unclaimed number
+// doesn't fix this either — another feature can claim that same number at
+// any time, as happened when id 7 got taken between one check and the next.
+// `key` strings like 'eventDates' are already unique per feature, so
+// matching on that instead makes this whole class of collision structurally
+// impossible, regardless of what numeric id Supabase assigns the row.
+//
+// Always re-fetches the freshest server value immediately before writing,
+// applies `mutateFn` to that fresh value, and writes with a conditional
+// update keyed on the exact updated_at it just read (a compare-and-swap).
+// If another save lands in the tiny window between the fetch and the write,
+// the conditional update simply matches zero rows and we transparently
+// retry — fetch fresh again, re-apply the same small mutation, try again —
+// instead of surfacing an alert and discarding the user's edit.
 //
 // mutateFn receives a deep copy of the current server value and must return
 // the new value to save (for members/eventDates: an array; for attendance:
 // an object).
-async function mutateAndSave(key, id, mutateFn, maxRetries = 5) {
+async function mutateAndSave(key, mutateFn, maxRetries = 5) {
     showSaveStatus('saving', 'Saving…');
     saveInFlight++;
     try {
         for (let attempt = 0; attempt <= maxRetries; attempt++) {
-            const { data: current, error: fetchErr } = await db
-                .from('app_data').select('value,updated_at').eq('id', id).maybeSingle();
+            // Ordered so that if duplicate rows for this key ever exist, we
+            // always operate on the most recently updated one.
+            const { data: rows, error: fetchErr } = await db
+                .from('app_data').select('id,value,updated_at').eq('key', key)
+                .order('updated_at', { ascending: false }).limit(1);
             if (fetchErr) { showSaveStatus('error', 'Save failed'); return false; }
+            const current = (rows && rows.length > 0) ? rows[0] : null;
 
             const baseValue = current ? current.value : (key === 'attendance' ? {} : []);
             let newValue;
@@ -673,22 +678,15 @@ async function mutateAndSave(key, id, mutateFn, maxRetries = 5) {
             let updatedRows, updateErr;
             if (current) {
                 ({ data: updatedRows, error: updateErr } = await db.from('app_data')
-                    .update({ value: newValue }).eq('id', id).eq('updated_at', current.updated_at)
+                    .update({ value: newValue }).eq('id', current.id).eq('updated_at', current.updated_at)
                     .select('updated_at'));
             } else {
-                // The fixed rows (members=2, eventDates=3, attendance=11)
-                // should already exist in this table. If `current` came back
-                // null it is far more likely a transient read hiccup than a
-                // genuinely missing row — and since this table does not
-                // enforce a unique constraint on `id`, blindly inserting here
-                // risks creating a SECOND row with the same id. That's what
-                // produced the "attendance reset to 0" bug: a stray blank
-                // duplicate got created, and later got picked up as the
-                // "current" copy on load. So instead of inserting, we retry
-                // the read a few times, and only give up with an error — we
-                // never guess-create a row for these three fixed ids.
-                await new Promise(r => setTimeout(r, 400));
-                continue;
+                // No row exists for this key yet — create one and let the
+                // database assign whatever id number is next. We never
+                // choose or hardcode a specific id here; that guessing game
+                // is exactly what caused the collisions in the first place.
+                ({ data: updatedRows, error: updateErr } = await db.from('app_data')
+                    .insert({ key, value: newValue }).select('updated_at'));
             }
 
             if (updateErr || !updatedRows || updatedRows.length === 0) {
@@ -722,13 +720,13 @@ async function mutateAndSave(key, id, mutateFn, maxRetries = 5) {
 // import) use mutateAndSave directly with a small mutation instead, so they
 // never depend on a possibly-stale local copy of the whole array/object.
 async function saveMembers() {
-    return mutateAndSave('members', 2, () => members);
+    return mutateAndSave('members', () => members);
 }
 async function saveEventDates() {
-    return mutateAndSave('eventDates', 3, () => eventDates);
+    return mutateAndSave('eventDates', () => eventDates);
 }
 async function saveAttendance() {
-    return mutateAndSave('attendance', ATTENDANCE_ROW_ID, () => attendance);
+    return mutateAndSave('attendance', () => attendance);
 }
 
 // --- History / restore panel ---
@@ -810,7 +808,7 @@ document.getElementById('btnAddEvent').addEventListener('click', async () => {
     const isWar = document.getElementById('newEventIsWarInput').checked;
     if (!name || !date) { alert('Please enter an event name and date.'); return; }
     const newEvent = { id: Date.now(), name, date, isWar };
-    const ok = await mutateAndSave('eventDates', 3, (evs) => [...evs, newEvent]);
+    const ok = await mutateAndSave('eventDates', (evs) => [...evs, newEvent]);
     if (!ok) { render(); return; }
     document.getElementById('newEventNameInput').value = '';
     document.getElementById('newDateInput').value = '';
@@ -834,7 +832,7 @@ document.getElementById('btnSaveEventModal').addEventListener('click', async () 
     const newName = document.getElementById('editEventNameInput').value.trim();
     const newDate = document.getElementById('editEventDateInput').value;
     const newIsWar = document.getElementById('editEventIsWarInput').checked;
-    const ok = await mutateAndSave('eventDates', 3, (evs) => evs.map(e =>
+    const ok = await mutateAndSave('eventDates', (evs) => evs.map(e =>
         e.id === targetId ? { ...e, name: newName || e.name, date: newDate || e.date, isWar: newIsWar } : e
     ));
     if (!ok) { render(); return; }
@@ -847,7 +845,7 @@ document.getElementById('btnDeleteEventModal').addEventListener('click', async (
 
     // Step 1: remove the event itself. If this fails or is cancelled (e.g.
     // the drastic-shrink guard), stop here — nothing else is touched.
-    const okEvents = await mutateAndSave('eventDates', 3, (evs) => evs.filter(e => e.id !== deletedId));
+    const okEvents = await mutateAndSave('eventDates', (evs) => evs.filter(e => e.id !== deletedId));
     if (!okEvents) {
         alert('Could not delete the event — please try again.');
         render();
@@ -855,7 +853,7 @@ document.getElementById('btnDeleteEventModal').addEventListener('click', async (
     }
 
     // Step 2: clean up attendance for the deleted event, against fresh data.
-    const okAttendance = await mutateAndSave('attendance', ATTENDANCE_ROW_ID, (att) => {
+    const okAttendance = await mutateAndSave('attendance', (att) => {
         Object.keys(att).forEach(memberId => { if (att[memberId]) delete att[memberId][deletedId]; });
         return att;
     });
@@ -867,7 +865,7 @@ document.getElementById('btnDeleteEventModal').addEventListener('click', async (
     }
 
     // Step 3: clean up war votes for the deleted event, against fresh data.
-    const okMembers = await mutateAndSave('members', 2, (mem) => {
+    const okMembers = await mutateAndSave('members', (mem) => {
         mem.forEach(m => { if (m.warVotes) delete m.warVotes[deletedId]; });
         return mem;
     });
@@ -884,7 +882,7 @@ document.getElementById('btnDeleteEventModal').addEventListener('click', async (
 window.toggleAttendance = function(memberId, eventId) {
     if (!isManagementOrAdmin) return;
     if (!members.some(x => x.id === memberId)) return;
-    mutateAndSave('attendance', ATTENDANCE_ROW_ID, (att) => {
+    mutateAndSave('attendance', (att) => {
         if (!att[memberId]) att[memberId] = {};
         if (att[memberId][eventId] === true) delete att[memberId][eventId];
         else att[memberId][eventId] = true;
@@ -895,7 +893,7 @@ window.toggleAttendance = function(memberId, eventId) {
 window.cycleWarAttendance = function(memberId, eventId) {
     if (!isManagementOrAdmin) return;
     if (!members.some(x => x.id === memberId)) return;
-    mutateAndSave('attendance', ATTENDANCE_ROW_ID, (att) => {
+    mutateAndSave('attendance', (att) => {
         if (!att[memberId]) att[memberId] = {};
         const order = ['absent', 'attended', 'late'];
         const v = att[memberId][eventId];
@@ -909,7 +907,7 @@ window.cycleWarAttendance = function(memberId, eventId) {
 };
 window.cycleWarVote = function(memberId, eventId) {
     if (!isManagementOrAdmin) return;
-    mutateAndSave('members', 2, (mem) => {
+    mutateAndSave('members', (mem) => {
         const m = mem.find(x => x.id === memberId);
         if (!m) return mem;
         if (!m.warVotes) m.warVotes = {};
@@ -1598,7 +1596,7 @@ window.applyEventsImportReview = async function() {
         if (!name) { alert('Please enter an event name for the new event.'); return; }
         if (!dateVal) { alert('Please select a date for the new event.'); return; }
         targetEventId = Date.now();
-        const okEvents = await mutateAndSave('eventDates', 3, (evs) => [...evs, { id: targetEventId, name, date: dateVal, isWar }]);
+        const okEvents = await mutateAndSave('eventDates', (evs) => [...evs, { id: targetEventId, name, date: dateVal, isWar }]);
         if (!okEvents) { alert('Could not save the new event — please try again.'); return; }
     } else {
         targetEventId = pendingEventsImport.targetEventId;
@@ -1613,7 +1611,7 @@ window.applyEventsImportReview = async function() {
         return;
     }
 
-    const okAttendance = await mutateAndSave('attendance', ATTENDANCE_ROW_ID, (att) => {
+    const okAttendance = await mutateAndSave('attendance', (att) => {
         includedRows.forEach(r => {
             if (!att[r.memberId]) att[r.memberId] = {};
             if (r.status === 'attended') att[r.memberId][targetEventId] = true;
@@ -1628,7 +1626,7 @@ window.applyEventsImportReview = async function() {
     }
 
     if (targetEvent.isWar) {
-        const okMembers = await mutateAndSave('members', 2, (mem) => {
+        const okMembers = await mutateAndSave('members', (mem) => {
             includedRows.forEach(r => {
                 const m = mem.find(x => String(x.id) === String(r.memberId));
                 if (!m) return;
