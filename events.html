@@ -471,9 +471,9 @@ let warSortMode = 'default';
 // stale re-fetch — see fetchDataOnly() below.
 let saveInFlight = 0;
 
-// Timestamp of each row as last loaded from the server. Used by
-// saveKeyWithLock() to detect "someone else saved this since I loaded it"
-// before we blindly overwrite with our (possibly stale) local copy.
+// Timestamp of each row as last confirmed-saved to the server, kept mostly
+// for display/debugging — mutateAndSave() below no longer relies on this for
+// conflict detection since it always re-fetches fresh data before writing.
 let lastLoadedAt = { members: null, eventDates: null, attendance: null };
 
 const RANK_GROUP_ORDER = { R5: 0, R4: 1, R3: 2, R2: 3, R1: 4 };
@@ -610,93 +610,105 @@ async function fetchDataOnly(force = false) {
     render();
 }
 
-// Refetches ONLY the single row that lost a save-conflict, instead of
-// clobbering all three (members/eventDates/attendance) globals. This is the
-// key fix: previously a conflict on ANY one key triggered a full refetch of
-// ALL keys via fetchDataOnly(true), which could silently discard unsaved
-// local edits sitting in the other two globals mid-way through a chained
-// save (e.g. delete-event, or apply-import).
-async function fetchSingleKey(key, id) {
-    try {
-        const { data, error } = await db.from('app_data').select('key,value,updated_at').eq('id', id).maybeSingle();
-        if (error || !data) return;
-        if (key === 'members') {
-            members = data.value || [];
-            lastLoadedAt.members = data.updated_at;
-            members.forEach(m => { if (!m.warVotes || typeof m.warVotes !== 'object') m.warVotes = {}; });
-        }
-        if (key === 'eventDates') { eventDates = data.value || []; lastLoadedAt.eventDates = data.updated_at; }
-        if (key === 'attendance') { attendance = data.value || {}; lastLoadedAt.attendance = data.updated_at; }
-    } catch (err) {
-        console.error('Error refreshing ' + key + ':', err);
-    }
-}
-
-// Shared save path for members / eventDates / attendance. Before writing,
-// confirms nobody else has saved this key since we last loaded it
-// (optimistic lock) and snapshots the new value into app_data_history so it
-// can always be restored later.
+// Core save path for members / eventDates / attendance. Unlike the old
+// "compare my stale local copy against the server, and reject if anyone
+// else has saved since" approach, this ALWAYS fetches the freshest server
+// value immediately before writing, applies `mutateFn` to that fresh value,
+// and writes with a conditional update keyed on the exact updated_at it just
+// read (a compare-and-swap). If another save lands in the tiny window
+// between the fetch and the write, the conditional update simply matches
+// zero rows and we transparently retry — fetch fresh again, re-apply the
+// same small mutation, try again — instead of surfacing an alert and
+// discarding the user's edit. With many concurrent admins, this is what
+// actually fixes the constant "someone else just saved" interruptions: most
+// conflicts were never about the same data, just a stale in-memory copy.
 //
-// Also runs a "drastic shrink" sanity check on array-type keys (members,
-// eventDates): if a save would cut the row's entry count by more than half,
-// it's far more likely to be a bug (a stale/reset local array being saved
-// over good server data) than an intentional bulk-delete, so it pauses and
-// asks for confirmation instead of silently overwriting.
-async function saveKeyWithLock(id, key, value) {
+// mutateFn receives a deep copy of the current server value and must return
+// the new value to save (for members/eventDates: an array; for attendance:
+// an object).
+async function mutateAndSave(key, id, mutateFn, maxRetries = 5) {
     showSaveStatus('saving', 'Saving…');
     saveInFlight++;
     try {
-        const { data: current, error: checkErr } = await db
-            .from('app_data').select('updated_at,value').eq('id', id).maybeSingle();
-        if (checkErr) { showSaveStatus('error', 'Save failed'); return false; }
+        for (let attempt = 0; attempt <= maxRetries; attempt++) {
+            const { data: current, error: fetchErr } = await db
+                .from('app_data').select('value,updated_at').eq('id', id).maybeSingle();
+            if (fetchErr) { showSaveStatus('error', 'Save failed'); return false; }
 
-        if (current && lastLoadedAt[key] && current.updated_at !== lastLoadedAt[key]) {
-            showSaveStatus('error', 'Out of date — refreshing');
-            alert(`Someone else just saved changes to "${key}". Your view will refresh now — please redo your last edit.`);
-            await fetchSingleKey(key, id);
-            render();
-            return false;
-        }
-
-        if (current && Array.isArray(current.value) && Array.isArray(value)) {
-            const oldLen = current.value.length, newLen = value.length;
-            if (oldLen >= 4 && newLen < oldLen * 0.5) {
-                const proceed = confirm(`Warning: saving "${key}" would drop it from ${oldLen} to ${newLen} entries. This looks like an accidental bulk deletion.\n\nClick OK to save anyway, or Cancel to abort and keep the existing ${oldLen} entries.`);
-                if (!proceed) { showSaveStatus('error', 'Save cancelled'); return false; }
+            const baseValue = current ? current.value : (key === 'attendance' ? {} : []);
+            let newValue;
+            try {
+                newValue = mutateFn(JSON.parse(JSON.stringify(baseValue)));
+            } catch (mutErr) {
+                console.error('Mutation error:', mutErr);
+                showSaveStatus('error', 'Save failed');
+                return false;
             }
+
+            // Drastic-shrink guard: if a save would cut an array-type row's
+            // entry count by more than half, that's far more likely to be a
+            // bug than an intentional bulk delete — pause for confirmation.
+            if (Array.isArray(baseValue) && Array.isArray(newValue)) {
+                const oldLen = baseValue.length, newLen = newValue.length;
+                if (oldLen >= 4 && newLen < oldLen * 0.5) {
+                    const proceed = confirm(`Warning: saving "${key}" would drop it from ${oldLen} to ${newLen} entries. This looks like an accidental bulk deletion.\n\nClick OK to save anyway, or Cancel to abort and keep the existing ${oldLen} entries.`);
+                    if (!proceed) { showSaveStatus('error', 'Save cancelled'); return false; }
+                }
+            }
+
+            let updatedRows, updateErr;
+            if (current) {
+                ({ data: updatedRows, error: updateErr } = await db.from('app_data')
+                    .update({ value: newValue }).eq('id', id).eq('updated_at', current.updated_at)
+                    .select('updated_at'));
+            } else {
+                // Row doesn't exist yet — create it. If two admins race to
+                // create it at the same instant, one insert wins and the
+                // other's insert errors; that other admin's next loop
+                // iteration will then see `current` populated and update
+                // normally instead.
+                ({ data: updatedRows, error: updateErr } = await db.from('app_data')
+                    .insert({ id, key, value: newValue }).select('updated_at'));
+            }
+
+            if (updateErr || !updatedRows || updatedRows.length === 0) {
+                continue; // lost the race — retry against the freshest data
+            }
+
+            const { error: histErr } = await db.from('app_data_history').insert({
+                data_key: key, value: newValue, saved_by: currentUser.username || 'unknown'
+            });
+            if (histErr) console.error('History snapshot failed:', histErr);
+
+            if (key === 'members') members = newValue;
+            if (key === 'eventDates') eventDates = newValue;
+            if (key === 'attendance') attendance = newValue;
+            lastLoadedAt[key] = updatedRows[0].updated_at;
+            showSaveStatus('ok', 'Saved');
+            return true;
         }
-
-        // Snapshot BEFORE overwriting so this write is always recoverable.
-        const { error: histErr } = await db.from('app_data_history').insert({
-            data_key: key, value, saved_by: currentUser.username || 'unknown'
-        });
-        if (histErr) console.error('History snapshot failed:', histErr);
-
-        const { data: updated, error } = await db.from('app_data')
-            .upsert({ id, key, value }, { onConflict: 'id' })
-            .select('updated_at').single();
-        if (error) { showSaveStatus('error', 'Save failed'); return false; }
-        lastLoadedAt[key] = updated.updated_at;
-        showSaveStatus('ok', 'Saved');
-        return true;
-    } catch (err) {
         showSaveStatus('error', 'Save failed');
+        alert(`This part of the sheet is very busy right now — your change to "${key}" couldn't be saved after several tries. Please try again in a moment.`);
         return false;
     } finally {
         saveInFlight--;
     }
 }
 
+// Thin wrappers used where we intentionally want to overwrite the server
+// value with whatever's currently in the matching local variable (restoring
+// a history snapshot, or the one-time attendance migration below). Everyday
+// edits (toggling a cell, adding/editing/deleting an event, applying an
+// import) use mutateAndSave directly with a small mutation instead, so they
+// never depend on a possibly-stale local copy of the whole array/object.
 async function saveMembers() {
-    return saveKeyWithLock(2, 'members', members);
+    return mutateAndSave('members', 2, () => members);
 }
-
 async function saveEventDates() {
-    return saveKeyWithLock(3, 'eventDates', eventDates);
+    return mutateAndSave('eventDates', 3, () => eventDates);
 }
-
 async function saveAttendance() {
-    return saveKeyWithLock(ATTENDANCE_ROW_ID, 'attendance', attendance);
+    return mutateAndSave('attendance', ATTENDANCE_ROW_ID, () => attendance);
 }
 
 // --- History / restore panel ---
@@ -778,10 +790,8 @@ document.getElementById('btnAddEvent').addEventListener('click', async () => {
     const isWar = document.getElementById('newEventIsWarInput').checked;
     if (!name || !date) { alert('Please enter an event name and date.'); return; }
     const newEvent = { id: Date.now(), name, date, isWar };
-    const prevEventDates = eventDates;
-    eventDates = [...eventDates, newEvent];
-    const ok = await saveEventDates();
-    if (!ok) { eventDates = prevEventDates; render(); return; }
+    const ok = await mutateAndSave('eventDates', 3, (evs) => [...evs, newEvent]);
+    if (!ok) { render(); return; }
     document.getElementById('newEventNameInput').value = '';
     document.getElementById('newDateInput').value = '';
     document.getElementById('newEventIsWarInput').checked = false;
@@ -800,59 +810,48 @@ window.openEditEventModal = function(eventId) {
     document.getElementById('editEventNameModal').style.display = 'flex';
 };
 document.getElementById('btnSaveEventModal').addEventListener('click', async () => {
-    const ev = eventDates.find(e => e.id === editingEventId);
-    if (!ev) return;
-    const prevName = ev.name, prevDate = ev.date, prevIsWar = ev.isWar;
-    ev.name = document.getElementById('editEventNameInput').value.trim() || ev.name;
-    ev.date = document.getElementById('editEventDateInput').value || ev.date;
-    ev.isWar = document.getElementById('editEventIsWarInput').checked;
-    const ok = await saveEventDates();
-    if (!ok) { ev.name = prevName; ev.date = prevDate; ev.isWar = prevIsWar; render(); return; }
+    const targetId = editingEventId;
+    const newName = document.getElementById('editEventNameInput').value.trim();
+    const newDate = document.getElementById('editEventDateInput').value;
+    const newIsWar = document.getElementById('editEventIsWarInput').checked;
+    const ok = await mutateAndSave('eventDates', 3, (evs) => evs.map(e =>
+        e.id === targetId ? { ...e, name: newName || e.name, date: newDate || e.date, isWar: newIsWar } : e
+    ));
+    if (!ok) { render(); return; }
     document.getElementById('editEventNameModal').style.display = 'none';
     render();
 });
 document.getElementById('btnDeleteEventModal').addEventListener('click', async () => {
     if (!confirm('Delete this event? This removes it for all members.')) return;
     const deletedId = editingEventId;
-    const prevEventDates = eventDates;
 
-    // Step 1: remove the event itself. If this save fails or is cancelled
-    // (e.g. the drastic-shrink guard), stop here — nothing else is touched.
-    eventDates = eventDates.filter(e => e.id !== deletedId);
-    const okEvents = await saveEventDates();
+    // Step 1: remove the event itself. If this fails or is cancelled (e.g.
+    // the drastic-shrink guard), stop here — nothing else is touched.
+    const okEvents = await mutateAndSave('eventDates', 3, (evs) => evs.filter(e => e.id !== deletedId));
     if (!okEvents) {
-        eventDates = prevEventDates;
         alert('Could not delete the event — please try again.');
         render();
         return;
     }
 
-    // Step 2: clean up attendance for the deleted event. Only proceed to
-    // step 3 if this actually saved — previously these ran unconditionally
-    // in sequence, so a conflict on this save could reset `members` via a
-    // full refetch and then have the next save silently overwrite it with
-    // stale data.
-    const prevAttendance = JSON.parse(JSON.stringify(attendance));
-    Object.keys(attendance).forEach(memberId => {
-        if (attendance[memberId]) delete attendance[memberId][deletedId];
+    // Step 2: clean up attendance for the deleted event, against fresh data.
+    const okAttendance = await mutateAndSave('attendance', ATTENDANCE_ROW_ID, (att) => {
+        Object.keys(att).forEach(memberId => { if (att[memberId]) delete att[memberId][deletedId]; });
+        return att;
     });
-    const okAttendance = await saveAttendance();
     if (!okAttendance) {
-        attendance = prevAttendance;
         alert('Event was deleted, but attendance records for it could not be cleaned up. Please retry, or check Edit History.');
         document.getElementById('editEventNameModal').style.display = 'none';
         render();
         return;
     }
 
-    // Step 3: clean up war votes for the deleted event.
-    const prevMembers = JSON.parse(JSON.stringify(members));
-    members.forEach(m => {
-        if (m.warVotes) delete m.warVotes[deletedId];
+    // Step 3: clean up war votes for the deleted event, against fresh data.
+    const okMembers = await mutateAndSave('members', 2, (mem) => {
+        mem.forEach(m => { if (m.warVotes) delete m.warVotes[deletedId]; });
+        return mem;
     });
-    const okMembers = await saveMembers();
     if (!okMembers) {
-        members = prevMembers;
         alert('Event was deleted, but war votes for it could not be cleaned up. Please retry, or check Edit History.');
     }
 
@@ -864,40 +863,44 @@ document.getElementById('btnDeleteEventModal').addEventListener('click', async (
 // Normal (non-war) events: simple 2-state toggle (attended <-> absent).
 window.toggleAttendance = function(memberId, eventId) {
     if (!isManagementOrAdmin) return;
-    const m = members.find(x => x.id === memberId);
-    if (!m) return;
-    if (!attendance[memberId]) attendance[memberId] = {};
-    const state = attendanceState(m, eventId);
-    if (state === 'attended') delete attendance[memberId][eventId];
-    else attendance[memberId][eventId] = true;
-    saveAttendance().then(render);
+    if (!members.some(x => x.id === memberId)) return;
+    mutateAndSave('attendance', ATTENDANCE_ROW_ID, (att) => {
+        if (!att[memberId]) att[memberId] = {};
+        if (att[memberId][eventId] === true) delete att[memberId][eventId];
+        else att[memberId][eventId] = true;
+        return att;
+    }).then(render);
 };
 // War events: 3-state cycle absent -> attended -> late -> absent.
 window.cycleWarAttendance = function(memberId, eventId) {
     if (!isManagementOrAdmin) return;
-    const m = members.find(x => x.id === memberId);
-    if (!m) return;
-    if (!attendance[memberId]) attendance[memberId] = {};
-    const order = ['absent', 'attended', 'late'];
-    const cur = attendanceState(m, eventId);
-    const next = order[(order.indexOf(cur) + 1) % order.length];
-    if (next === 'absent') delete attendance[memberId][eventId];
-    else if (next === 'attended') attendance[memberId][eventId] = true;
-    else attendance[memberId][eventId] = 'late';
-    saveAttendance().then(render);
+    if (!members.some(x => x.id === memberId)) return;
+    mutateAndSave('attendance', ATTENDANCE_ROW_ID, (att) => {
+        if (!att[memberId]) att[memberId] = {};
+        const order = ['absent', 'attended', 'late'];
+        const v = att[memberId][eventId];
+        const cur = v === true ? 'attended' : (v === 'late' ? 'late' : 'absent');
+        const next = order[(order.indexOf(cur) + 1) % order.length];
+        if (next === 'absent') delete att[memberId][eventId];
+        else if (next === 'attended') att[memberId][eventId] = true;
+        else att[memberId][eventId] = 'late';
+        return att;
+    }).then(render);
 };
 window.cycleWarVote = function(memberId, eventId) {
     if (!isManagementOrAdmin) return;
-    const m = members.find(x => x.id === memberId);
-    if (!m) return;
-    if (!m.warVotes) m.warVotes = {};
-    const order = [undefined, 'yes', 'maybe', 'no'];
-    const cur = m.warVotes[eventId];
-    const idx = order.indexOf(cur);
-    const next = order[(idx + 1) % order.length];
-    if (next === undefined) delete m.warVotes[eventId];
-    else m.warVotes[eventId] = next;
-    saveMembers().then(render);
+    mutateAndSave('members', 2, (mem) => {
+        const m = mem.find(x => x.id === memberId);
+        if (!m) return mem;
+        if (!m.warVotes) m.warVotes = {};
+        const order = [undefined, 'yes', 'maybe', 'no'];
+        const cur = m.warVotes[eventId];
+        const idx = order.indexOf(cur);
+        const next = order[(idx + 1) % order.length];
+        if (next === undefined) delete m.warVotes[eventId];
+        else m.warVotes[eventId] = next;
+        return mem;
+    }).then(render);
 };
 
 // --- Stat helpers ---
@@ -1558,12 +1561,11 @@ window.addManualEventsImportRow = function() {
 // No other event's data or any other field on any member is read or touched,
 // so a bad import can't silently overwrite or delete unrelated records.
 //
-// Each save in this chain now checks its own success before the next step
-// runs. Previously the three saves fired unconditionally back-to-back; if
-// the first one hit a conflict, the resulting refetch could reset the
-// `members`/`attendance` globals mid-function, and the following save(s)
-// would then silently persist that (now stale, possibly emptied) state —
-// this is very likely what caused rows/records to appear to vanish.
+// Each step mutates a freshly-fetched copy of its table (via mutateAndSave)
+// and retries automatically on conflict, rather than mutating this browser's
+// possibly-stale local `attendance`/`members` and saving that whole blob —
+// which is what previously triggered the "someone else just saved" alert
+// and blocked the import when other admins were active at the same time.
 window.applyEventsImportReview = async function() {
     if (!pendingEventsImport) return;
     const { rows } = pendingEventsImport;
@@ -1576,14 +1578,8 @@ window.applyEventsImportReview = async function() {
         if (!name) { alert('Please enter an event name for the new event.'); return; }
         if (!dateVal) { alert('Please select a date for the new event.'); return; }
         targetEventId = Date.now();
-        const prevEventDates = eventDates;
-        eventDates = [...eventDates, { id: targetEventId, name, date: dateVal, isWar }];
-        const okEvents = await saveEventDates();
-        if (!okEvents) {
-            eventDates = prevEventDates;
-            alert('Could not save the new event — please try again.');
-            return;
-        }
+        const okEvents = await mutateAndSave('eventDates', 3, (evs) => [...evs, { id: targetEventId, name, date: dateVal, isWar }]);
+        if (!okEvents) { alert('Could not save the new event — please try again.'); return; }
     } else {
         targetEventId = pendingEventsImport.targetEventId;
     }
@@ -1591,53 +1587,43 @@ window.applyEventsImportReview = async function() {
     const targetEvent = eventDates.find(e => e.id === targetEventId);
     if (!targetEvent) { alert('Could not determine which event to apply to.'); return; }
 
-    const prevAttendance = JSON.parse(JSON.stringify(attendance));
-    const prevMembers = JSON.parse(JSON.stringify(members));
-
-    let appliedCount = 0;
-    rows.forEach(r => {
-        if (!r.include || !r.memberId) return;
-        const member = members.find(m => String(m.id) === String(r.memberId));
-        if (!member) return;
-        if (!attendance[r.memberId]) attendance[r.memberId] = {};
-        if (!member.warVotes) member.warVotes = {};
-
-        if (r.status === 'attended') attendance[r.memberId][targetEventId] = true;
-        else if (r.status === 'late' && targetEvent.isWar) attendance[r.memberId][targetEventId] = 'late';
-        else delete attendance[r.memberId][targetEventId];
-
-        if (targetEvent.isWar) {
-            if (r.vote && r.vote !== 'none') member.warVotes[targetEventId] = r.vote;
-            else delete member.warVotes[targetEventId];
-        }
-        appliedCount++;
-    });
-
-    if (appliedCount === 0) {
-        attendance = prevAttendance;
-        members = prevMembers;
+    const includedRows = rows.filter(r => r.include && r.memberId && members.some(m => String(m.id) === String(r.memberId)));
+    if (includedRows.length === 0) {
         alert('No rows were checked with a member selected — nothing was applied.');
         return;
     }
 
-    const okAttendance = await saveAttendance();
+    const okAttendance = await mutateAndSave('attendance', ATTENDANCE_ROW_ID, (att) => {
+        includedRows.forEach(r => {
+            if (!att[r.memberId]) att[r.memberId] = {};
+            if (r.status === 'attended') att[r.memberId][targetEventId] = true;
+            else if (r.status === 'late' && targetEvent.isWar) att[r.memberId][targetEventId] = 'late';
+            else delete att[r.memberId][targetEventId];
+        });
+        return att;
+    });
     if (!okAttendance) {
-        attendance = prevAttendance;
-        members = prevMembers;
         alert('Could not save attendance changes — please try again. Nothing was applied.');
-        render();
         return;
     }
 
-    const okMembers = await saveMembers();
-    if (!okMembers) {
-        members = prevMembers;
-        alert('Attendance was saved, but war-vote updates could not be saved. Please retry the import for war votes.');
+    if (targetEvent.isWar) {
+        const okMembers = await mutateAndSave('members', 2, (mem) => {
+            includedRows.forEach(r => {
+                const m = mem.find(x => String(x.id) === String(r.memberId));
+                if (!m) return;
+                if (!m.warVotes) m.warVotes = {};
+                if (r.vote && r.vote !== 'none') m.warVotes[targetEventId] = r.vote;
+                else delete m.warVotes[targetEventId];
+            });
+            return mem;
+        });
+        if (!okMembers) alert('Attendance was saved, but war-vote updates could not be saved. Please retry the import for war votes.');
     }
 
     render();
     closeEventsImportReviewModal();
-    alert(`Applied ${appliedCount} record(s) to "${targetEvent.name}" (${targetEvent.date}).`);
+    alert(`Applied ${includedRows.length} record(s) to "${targetEvent.name}" (${targetEvent.date}).`);
 };
 
 window.closeEventsImportReviewModal = function() {
