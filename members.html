@@ -1,316 +1,836 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Members - Loopy's Playground</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Fredoka+One&family=Montserrat:wght@600;700;800&family=Noto+Sans+SC:wght@900&family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :root {
-            --color-bg-main: #f5f4ef;
-            --color-bg-sidebar: #ffffff;
-            --color-primary: #3b52a4;
-            --color-primary-dark: #2d3a91;
-            --color-primary-light: #eceff8;
-            --color-text-dark: #2b3044;
-            --color-text-muted: #8c93a6;
-            --color-border: #3b52a4;
-            --color-border-light: #e2e5ed;
-            --color-gold: #f3a808;
-            --color-gold-bg: #fffdf0;
-            --color-a: #c0392b;
-            --color-b: #3b52a4;
-            --color-unassigned: #c9ccd6;
-            --color-attended: #1f9d55;
-            --color-not-attended: #d9381e;
-            --color-sub: #c8e0dd;
-            --color-main: #ffb000;
-            --font-family-base: 'Montserrat', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            --font-family-ui: 'Montserrat', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            --font-family-logo: 'Noto Sans SC', sans-serif;
-            --font-xs: 12px;
-            --font-sm: 14px;
-        }
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-            font-family: 'Open Sans', sans-serif;
-            background-color: var(--color-bg-main);
-            color: var(--color-text-dark);
-            min-height: 100vh;
-        }
-        .top-accent-bar {
-            position: fixed;
-            top: 0; left: 0; right: 0;
-            height: 6px;
-            background-color: var(--color-primary-dark);
-            z-index: 200;
-        }
-        .save-status {
-            position: fixed;
-            top: 14px; right: 14px;
-            z-index: 300;
-            font-family: var(--font-family-base);
-            font-weight: 800;
-            font-size: 11px;
-            padding: 6px 12px;
-            border-radius: 4px;
-            display: none;
-        }
-        .save-status--saving { display: block; background: #eef2f9; color: var(--color-primary); border: 1px solid var(--color-primary); }
-        .save-status--error { display: block; background: #fce8e6; color: #d9381e; border: 1px solid #d9381e; }
-        .save-status--ok { display: block; background: #e6f4ea; color: #1f9d55; border: 1px solid #1f9d55; }
-        /* ===== APP SHELL / SIDEBAR =====
-           Sidebar is ALWAYS an off-canvas fixed panel, hidden by default, and only
-           opens via the .sidebar--open class from the hamburger button. This is
-           intentionally NOT gated behind a @media breakpoint anymore — the previous
-           version only applied this fixed/hidden behavior below 1024px, so rotating
-           a tablet/phone into landscape (crossing that width) made the sidebar pop
-           open and sit in-flow permanently, ignoring the toggle. Keeping the rule
-           unconditional matches vspoint.html and fixes that. */
-        .app { display: flex; width: 100%; min-height: 100vh; padding-top: 6px; flex-direction: column; }
-        .sidebar {
-            width: 300px;
-            background-color: var(--color-bg-sidebar);
-            border-right: 2px solid var(--color-border);
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Black Gold - Loopy's Playground</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Fredoka+One&family=Montserrat:wght@600;700;800&family=Noto+Sans+SC:wght@900&family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+    :root {
+        --color-bg-main: #f5f4ef;
+        --color-bg-sidebar: #ffffff;
+        --color-primary: #3b52a4;
+        --color-primary-dark: #2d3a91;
+        --color-primary-light: #eceff8;
+        --color-text-dark: #2b3044;
+        --color-text-muted: #8c93a6;
+        --color-border: #3b52a4;
+        --color-border-light: #e2e5ed;
+        --color-gold: #f3a808;
+        --color-gold-bg: #fffdf0;
+        --color-a: #c0392b;
+        --color-b: #3b52a4;
+        --color-unassigned: #c9ccd6;
+        --color-attended: #1f9d55;
+        --color-not-attended: #d9381e;
+        --color-sub: #c8e0dd;
+        --color-main: #ffb000;
+
+        --font-family-base: 'Montserrat', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        --font-family-ui: 'Montserrat', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        --font-family-logo: 'Noto Sans SC', sans-serif;
+
+        --font-xs: 12px;
+        --font-sm: 14px;
+
+        /* Multiplier applied to map markers/arrows so they stay readable when the
+           page is zoomed out (desktop browser zoom or mobile pinch-zoom). Updated
+           live from JS; 1 = no boost (normal 100% zoom). */
+        --zoom-boost: 1;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+        font-family: 'Open Sans', sans-serif;
+        background-color: var(--color-bg-main);
+        color: var(--color-text-dark);
+        min-height: 100vh;
+    }
+
+    .top-accent-bar {
+        position: fixed;
+        top: 0; left: 0; right: 0;
+        height: 6px;
+        background-color: var(--color-primary-dark);
+        z-index: 200;
+    }
+
+    .save-status {
+        position: fixed;
+        top: 14px; right: 14px;
+        z-index: 300;
+        font-family: var(--font-family-base);
+        font-weight: 800;
+        font-size: 11px;
+        padding: 6px 12px;
+        border-radius: 4px;
+        display: none;
+    }
+    .save-status--saving { display: block; background: #eef2f9; color: var(--color-primary); border: 1px solid var(--color-primary); }
+    .save-status--error { display: block; background: #fce8e6; color: #d9381e; border: 1px solid #d9381e; }
+    .save-status--ok { display: block; background: #e6f4ea; color: #1f9d55; border: 1px solid #1f9d55; }
+
+    .app { display: flex; flex-direction: column; width: 100%; min-height: 100vh; padding-top: 6px; }
+
+    .sidebar {
+        width: 300px;
+        background-color: var(--color-bg-sidebar);
+        border-right: 2px solid var(--color-border);
+        display: flex;
+        flex-direction: column;
+        flex-shrink: 0;
+        transition: transform 0.3s ease;
+        z-index: 150;
+        position: fixed;
+        top: 0; left: 0;
+        height: 100vh;
+        transform: translateX(-100%);
+    }
+    .sidebar--open { transform: translateX(0); }
+    .sidebar__header { padding: 24px; display: flex; justify-content: center; align-items: center; border-bottom: 2px solid var(--color-border); }
+    .sidebar__logo { width: 85px; height: 85px; display: flex; align-items: center; justify-content: center; }
+    .sidebar__user { padding: 18px 24px; display: flex; align-items: center; gap: 14px; font-weight: 700; font-size: var(--font-sm); color: #62697b; border-bottom: 1px solid var(--color-border-light); }
+    .sidebar__user-avatar { width: 42px; height: 42px; border-radius: 50%; background-color: var(--color-primary); color: white; display: flex; align-items: center; justify-content: center; font-size: var(--font-sm); font-weight: 800; }
+    .sidebar__nav { display: flex; flex-direction: column; gap: 6px; overflow-y: auto; padding-bottom: 24px; flex-grow: 1; }
+    .sidebar__footer { padding: 14px 24px; border-top: 1px solid var(--color-border-light); margin-top: auto; }
+    .sidebar__menu { list-style: none; }
+    .sidebar__section-title { font-size: var(--font-xs); font-weight: 800; color: #8c93a6; padding: 18px 24px 8px 24px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .sidebar__item { display: flex; align-items: center; padding: 14px 24px; color: #555b6e; font-weight: 700; font-size: var(--font-xs); text-decoration: none; gap: 14px; cursor: pointer; transition: background 0.2s; }
+    .sidebar__item:hover { background-color: #f0f2f8; }
+    .sidebar__item--active { background-color: var(--color-primary); color: white; }
+    .sidebar__item--logout { color: #d9381e; }
+    .sidebar__item--logout:hover { background-color: #fce8e6; }
+    .sidebar__icon { width: 18px; text-align: center; }
+
+    .sidebar-overlay {
+        display: none;
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.35);
+        z-index: 140;
+    }
+    .sidebar-overlay--visible { display: block; }
+
+    .main { flex-grow: 1; padding: 28px; display: flex; flex-direction: column; gap: 18px; max-width: 1600px; width: 100%; margin: 0 auto; box-sizing: border-box; }
+    .mobile-header { display: flex; justify-content: flex-end; align-items: center; padding: 10px 14px; background: transparent; border: none; margin-bottom: 8px; }
+    .hamburger { background: none; border: none; cursor: pointer; display: flex; flex-direction: column; gap: 5px; padding: 5px; }
+    .hamburger__line { width: 26px; height: 3px; background-color: var(--color-primary); border-radius: 2px; }
+
+    .page-header { margin-bottom: 20px; }
+    .page-header__title {
+        font-family: var(--font-family-base);
+        font-weight: 800;
+        font-size: 34px;
+        letter-spacing: -1px;
+        color: var(--color-primary-dark);
+        text-transform: uppercase;
+    }
+    .page-header__subtitle {
+        font-family: var(--font-family-base);
+        font-weight: 700;
+        font-size: 14px;
+        color: var(--color-text-muted);
+        margin-top: 4px;
+    }
+
+    .toolbar-card {
+        background: white;
+        border: 2px solid var(--color-primary);
+        border-radius: 6px;
+        padding: 16px 20px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
+        margin-bottom: 16px;
+    }
+    .toolbar-card__label {
+        font-family: var(--font-family-base);
+        font-weight: 800;
+        font-size: 12px;
+        color: white;
+        background: var(--color-primary);
+        padding: 8px 16px;
+        border-radius: 4px;
+        letter-spacing: 0.5px;
+    }
+
+    .tab-switch { display: flex; border-radius: 4px; overflow: hidden; border: 2px solid var(--color-primary); flex-wrap: wrap; }
+    .tab-switch__btn {
+        font-family: var(--font-family-base);
+        font-weight: 800;
+        font-size: 12px;
+        letter-spacing: 0.5px;
+        color: var(--color-primary);
+        background: white;
+        border: none;
+        padding: 10px 18px;
+        cursor: pointer;
+        transition: all 0.15s;
+    }
+    .tab-switch__btn + .tab-switch__btn { border-left: 2px solid var(--color-primary); }
+    .tab-switch__btn:hover { background: #eef2f9; }
+    .tab-switch__btn--active { background: var(--color-primary); color: white; }
+    .tab-switch__btn--active:hover { background: var(--color-primary); }
+    .tab-switch__btn--locked { cursor: not-allowed; opacity: 0.45; }
+
+    .search-box { flex-grow: 1; max-width: 320px; position: relative; }
+    .search-box input {
+        width: 100%;
+        padding: 9px 12px 9px 32px;
+        border: 1px solid #d1d5db;
+        background-color: #f7f6f0;
+        border-radius: 4px;
+        font-size: 13px;
+        font-family: var(--font-family-base);
+        outline: none;
+    }
+    .search-box__icon {
+        position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+        color: #9ca3af; font-size: 13px;
+    }
+    .btn-gold {
+        background-color: var(--color-gold-bg);
+        border: 2px solid var(--color-gold);
+        color: var(--color-gold);
+        font-family: var(--font-family-base);
+        font-weight: 800;
+        font-size: 12px;
+        letter-spacing: 0.5px;
+        padding: 10px 18px;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.15s;
+    }
+    .btn-gold:hover { background-color: var(--color-gold); color: white; }
+    .btn-danger-outline {
+        background-color: #fce8e6;
+        border: 2px solid #d9381e;
+        color: #d9381e;
+        font-family: var(--font-family-base);
+        font-weight: 800;
+        font-size: 12px;
+        letter-spacing: 0.5px;
+        padding: 10px 18px;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.15s;
+    }
+    .btn-danger-outline:hover { background-color: #d9381e; color: white; }
+    .toolbar-spacer { margin-left: auto; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
+    .legend-row {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        flex-wrap: wrap;
+        font-family: var(--font-family-base);
+        font-weight: 700;
+        font-size: 12px;
+        color: var(--color-text-dark);
+        margin-bottom: 16px;
+        padding: 0 4px;
+    }
+    .legend-item { display: flex; align-items: center; gap: 6px; }
+    .legend-hint { color: var(--color-text-muted); font-weight: 600; font-size: 11px; width: 100%; margin-top: -4px; display: none !important; }
+
+    .slot-badge {
+        width: 24px; height: 24px;
+        border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        font-family: var(--font-family-base);
+        font-weight: 800;
+        font-size: 11px;
+        flex-shrink: 0;
+    }
+    .slot-badge--a { border: 2px solid var(--color-a); color: var(--color-a); background: white; }
+    .slot-badge--b { border: 2px solid var(--color-b); color: var(--color-b); background: white; }
+    .slot-badge--unassigned { border: 2px dashed var(--color-unassigned); background: white; }
+
+    .status-badge-legend {
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-size: 9px;
+        font-weight: 800;
+        text-transform: uppercase;
+    }
+
+    .table-card {
+        background: white;
+        border: 2px solid var(--color-primary);
+        border-radius: 6px;
+        overflow: hidden;
+    }
+    .table-wrapper { overflow-x: auto; }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        font-family: var(--font-family-base);
+    }
+    thead th {
+        background-color: #e9ecf7;
+        padding: 14px 12px;
+        font-size: 11px;
+        font-weight: 800;
+        color: var(--color-primary-dark);
+        text-transform: uppercase;
+        border-bottom: 2px solid var(--color-primary);
+        white-space: nowrap;
+        text-align: center;
+    }
+    thead th.col-member { text-align: left; padding-left: 20px; }
+    thead th .date-label { font-size: 13px; font-weight: 800; color: var(--color-text-dark); cursor: pointer; }
+    thead th .date-label:hover { text-decoration: underline; color: var(--color-primary); }
+    thead th .week-label { font-size: 9px; font-weight: 700; color: var(--color-text-muted); text-transform: none; margin-top: 2px; }
+    thead th .remove-date-btn {
+        display: inline-block;
+        margin-top: 4px;
+        color: #d9381e;
+        cursor: pointer;
+        font-size: 10px;
+        font-weight: 800;
+    }
+
+    tbody td {
+        padding: 12px;
+        border-bottom: 1px solid var(--color-border-light);
+        text-align: center;
+        vertical-align: middle;
+    }
+    tbody td.col-rank { color: var(--color-text-muted); font-weight: 700; width: 40px; }
+    tbody td.col-member { text-align: left; padding-left: 20px; font-weight: 800; color: var(--color-text-dark); }
+    tbody td.col-penalty { font-weight: 800; }
+
+    .cell-stack { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+
+    .slot-btn {
+        width: 30px; height: 30px;
+        border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        font-weight: 800;
+        font-size: 12px;
+        cursor: pointer;
+        user-select: none;
+        transition: transform 0.1s;
+    }
+    .slot-btn:active { transform: scale(0.92); }
+    .slot-btn--a { border: 2px solid var(--color-a); color: var(--color-a); background: white; }
+    .slot-btn--b { border: 2px solid var(--color-b); color: var(--color-b); background: white; }
+    .slot-btn--unassigned { border: 2px dashed var(--color-unassigned); background: white; color: transparent; }
+    .slot-btn--readonly { cursor: default; }
+
+    .attend-pill {
+        font-size: 9px;
+        font-weight: 800;
+        letter-spacing: 0.3px;
+        padding: 3px 8px;
+        border-radius: 10px;
+        cursor: pointer;
+        user-select: none;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+    .attend-pill--yes { background: #e6f4ea; color: var(--color-attended); border: 1px solid var(--color-attended); }
+    .attend-pill--no { background: #fce8e6; color: var(--color-not-attended); border: 1px solid var(--color-not-attended); }
+    .attend-pill--readonly { cursor: default; }
+
+    .role-pill {
+        font-size: 9px;
+        font-weight: 800;
+        letter-spacing: 0.3px;
+        padding: 3px 8px;
+        border-radius: 10px;
+        cursor: pointer;
+        user-select: none;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+    .role-pill--main { background: var(--color-main); color: #3d2c00; border: 1px solid #c98c00; }
+    .role-pill--sub { background: var(--color-sub); color: #1e3a38; border: 1px solid #95b8b5; }
+    .role-pill--none { background: #f0f1f5; color: #a0a5b8; border: 1px dashed #d1d5db; }
+    .role-pill--readonly { cursor: default; }
+
+    .att-penalty-badge {
+        font-size: 9.5px;
+        font-weight: 800;
+        letter-spacing: 0.3px;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+    .att-penalty-badge--locked { color: #d9381e; }
+    .att-penalty-badge--countdown { color: #8a6300; }
+
+    .att-faction-divider td {
+        background: var(--divider-color, #5c4127);
+        color: #ffffff;
+        font-family: var(--font-family-base);
+        font-weight: 800;
+        font-size: 11px;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        padding: 8px 20px !important;
+        border-bottom: none;
+        text-align: left;
+    }
+
+    tfoot td {
+        background-color: #f4f6fb;
+        border-top: 2px solid var(--color-primary);
+        padding: 12px;
+        font-size: 11px;
+        font-weight: 800;
+        color: var(--color-text-muted);
+        text-align: center;
+    }
+    tfoot td.col-member { text-align: left; padding-left: 20px; color: var(--color-primary-dark); }
+    tfoot .ab-count-a { color: var(--color-a); }
+    tfoot .ab-count-b { color: var(--color-b); }
+
+    .faction-circle { width: 26px; height: 26px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-weight: 800; font-size: 10px; color: white; box-shadow: 0 1px 3px rgba(0,0,0,0.15); flex-shrink: 0; font-family: var(--font-family-base); }
+    .faction-f { background-color: #2563eb; }
+    .faction-s { background-color: #9333ea; }
+    .faction-r { background-color: #ea580c; }
+    .faction-circle--empty { background-color: #d1d5db; color: #6b7280; }
+
+    .map-card {
+        background: white;
+        border: 2px solid var(--color-primary);
+        border-radius: 6px;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+    }
+    .map-toolbar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+    .map-toolbar__label {
+        font-family: var(--font-family-base); font-weight: 800; font-size: 12px; color: white;
+        background: var(--color-primary); padding: 8px 16px; border-radius: 4px; letter-spacing: 0.5px;
+    }
+    .map-toolbar__controls { display: flex; gap: 8px; }
+    .map-toolbar__hint { font-family: var(--font-family-base); font-weight: 600; font-size: 11px; color: var(--color-text-muted); width: 100%; }
+
+    .map-toolbar__right { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+
+    .map-circles-toggle-btn {
+        background: white;
+        border: 2px solid var(--color-primary);
+        color: var(--color-primary);
+        font-family: var(--font-family-base);
+        font-weight: 800;
+        font-size: 11px;
+        letter-spacing: 0.4px;
+        padding: 8px 14px;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.15s;
+        white-space: nowrap;
+    }
+    .map-circles-toggle-btn:hover { background: #eef2f9; }
+    .map-circles-toggle-btn--active { background: var(--color-primary); color: white; }
+
+    .map-dot-color-picker { display: flex; align-items: center; gap: 10px; }
+    .map-dot-color-picker__label {
+        font-family: var(--font-family-base); font-weight: 800; font-size: 11px; letter-spacing: 0.3px;
+        color: var(--color-text-muted); text-transform: uppercase;
+    }
+    .map-dot-color-picker__swatches { display: flex; gap: 6px; align-items: center; }
+    .map-dot-color-swatch {
+        width: 22px; height: 22px; border-radius: 50%; cursor: pointer;
+        border: 2px solid rgba(0,0,0,0.15); box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+        transition: transform 0.1s;
+    }
+    .map-dot-color-swatch:hover { transform: scale(1.12); }
+    .map-dot-color-swatch--active { border-color: var(--color-primary-dark); box-shadow: 0 0 0 2px white, 0 0 0 4px var(--color-primary-dark); }
+
+    .map-connector-dot {
+        position: absolute;
+        width: clamp(18px, 4.2cqw, 34px);
+        height: clamp(18px, 4.2cqw, 34px);
+        transform: translate(-50%, -50%) scale(var(--zoom-boost, 1));
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer;
+        transition: filter 0.15s ease, opacity 0.15s ease, transform 0.1s ease;
+    }
+    /* Arrows (rotated connector dots) render noticeably larger than plain circles so
+       rally direction is easy to read at a glance. */
+    .map-connector-dot--arrow {
+        width: clamp(30px, 6.4cqw, 52px);
+        height: clamp(30px, 6.4cqw, 52px);
+    }
+    .map-connector-dot--readonly { cursor: default; }
+    .map-connector-dot svg { width: 100%; height: 100%; overflow: visible; }
+    .map-connector-arrow-inner { transition: transform 0.15s ease; transform-origin: 50% 50%; }
+    .map-connector-dot--selected { filter: drop-shadow(0 0 0 2px white) drop-shadow(0 0 5px var(--color-primary-dark)); }
+    .map-connector-dot--hidden { display: none; }
+    .map-connector-dot--dragging { transition: none; cursor: grabbing; z-index: 30; }
+
+    .map-subtabs { display: flex; gap: 8px; }
+    .map-subtab-btn {
+        font-family: var(--font-family-base);
+        font-weight: 800;
+        font-size: 11px;
+        letter-spacing: 0.5px;
+        color: var(--color-primary);
+        background: white;
+        border: 2px solid var(--color-primary);
+        padding: 8px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.15s;
+    }
+    .map-subtab-btn:hover { background: #eef2f9; }
+    .map-subtab-btn--active { background: var(--color-primary); color: white; }
+
+    .map-body { display: flex; gap: 0; align-items: flex-start; position: relative; }
+
+    /* Groups panel behaves as a true sidebar: collapsed by default so the map
+       fills all available space, and when opened it takes its own column
+       BESIDE the map (flex layout), never overlapping/covering it. */
+    .map-table-wrapper {
+        flex: 0 0 0px;
+        width: 0px;
+        min-width: 0;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        opacity: 0;
+        transition: flex-basis 0.2s ease, width 0.2s ease, opacity 0.15s ease;
+    }
+    .map-body--sidebar-open .map-table-wrapper {
+        flex: 0 0 380px;
+        width: 380px;
+        min-width: 340px;
+        opacity: 1;
+        margin-right: 18px;
+        overflow-y: auto;
+        max-height: calc(100vh - 160px);
+    }
+
+    /* Three-line hamburger toggle sitting at the upper-left corner of the map,
+       used to reveal/hide the groups sidebar without ever covering the map. */
+    .map-groups-toggle-btn {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        z-index: 20;
+        width: 40px;
+        height: 40px;
+        border-radius: 6px;
+        background: rgba(59, 82, 164, 0.92);
+        border: none;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        cursor: pointer;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+        transition: background 0.15s;
+    }
+    .map-groups-toggle-btn span {
+        display: block;
+        width: 20px;
+        height: 3px;
+        background: white;
+        border-radius: 2px;
+    }
+    .map-groups-toggle-btn:hover,
+    .map-groups-toggle-btn--active {
+        background: var(--color-primary-dark);
+    }
+    .map-body--sidebar-open .map-groups-toggle-btn {
+        position: static;
+        margin-right: 10px;
+        align-self: flex-start;
+    }
+
+    .map-team-block { border: 2px solid var(--color-border-light); border-radius: 6px; overflow: hidden; }
+    .map-team-header {
+        padding: 9px 12px; font-family: var(--font-family-base); font-weight: 800; font-size: 12px;
+        color: white; display: flex; align-items: center; justify-content: space-between;
+        text-transform: uppercase; letter-spacing: 0.5px;
+        background: #5c4127;
+    }
+    .map-team-header__title { display: flex; align-items: center; gap: 8px; flex: 1 1 auto; min-width: 0; }
+    .map-team-header__color {
+        width: 18px; height: 18px; padding: 0; border: 2px solid rgba(255,255,255,0.65);
+        border-radius: 4px; cursor: pointer; background: none;
+    }
+    .map-team-header__name-input {
+        flex: 1 1 auto;
+        min-width: 0;
+        background: rgba(255,255,255,0.16);
+        border: 1px solid rgba(255,255,255,0.4);
+        border-radius: 4px;
+        color: #ffffff;
+        font-family: var(--font-family-base);
+        font-weight: 800;
+        font-size: 11px;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        padding: 5px 7px;
+        outline: none;
+    }
+    .map-team-header__name-input::placeholder { color: rgba(255,255,255,0.6); text-transform: none; font-weight: 600; }
+    .map-team-header__name-input:focus { background: rgba(255,255,255,0.26); border-color: #ffffff; }
+    .map-team-header__number {
+        width: 22px; height: 22px; border-radius: 50%; background: rgba(255,255,255,0.28);
+        display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800;
+        flex-shrink: 0;
+    }
+    .map-team-header__number--clickable { cursor: pointer; }
+    .map-team-header__number--clickable:hover { background: rgba(255,255,255,0.5); }
+
+    table.map-role-table { width: 100%; table-layout: fixed; border-collapse: collapse; font-family: var(--font-family-base); }
+    .map-role-table td { padding: 7px 8px; border-bottom: 1px solid var(--color-border-light); font-size: 11.5px; vertical-align: middle; overflow: visible; }
+    .map-role-table tr:last-child td { border-bottom: none; }
+    .map-role-label { font-weight: 800; color: var(--color-text-dark); width: 128px; white-space: nowrap; }
+    .map-role-label select { width: 100%; }
+    .map-role-faction-cell { width: 26px; text-align: center; padding-left: 4px !important; padding-right: 4px !important; }
+    .map-role-select {
+        width: 100%; padding: 5px 6px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 11.5px;
+        font-family: var(--font-family-base); font-weight: 600; background: #f7f6f0; outline: none; cursor: pointer;
+        text-overflow: ellipsis;
+    }
+    .map-role-select:focus { border-color: var(--color-primary); background: white; }
+    .map-role-select:disabled { cursor: default; background: #f0f1f5; color: #8c93a6; }
+    .map-role-power { font-weight: 800; color: var(--color-primary-dark); font-size: 11.5px; white-space: nowrap; width: 34px; text-align: right; padding-left: 2px !important; padding-right: 2px !important; }
+    .map-role-delete-btn { color: #d9381e; font-weight: 800; font-size: 13px; cursor: pointer; padding: 2px 4px; }
+    .map-role-delete-btn:hover { text-decoration: underline; }
+    .map-role-table td:last-child { padding-left: 2px !important; width: 18px; }
+    .map-role-add-row { padding: 9px; text-align: center; }
+    .map-role-add-btn {
+        font-family: var(--font-family-base); font-weight: 800; font-size: 10px; letter-spacing: 0.3px;
+        color: var(--color-primary); background: var(--color-primary-light); border: 1px solid var(--color-primary);
+        border-radius: 4px; padding: 7px 14px; cursor: pointer;
+    }
+    .map-role-add-btn:hover { background: var(--color-primary); color: white; }
+
+    .map-diagram-wrap { flex: 1 1 auto; min-width: 360px; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 10px; position: sticky; top: 12px; }
+    .map-diagram {
+        position: relative; width: 100%; aspect-ratio: 1093 / 1096;
+        max-height: calc(100vh - 110px);
+        background: #c58f5f;
+        border-radius: 14px; border: 3px solid #93672f; box-shadow: inset 0 0 30px rgba(0,0,0,0.15);
+        overflow: hidden;
+        container-type: inline-size;
+        container-name: mapdiagram;
+        touch-action: none;
+    }
+
+    .map-icon-static {
+        position: absolute;
+        transform: translate(-50%, -50%);
+        pointer-events: none;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.25);
+    }
+
+    .map-arrow-static {
+        position: absolute;
+        transform-origin: center;
+        pointer-events: none;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    }
+
+    .map-dotted-svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+
+    .map-pin {
+        position: absolute;
+        width: 4.8cqw; height: 5.62cqw;
+        min-width: 25px; min-height: 29px;
+        max-width: 52px; max-height: 61px;
+        transform: translate(-50%, -62%) scale(var(--zoom-boost, 1));
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer;
+        transition: transform 0.12s;
+    }
+    .map-pin:active { transform: translate(-50%, -62%) scale(calc(var(--zoom-boost, 1) * 0.92)); }
+    .map-pin--readonly { cursor: default; }
+    .map-pin svg { width: 100%; height: 100%; filter: drop-shadow(0 3px 4px rgba(0,0,0,0.35)); }
+    .map-pin__num {
+        position: absolute;
+        left: 50%; top: 40%;
+        transform: translate(-50%, -50%);
+        color: #fff;
+        font-weight: 800;
+        font-family: var(--font-family-base);
+        font-size: 1.46cqw;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.45), 0 0 3px rgba(0,0,0,0.5);
+    }
+
+    .map-locked-state {
+        text-align: center; padding: 40px 20px; color: var(--color-text-muted);
+        font-family: var(--font-family-base); font-weight: 700; font-size: 13px;
+    }
+
+    .map-legend-card {
+        background: white;
+        border: 2px solid var(--color-primary);
+        border-radius: 6px;
+        padding: 16px 20px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 18px;
+        align-items: center;
+        font-family: var(--font-family-base);
+    }
+    .map-legend-card__label {
+        font-weight: 800; font-size: 11px; letter-spacing: 0.5px; color: var(--color-primary-dark);
+        text-transform: uppercase; margin-right: 4px;
+    }
+    .map-legend-item { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 11px; color: var(--color-text-dark); }
+    .map-legend-swatch { width: 16px; height: 16px; border-radius: 3px; border: 1px solid rgba(0,0,0,0.15); flex-shrink: 0; }
+
+    .page-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 16px;
+        font-family: var(--font-family-base);
+        font-size: 10px;
+        font-weight: 700;
+        color: var(--color-text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        padding: 0 4px;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 40px 20px;
+        color: var(--color-text-muted);
+        font-family: var(--font-family-base);
+        font-weight: 700;
+        font-size: 13px;
+    }
+
+    #mapSection .main,
+    body:has(#mapSection[style*="block"]) .main {
+        max-width: 2000px;
+    }
+
+    /* Only the Map (and its Groups sidebar) is used on this page for now. */
+    #tabAB, #tabCalendar, #abSlotsSection, #calendarSection, #abSearchBox, #calendarToolbarControls { display: none !important; }
+
+    @media (min-width: 981px) {
+        .map-toolbar__hint { display: none !important; }
+    }
+
+    @media (max-width: 980px) {
+        .map-body { flex-direction: column; }
+        .map-table-wrapper { width: 100%; flex: 1 1 auto; max-height: none; overflow-y: visible; display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px; }
+        .map-diagram-wrap { position: static; }
+        .map-diagram { max-width: 100%; max-height: none; }
+        .map-team-header { padding: 7px 10px; font-size: 11px; }
+        .map-role-table td { padding: 4px 6px; }
+    }
+
+    @media (max-width: 640px) {
+        .page-header__title { font-size: 26px; }
+        .toolbar-card { flex-direction: column; align-items: stretch; }
+        .toolbar-spacer { margin-left: 0; }
+        .search-box { max-width: none; }
+        .map-table-wrapper { grid-template-columns: 1fr; }
+
+        table.map-role-table { table-layout: auto; }
+        .map-role-table tr {
             display: flex;
-            flex-direction: column;
-            flex-shrink: 0;
-            transition: transform 0.3s ease;
-            z-index: 150;
-            position: fixed;
-            top: 0; left: 0;
-            height: 100vh;
-            transform: translateX(-100%);
-        }
-        .sidebar--open { transform: translateX(0); }
-        .sidebar__header { padding: 24px; display: flex; justify-content: center; align-items: center; border-bottom: 2px solid var(--color-border); }
-        .sidebar__logo { width: 85px; height: 85px; display: flex; align-items: center; justify-content: center; }
-        .sidebar__user { padding: 18px 24px; display: flex; align-items: center; gap: 14px; font-weight: 700; font-size: var(--font-sm); color: #62697b; border-bottom: 1px solid var(--color-border-light); }
-        .sidebar__user-avatar { width: 42px; height: 42px; border-radius: 50%; background-color: var(--color-primary); color: white; display: flex; align-items: center; justify-content: center; font-size: var(--font-sm); font-weight: 800; }
-        .sidebar__nav { display: flex; flex-direction: column; gap: 6px; overflow-y: auto; padding-bottom: 24px; flex-grow: 1; }
-        .sidebar__footer { padding: 14px 24px; border-top: 1px solid var(--color-border-light); margin-top: auto; }
-        .sidebar__menu { list-style: none; }
-        .sidebar__section-title { font-size: var(--font-xs); font-weight: 800; color: #8c93a6; padding: 18px 24px 8px 24px; text-transform: uppercase; letter-spacing: 0.5px; }
-        .sidebar__item { display: flex; align-items: center; padding: 14px 24px; color: #555b6e; font-weight: 700; font-size: var(--font-xs); text-decoration: none; gap: 14px; cursor: pointer; transition: background 0.2s; }
-        .sidebar__item:hover { background-color: #f0f2f8; }
-        .sidebar__item--active { background-color: var(--color-primary); color: white; }
-        .sidebar__item--logout { color: #d9381e; }
-        .sidebar__item--logout:hover { background-color: #fce8e6; }
-        .sidebar__icon { width: 18px; text-align: center; }
-        /* Backdrop shown behind the sidebar while open; click it to close (matches vspoint.html) */
-        .sidebar-overlay {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.35);
-            z-index: 140;
-        }
-        .sidebar-overlay--visible { display: block; }
-        .main { flex-grow: 1; padding: 28px; display: flex; flex-direction: column; gap: 18px; max-width: 1450px; width: 100%; margin: 0 auto; box-sizing: border-box; }
-        .mobile-header { display: flex; justify-content: flex-end; align-items: center; padding: 10px 14px; background: transparent; border: none; margin-bottom: 8px; }
-        .hamburger { background: none; border: none; cursor: pointer; display: flex; flex-direction: column; gap: 5px; padding: 5px; }
-        .hamburger__line { width: 26px; height: 3px; background-color: var(--color-primary); border-radius: 2px; }
-        /* ===== PAGE CONTENT ===== */
-        .page-header { margin-bottom: 20px; }
-        .page-header__title {
-            font-family: var(--font-family-base);
-            font-weight: 800;
-            font-size: 34px;
-            letter-spacing: -1px;
-            color: var(--color-primary-dark);
-            text-transform: uppercase;
-        }
-        .page-header__subtitle {
-            font-family: var(--font-family-base);
-            font-weight: 700;
-            font-size: 14px;
-            color: var(--color-text-muted);
-            margin-top: 4px;
-        }
-        .controls-card {
-            background: white;
-            border: 2px solid var(--color-primary);
-            border-radius: 6px;
-            padding: 16px 20px;
-            display: flex;
-            align-items: center;
-            gap: 16px;
             flex-wrap: wrap;
-            justify-content: space-between;
-            margin-bottom: 16px;
-        }
-        .controls-left { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; flex-grow: 1; }
-        .controls-right { display: flex; gap: 10px; align-items: center; }
-        .btn-group { display: flex; border: 2px solid var(--color-primary); border-radius: 4px; overflow: hidden; }
-        .btn-toggle { padding: 8px 16px; font-weight: 800; font-size: 11px; border: none; background: white; color: var(--color-primary); cursor: pointer; display: flex; align-items: center; gap: 6px; font-family: var(--font-family-base); }
-        .btn-toggle--active { background-color: var(--color-primary); color: white; }
-        .search-box { flex-grow: 1; max-width: 300px; position: relative; }
-        .search-box__input { width: 100%; padding: 9px 12px 9px 32px; border: 1px solid #d1d5db; background-color: #f7f6f0; border-radius: 4px; font-size: 13px; font-family: var(--font-family-base); outline: none; }
-        .search-box__icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #9ca3af; font-size: 13px; }
-        .btn-action { background: white; border: 2px solid var(--color-primary); color: var(--color-primary); font-weight: 800; font-size: 12px; padding: 10px 18px; border-radius: 4px; cursor: pointer; transition: all 0.2s; font-family: var(--font-family-base); }
-        .btn-action:hover { background: #eef2f9; }
-        .btn-gold { background: var(--color-gold-bg); border: 2px solid var(--color-gold); color: var(--color-gold); }
-        .btn-gold:hover { background-color: var(--color-gold); color: white; }
-        .btn-danger { border-color: #dc2626; color: #dc2626; }
-        .btn-danger:hover { background: #fee2e2; }
-        .manual-box { background: #fffdf5; border: 1px solid #e2cb6b; border-radius: 6px; padding: 12px 16px; font-size: 12px; color: #71788e; font-weight: 600; line-height: 1.4; display: flex; align-items: center; gap: 8px; margin-bottom: 16px; font-family: var(--font-family-base); }
-        .manual-box i { color: var(--color-gold); font-size: 14px; }
-        .table-card { background: white; border: 2px solid var(--color-primary); border-radius: 6px; overflow: hidden; display: flex; flex-direction: column; }
-        .table-wrapper { overflow-x: auto; }
-        .data-table { width: 100%; border-collapse: collapse; text-align: left; font-family: var(--font-family-base); }
-        .data-table th { background-color: #e9ecf7; padding: 14px 12px; font-size: 11px; font-weight: 800; color: var(--color-primary-dark); text-transform: uppercase; border-bottom: 2px solid var(--color-primary); white-space: nowrap; text-align: center; }
-        .data-table th.col-name { text-align: left; padding-left: 20px; }
-        .data-table td { padding: 12px; border-bottom: 1px solid var(--color-border-light); vertical-align: middle; font-weight: 700; color: #4a5060; text-align: center; }
-        .data-table tfoot td { background-color: #f4f6fb; border-top: 2px solid var(--color-primary); padding: 12px; font-size: 11px; font-weight: 800; color: var(--color-text-muted); text-align: center; }
-        .data-table tr.rank-1 { background-color: #fffdf5; }
-        .data-table tr.rank-2 { background-color: #faf9f5; }
-        .data-table tr.rank-3 { background-color: #fcfbf7; }
-        .col-rank { width: 50px; text-align: center; color: var(--color-text-muted); font-weight: 700; white-space: nowrap; }
-        .col-name { font-weight: 800; color: var(--color-text-dark); text-align: left; padding-left: 16px; min-width: 320px; }
-        .col-cp { min-width: 170px; }
-        .col-f1 { min-width: 170px; }
-        .status-tabs { display: flex; border: 1px solid #d1d5db; border-radius: 4px; overflow: hidden; background: #f7f6f0; flex-shrink: 0; }
-        .status-tab { padding: 4px 8px; font-size: 10px; font-weight: 800; border: none; background: transparent; cursor: pointer; color: #8c93a6; }
-        .status-tab.active-active { background: #16a34a; color: white; }
-        .status-tab.active-inactive { background: #ca8a04; color: white; }
-        .status-tab.active-removed { background: #dc2626; color: white; }
-        .rank-dot { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; cursor: pointer; user-select: none; border: 1px solid rgba(0,0,0,0.1); flex-shrink: 0; }
-        .rank-dot-r1, .rank-dot-r2, .rank-dot-r3 { background: #eef2f9; color: var(--color-primary); }
-        .rank-dot-r4 { background: #dc2626 !important; color: white !important; }
-        .rank-dot-r5 { background: #2563eb !important; color: white !important; }
-        /* ===== RANK GROUP SEPARATOR BARS ===== */
-        .rank-group-bar-row td { padding: 0; border-bottom: none; }
-        .rank-group-bar {
-            display: flex;
             align-items: center;
-            padding: 7px 20px;
-            font-family: var(--font-family-base);
-            font-weight: 800;
-            font-size: 11px;
-            letter-spacing: 1px;
-            color: #ffffff;
-            text-transform: uppercase;
+            gap: 6px;
+            padding: 8px 10px;
+            border-bottom: 1px solid var(--color-border-light);
         }
-        .rank-group-bar--r5 { background-color: #2563eb; }
-        .rank-group-bar--r4 { background-color: #dc2626; }
-        .rank-group-bar--r3 { background-color: #ea580c; }
-        .rank-group-bar--r2 { background-color: #eab308; }
-        .rank-group-bar--r1 { background-color: #16a34a; }
-        .faction-circle { width: 34px; height: 34px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-weight: 800; font-size: 12px; cursor: pointer; color: white; box-shadow: 0 1px 3px rgba(0,0,0,0.15); flex-shrink: 0; }
-        .faction-f { background-color: #2563eb; }
-        .faction-s { background-color: #9333ea; }
-        .faction-r { background-color: #ea580c; }
-        .diff-green { color: #16a34a; font-weight: 850; font-size: 12px; display: inline-flex; align-items: center; gap: 2px; }
-        .diff-red { color: #dc2626; font-weight: 850; font-size: 12px; display: inline-flex; align-items: center; gap: 2px; }
-        .editable-input { width: 100%; background: #f7f6f0; border: 1px solid #d1d5db; border-radius: 4px; padding: 7px 10px; font-size: 12px; font-weight: 600; outline: none; font-family: var(--font-family-base); }
-        .editable-input:focus { border-color: var(--color-primary); background: white; }
-        .editable-select { width: 100%; background: #f7f6f0; border: 1px solid #d1d5db; border-radius: 4px; padding: 7px 10px; font-size: 12px; font-weight: 600; outline: none; cursor: pointer; font-family: var(--font-family-base); }
-        .col-level-cell { min-width: 110px; text-align: center; }
-        .col-note-cell { min-width: 220px; }
-        .f1-history-badge { background: #f0f3fa; border: 1px solid var(--color-border-light); border-radius: 4px; padding: 4px 8px; font-size: 10px; font-weight: 800; color: var(--color-primary); cursor: pointer; display: inline-flex; align-items: center; gap: 4px; margin-top: 4px; transition: background 0.2s; font-family: var(--font-family-base); }
-        .f1-history-badge:hover { background: #eef2f9; }
-        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.4); display: none; align-items: center; justify-content: center; z-index: 1000; }
-        .modal-card { background: white; padding: 24px; border-radius: 6px; width: 100%; max-width: 450px; border: 2px solid var(--color-primary); box-shadow: 0 10px 25px rgba(0,0,0,0.2); font-family: var(--font-family-base); }
-        .modal-card h3 { margin-bottom: 16px; color: var(--color-primary-dark); font-size: 18px; display: flex; justify-content: space-between; align-items: center; font-weight: 800; text-transform: uppercase; }
-        .modal-card label { display: block; font-size: 11px; font-weight: 800; color: var(--color-text-muted); text-transform: uppercase; margin-bottom: 4px; }
-        .modal-card input, .modal-card select { width: 100%; padding: 10px; margin-bottom: 14px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 13px; outline: none; font-family: var(--font-family-base); }
-        .modal-card-btns { display: flex; justify-content: flex-end; gap: 8px; }
-        .history-list { max-height: 200px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; border: 1px solid var(--color-border-light); padding: 8px; border-radius: 4px; background: #f9fafc; }
-        .history-item { display: flex; justify-content: space-between; align-items: center; background: white; padding: 6px 10px; border-radius: 4px; border: 1px solid #eef2f9; font-size: 12px; font-weight: 700; }
-        .history-item-date { color: var(--color-text-muted); font-size: 10px; }
-        .history-item-val { color: #16a34a; font-family: monospace; font-weight: 800; }
-        .page-footer {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 16px;
-            font-family: var(--font-family-base);
-            font-size: 10px;
-            font-weight: 700;
-            color: var(--color-text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            padding: 0 4px;
-        }
-        @media (max-width: 640px) {
-            .page-header__title { font-size: 26px; }
-            .controls-card { flex-direction: column; align-items: stretch; }
-            .search-box { max-width: none; }
-        }
-        #google_translate_element .goog-te-gadget { font-family: var(--font-family-base) !important; font-size: 11px !important; }
-        #google_translate_element select { padding: 6px 8px; border-radius: 4px; border: 1px solid #d1d5db; font-family: var(--font-family-base); font-weight: 700; font-size: 11px; }
-        .goog-te-banner-frame,
-        iframe.goog-te-banner-frame,
-        .skiptranslate iframe {
-            display: none !important;
-            visibility: hidden !important;
-            height: 0 !important;
-        }
-        body, html { top: 0px !important; position: static !important; }
-        .lang-dropdown { position: relative; margin-bottom: 14px; font-family: var(--font-family-base); }
-        .lang-dropdown__label { font-size: 10px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; color: var(--color-text-muted); margin-bottom: 6px; }
-        .lang-dropdown__trigger {
-            width: 100%;
-            display: flex; align-items: center; justify-content: space-between;
-            background: #ffffff;
-            border: 1px solid var(--color-border-light);
-            border-radius: 8px;
-            padding: 10px 12px;
-            font-family: var(--font-family-base);
-            font-weight: 700;
-            font-size: 13px;
-            color: var(--color-text-dark);
-            cursor: pointer;
-            transition: border-color 0.15s, box-shadow 0.15s;
-        }
-        .lang-dropdown__trigger:hover { border-color: var(--color-primary); }
-        .lang-dropdown--open .lang-dropdown__trigger { border-color: var(--color-primary); box-shadow: 0 0 0 3px var(--color-primary-light); }
-        .lang-dropdown__trigger-content { display: flex; align-items: center; gap: 10px; }
-        .lang-dropdown__flag { font-size: 16px; line-height: 1; }
-        .lang-dropdown__chevron { font-size: 11px; color: var(--color-text-muted); transition: transform 0.15s; }
-        .lang-dropdown--open .lang-dropdown__chevron { transform: rotate(180deg); }
-        .lang-dropdown__menu {
-            display: none;
-            position: absolute;
-            bottom: calc(100% + 6px);
-            left: 0; right: 0;
-            background: #ffffff;
-            border: 1px solid var(--color-border-light);
-            border-radius: 8px;
-            box-shadow: 0 8px 24px rgba(43, 48, 68, 0.14);
-            padding: 6px;
-            z-index: 400;
-            max-height: 260px;
-            overflow-y: auto;
-        }
-        .lang-dropdown--open .lang-dropdown__menu { display: block; }
-        .lang-dropdown__option {
-            display: flex; align-items: center; gap: 10px;
-            padding: 9px 10px;
-            border-radius: 6px;
-            font-weight: 600;
-            font-size: 13px;
-            color: var(--color-text-dark);
-            cursor: pointer;
-        }
-        .lang-dropdown__option:hover { background: var(--color-primary-light); }
-        .lang-dropdown__option--active { background: var(--color-primary-light); font-weight: 800; color: var(--color-primary-dark); }
-        #google_translate_element {
-            position: absolute !important;
-            width: 1px !important;
-            height: 1px !important;
-            overflow: hidden !important;
-            clip: rect(0 0 0 0) !important;
-            clip-path: inset(50%) !important;
-            white-space: nowrap !important;
-        }
-    </style>
+        .map-role-table tr:last-child { border-bottom: none; }
+        .map-role-table td { display: block; border: none; padding: 0 !important; }
+        .map-role-label { flex: 1 1 100%; width: auto !important; order: -1; font-size: 12px; margin-bottom: 2px; }
+        .map-role-label select { font-size: 12px; }
+        .map-role-faction-cell { flex: 0 0 auto; width: auto !important; }
+        .map-role-table td:nth-child(3) { flex: 1 1 110px; min-width: 100px; }
+        .map-role-power { flex: 0 0 auto; width: auto !important; text-align: left !important; }
+        .map-role-table td:nth-child(5) { flex: 0 0 auto; }
+        .map-role-add-row { padding: 10px !important; }
+    }
+
+    #google_translate_element .goog-te-gadget { font-family: var(--font-family-base) !important; font-size: 11px !important; }
+    #google_translate_element select { padding: 6px 8px; border-radius: 4px; border: 1px solid #d1d5db; font-family: var(--font-family-base); font-weight: 700; font-size: 11px; }
+    .goog-te-banner-frame,
+    iframe.goog-te-banner-frame,
+    .skiptranslate iframe {
+        display: none !important;
+        visibility: hidden !important;
+        height: 0 !important;
+    }
+    body, html { top: 0px !important; position: static !important; }
+
+    .lang-dropdown { position: relative; margin-bottom: 14px; font-family: var(--font-family-base); }
+    .lang-dropdown__label { font-size: 10px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; color: var(--color-text-muted); margin-bottom: 6px; }
+    .lang-dropdown__trigger {
+        width: 100%;
+        display: flex; align-items: center; justify-content: space-between;
+        background: #ffffff;
+        border: 1px solid var(--color-border-light);
+        border-radius: 8px;
+        padding: 10px 12px;
+        font-family: var(--font-family-base);
+        font-weight: 700;
+        font-size: 13px;
+        color: var(--color-text-dark);
+        cursor: pointer;
+        transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .lang-dropdown__trigger:hover { border-color: var(--color-primary); }
+    .lang-dropdown--open .lang-dropdown__trigger { border-color: var(--color-primary); box-shadow: 0 0 0 3px var(--color-primary-light); }
+    .lang-dropdown__trigger-content { display: flex; align-items: center; gap: 10px; }
+    .lang-dropdown__flag { font-size: 16px; line-height: 1; }
+    .lang-dropdown__chevron { font-size: 11px; color: var(--color-text-muted); transition: transform 0.15s; }
+    .lang-dropdown--open .lang-dropdown__chevron { transform: rotate(180deg); }
+
+    .lang-dropdown__menu {
+        display: none;
+        position: absolute;
+        bottom: calc(100% + 6px);
+        left: 0; right: 0;
+        background: #ffffff;
+        border: 1px solid var(--color-border-light);
+        border-radius: 8px;
+        box-shadow: 0 8px 24px rgba(43, 48, 68, 0.14);
+        padding: 6px;
+        z-index: 400;
+        max-height: 260px;
+        overflow-y: auto;
+    }
+    .lang-dropdown--open .lang-dropdown__menu { display: block; }
+    .lang-dropdown__option {
+        display: flex; align-items: center; gap: 10px;
+        padding: 9px 10px;
+        border-radius: 6px;
+        font-weight: 600;
+        font-size: 13px;
+        color: var(--color-text-dark);
+        cursor: pointer;
+    }
+    .lang-dropdown__option:hover { background: var(--color-primary-light); }
+    .lang-dropdown__option--active { background: var(--color-primary-light); font-weight: 800; color: var(--color-primary-dark); }
+
+    #google_translate_element {
+        position: absolute !important;
+        width: 1px !important;
+        height: 1px !important;
+        overflow: hidden !important;
+        clip: rect(0 0 0 0) !important;
+        clip-path: inset(50%) !important;
+        white-space: nowrap !important;
+    }
+</style>
 </head>
 <body>
 <div class="top-accent-bar"></div>
 <div class="save-status" id="saveStatus"></div>
+
 <div class="app">
     <aside class="sidebar" id="sidebar">
         <div class="sidebar__header"><div class="sidebar__logo"><img src="https://sqrrfslqwcgpsmzdovru.supabase.co/storage/v1/object/public/assets/IMG_6300.png" alt="logo" style="width:100%;height:100%;object-fit:contain;"></div></div>
@@ -325,8 +845,8 @@
             <ul class="sidebar__menu">
                 <li><a class="sidebar__item" href="index.html"><span class="sidebar__icon">✧</span> HOMEPAGE</a></li>
                 <li><a class="sidebar__item" href="index.html#notice"><span class="sidebar__icon">✧</span> NOTICE</a></li>
-                <li><a class="sidebar__item sidebar__item--active" href="members.html"><span class="sidebar__icon">✧</span> MEMBERS</a></li>
-                <li><a class="sidebar__item" href="blackgold.html"><span class="sidebar__icon">✧</span> BLACK GOLD</a></li>
+                <li><a class="sidebar__item" href="members.html"><span class="sidebar__icon">✧</span> MEMBERS</a></li>
+                <li><a class="sidebar__item sidebar__item--active" href="blackgold.html"><span class="sidebar__icon">✧</span> BLACK GOLD</a></li>
                 <li><a class="sidebar__item" href="index.html#attendance"><span class="sidebar__icon">✧</span> EVENT ATTENDANCE</a></li>
                 <li><a class="sidebar__item" href="vspoint.html"><span class="sidebar__icon">✧</span> VS POINTS</a></li>
             </ul>
@@ -369,69 +889,161 @@
             <a class="sidebar__item sidebar__item--logout" id="sidebarLogoutBtn"><span class="sidebar__icon">|</span> LOG OUT</a>
         </div>
     </aside>
+
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
     <main class="main">
         <div class="mobile-header">
             <button class="hamburger" id="hamburgerBtn"><span class="hamburger__line"></span><span class="hamburger__line"></span><span class="hamburger__line"></span></button>
         </div>
+
         <div class="page-header">
-            <div class="page-header__title">Members</div>
-            <div class="page-header__subtitle" id="pageSubtitle">0 members total</div>
+            <div class="page-header__title">Black Gold</div>
+            <div class="page-header__subtitle" id="pageSubtitle">0 members · 0 sessions</div>
         </div>
-        <section class="controls-card">
-            <div class="controls-left">
-                <div class="btn-group">
-                    <button class="btn-toggle btn-toggle--active" onclick="setStatusFilter('all')" id="tabAll">ALL</button>
-                    <button class="btn-toggle" onclick="setStatusFilter('active')" id="tabActive">ACTIVE</button>
-                    <button class="btn-toggle" onclick="setStatusFilter('inactive')" id="tabInactive">INACTIVE</button>
-                    <button class="btn-toggle" onclick="setStatusFilter('removed')" id="tabRemoved">REMOVED</button>
+
+        <div class="toolbar-card">
+            <div class="tab-switch">
+                <button class="tab-switch__btn tab-switch__btn--active" id="tabAB" title="A / B Slots">A / B SLOTS</button>
+                <button class="tab-switch__btn" id="tabAttendance" title="Attendance">ATTENDANCE</button>
+                <button class="tab-switch__btn" id="tabMap" title="Formation Map">MAP</button>
+                <button class="tab-switch__btn" id="tabCalendar" title="Calendar">CALENDAR</button>
+            </div>
+            <div class="search-box" id="abSearchBox">
+                <span class="search-box__icon">🔍</span>
+                <input type="text" id="searchInput" placeholder="Search member...">
+            </div>
+            <div class="toolbar-spacer" id="mapToolbarControls" style="display: none;">
+                <input type="date" id="mapCalendarPicker" style="display: none; padding: 8px; border: 2px solid var(--color-gold); background: var(--color-gold-bg); border-radius: 4px; font-family: var(--font-family-base); font-weight: 800; font-size: 12px; cursor: pointer;">
+                <button class="btn-gold" id="mapBtnAddDate" style="display: none;">+ ADD DATE</button>
+                <button class="btn-gold" id="btnAddTeam" style="display: none;">+ ADD GROUP</button>
+                <button class="btn-danger-outline" id="btnRemoveTeam" style="display: none;">− REMOVE GROUP</button>
+            </div>
+            <div class="toolbar-spacer" id="calendarToolbarControls" style="display: none;">
+                <input type="date" id="calCalendarPicker" style="display: none; padding: 8px; border: 2px solid var(--color-gold); background: var(--color-gold-bg); border-radius: 4px; font-family: var(--font-family-base); font-weight: 800; font-size: 12px; cursor: pointer;">
+                <button class="btn-gold" id="calBtnAddDate" style="display: none;">+ ADD DATE</button>
+            </div>
+            <div class="toolbar-spacer" id="attendanceToolbarControls" style="display: none;">
+                <input type="date" id="attCalendarPicker" style="display: none; padding: 8px; border: 2px solid var(--color-gold); background: var(--color-gold-bg); border-radius: 4px; font-family: var(--font-family-base); font-weight: 800; font-size: 12px; cursor: pointer;">
+                <button class="btn-gold" id="attBtnAddDate" style="display: none;">+ ADD DATE</button>
+            </div>
+        </div>
+
+        <div id="abSlotsSection">
+            <div class="legend-row">
+                <div class="legend-item"><span class="slot-badge slot-badge--a">A</span> Slot A</div>
+                <div class="legend-item"><span class="slot-badge slot-badge--b">B</span> Slot B</div>
+                <div class="legend-item"><span class="slot-badge slot-badge--unassigned"></span> Unassigned</div>
+                <div class="legend-item"><span class="status-badge-legend" style="background:#fce8e6; color:#d9381e; border:1px solid #d9381e;">Not Attended</span></div>
+                <div class="legend-item"><span class="status-badge-legend" style="background:#e6f4ea; color:#1f9d55; border:1px solid #1f9d55;">Attended</span></div>
+                <div class="legend-item"><span class="status-badge-legend" style="background:#ffb000; color:#3d2c00; border:1px solid #c98c00;">Main Player</span></div>
+                <div class="legend-item"><span class="status-badge-legend" style="background:#c8e0dd; color:#1e3a38; border:1px solid #95b8b5;">Substitute</span></div>
+                <span class="legend-hint" id="legendHint">· Unassigned slots count as 0 penalty. Penalties count only for passed weeks where a member was assigned to Slot A or B and did not attend. Dates are strictly ordered chronologically. Click any date header to edit it.</span>
+            </div>
+
+            <div class="table-card">
+                <div class="table-wrapper">
+                    <table>
+                        <thead><tr id="tableHeaderRow"></tr></thead>
+                        <tbody id="tableBody"></tbody>
+                        <tfoot id="tableFooter"></tfoot>
+                    </table>
                 </div>
-                <div class="search-box">
-                    <span class="search-box__icon"><i class="fa-solid fa-magnifying-glass"></i></span>
-                    <input type="text" class="search-box__input" id="searchInput" placeholder="Search member, CP...">
+            </div>
+        </div>
+
+        <div id="mapSection" style="display: none;">
+            <div class="map-card" id="mapCard">
+                <div class="map-toolbar">
+                    <span class="map-toolbar__label">FORMATION MAP · GROUPS &amp; RALLY ORDER</span>
+                    <div class="map-toolbar__right">
+                        <button class="map-circles-toggle-btn" id="mapHideCirclesBtn" style="display:none;" title="Hide arrow/dot markers that are still unmodified (plain circle, default color)">HIDE DEFAULT CIRCLES</button>
+                        <button class="map-circles-toggle-btn" id="mapExportPngBtn" style="display:none;" title="Export the map and group names as a PNG image">EXPORT PNG</button>
+                        <div class="map-dot-color-picker" id="mapDotColorPicker" style="display:none;">
+                            <span class="map-dot-color-picker__label" id="mapDotColorPickerLabel">Selected arrow color</span>
+                            <input type="color" id="mapDotColorInput" class="map-team-header__color" style="border:2px solid var(--color-primary); width:26px; height:26px;" oninput="setDotColor(this.value)">
+                        </div>
+                    </div>
                 </div>
-                <button class="btn-action" id="btnToggleDiff"><i class="fa-solid fa-chart-line mr-1"></i> ± DIFF</button>
-                <input type="file" id="screenshotInput" accept="image/*" style="display: none;">
-                <button class="btn-action" id="importBtn" style="display: none;"><i class="fa-solid fa-upload mr-1"></i> UPLOAD SCREENSHOT</button>
+                <div class="map-subtabs">
+                    <button class="map-subtab-btn map-subtab-btn--active" id="mapSubtabA">TEAM A</button>
+                    <button class="map-subtab-btn" id="mapSubtabB">TEAM B</button>
+                </div>
+                <div class="map-toolbar__hint" id="mapAdminHint" style="display:none;">The map always shows a fixed set of 6 teardrop markers plus 4 fixed landmark markers (2 Military Base stars, 2 Hospital crosses) and 1 house marker — adding or removing a group never adds or removes a teardrop marker; it only fills or empties one of the 6 teardrop slots (up to 10 groups total, the 7th–10th are "extra" and don't get their own teardrop, but their colors are still available for the arrow swatches below). The number badge on each group's tab (top-right of its block) cycles 1–10 and is just a label for that group — it does not change the map. Click a teardrop, star, cross, or house marker directly on the map to cycle its own number (1–10, then back to no number) — the marker's shape always stays the same and never disappears or changes; at the start of the cycle it simply shows no number. Click a teardrop marker to also select it for its own color — use the color picker above (same one used for a group's header color) to set that teardrop's color. Star, cross, and house markers keep their fixed shape and background colors and are not customisable, but their numbers are still clickable. Click a small circle or arrow marker to cycle its rotation, or drag it to reposition it anywhere on the map (handy for nudging an arrow off the house or another icon so nothing overlaps, especially in the exported PNG) — dragging never changes its rotation or color, and a quick double-click/double-tap snaps it back to its original spot. Use the select boxes on the left to assign members (auto-pulls Faction &amp; F1 Power from Members) · click a group's color swatch to recolor its table header (and its rally-path color options) · type a name in a group's header field to label that group for your own reference (shown in the sidebar list only, and in the exported PNG once set — the number badge stays visible either way) · use a role's name dropdown to rename it — or pick "➕ Add New Role to List..." / "🗑 Remove a Role from List..." to manage the shared dropdown options so you don't have to keep retyping — the × deletes that row, and + ADD ROLE ROW adds a new one, all scoped to that one group, on the team you're currently viewing · use HIDE DEFAULT CIRCLES to temporarily hide any small circle markers that are still untouched (never rotated into an arrow, never dragged, and still the default color) so the map looks cleaner. Assigning a member here automatically sets their Slot (A or B, matching this tab) and Main/Substitute status on the most recent A/B Slots session. A member can only be assigned to one team (A or B) per session.</div>
+                <div class="map-body">
+                    <button class="map-groups-toggle-btn" id="mapGroupsToggleBtn" title="Show / hide groups panel">
+                        <span></span><span></span><span></span>
+                    </button>
+                    <div class="map-table-wrapper" id="mapTableWrapper"></div>
+                    <div class="map-diagram-wrap">
+                        <div class="map-diagram" id="mapDiagram"></div>
+                    </div>
+                </div>
             </div>
-            <div class="controls-right">
-                <button class="btn-action btn-gold" id="btnAddMemberModal" style="display: none;"><i class="fa-solid fa-user-plus mr-1"></i> ADD MEMBER</button>
-            </div>
-        </section>
-        <div class="manual-box">
-            <i class="fa-solid fa-circle-info"></i>
-            <div><strong>Combat Power & F1 Power Manual:</strong> Combat Power uses standard comma formatting (0-00,000,000,000). F1 Power automatically handles G/M parsing and sorting (0-999.999 assumes Millions / M; decimal numbers like 00.00 assume Billions / G; G is higher than M). Note: This calculates power 100M and above. Press <kbd>Enter</kbd> to save changes instantly. Every time you input a new value, a new history record is appended so changes are properly tracked for the ± DIFF calculation.</div>
-        </div>
-        <div class="table-card">
-            <div class="table-wrapper">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th class="col-rank">#</th>
-                            <th class="col-name">In-Game Name</th>
-                            <th class="col-cp">Combat Power (CP)</th>
-                            <th class="col-f1" id="thF1Power">F1 Power</th>
-                            <th style="text-align: center;">Faction</th>
-                            <th class="col-level-cell" style="text-align: center;">Level</th>
-                            <th style="text-align: center;">Rank</th>
-                            <th style="text-align: center;" id="thDiff">Diff</th>
-                            <th class="col-note-cell">Note</th>
-                            <th style="text-align: center;" id="thActionHeader" style="display: none;">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody id="memberTableBody">
-                        <tr><td colspan="10" style="text-align: center; color: var(--color-text-muted);">Loading roster...</td></tr>
-                    </tbody>
-                    <tfoot id="tableFooterRow"></tfoot>
-                </table>
+            <div class="map-legend-card" id="mapLegendCard">
+                <span class="map-legend-card__label">Directory</span>
+                <div class="map-legend-item"><span class="map-legend-swatch" style="background:#f4c94c;"></span> Military Base</div>
+                <div class="map-legend-item"><span class="map-legend-swatch" style="background:#3d8b4c;"></span> Hospital</div>
+                <div class="map-legend-item"><span class="map-legend-swatch" style="background:#8a5a2b;"></span> Oil</div>
+                <div class="map-legend-item"><span class="map-legend-swatch" style="background:#e07b1f;"></span> Rare Earth Factory</div>
+                <div class="map-legend-item"><span class="map-legend-swatch" style="background:linear-gradient(90deg,#3b52a4 50%,#c0392b 50%);"></span> Base</div>
             </div>
         </div>
+
+        <div id="calendarSection" style="display: none;">
+            <div class="legend-row">
+                <span class="legend-hint" id="calendarHint" style="display:inline !important; margin-top:0;">· Sessions added or removed here sync directly with the A/B Slots tab — they're the same dates.</span>
+            </div>
+            <div class="table-card">
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th class="col-member">Session Date</th>
+                                <th>Week</th>
+                                <th>A Count</th>
+                                <th>B Count</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="calendarBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="attendanceSection" style="display: none;">
+            <div class="legend-row">
+                <div class="legend-item"><span class="slot-badge slot-badge--a">A</span> Slot A</div>
+                <div class="legend-item"><span class="slot-badge slot-badge--b">B</span> Slot B</div>
+                <div class="legend-item"><span class="slot-badge slot-badge--unassigned"></span> Unassigned</div>
+                <div class="legend-item"><span class="status-badge-legend" style="background:#fce8e6; color:#d9381e; border:1px solid #d9381e;">Not Attended</span></div>
+                <div class="legend-item"><span class="status-badge-legend" style="background:#e6f4ea; color:#1f9d55; border:1px solid #1f9d55;">Attended</span></div>
+                <div class="legend-item"><span class="status-badge-legend" style="background:#ffb000; color:#3d2c00; border:1px solid #c98c00;">Main Player</span></div>
+                <div class="legend-item"><span class="status-badge-legend" style="background:#c8e0dd; color:#1e3a38; border:1px solid #95b8b5;">Substitute</span></div>
+                <div class="legend-item"><span class="status-badge-legend" style="background:#fce8e6; color:#d9381e; border:1px solid #d9381e;">Penalty Locked</span></div>
+                <div class="legend-item"><span class="status-badge-legend" style="background:#fff3cd; color:#8a6300; border:1px solid #e0b400;">Countdown</span></div>
+                <span class="legend-hint" id="attendanceLegendHint">· Members are grouped by faction (color bar per group), matching the Members page. Missing an assigned slot starts a 14-day countdown shown on that cell. Once 14 days pass with no Attended mark, a 2-week penalty locks in permanently for that date and is added to the Total Penalty column.</span>
+            </div>
+
+            <div class="table-card">
+                <div class="table-wrapper">
+                    <table>
+                        <thead><tr id="attendanceHeaderRow"></tr></thead>
+                        <tbody id="attendanceBody"></tbody>
+                        <tfoot id="attendanceFooter"></tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+
         <div class="page-footer">
             <span>♦ Loopy's Playground · Alliance Management Tool</span>
             <span id="shownCount">0/0 members shown</span>
         </div>
     </main>
 </div>
+
 <script type="text/javascript">
     function googleTranslateElementInit() {
         new google.translate.TranslateElement({
@@ -443,6 +1055,8 @@
     }
 </script>
 <script type="text/javascript" src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
 <script>
     (function() {
         const dropdownEl = document.getElementById('langDropdown');
@@ -504,54 +1118,18 @@
         }
     })();
 </script>
-<div class="modal-overlay" id="addMemberModal">
-    <div class="modal-card">
-        <h3>Add New Member</h3>
-        <label>In-Game Name</label>
-        <input type="text" id="newMemberName" class="notranslate" translate="no" placeholder="Enter fighter name...">
-        <label>Combat Power (CP)</label>
-        <input type="text" id="newMemberCp" class="notranslate" translate="no" placeholder="e.g. 5,390,000,000">
-        <label>Initial Faction</label>
-        <select id="newMemberFaction">
-            <option value="F">F (Blue)</option>
-            <option value="S">S (Purple)</option>
-            <option value="R">R (Orange)</option>
-        </select>
-        <label>Level (1-30 or i1-i10)</label>
-        <select id="newMemberLevel">
-            <script>
-                for(let i=1; i<=30; i++) document.write(`<option value="${i}">${i}</option>`);
-                for(let i=1; i<=10; i++) document.write(`<option value="i${i}">i${i}</option>`);
-            </script>
-        </select>
-        <div class="modal-card-btns">
-            <button class="btn-action" onclick="document.getElementById('addMemberModal').style.display='none'">Cancel</button>
-            <button class="btn-action btn-gold" id="btnSubmitAddMember">Save Member</button>
-        </div>
-    </div>
-</div>
-<div class="modal-overlay" id="f1HistoryModal">
-    <div class="modal-card">
-        <h3 id="f1HistoryTitle">F1 History Trend <i class="fa-solid fa-xmark" style="cursor:pointer;" onclick="document.getElementById('f1HistoryModal').style.display='none'"></i></h3>
-        <label>Recorded Entries</label>
-        <div class="history-list" id="f1HistoryList"></div>
-        <div class="modal-card-btns">
-            <button class="btn-action" onclick="document.getElementById('f1HistoryModal').style.display='none'">Close</button>
-        </div>
-    </div>
-</div>
+
 <script>
     const SUPABASE_URL = 'https://xqzyncgtzybuclgxfzoi.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_dy0l_clzR9nOP6LKGqGA0w_bAkPPA7B';
-    // Screenshot import now calls /api/members-import.js (a Vercel serverless
-    // function) instead of Gemini directly. The Gemini key lives server-side
-    // only, and that endpoint independently checks the caller's role before
-    // doing anything, so this is no longer just a UI-level restriction.
     const { createClient } = supabase;
     const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
     let currentUser = { username: null, role: null };
     let isManagementOrAdmin = false;
     let isAdmin = false;
+    let canViewMap = false;
+
     async function loadCurrentUserAccount() {
         const { data: { session } } = await db.auth.getSession();
         if (!session) return false;
@@ -564,11 +1142,13 @@
         currentUser.role = acc.role;
         isManagementOrAdmin = (acc.role === 'admin' || acc.role === 'management');
         isAdmin = (acc.role === 'admin');
+        canViewMap = isManagementOrAdmin || acc.role === 'member' || acc.role === 'alliance';
         return true;
     }
-    // --- SIDEBAR (always off-canvas; only opens via hamburger, closes via X-tap on overlay) ---
+
     const sidebarEl = document.getElementById('sidebar');
     const sidebarOverlayEl = document.getElementById('sidebarOverlay');
+
     function openSidebar() {
         sidebarEl.classList.add('sidebar--open');
         sidebarOverlayEl.classList.add('sidebar-overlay--visible');
@@ -577,6 +1157,7 @@
         sidebarEl.classList.remove('sidebar--open');
         sidebarOverlayEl.classList.remove('sidebar-overlay--visible');
     }
+
     document.getElementById('hamburgerBtn').addEventListener('click', () => {
         if (sidebarEl.classList.contains('sidebar--open')) {
             closeSidebar();
@@ -584,22 +1165,28 @@
             openSidebar();
         }
     });
+
     if (sidebarOverlayEl) {
         sidebarOverlayEl.addEventListener('click', closeSidebar);
     }
+
     document.getElementById('sidebarLogoutBtn').addEventListener('click', async () => {
         await db.auth.signOut();
         window.location.href = 'index.html';
     });
+
     function renderSidebarUser() {
         document.getElementById('userRoleDisplay').innerText = (currentUser.username || 'Guest').toUpperCase();
         document.getElementById('userPermissionBadge').innerText = `Role: ${(currentUser.role || 'guest').toUpperCase()}`;
         document.getElementById('userAvatarIcon').innerText = (currentUser.username || 'G').charAt(0).toUpperCase();
+
         document.getElementById('adminSectionHeader').style.display = isManagementOrAdmin ? 'block' : 'none';
         document.getElementById('navDiscussionLi').style.display = isManagementOrAdmin ? 'block' : 'none';
         document.getElementById('navHistoryLi').style.display = isAdmin ? 'block' : 'none';
         document.getElementById('assignRolesNavLi').style.display = isAdmin ? 'block' : 'none';
     }
+    renderSidebarUser();
+
     const saveStatusEl = document.getElementById('saveStatus');
     let saveStatusTimer = null;
     function showSaveStatus(kind, text) {
@@ -610,140 +1197,411 @@
             saveStatusTimer = setTimeout(() => { saveStatusEl.className = 'save-status'; }, 1500);
         }
     }
+
+    // --- Adaptive marker sizing: keep map pins/arrows readable at any zoom level ---
+    // Desktop browser page-zoom (Ctrl/Cmd +/-) changes window.devicePixelRatio
+    // proportionally to the zoom level; mobile pinch-zoom instead changes
+    // window.visualViewport.scale (devicePixelRatio doesn't move for pinch).
+    // Track both and grow the --zoom-boost CSS variable as the page zooms out
+    // so markers don't shrink into unreadable dots.
+    const baseDevicePixelRatio = window.devicePixelRatio || 1;
+    function updateZoomBoost() {
+        const desktopZoomFactor = baseDevicePixelRatio / (window.devicePixelRatio || baseDevicePixelRatio);
+        const visualZoomFactor = (window.visualViewport && window.visualViewport.scale)
+            ? (1 / window.visualViewport.scale)
+            : 1;
+        const boost = Math.min(2.5, Math.max(1, desktopZoomFactor, visualZoomFactor));
+        document.documentElement.style.setProperty('--zoom-boost', boost.toFixed(3));
+    }
+    updateZoomBoost();
+    window.addEventListener('resize', updateZoomBoost);
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', updateZoomBoost);
+        window.visualViewport.addEventListener('scroll', updateZoomBoost);
+    }
+
     let members = [];
-    let showDiffMode = false;
-    let currentStatusFilter = 'all';
-    // ===== Realtime sync: re-fetch the 'members' row whenever ANY row in app_data =====
-    // ===== changes (e.g. someone edits attendance on index.html, or edits members  =====
-    // ===== from another open tab), so this page updates without a manual refresh.  =====
-    // Requires Realtime to be enabled for the app_data table in the Supabase
-    // dashboard (Database > Replication).
-    let realtimeSubscribed = false;
-    function subscribeToAppDataChanges() {
-        if (realtimeSubscribed) return; // guard against double-subscribing
-        realtimeSubscribed = true;
-        db.channel('app_data_changes_members')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'app_data' }, (payload) => {
-                fetchMembersOnly();
-            })
-            .subscribe();
-    }
-    // Frozen rank-group order used for the colored group separator bars.
-    // R5 (top) -> R4 -> R3 -> R2 -> R1 (bottom).
-    const RANK_GROUP_ORDER = { R5: 0, R4: 1, R3: 2, R2: 3, R1: 4 };
-    // Centralized helper used across all views/tabs to strictly restrict active roster data
-    window.getActiveMembers = function() {
-        return members.filter(m => m.status !== 'removed');
+    let bgDates = [];
+    let assignments = {};
+    let mapBoards = { A: [], B: [] };
+    let activeBoard = 'A';
+    let activeTab = 'map';
+    let groupsSidebarOpen = false;
+    let hideDefaultCircles = false;
+
+    const SLOT_POSITIONS = [
+        { left: 70.91, top: 63.69 },
+        { left: 83.26, top: 49.54 },
+        { left: 67.52, top: 32.48 },
+        { left: 30.65, top: 63.69 },
+        { left: 18.30, top: 49.54 },
+        { left: 34.03, top: 32.48 },
+        { left: 50.00, top: 18.50 },
+        { left: 50.00, top: 80.50 }
+    ];
+    const MAX_PIN_NUMBER = 10;
+    const MARKER_CYCLE_STATES = MAX_PIN_NUMBER + 1; // 0 = no-number state, 1-10 = numbered (shape never changes)
+    const DEFAULT_GROUP_COUNT = 6;
+    const MAP_PIN_POSITIONS = SLOT_POSITIONS.slice(0, 6);
+    const MAX_GROUPS = 10;
+    const HOUSE_POSITION = { left: 50.78, top: 48.36 };
+
+    // Fixed background landmarks (2 Military Base stars, 2 Hospital crosses) that
+    // are also clickable number markers now, independent of the teardrop groups.
+    // Their shapes/colors are fixed (not customisable) — only their number cycles,
+    // and no extra circle is drawn on top of them.
+    const LANDMARK_MARKERS = [
+        { left: 18.30, top: 13.78, label: 'Military Base' },
+        { left: 50.78, top: 13.78, label: 'Hospital' },
+        { left: 50.78, top: 82.94, label: 'Hospital' },
+        { left: 81.43, top: 82.94, label: 'Military Base' }
+    ];
+
+    const DOT_POSITIONS = [
+        { left: 40.34, top: 24.64 },
+        { left: 61.11, top: 24.64 },
+        { left: 26.19, top: 25.49 },
+        { left: 18.08, top: 34.19 },
+        { left: 40.39, top: 38.47 },
+        { left: 61.09, top: 38.47 },
+        { left: 76.09, top: 39.58 },
+        { left: 25.41, top: 39.64 },
+        { left: 78.89, top: 56.78 },
+        { left: 22.61, top: 56.85 },
+        { left: 36.54, top: 58.73 },
+        { left: 64.99, top: 58.73 },
+        { left: 83.12, top: 63.02 },
+        { left: 77.71, top: 70.81 },
+        { left: 63.52, top: 72.11 },
+        { left: 37.98, top: 72.17 },
+        { left: 26.64, top: 48.80 },
+        { left: 74.66, top: 48.80 }
+    ];
+    const DOT_ROTATION_STEP = 25;
+    const DOT_STEPS_PER_CYCLE = Math.ceil(360 / DOT_ROTATION_STEP);
+
+    const DEFAULT_GROUP_COLORS = ['#966426', '#3b52a4', '#c0392b', '#1f9d55', '#9333ea', '#ea580c', '#0e7490', '#a16207', '#be185d', '#0d9488'];
+    const DEFAULT_DOT_COLOR = DEFAULT_GROUP_COLORS[0];
+
+    let mapDotsByBoard = {
+        A: { colors: new Array(DOT_POSITIONS.length).fill(DEFAULT_DOT_COLOR), steps: new Array(DOT_POSITIONS.length).fill(0), offsets: DOT_POSITIONS.map(() => ({ dx: 0, dy: 0 })) },
+        B: { colors: new Array(DOT_POSITIONS.length).fill(DEFAULT_DOT_COLOR), steps: new Array(DOT_POSITIONS.length).fill(0), offsets: DOT_POSITIONS.map(() => ({ dx: 0, dy: 0 })) }
     };
-    function parseCpWithCommas(cpStr) {
-        if (!cpStr) return { formatted: '0', raw: 0 };
-        let cleanStr = cpStr.toString().trim();
-        let numVal = parseFloat(cleanStr.replace(/[^0-9.]/g, '')) || 0;
-        let formatted = numVal.toLocaleString('en-US', { maximumFractionDigits: 0 });
-        return { formatted, raw: numVal };
+
+    // Teardrop marker colors are now independent from the group's own color
+    // (no more sync) — stored per board, one color per of the 6 map slots.
+    function defaultPinColors() {
+        return DEFAULT_GROUP_COLORS.slice(0, MAP_PIN_POSITIONS.length);
     }
-    function parseCpToRaw(cpStr) {
-        if (!cpStr) return { formatted: '0G', raw: 0 };
-        let cleanStr = cpStr.toString().trim().toUpperCase();
-        let numVal = parseFloat(cleanStr.replace(/[^0-9.]/g, '')) || 0;
-        let isExplicitG = cleanStr.includes('G');
-        let isExplicitM = cleanStr.includes('M');
-        let raw = 0;
-        if (isExplicitG) {
-            raw = numVal * 1000000000;
-        } else if (isExplicitM) {
-            raw = numVal * 1000000;
-        } else {
-            if (numVal >= 0 && numVal <= 999 && !cleanStr.includes('.')) {
-                raw = numVal * 1000000;
+    let mapPinColorsByBoard = { A: defaultPinColors(), B: defaultPinColors() };
+
+    // Number state (0-10) for each of the 4 fixed landmark markers, per board.
+    let mapLandmarksByBoard = {
+        A: new Array(LANDMARK_MARKERS.length).fill(0),
+        B: new Array(LANDMARK_MARKERS.length).fill(0)
+    };
+
+    // Number state (0-10) for the single house marker, per board.
+    let mapHouseByBoard = { A: 0, B: 0 };
+
+    // Currently selected map marker for recoloring: { type: 'dot' | 'pin', index } or null.
+    let selectedMarker = null;
+
+    const DEFAULT_ROLE_DEFS = [
+        { key: 'ballCapture', label: 'Ball Capture' },
+        { key: 'territoryCapture', label: 'Territory Capture' },
+        { key: 'ballSupport', label: 'Ball Support' },
+        { key: 'substitute', label: 'Substitute' }
+    ];
+
+    const DEFAULT_ROLE_PRESETS = ['Ball Capture', 'Territory Capture', 'Ball Support', 'Substitute', 'Scout', 'Reserve', 'Defense', 'Attack'];
+    // Shared, editable list of role-name dropdown options for admin/management —
+    // add/remove entries directly from the dropdown so they don't have to keep
+    // retyping the same custom names.
+    let rolePresets = DEFAULT_ROLE_PRESETS.slice();
+
+    // Faction sort order + divider colors/labels for the Attendance tab, matching
+    // the same F / S / R faction colors already used elsewhere on this page
+    // (faction-f / faction-s / faction-r circles) so the grouping looks and
+    // sorts the same way it does on the Members page.
+    const FACTION_ORDER = { F: 0, S: 1, R: 2 };
+    const FACTION_DIVIDER_COLORS = { F: '#2563eb', S: '#9333ea', R: '#ea580c', OTHER: '#5c4127' };
+    const FACTION_DIVIDER_LABELS = { F: 'FACTION F', S: 'FACTION S', R: 'FACTION R', OTHER: 'UNASSIGNED FACTION' };
+
+    function getActiveMembers() {
+        return members.filter(m => m.status !== 'removed');
+    }
+
+    function getEntry(memberId, dateId) {
+        if (!assignments[memberId]) assignments[memberId] = {};
+        if (!assignments[memberId][dateId]) {
+            assignments[memberId][dateId] = { slot: null, attended: false, playerRole: null };
+        }
+        return assignments[memberId][dateId];
+    }
+
+    function parseDateString(dateStr) {
+        if (!dateStr) return new Date(0);
+        let parts = dateStr.split('-');
+        if (parts.length === 3) {
+            if (parts[0].length === 4) {
+                return new Date(dateStr);
             } else {
-                raw = numVal * 1000000000;
+                return new Date(`${parts[2]}-${parts[0]}-${parts[1]}`);
             }
+        } else if (parts.length === 2) {
+            const currentYear = new Date().getFullYear();
+            return new Date(`${currentYear}-${parts[0]}-${parts[1]}`);
         }
-        let formatted = '';
-        if (raw >= 1000000000) {
-            let gVal = raw / 1000000000;
-            formatted = gVal % 1 === 0 ? gVal.toLocaleString() + 'G' : gVal.toFixed(1).replace(/\.0$/, '') + 'G';
-        } else {
-            let mVal = raw / 1000000;
-            formatted = mVal % 1 === 0 ? mVal.toLocaleString() + 'M' : mVal.toFixed(1).replace(/\.0$/, '') + 'M';
-        }
-        return { formatted, raw };
+        return new Date(dateStr);
     }
-        async function loadDataFromCloud() {
-        let loadSucceeded = false;
+
+    function defaultMapTeams() {
+        const teams = [];
+        for (let i = 0; i < DEFAULT_GROUP_COUNT; i++) {
+            teams.push({
+                id: 'team' + (i + 1) + '_' + Date.now() + '_' + i,
+                slot: i,
+                number: (i % MAX_PIN_NUMBER) + 1,
+                groupNumber: i + 1,
+                name: '',
+                color: DEFAULT_GROUP_COLORS[i % DEFAULT_GROUP_COLORS.length],
+                roleRows: DEFAULT_ROLE_DEFS.map(r => ({ key: r.key, label: r.label, memberId: null }))
+            });
+        }
+        return teams;
+    }
+
+    function currentTeams() {
+        return mapBoards[activeBoard];
+    }
+
+    async function loadData() {
+        let legacyMap = null, mapA = null, mapB = null, legacyRoleDefs = null, dotsLoadedA = null, dotsLoadedB = null, legacyDotsLoaded = null;
+        let rolePresetsLoaded = null, pinColorsLoadedA = null, pinColorsLoadedB = null, landmarksLoadedA = null, landmarksLoadedB = null;
+        let houseLoadedA = null, houseLoadedB = null;
         try {
             const { data, error } = await db.from('app_data').select('*');
             if (error) throw error;
-            if (data && data.length > 0) {
+            if (data) {
                 data.forEach(row => {
                     if (row.key === 'members') members = row.value || [];
+                    if (row.key === 'blackGoldDates') bgDates = row.value || [];
+                    if (row.key === 'blackGoldAssignments') {
+                        assignments = (row.value && !Array.isArray(row.value)) ? row.value : {};
+                    }
+                    if (row.key === 'blackGoldMap') {
+                        legacyMap = (row.value && Array.isArray(row.value) && row.value.length > 0) ? row.value : null;
+                    }
+                    if (row.key === 'blackGoldMapA') {
+                        mapA = (row.value && Array.isArray(row.value) && row.value.length > 0) ? row.value : null;
+                    }
+                    if (row.key === 'blackGoldMapB') {
+                        mapB = (row.value && Array.isArray(row.value) && row.value.length > 0) ? row.value : null;
+                    }
+                    if (row.key === 'blackGoldRoles') {
+                        legacyRoleDefs = (row.value && Array.isArray(row.value) && row.value.length > 0) ? row.value : null;
+                    }
+                    if (row.key === 'blackGoldRolePresets') {
+                        rolePresetsLoaded = (row.value && Array.isArray(row.value) && row.value.length > 0) ? row.value : null;
+                    }
+                    if (row.key === 'blackGoldMapDotsA') {
+                        dotsLoadedA = (row.value && typeof row.value === 'object') ? row.value : null;
+                    }
+                    if (row.key === 'blackGoldMapDotsB') {
+                        dotsLoadedB = (row.value && typeof row.value === 'object') ? row.value : null;
+                    }
+                    if (row.key === 'blackGoldMapDots') {
+                        legacyDotsLoaded = (row.value && typeof row.value === 'object') ? row.value : null;
+                    }
+                    if (row.key === 'blackGoldMapPinColorsA') {
+                        pinColorsLoadedA = (row.value && Array.isArray(row.value)) ? row.value : null;
+                    }
+                    if (row.key === 'blackGoldMapPinColorsB') {
+                        pinColorsLoadedB = (row.value && Array.isArray(row.value)) ? row.value : null;
+                    }
+                    if (row.key === 'blackGoldMapLandmarksA') {
+                        landmarksLoadedA = (row.value && Array.isArray(row.value)) ? row.value : null;
+                    }
+                    if (row.key === 'blackGoldMapLandmarksB') {
+                        landmarksLoadedB = (row.value && Array.isArray(row.value)) ? row.value : null;
+                    }
+                    if (row.key === 'blackGoldMapHouseA') {
+                        houseLoadedA = (typeof row.value === 'number') ? row.value : null;
+                    }
+                    if (row.key === 'blackGoldMapHouseB') {
+                        houseLoadedB = (typeof row.value === 'number') ? row.value : null;
+                    }
                 });
             }
-            loadSucceeded = true;
+            bgDates.sort((a, b) => parseDateString(a.date) - parseDateString(b.date));
         } catch (err) {
-            console.error('Error loading data:', err);
+            console.error('Error loading Black Gold data:', err.message || err);
         }
-        if (!loadSucceeded) {
-            alert('Could not load member data from the server. Please check your connection and reload the page. (Data was NOT modified.)');
-            return;
-        }
-        if (members.length === 0) {
-            members = [
-                ];
+
+        mapBoards.A = mapA || legacyMap || null;
+        mapBoards.B = mapB || null;
+
+        const fallbackRoleDefs = legacyRoleDefs || DEFAULT_ROLE_DEFS;
+
+        let needResaveA = false, needResaveB = false, needResaveDotsA = false, needResaveDotsB = false;
+        let needResaveRolePresets = false, needResavePinColorsA = false, needResavePinColorsB = false;
+        let needResaveLandmarksA = false, needResaveLandmarksB = false;
+        let needResaveHouseA = false, needResaveHouseB = false;
+
+        if (rolePresetsLoaded) {
+            rolePresets = rolePresetsLoaded;
         } else {
-            members.forEach(m => {
-                const parsedCp = parseCpWithCommas(m.cp);
-                m.cp = parsedCp.formatted;
-                m.rawCp = parsedCp.raw;
-                
-                const parsedF1 = parseCpToRaw(m.f1Cp || '0G');
-                m.f1Cp = parsedF1.formatted;
-                m.f1Raw = parsedF1.raw;
-                if (!m.f1History || !Array.isArray(m.f1History) || m.f1History.length === 0) {
-                    m.f1History = [{ date: new Date().toISOString().split('T')[0], val: m.f1Cp }];
-                }
-            });
+            rolePresets = DEFAULT_ROLE_PRESETS.slice();
+            needResaveRolePresets = true;
         }
-        // Freeze each member's rank-group for sorting/grouping purposes at the moment
-        // of this page load/refresh. Any rank changes made afterwards (via cycleRank)
-        // still update the live rank dot immediately, but will not move the row into
-        // a different colored group section until the page is refreshed again.
-        members.forEach(m => { m.frozenRank = m.rank; });
-        render();
-    }
-    // Lightweight refresh used by the Realtime subscription: re-pulls just the
-    // 'members' row (skips the login/session check and the first-run seed data)
-    // and re-renders, so edits made elsewhere show up here without a reload.
-    async function fetchMembersOnly() {
-        try {
-            const { data, error } = await db.from('app_data').select('*').eq('key', 'members').maybeSingle();
-            if (error) throw error;
-            if (data) members = data.value || [];
-        } catch (err) {
-            console.error('Error refreshing members:', err);
-            return;
-        }
-        members.forEach(m => {
-            const parsedCp = parseCpWithCommas(m.cp);
-            m.cp = parsedCp.formatted;
-            m.rawCp = parsedCp.raw;
-            const parsedF1 = parseCpToRaw(m.f1Cp || '0G');
-            m.f1Cp = parsedF1.formatted;
-            m.f1Raw = parsedF1.raw;
-            if (!m.f1History || !Array.isArray(m.f1History) || m.f1History.length === 0) {
-                m.f1History = [{ date: new Date().toISOString().split('T')[0], val: m.f1Cp }];
+
+        ['A', 'B'].forEach(board => {
+            let teams = mapBoards[board];
+            if (teams) {
+                teams = teams.filter(t => t).slice(0, MAX_GROUPS);
+                teams.forEach((t, i) => {
+                    if (typeof t.slot !== 'number') t.slot = i;
+                    if (typeof t.number !== 'number' || t.number < 0 || t.number > MAX_PIN_NUMBER) t.number = (i % MAX_PIN_NUMBER) + 1;
+                    if (typeof t.groupNumber !== 'number' || t.groupNumber < 1 || t.groupNumber > MAX_GROUPS) {
+                        t.groupNumber = i + 1;
+                        if (board === 'A') needResaveA = true; else needResaveB = true;
+                    }
+                    if (typeof t.name !== 'string') t.name = '';
+                    if (!t.color) t.color = DEFAULT_GROUP_COLORS[i % DEFAULT_GROUP_COLORS.length];
+                    delete t.icon;
+                    delete t.arrowOffset;
+                    if (!Array.isArray(t.roleRows)) {
+                        if (t.roles && typeof t.roles === 'object') {
+                            t.roleRows = fallbackRoleDefs.map(rd => ({
+                                key: rd.key,
+                                label: rd.label,
+                                memberId: t.roles[rd.key] || null
+                            }));
+                        } else {
+                            t.roleRows = fallbackRoleDefs.map(rd => ({ key: rd.key, label: rd.label, memberId: null }));
+                        }
+                        delete t.roles;
+                        if (board === 'A') needResaveA = true; else needResaveB = true;
+                    }
+                });
+                mapBoards[board] = teams;
             }
-            m.frozenRank = m.rank;
+            if (!mapBoards[board] || mapBoards[board].length === 0) {
+                mapBoards[board] = defaultMapTeams();
+                if (board === 'A') needResaveA = true; else needResaveB = true;
+            }
         });
+
+        function normalizeDotsData(loaded) {
+            if (!loaded || !Array.isArray(loaded.steps)) {
+                return { data: { colors: new Array(DOT_POSITIONS.length).fill(DEFAULT_DOT_COLOR), steps: new Array(DOT_POSITIONS.length).fill(0), offsets: DOT_POSITIONS.map(() => ({ dx: 0, dy: 0 })) }, needResave: true };
+            }
+            let needResave = false;
+            const steps = loaded.steps.slice(0, DOT_POSITIONS.length).map(s => (typeof s === 'number' && s >= 0 && s < DOT_STEPS_PER_CYCLE) ? s : 0);
+            if (steps.length !== loaded.steps.length) needResave = true;
+            while (steps.length < DOT_POSITIONS.length) { steps.push(0); needResave = true; }
+
+            const isHex = c => typeof c === 'string' && /^#[0-9a-fA-F]{6}$/.test(c);
+            let colors;
+            if (Array.isArray(loaded.colors)) {
+                colors = loaded.colors.slice(0, DOT_POSITIONS.length).map(c => isHex(c) ? c : DEFAULT_DOT_COLOR);
+                if (colors.length !== loaded.colors.length) needResave = true;
+                while (colors.length < DOT_POSITIONS.length) { colors.push(DEFAULT_DOT_COLOR); needResave = true; }
+            } else if (isHex(loaded.color)) {
+                colors = new Array(DOT_POSITIONS.length).fill(loaded.color);
+                needResave = true;
+            } else {
+                colors = new Array(DOT_POSITIONS.length).fill(DEFAULT_DOT_COLOR);
+                needResave = true;
+            }
+
+            const isFiniteNum = n => typeof n === 'number' && isFinite(n);
+            let offsets;
+            if (Array.isArray(loaded.offsets)) {
+                offsets = loaded.offsets.slice(0, DOT_POSITIONS.length).map(o => (o && isFiniteNum(o.dx) && isFiniteNum(o.dy)) ? { dx: o.dx, dy: o.dy } : { dx: 0, dy: 0 });
+                if (offsets.length !== loaded.offsets.length) needResave = true;
+                while (offsets.length < DOT_POSITIONS.length) { offsets.push({ dx: 0, dy: 0 }); needResave = true; }
+            } else {
+                offsets = DOT_POSITIONS.map(() => ({ dx: 0, dy: 0 }));
+                needResave = true;
+            }
+
+            return { data: { colors, steps, offsets }, needResave };
+        }
+
+        function normalizePinColors(loaded) {
+            const isHex = c => typeof c === 'string' && /^#[0-9a-fA-F]{6}$/.test(c);
+            if (!Array.isArray(loaded)) return { data: defaultPinColors(), needResave: true };
+            let needResave = loaded.length !== MAP_PIN_POSITIONS.length;
+            let colors = loaded.slice(0, MAP_PIN_POSITIONS.length).map(c => isHex(c) ? c : DEFAULT_DOT_COLOR);
+            while (colors.length < MAP_PIN_POSITIONS.length) { colors.push(DEFAULT_DOT_COLOR); needResave = true; }
+            return { data: colors, needResave };
+        }
+
+        function normalizeLandmarkNumbers(loaded) {
+            if (!Array.isArray(loaded)) return { data: new Array(LANDMARK_MARKERS.length).fill(0), needResave: true };
+            let needResave = loaded.length !== LANDMARK_MARKERS.length;
+            let nums = loaded.slice(0, LANDMARK_MARKERS.length).map(n => (typeof n === 'number' && n >= 0 && n <= MAX_PIN_NUMBER) ? n : 0);
+            while (nums.length < LANDMARK_MARKERS.length) { nums.push(0); needResave = true; }
+            return { data: nums, needResave };
+        }
+
+        function normalizeHouseNumber(loaded) {
+            if (typeof loaded !== 'number' || loaded < 0 || loaded > MAX_PIN_NUMBER) return { data: 0, needResave: true };
+            return { data: loaded, needResave: false };
+        }
+
+        const resultA = normalizeDotsData(dotsLoadedA || legacyDotsLoaded);
+        const resultB = normalizeDotsData(dotsLoadedB || legacyDotsLoaded);
+        mapDotsByBoard.A = resultA.data;
+        mapDotsByBoard.B = resultB.data;
+        needResaveDotsA = resultA.needResave || !dotsLoadedA;
+        needResaveDotsB = resultB.needResave || !dotsLoadedB;
+
+        const pinResultA = normalizePinColors(pinColorsLoadedA);
+        const pinResultB = normalizePinColors(pinColorsLoadedB);
+        mapPinColorsByBoard.A = pinResultA.data;
+        mapPinColorsByBoard.B = pinResultB.data;
+        needResavePinColorsA = pinResultA.needResave || !pinColorsLoadedA;
+        needResavePinColorsB = pinResultB.needResave || !pinColorsLoadedB;
+
+        const landmarkResultA = normalizeLandmarkNumbers(landmarksLoadedA);
+        const landmarkResultB = normalizeLandmarkNumbers(landmarksLoadedB);
+        mapLandmarksByBoard.A = landmarkResultA.data;
+        mapLandmarksByBoard.B = landmarkResultB.data;
+        needResaveLandmarksA = landmarkResultA.needResave || !landmarksLoadedA;
+        needResaveLandmarksB = landmarkResultB.needResave || !landmarksLoadedB;
+
+        const houseResultA = normalizeHouseNumber(houseLoadedA);
+        const houseResultB = normalizeHouseNumber(houseLoadedB);
+        mapHouseByBoard.A = houseResultA.data;
+        mapHouseByBoard.B = houseResultB.data;
+        needResaveHouseA = houseResultA.needResave || houseLoadedA === null;
+        needResaveHouseB = houseResultB.needResave || houseLoadedB === null;
+
+        if (needResaveA) await saveMapBoard('A');
+        if (needResaveB) await saveMapBoard('B');
+        if (needResaveDotsA) await saveMapDots('A');
+        if (needResaveDotsB) await saveMapDots('B');
+        if (needResaveRolePresets) await saveRolePresets();
+        if (needResavePinColorsA) await saveMapPinColors('A');
+        if (needResavePinColorsB) await saveMapPinColors('B');
+        if (needResaveLandmarksA) await saveMapLandmarks('A');
+        if (needResaveLandmarksB) await saveMapLandmarks('B');
+        if (needResaveHouseA) await saveMapHouse('A');
+        if (needResaveHouseB) await saveMapHouse('B');
+
         render();
     }
-    async function saveData() {
+
+    async function saveDates() {
         showSaveStatus('saving', 'Saving…');
         try {
-            const { error } = await db.from('app_data').upsert({ id: 2, key: 'members', value: members }, { onConflict: 'id' });
+            const { error } = await db.from('app_data')
+                .upsert({ id: 5, key: 'blackGoldDates', value: bgDates }, { onConflict: 'id' });
             if (error) {
-                showSaveStatus('error', 'Save failed');
+                showSaveStatus('error', 'Save failed: ' + error.message);
                 return;
             }
             showSaveStatus('ok', 'Saved');
@@ -751,454 +1609,1433 @@
             showSaveStatus('error', 'Save failed');
         }
     }
-    function render() {
-        document.getElementById('importBtn').style.display = isManagementOrAdmin ? 'flex' : 'none';
-        document.getElementById('btnAddMemberModal').style.display = isManagementOrAdmin ? 'flex' : 'none';
-        document.getElementById('thActionHeader').style.display = isManagementOrAdmin ? 'table-cell' : 'none';
-        document.getElementById('thF1Power').style.display = 'table-cell';
-        document.getElementById('thDiff').style.display = 'table-cell';
-        document.getElementById('btnToggleDiff').style.display = 'inline-flex';
-        const filterQuery = document.getElementById('searchInput').value.toLowerCase();
-        // Count total active/inactive members (strictly excluding removed ones from general totals)
-        const activeOrInactiveMembers = members.filter(m => m.status !== 'removed');
-        let filtered = members.filter(m => {
-            let matchesStatus = false;
-            if (currentStatusFilter === 'all') {
-                matchesStatus = m.status !== 'removed';
-            } else if (currentStatusFilter === 'active') {
-                matchesStatus = m.status === 'active';
-            } else if (currentStatusFilter === 'inactive') {
-                matchesStatus = m.status === 'inactive';
-            } else if (currentStatusFilter === 'removed') {
-                matchesStatus = m.status === 'removed';
+
+    async function saveAssignments() {
+        showSaveStatus('saving', 'Saving…');
+        try {
+            const { error } = await db.from('app_data')
+                .upsert({ id: 6, key: 'blackGoldAssignments', value: assignments }, { onConflict: 'id' });
+            if (error) {
+                showSaveStatus('error', 'Save failed: ' + error.message);
+                return;
             }
-            const matchesSearch = m.name.toLowerCase().includes(filterQuery) || m.cp.toLowerCase().includes(filterQuery);
-            return matchesStatus && matchesSearch;
+            showSaveStatus('ok', 'Saved');
+        } catch (err) {
+            showSaveStatus('error', 'Save failed');
+        }
+    }
+
+    async function saveMapBoard(board) {
+        showSaveStatus('saving', 'Saving…');
+        const key = board === 'A' ? 'blackGoldMapA' : 'blackGoldMapB';
+        const id = board === 'A' ? 16 : 17;
+        try {
+            const { error } = await db.from('app_data')
+                .upsert({ id, key, value: mapBoards[board] }, { onConflict: 'id' });
+            if (error) {
+                showSaveStatus('error', 'Save failed: ' + error.message);
+                return;
+            }
+            showSaveStatus('ok', 'Saved');
+        } catch (err) {
+            showSaveStatus('error', 'Save failed');
+        }
+    }
+
+    async function saveMapDots(board) {
+        showSaveStatus('saving', 'Saving…');
+        // NOTE: previously hardcoded to id 14/15, which collided with
+        // pre-existing unrelated rows ("notices" / "dataSnapshots") in this
+        // Supabase table. Moved to 25/26, which are unused. If your table
+        // already has rows at 25/26 for something else, change these two
+        // ids (and the ids below for the new Attendance-related saves) to
+        // whatever numbers are actually free in your app_data table.
+        const key = board === 'A' ? 'blackGoldMapDotsA' : 'blackGoldMapDotsB';
+        const id = board === 'A' ? 25 : 26;
+        try {
+            const { error } = await db.from('app_data')
+                .upsert({ id, key, value: mapDotsByBoard[board] }, { onConflict: 'id' });
+            if (error) {
+                showSaveStatus('error', 'Save failed: ' + error.message);
+                return;
+            }
+            showSaveStatus('ok', 'Saved');
+        } catch (err) {
+            showSaveStatus('error', 'Save failed');
+        }
+    }
+
+    async function saveRolePresets() {
+        showSaveStatus('saving', 'Saving…');
+        try {
+            const { error } = await db.from('app_data')
+                .upsert({ id: 18, key: 'blackGoldRolePresets', value: rolePresets }, { onConflict: 'id' });
+            if (error) {
+                showSaveStatus('error', 'Save failed: ' + error.message);
+                return;
+            }
+            showSaveStatus('ok', 'Saved');
+        } catch (err) {
+            showSaveStatus('error', 'Save failed');
+        }
+    }
+
+    async function saveMapPinColors(board) {
+        showSaveStatus('saving', 'Saving…');
+        const key = board === 'A' ? 'blackGoldMapPinColorsA' : 'blackGoldMapPinColorsB';
+        const id = board === 'A' ? 19 : 20;
+        try {
+            const { error } = await db.from('app_data')
+                .upsert({ id, key, value: mapPinColorsByBoard[board] }, { onConflict: 'id' });
+            if (error) {
+                showSaveStatus('error', 'Save failed: ' + error.message);
+                return;
+            }
+            showSaveStatus('ok', 'Saved');
+        } catch (err) {
+            showSaveStatus('error', 'Save failed');
+        }
+    }
+
+    async function saveMapLandmarks(board) {
+        showSaveStatus('saving', 'Saving…');
+        const key = board === 'A' ? 'blackGoldMapLandmarksA' : 'blackGoldMapLandmarksB';
+        const id = board === 'A' ? 21 : 22;
+        try {
+            const { error } = await db.from('app_data')
+                .upsert({ id, key, value: mapLandmarksByBoard[board] }, { onConflict: 'id' });
+            if (error) {
+                showSaveStatus('error', 'Save failed: ' + error.message);
+                return;
+            }
+            showSaveStatus('ok', 'Saved');
+        } catch (err) {
+            showSaveStatus('error', 'Save failed');
+        }
+    }
+
+    async function saveMapHouse(board) {
+        showSaveStatus('saving', 'Saving…');
+        const key = board === 'A' ? 'blackGoldMapHouseA' : 'blackGoldMapHouseB';
+        const id = board === 'A' ? 23 : 24;
+        try {
+            const { error } = await db.from('app_data')
+                .upsert({ id, key, value: mapHouseByBoard[board] }, { onConflict: 'id' });
+            if (error) {
+                showSaveStatus('error', 'Save failed: ' + error.message);
+                return;
+            }
+            showSaveStatus('ok', 'Saved');
+        } catch (err) {
+            showSaveStatus('error', 'Save failed');
+        }
+    }
+
+    function switchTab(tab) {
+        if (tab === 'map' && !canViewMap) return;
+        activeTab = tab;
+
+        document.getElementById('tabAB').classList.toggle('tab-switch__btn--active', tab === 'ab');
+        document.getElementById('tabMap').classList.toggle('tab-switch__btn--active', tab === 'map');
+        document.getElementById('tabCalendar').classList.toggle('tab-switch__btn--active', tab === 'calendar');
+        document.getElementById('tabAttendance').classList.toggle('tab-switch__btn--active', tab === 'attendance');
+
+        document.getElementById('abSlotsSection').style.display = tab === 'ab' ? 'block' : 'none';
+        document.getElementById('mapSection').style.display = tab === 'map' ? 'block' : 'none';
+        document.getElementById('calendarSection').style.display = tab === 'calendar' ? 'block' : 'none';
+        document.getElementById('attendanceSection').style.display = tab === 'attendance' ? 'block' : 'none';
+
+        document.getElementById('abSearchBox').style.display = (tab === 'ab' || tab === 'attendance') ? 'block' : 'none';
+        document.getElementById('mapToolbarControls').style.display = tab === 'map' ? 'flex' : 'none';
+        document.getElementById('calendarToolbarControls').style.display = tab === 'calendar' ? 'flex' : 'none';
+        document.getElementById('attendanceToolbarControls').style.display = tab === 'attendance' ? 'flex' : 'none';
+
+        render();
+    }
+    document.getElementById('tabAB').addEventListener('click', () => switchTab('ab'));
+    document.getElementById('tabMap').addEventListener('click', () => switchTab('map'));
+    document.getElementById('tabCalendar').addEventListener('click', () => switchTab('calendar'));
+    document.getElementById('tabAttendance').addEventListener('click', () => switchTab('attendance'));
+
+    function switchMapSubtab(board) {
+        if (!canViewMap) return;
+        activeBoard = board;
+        selectedMarker = null;
+        document.getElementById('mapSubtabA').classList.toggle('map-subtab-btn--active', board === 'A');
+        document.getElementById('mapSubtabB').classList.toggle('map-subtab-btn--active', board === 'B');
+        render();
+    }
+    document.getElementById('mapSubtabA').addEventListener('click', () => switchMapSubtab('A'));
+    document.getElementById('mapSubtabB').addEventListener('click', () => switchMapSubtab('B'));
+
+    function setGroupsSidebarOpen(open) {
+        groupsSidebarOpen = open;
+        const body = document.querySelector('.map-body');
+        const btn = document.getElementById('mapGroupsToggleBtn');
+        if (body) body.classList.toggle('map-body--sidebar-open', groupsSidebarOpen);
+        if (btn) btn.classList.toggle('map-groups-toggle-btn--active', groupsSidebarOpen);
+    }
+
+    document.getElementById('mapGroupsToggleBtn').addEventListener('click', () => {
+        setGroupsSidebarOpen(!groupsSidebarOpen);
+    });
+
+    document.getElementById('mapExportPngBtn').addEventListener('click', () => {
+        exportMapToPng();
+    });
+
+    document.getElementById('mapHideCirclesBtn').addEventListener('click', () => {
+        hideDefaultCircles = !hideDefaultCircles;
+        document.getElementById('mapHideCirclesBtn').classList.toggle('map-circles-toggle-btn--active', hideDefaultCircles);
+        document.getElementById('mapHideCirclesBtn').innerText = hideDefaultCircles ? 'SHOW DEFAULT CIRCLES' : 'HIDE DEFAULT CIRCLES';
+        renderMapDiagram();
+    });
+
+    function render() {
+        const activeMembers = getActiveMembers();
+        const query = document.getElementById('searchInput').value.toLowerCase();
+        const filtered = activeMembers.filter(m => m.name.toLowerCase().includes(query));
+
+        document.getElementById('pageSubtitle').innerText = `${activeMembers.length} members · ${bgDates.length} sessions`;
+        document.getElementById('shownCount').innerText = `${filtered.length}/${activeMembers.length} members shown`;
+
+        if (!canViewMap) {
+            document.getElementById('tabMap').classList.add('tab-switch__btn--locked');
+            document.getElementById('tabMap').title = 'Not available for your role';
+        }
+
+        document.getElementById('mapBtnAddDate').style.display = isManagementOrAdmin ? 'inline-block' : 'none';
+        document.getElementById('mapCalendarPicker').style.display = isManagementOrAdmin ? 'inline-block' : 'none';
+        document.getElementById('btnAddTeam').style.display = isManagementOrAdmin ? 'inline-block' : 'none';
+        document.getElementById('btnRemoveTeam').style.display = isManagementOrAdmin ? 'inline-block' : 'none';
+        document.getElementById('mapAdminHint').style.display = isManagementOrAdmin ? 'block' : 'none';
+        document.getElementById('calBtnAddDate').style.display = isManagementOrAdmin ? 'inline-block' : 'none';
+        document.getElementById('calCalendarPicker').style.display = isManagementOrAdmin ? 'inline-block' : 'none';
+        document.getElementById('attBtnAddDate').style.display = isManagementOrAdmin ? 'inline-block' : 'none';
+        document.getElementById('attCalendarPicker').style.display = isManagementOrAdmin ? 'inline-block' : 'none';
+        document.getElementById('mapDotColorPicker').style.display = isManagementOrAdmin ? 'flex' : 'none';
+        document.getElementById('mapExportPngBtn').style.display = canViewMap ? 'inline-block' : 'none';
+        document.getElementById('mapHideCirclesBtn').style.display = canViewMap ? 'inline-block' : 'none';
+
+        const legendHint = document.getElementById('legendHint');
+        if (isManagementOrAdmin) {
+            legendHint.style.setProperty('display', 'inline', 'important');
+        } else {
+            legendHint.style.setProperty('display', 'none', 'important');
+        }
+
+        const attendanceLegendHint = document.getElementById('attendanceLegendHint');
+        if (attendanceLegendHint) {
+            if (isManagementOrAdmin) {
+                attendanceLegendHint.style.setProperty('display', 'inline', 'important');
+            } else {
+                attendanceLegendHint.style.setProperty('display', 'none', 'important');
+            }
+        }
+
+        if (activeTab === 'ab') {
+            renderHeader();
+            renderBody(filtered);
+            renderFooter();
+        } else if (activeTab === 'map') {
+            renderMap();
+        } else if (activeTab === 'calendar') {
+            renderCalendar();
+        } else if (activeTab === 'attendance') {
+            renderAttendance(filtered);
+        }
+    }
+
+    function renderHeader() {
+        const row = document.getElementById('tableHeaderRow');
+        let html = `<th class="col-rank">#</th><th class="col-member">Member</th>`;
+
+        bgDates.forEach((d, idx) => {
+            const dateClickAttr = isManagementOrAdmin ? `onclick="editDate('${d.id}')" title="Click to edit date"` : '';
+            html += `
+                <th>
+                    <div class="date-label notranslate" translate="no" ${dateClickAttr}>${d.date}</div>
+                    <div class="week-label">Week ${idx + 1}</div>
+                    ${isManagementOrAdmin ? `<span class="remove-date-btn" onclick="removeDate('${d.id}')">✕</span>` : ''}
+                </th>
+            `;
         });
-        // Primary sort: frozen rank group (R5 -> R4 -> R3 -> R2 -> R1), captured at last page load.
-        // Secondary sort: F1 power descending, same as before (this still updates live).
-        filtered.sort((a, b) => {
-            const rankA = RANK_GROUP_ORDER[a.frozenRank] !== undefined ? RANK_GROUP_ORDER[a.frozenRank] : 99;
-            const rankB = RANK_GROUP_ORDER[b.frozenRank] !== undefined ? RANK_GROUP_ORDER[b.frozenRank] : 99;
-            if (rankA !== rankB) return rankA - rankB;
-            return (b.f1Raw || 0) - (a.f1Raw || 0);
-        });
-        const tbody = document.getElementById('memberTableBody');
-        const tableFooterRow = document.getElementById('tableFooterRow');
-        document.getElementById('pageSubtitle').innerText = `${activeOrInactiveMembers.length} members total`;
-        document.getElementById('shownCount').innerText = `${filtered.length}/${activeOrInactiveMembers.length} members shown`;
+
+        html += `<th>Penalty</th>`;
+        row.innerHTML = html;
+    }
+
+    function renderBody(filtered) {
+        const body = document.getElementById('tableBody');
+        body.innerHTML = '';
+
         if (filtered.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; padding: 24px; color: var(--color-text-muted);">No members found.</td></tr>`;
-            tableFooterRow.innerHTML = '';
+            body.innerHTML = `<tr><td colspan="${3 + bgDates.length}" class="empty-state">No members found.</td></tr>`;
             return;
         }
-        const groupColSpan = isManagementOrAdmin ? 10 : 9;
-        let html = '';
-        let lastGroupKey = null;
+
+        const today = new Date();
+        today.setHours(0,0,0,0);
+
+        const twoWeeksAgo = new Date(today);
+        twoWeeksAgo.setDate(today.getDate() - 14);
+
         filtered.forEach((member, index) => {
-            const groupKey = member.frozenRank || 'R1';
-            if (groupKey !== lastGroupKey) {
-                lastGroupKey = groupKey;
-                html += `
-                    <tr class="rank-group-bar-row">
-                        <td colspan="${groupColSpan}">
-                            <div class="rank-group-bar rank-group-bar--${groupKey.toLowerCase()}">${groupKey}</div>
-                        </td>
-                    </tr>
-                `;
-            }
-            const rank = index + 1;
-            const rankClass = rank === 1 ? 'rank-1' : (rank === 2 ? 'rank-2' : (rank === 3 ? 'rank-3' : ''));
-            const isAct = member.status === 'active';
-            const isInact = member.status === 'inactive';
-            const isRem = member.status === 'removed';
-            let rankDotClass = 'rank-dot-r1';
-            if (member.rank === 'R4') rankDotClass = 'rank-dot-r4';
-            if (member.rank === 'R5') rankDotClass = 'rank-dot-r5';
-            let factionClass = 'faction-f';
-            if (member.faction === 'S') factionClass = 'faction-s';
-            if (member.faction === 'R') factionClass = 'faction-r';
-            let diffHtml = `<span style="color: var(--color-text-muted);">-</span>`;
-            if (showDiffMode && member.f1History && member.f1History.length >= 2) {
-                let latestRaw = member.f1Raw || 0;
-                let prevEntry = member.f1History[member.f1History.length - 2];
-                let prevRaw = parseCpToRaw(prevEntry.val).raw;
-                let diffVal = latestRaw - prevRaw;
-                
-                if (diffVal > 0) {
-                    let formattedDiff = diffVal >= 1000000000 ? (diffVal / 1000000000).toFixed(1) + 'G' : (diffVal / 1000000).toFixed(0) + 'M';
-                    diffHtml = `<span class="diff-green"><i class="fa-solid fa-arrow-trend-up"></i> +${formattedDiff}</span>`;
-                } else if (diffVal < 0) {
-                    let absDiff = Math.abs(diffVal);
-                    let formattedDiff = absDiff >= 1000000000 ? (absDiff / 1000000000).toFixed(1) + 'G' : (absDiff / 1000000).toFixed(0) + 'M';
-                    diffHtml = `<span class="diff-red"><i class="fa-solid fa-arrow-trend-down"></i> -${formattedDiff}</span>`;
+            let penaltyWeeks = 0;
+            let cellsHTML = '';
+
+            bgDates.forEach(d => {
+                const entry = getEntry(member.id, d.id);
+
+                const sessionDate = parseDateString(d.date);
+                sessionDate.setHours(0,0,0,0);
+
+                const isWithinPenaltyWindow = sessionDate <= today && sessionDate >= twoWeeksAgo;
+
+                if (isWithinPenaltyWindow && entry.slot !== null && !entry.attended) {
+                    penaltyWeeks += 2;
                 }
-            }
-            let actionCell = isManagementOrAdmin ? `
-                <td style="text-align: center;">
-                    <button class="btn-action btn-danger" style="padding: 4px 8px; font-size: 10px;" onclick="removeMember(${member.id})" title="Delete Member">
-                        <i class="fa-solid fa-trash"></i>
-                    </button>
-                </td>
-            ` : '';
-            const historyCount = member.f1History ? member.f1History.length : 0;
-            const f1Cell = `
-                <td>
-                    <div style="display: flex; flex-direction: column;">
-                        <input type="text" value="${member.f1Cp || '0G'}" ${isManagementOrAdmin ? `onchange="updateF1Power(${member.id}, this.value)" onkeydown="if(event.key==='Enter') { this.blur(); }"` : 'readonly'} class="editable-input notranslate" translate="no" placeholder="0G">
-                        <button class="f1-history-badge" onclick="openF1History(${member.id})"><i class="fa-solid fa-clock-rotate-left"></i> History (${historyCount})</button>
-                    </div>
-                </td>
-            `;
-            const diffCell = `<td class="notranslate" translate="no" style="text-align: center;">${diffHtml}</td>`;
-            const statusTabsContent = isManagementOrAdmin ? `
-                <div class="status-tabs">
-                    <button onclick="setPlayerStatus(${member.id}, 'active')" class="status-tab ${isAct ? 'active-active' : ''}" title="Active">A</button>
-                    <button onclick="setPlayerStatus(${member.id}, 'inactive')" class="status-tab ${isInact ? 'active-inactive' : ''}" title="Inactive">I</button>
-                    <button onclick="setPlayerStatus(${member.id}, 'removed')" class="status-tab ${isRem ? 'active-removed' : ''}" title="Removed">R</button>
-                </div>
-            ` : `
-                <div class="status-tabs">
-                    <span class="status-tab ${isAct ? 'active-active' : ''}">A</span>
-                    <span class="status-tab ${isInact ? 'active-inactive' : ''}">I</span>
-                    <span class="status-tab ${isRem ? 'active-removed' : ''}">R</span>
-                </div>
-            `;
-            const nameFieldContent = isManagementOrAdmin 
-                ? `<input type="text" value="${member.name || ''}" onchange="updateMemberMeta(${member.id}, 'name', this.value)" onkeydown="if(event.key==='Enter') { this.blur(); }" class="editable-input notranslate" translate="no" placeholder="Member name...">`
-                : `<span class="notranslate" translate="no">${member.name}</span>`;
-            const rankDotContent = isManagementOrAdmin
-                ? `<div class="rank-dot ${rankDotClass} notranslate" translate="no" onclick="cycleRank(${member.id})" title="Click to cycle rank">${member.rank}</div>`
-                : `<div class="rank-dot ${rankDotClass} notranslate" translate="no">${member.rank}</div>`;
-            const factionCircleContent = isManagementOrAdmin
-                ? `<div class="faction-circle ${factionClass} notranslate" translate="no" onclick="cycleFaction(${member.id})" title="Click to cycle faction (F, S, R)">${member.faction || 'F'}</div>`
-                : `<div class="faction-circle ${factionClass} notranslate" translate="no">${member.faction || 'F'}</div>`;
-            html += `
-                <tr class="${rankClass}">
-                    <td class="col-rank">${rank}</td>
-                    <td class="col-name">
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            ${statusTabsContent}
-                            <div style="flex-grow: 1;">${nameFieldContent}</div>
-                            ${rankDotContent}
+
+                const slotClass = entry.slot === 'A' ? 'slot-btn--a' : entry.slot === 'B' ? 'slot-btn--b' : 'slot-btn--unassigned';
+                const slotLabel = entry.slot || '·';
+
+                const attendClass = entry.attended ? 'attend-pill--yes' : 'attend-pill--no';
+                const attendLabel = entry.attended ? 'Attended' : 'Not Attended';
+
+                let roleClass = 'role-pill--none';
+                let roleLabel = 'Role: None';
+                if (entry.playerRole === 'main') {
+                    roleClass = 'role-pill--main';
+                    roleLabel = 'Main Player';
+                } else if (entry.playerRole === 'sub') {
+                    roleClass = 'role-pill--sub';
+                    roleLabel = 'Substitute';
+                }
+
+                cellsHTML += `
+                    <td>
+                        <div class="cell-stack">
+                            <div class="slot-btn ${slotClass} notranslate ${isManagementOrAdmin ? '' : 'slot-btn--readonly'}" translate="no"
+                                 ${isManagementOrAdmin ? `onclick="cycleSlot('${member.id}','${d.id}')"` : ''}>${slotLabel}</div>
+                            <div class="attend-pill ${attendClass} ${isManagementOrAdmin ? '' : 'attend-pill--readonly'}"
+                                 ${isManagementOrAdmin ? `onclick="toggleAttended('${member.id}','${d.id}')"` : ''}>${attendLabel}</div>
+                            <div class="role-pill ${roleClass} ${isManagementOrAdmin ? '' : 'role-pill--readonly'}"
+                                 ${isManagementOrAdmin ? `onclick="cycleRole('${member.id}','${d.id}')"` : ''}>${roleLabel}</div>
                         </div>
                     </td>
-                    <td>
-                        <input type="text" value="${member.cp || '0'}" ${isManagementOrAdmin ? `onchange="updateCombatPower(${member.id}, this.value)" onkeydown="if(event.key==='Enter') { this.blur(); }"` : 'readonly'} class="editable-input notranslate" translate="no" style="font-family: monospace; font-weight: 800; color: #16a34a;" placeholder="e.g. 5,390,000,000">
-                    </td>
-                    ${f1Cell}
-                    <td style="text-align: center;">
-                        ${factionCircleContent}
-                    </td>
-                    <td class="col-level-cell" style="text-align: center;">
-                        <select class="editable-select notranslate" translate="no" ${isManagementOrAdmin ? `onchange="updateMemberMeta(${member.id}, 'level', this.value)"` : 'disabled'}>
-                            ${generateLevelOptions(member.level)}
-                        </select>
-                    </td>
-                    <td class="notranslate" translate="no" style="text-align: center; font-weight: 800; color: var(--color-primary-dark);">#${rank}</td>
-                    ${diffCell}
-                    <td class="col-note-cell">
-                        <input type="text" value="${member.note || ''}" ${isManagementOrAdmin ? `onchange="updateMemberMeta(${member.id}, 'note', this.value)" onkeydown="if(event.key==='Enter') { this.blur(); }"` : 'readonly'} class="editable-input notranslate" translate="no" placeholder="Add note...">
-                    </td>
-                    ${actionCell}
+                `;
+            });
+
+            body.insertAdjacentHTML('beforeend', `
+                <tr>
+                    <td class="col-rank">${index + 1}</td>
+                    <td class="col-member notranslate" translate="no">${member.name}</td>
+                    ${cellsHTML}
+                    <td class="col-penalty notranslate" translate="no" style="color: ${penaltyWeeks > 0 ? 'var(--color-not-attended)' : 'var(--color-text-muted)'};">${penaltyWeeks} weeks</td>
+                </tr>
+            `);
+        });
+    }
+
+    function renderFooter() {
+        const footer = document.getElementById('tableFooter');
+        let html = `<tr><td colspan="2" class="col-member">A / B COUNT</td>`;
+
+        const activeMembers = getActiveMembers();
+        bgDates.forEach(d => {
+            let countA = 0, countB = 0;
+            activeMembers.forEach(m => {
+                const entry = getEntry(m.id, d.id);
+                if (entry.slot === 'A') countA++;
+                if (entry.slot === 'B') countB++;
+            });
+            html += `<td class="notranslate" translate="no"><span class="ab-count-a">A:${countA}</span> · <span class="ab-count-b">B:${countB}</span></td>`;
+        });
+
+        html += `<td></td></tr>`;
+        footer.innerHTML = html;
+    }
+
+    window.cycleSlot = function(memberId, dateId) {
+        const entry = getEntry(memberId, dateId);
+        entry.slot = entry.slot === null ? 'A' : entry.slot === 'A' ? 'B' : null;
+        saveAssignments();
+        render();
+    };
+
+    window.toggleAttended = function(memberId, dateId) {
+        const entry = getEntry(memberId, dateId);
+        entry.attended = !entry.attended;
+        saveAssignments();
+        render();
+    };
+
+    window.cycleRole = function(memberId, dateId) {
+        const entry = getEntry(memberId, dateId);
+        if (entry.playerRole === null) {
+            entry.playerRole = 'main';
+        } else if (entry.playerRole === 'main') {
+            entry.playerRole = 'sub';
+        } else {
+            entry.playerRole = null;
+        }
+        saveAssignments();
+        render();
+    };
+
+    window.editDate = function(dateId) {
+        const d = bgDates.find(x => x.id === dateId);
+        if (!d) return;
+
+        let defaultVal = '';
+        const parsed = parseDateString(d.date);
+        if (!isNaN(parsed) && parsed.getTime() > 0) {
+            const yyyy = parsed.getFullYear();
+            const mm = String(parsed.getMonth() + 1).padStart(2, '0');
+            const dd = String(parsed.getDate()).padStart(2, '0');
+            defaultVal = `${yyyy}-${mm}-${dd}`;
+        }
+
+        const newDateInput = prompt(`Edit date (Format: MM-DD-YYYY):`, d.date);
+        if (newDateInput === null) return;
+        const trimmed = newDateInput.trim();
+        if (!trimmed) {
+            alert('Date cannot be empty.');
+            return;
+        }
+
+        let formattedDate = trimmed;
+        let parts = trimmed.split('-');
+        if (parts.length === 3 && parts[0].length === 4) {
+            formattedDate = `${parts[1]}-${parts[2]}-${parts[0]}`;
+        }
+
+        if (bgDates.some(x => x.id !== dateId && x.date === formattedDate)) {
+            alert('Another session with this date already exists.');
+            return;
+        }
+
+        d.date = formattedDate;
+        bgDates.sort((a, b) => parseDateString(a.date) - parseDateString(b.date));
+        saveDates();
+        render();
+    };
+
+    window.removeDate = function(dateId) {
+        const d = bgDates.find(x => x.id === dateId);
+        if (!confirm(`Remove session "${d ? d.date : ''}"? This also clears all slots, attendance, and role markers for it.`)) return;
+
+        bgDates = bgDates.filter(x => x.id !== dateId);
+        Object.keys(assignments).forEach(memberId => {
+            if (assignments[memberId][dateId]) delete assignments[memberId][dateId];
+        });
+        saveDates();
+        saveAssignments();
+        render();
+    };
+
+    async function addDateFromPicker(pickerId) {
+        const picker = document.getElementById(pickerId);
+        if (!picker.value) {
+            alert('Please select a date from the calendar picker first.');
+            return;
+        }
+        const selectedDate = picker.value;
+        const parts = selectedDate.split('-');
+        const formattedDate = `${parts[1]}-${parts[2]}-${parts[0]}`;
+
+        if (bgDates.some(d => d.date === formattedDate)) {
+            alert('This date is already added.');
+            return;
+        }
+
+        if (!confirm(`Add session ${formattedDate}? This starts a fresh Map (Team A & Team B group assignments clear to blank for the new session). Your saved A/B Slots history for every existing date is not touched.`)) {
+            return;
+        }
+
+        bgDates.push({ id: 'd' + Date.now(), date: formattedDate });
+        bgDates.sort((a, b) => parseDateString(a.date) - parseDateString(b.date));
+        picker.value = '';
+
+        await saveDates();
+        await clearAllMapAssignments();
+        render();
+    }
+
+    async function clearAllMapAssignments() {
+        ['A', 'B'].forEach(board => {
+            mapBoards[board].forEach(team => {
+                team.roleRows.forEach(row => { row.memberId = null; });
+            });
+        });
+        await saveMapBoard('A');
+        await saveMapBoard('B');
+    }
+
+    document.getElementById('mapBtnAddDate').addEventListener('click', () => addDateFromPicker('mapCalendarPicker'));
+    document.getElementById('calBtnAddDate').addEventListener('click', () => addDateFromPicker('calCalendarPicker'));
+    document.getElementById('attBtnAddDate').addEventListener('click', () => addDateFromPicker('attCalendarPicker'));
+
+    document.getElementById('searchInput').addEventListener('input', render);
+
+    function renderCalendar() {
+        const body = document.getElementById('calendarBody');
+
+        if (bgDates.length === 0) {
+            body.innerHTML = `<tr><td colspan="5" class="empty-state">No sessions yet. ${isManagementOrAdmin ? 'Pick a date above and click + ADD DATE.' : ''}</td></tr>`;
+            return;
+        }
+
+        const activeMembers = getActiveMembers();
+        let html = '';
+        bgDates.forEach((d, idx) => {
+            let countA = 0, countB = 0;
+            activeMembers.forEach(m => {
+                const entry = getEntry(m.id, d.id);
+                if (entry.slot === 'A') countA++;
+                if (entry.slot === 'B') countB++;
+            });
+
+            const dateAttrs = isManagementOrAdmin
+                ? `onclick="editDate('${d.id}')" title="Click to edit date" style="cursor:pointer;"`
+                : '';
+
+            html += `
+                <tr>
+                    <td class="col-member notranslate" translate="no" ${dateAttrs}>${d.date}</td>
+                    <td>Week ${idx + 1}</td>
+                    <td class="notranslate" translate="no"><span class="ab-count-a">${countA}</span></td>
+                    <td class="notranslate" translate="no"><span class="ab-count-b">${countB}</span></td>
+                    <td>${isManagementOrAdmin ? `<span class="remove-date-btn" style="cursor:pointer; font-size:11px;" onclick="removeDate('${d.id}')">✕ Remove</span>` : '—'}</td>
                 </tr>
             `;
         });
-        tbody.innerHTML = html;
-        const colSpanVal = isManagementOrAdmin ? 10 : 9;
-        tableFooterRow.innerHTML = `<tr><td colspan="${colSpanVal}">Showing ${filtered.length} of ${activeOrInactiveMembers.length} active/inactive members</td></tr>`;
+        body.innerHTML = html;
     }
-    function generateLevelOptions(currentVal) {
-        let opts = '';
-        for(let i=1; i<=30; i++) {
-            let val = `${i}`;
-            opts += `<option value="${val}" ${currentVal === val ? 'selected' : ''}>${val}</option>`;
-        }
-        for(let i=1; i<=10; i++) {
-            let val = `i${i}`;
-            opts += `<option value="${val}" ${currentVal === val ? 'selected' : ''}>${val}</option>`;
-        }
-        return opts;
+
+    // ---- Attendance tab ---------------------------------------------------
+    // Reuses the exact same `assignments` data as the A/B Slots tab (slot,
+    // attended, playerRole per member per session date) — this is simply a
+    // different view over it, grouped by faction and with an auto penalty
+    // countdown, so there's no separate table needed and nothing about it
+    // can drift out of sync with A/B Slots.
+
+    function sortMembersForAttendance(list) {
+        return [...list].sort((a, b) => {
+            const fa = FACTION_ORDER.hasOwnProperty(a.faction) ? FACTION_ORDER[a.faction] : 3;
+            const fb = FACTION_ORDER.hasOwnProperty(b.faction) ? FACTION_ORDER[b.faction] : 3;
+            if (fa !== fb) return fa - fb;
+            return (a.name || '').localeCompare(b.name || '');
+        });
     }
-    window.setPlayerStatus = function(id, status) {
-        if (currentUser.role !== 'admin' && currentUser.role !== 'management') return;
-        const m = members.find(x => x.id === id);
-        if(m) { 
-            m.status = status; 
-            saveData().then(() => {
-                render(); 
-            }); 
-        }
-    };
-    window.cycleRank = function(id) {
-        if (currentUser.role !== 'admin' && currentUser.role !== 'management') return;
-        const ranks = ["R1", "R2", "R3", "R4", "R5"];
-        const m = members.find(x => x.id === id);
-        if(m) {
-            let idx = ranks.indexOf(m.rank);
-            m.rank = ranks[(idx + 1) % ranks.length];
-            saveData().then(() => render());
-        }
-    };
-    window.cycleFaction = function(id) {
-        if (currentUser.role !== 'admin' && currentUser.role !== 'management') return;
-        const factions = ["F", "S", "R"];
-        const m = members.find(x => x.id === id);
-        if(m) {
-            let idx = factions.indexOf(m.faction || "F");
-            m.faction = factions[(idx + 1) % factions.length];
-            saveData().then(() => render());
-        }
-    };
-    window.updateCombatPower = function(id, val) {
-        if (currentUser.role !== 'admin' && currentUser.role !== 'management') return;
-        const m = members.find(x => x.id === id);
-        if(m) {
-            const parsed = parseCpWithCommas(val);
-            m.cp = parsed.formatted;
-            m.rawCp = parsed.raw;
-            saveData().then(() => render());
-        }
-    };
-    window.updateF1Power = function(id, val) {
-        if (currentUser.role !== 'admin' && currentUser.role !== 'management') return;
-        const m = members.find(x => x.id === id);
-        if(m) {
-            const parsed = parseCpToRaw(val);
-            
-            if (!m.f1History || !Array.isArray(m.f1History)) {
-                m.f1History = [];
+
+    function computeAttendancePenaltyWeeks(memberId, today) {
+        let weeks = 0;
+        bgDates.forEach(d => {
+            const entry = getEntry(memberId, d.id);
+            if (entry.slot && !entry.attended) {
+                const sessionDate = parseDateString(d.date);
+                sessionDate.setHours(0, 0, 0, 0);
+                const daysSince = Math.floor((today - sessionDate) / 86400000);
+                if (daysSince >= 14) weeks += 2;
             }
-            const nowStr = new Date().toISOString().replace('T', ' ').substring(0, 16);
-            m.f1History.push({ date: nowStr, val: parsed.formatted });
-            m.f1Cp = parsed.formatted;
-            m.f1Raw = parsed.raw;
-            saveData().then(() => render());
+        });
+        return weeks;
+    }
+
+    function attendancePenaltyBadgeHtml(entry, sessionDate, today) {
+        if (!entry.slot || entry.attended) return '';
+        const daysSince = Math.floor((today - sessionDate) / 86400000);
+        if (daysSince < 0) return ''; // session hasn't happened yet
+        if (daysSince >= 14) {
+            return `<div class="att-penalty-badge att-penalty-badge--locked">PENALTY LOCKED</div>`;
         }
-    };
-    window.updateMemberMeta = function(id, field, val) {
-        if (currentUser.role !== 'admin' && currentUser.role !== 'management') return;
-        const m = members.find(x => x.id === id);
-        if(m) {
-            m[field] = val;
-            saveData().then(() => render());
-        }
-    };
-    window.removeMember = function(id) {
-        if (currentUser.role !== 'admin' && currentUser.role !== 'management') return;
-        const m = members.find(x => x.id === id);
-        if(m && confirm(`Are you sure you want to permanently remove ${m.name} from the roster?`)) {
-            members = members.filter(x => x.id !== id);
-            saveData().then(() => render());
-        }
-    };
-    window.openF1History = function(id) {
-        const m = members.find(x => x.id === id);
-        if (!m) return;
-        document.getElementById('f1HistoryTitle').innerHTML = `<span class="notranslate" translate="no">${m.name}</span> - F1 History <i class="fa-solid fa-xmark" style="cursor:pointer;" onclick="document.getElementById('f1HistoryModal').style.display='none'"></i>`;
-        const listEl = document.getElementById('f1HistoryList');
-        if (!m.f1History || m.f1History.length === 0) {
-            listEl.innerHTML = `<div style="text-align: center; color: var(--color-text-muted); padding: 12px; font-size: 12px;">No historical records found.</div>`;
-        } else {
-            let listHtml = '';
-            m.f1History.forEach((item, index) => {
-                let deleteBtnHtml = '';
-                if (currentUser.role === 'admin') {
-                    deleteBtnHtml = `<button class="btn-action btn-danger" style="padding: 2px 6px; font-size: 9px;" onclick="deleteF1HistoryEntry(${m.id}, ${index})"><i class="fa-solid fa-trash"></i></button>`;
-                }
-                listHtml += `
-                    <div class="history-item">
-                        <div class="notranslate" translate="no">
-                            <span class="history-item-date">${item.date}</span>
-                            <div class="history-item-val">${item.val}</div>
-                        </div>
-                        ${deleteBtnHtml}
-                    </div>
-                `;
-            });
-            listEl.innerHTML = listHtml;
-        }
-        document.getElementById('f1HistoryModal').style.display = 'flex';
-    };
-    window.deleteF1HistoryEntry = function(memberId, historyIndex) {
-        if (currentUser.role !== 'admin') {
-            alert('Only Admin users can delete history items.');
+        return `<div class="att-penalty-badge att-penalty-badge--countdown">${14 - daysSince}D TO PENALTY</div>`;
+    }
+
+    function renderAttendanceHeader() {
+        const row = document.getElementById('attendanceHeaderRow');
+        let html = `<th class="col-member">Member</th>`;
+
+        bgDates.forEach((d, idx) => {
+            const dateClickAttr = isManagementOrAdmin ? `onclick="editDate('${d.id}')" title="Click to edit date"` : '';
+            html += `
+                <th>
+                    <div class="date-label notranslate" translate="no" ${dateClickAttr}>${d.date}</div>
+                    <div class="week-label">Week ${idx + 1}</div>
+                    ${isManagementOrAdmin ? `<span class="remove-date-btn" onclick="removeDate('${d.id}')">✕</span>` : ''}
+                </th>
+            `;
+        });
+
+        html += `<th>Total Penalty</th>`;
+        row.innerHTML = html;
+    }
+
+    function renderAttendanceBody(filtered) {
+        const body = document.getElementById('attendanceBody');
+        body.innerHTML = '';
+
+        if (filtered.length === 0) {
+            body.innerHTML = `<tr><td colspan="${2 + bgDates.length}" class="empty-state">No members found.</td></tr>`;
             return;
         }
-        const m = members.find(x => x.id === memberId);
-        if (m && m.f1History) {
-            m.f1History.splice(historyIndex, 1);
-            saveData().then(() => {
-                openF1History(memberId);
-                render();
-            });
-        }
-    };
-    window.setStatusFilter = function(status) {
-        currentStatusFilter = status;
-        ['all', 'active', 'inactive', 'removed'].forEach(s => {
-            document.getElementById(`tab${s.charAt(0).toUpperCase() + s.slice(1)}`).classList.toggle('btn-toggle--active', s === status);
-        });
-        render();
-    };
-    document.getElementById('btnToggleDiff').addEventListener('click', () => {
-        showDiffMode = !showDiffMode;
-        document.getElementById('btnToggleDiff').classList.toggle('btn-toggle--active', showDiffMode);
-        render();
-    });
-    document.getElementById('searchInput').addEventListener('input', render);
-    document.getElementById('btnAddMemberModal').addEventListener('click', () => {
-        if (currentUser.role !== 'admin' && currentUser.role !== 'management') return;
-        document.getElementById('addMemberModal').style.display = 'flex';
-    });
-    document.getElementById('btnSubmitAddMember').addEventListener('click', () => {
-        if (currentUser.role !== 'admin' && currentUser.role !== 'management') return;
-        const name = document.getElementById('newMemberName').value.trim();
-        const cpInput = document.getElementById('newMemberCp').value.trim() || '0';
-        const faction = document.getElementById('newMemberFaction').value;
-        const level = document.getElementById('newMemberLevel').value;
-        if(!name) { alert('Please enter a member name.'); return; }
-        const parsedCp = parseCpWithCommas(cpInput);
-        const initialF1 = parseCpToRaw('0G');
-        const nowStr = new Date().toISOString().replace('T', ' ').substring(0, 16);
-        members.push({
-            id: Date.now(),
-            name,
-            cp: parsedCp.formatted,
-            rawCp: parsedCp.raw,
-            f1Cp: initialF1.formatted,
-            f1Raw: initialF1.raw,
-            f1History: [{ date: nowStr, val: initialF1.formatted }],
-            faction,
-            level,
-            rank: 'R1',
-            status: 'active',
-            note: '',
-            attended: 0,
-            events: []
-        });
-        saveData().then(() => {
-            document.getElementById('addMemberModal').style.display = 'none';
-            document.getElementById('newMemberName').value = '';
-            document.getElementById('newMemberCp').value = '';
-            render();
-        });
-    });
-    const importBtn = document.getElementById('importBtn');
-    const screenshotInput = document.getElementById('screenshotInput');
-    importBtn.addEventListener('click', () => {
-        if (currentUser.role !== 'admin' && currentUser.role !== 'management') return;
-        screenshotInput.click();
-    });
-    // Reads a File object and resolves to just the base64 payload (no data: URL prefix),
-    // which is what the Gemini inline_data field expects.
-    async function fileToBase64(file) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result.split(',')[1]);
-            reader.onerror = reject;
-            reader.readAsDataURL(file);
-        });
-    }
-    screenshotInput.addEventListener('change', async (e) => {
-        if (currentUser.role !== 'admin' && currentUser.role !== 'management') return;
-        const file = e.target.files[0];
-        if (!file) return;
-        importBtn.innerText = 'PROCESSING...'; importBtn.disabled = true;
-        try {
-            const { data: { session } } = await db.auth.getSession();
-            if (!session) throw new Error('Your session expired — please log out and back in.');
 
-            const base64Data = await fileToBase64(file);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
 
-            const response = await fetch('/api/members-import', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${session.access_token}`
-                },
-                body: JSON.stringify({
-                    imageBase64: base64Data,
-                    mimeType: file.type || 'image/png'
-                })
-            });
+        const sorted = sortMembersForAttendance(filtered);
+        let lastFactionKey = null;
 
-            if (!response.ok) {
-                let detail = '';
-                try {
-                    const errBody = await response.json();
-                    detail = errBody?.error || JSON.stringify(errBody);
-                } catch (parseErr) {
-                    detail = await response.text().catch(() => '(no body)');
-                }
-                throw new Error(`Import failed (${response.status}): ${detail}`);
+        sorted.forEach(member => {
+            const factionKey = FACTION_ORDER.hasOwnProperty(member.faction) ? member.faction : 'OTHER';
+            if (factionKey !== lastFactionKey) {
+                body.insertAdjacentHTML('beforeend', `
+                    <tr class="att-faction-divider" style="--divider-color:${FACTION_DIVIDER_COLORS[factionKey]};">
+                        <td colspan="${2 + bgDates.length}">${FACTION_DIVIDER_LABELS[factionKey]}</td>
+                    </tr>
+                `);
+                lastFactionKey = factionKey;
             }
 
-            const { rows } = await response.json();
-            const entries = Array.isArray(rows) ? rows : [];
-            let addedCount = 0;
-            const nowStr = new Date().toISOString().replace('T', ' ').substring(0, 16);
+            let cellsHTML = '';
+            bgDates.forEach(d => {
+                const entry = getEntry(member.id, d.id);
+                const sessionDate = parseDateString(d.date);
+                sessionDate.setHours(0, 0, 0, 0);
 
-            entries.forEach(entry => {
-                const name = (entry.name || '').trim();
-                if (!name) return;
-                const parsedCp = parseCpWithCommas(entry.cp || '0');
-                const hasF1 = entry.f1Cp && entry.f1Cp.trim() !== '';
-                const parsedF1 = hasF1 ? parseCpToRaw(entry.f1Cp) : null;
+                const slotClass = entry.slot === 'A' ? 'slot-btn--a' : entry.slot === 'B' ? 'slot-btn--b' : 'slot-btn--unassigned';
+                const slotLabel = entry.slot || '·';
 
-                const existing = members.find(m => m.name.toLowerCase() === name.toLowerCase());
-                if (existing) {
-                    existing.cp = parsedCp.formatted;
-                    existing.rawCp = parsedCp.raw;
-                    if (parsedF1) {
-                        if (!existing.f1History || !Array.isArray(existing.f1History)) existing.f1History = [];
-                        existing.f1History.push({ date: nowStr, val: parsedF1.formatted });
-                        existing.f1Cp = parsedF1.formatted;
-                        existing.f1Raw = parsedF1.raw;
-                    }
-                } else {
-                    const f1ToUse = parsedF1 || parseCpToRaw('0G');
-                    members.push({
-                        id: Date.now() + Math.random(),
-                        name,
-                        cp: parsedCp.formatted,
-                        rawCp: parsedCp.raw,
-                        f1Cp: f1ToUse.formatted,
-                        f1Raw: f1ToUse.raw,
-                        f1History: [{ date: nowStr, val: f1ToUse.formatted }],
-                        faction: 'F',
-                        level: '1',
-                        rank: 'R1',
-                        status: 'active',
-                        note: '',
-                        attended: 0,
-                        events: []
-                    });
+                const attendClass = entry.attended ? 'attend-pill--yes' : 'attend-pill--no';
+                const attendLabel = entry.attended ? 'Attended' : 'Not Attended';
+
+                let roleClass = 'role-pill--none';
+                let roleLabel = 'Role: None';
+                if (entry.playerRole === 'main') {
+                    roleClass = 'role-pill--main';
+                    roleLabel = 'Main Player';
+                } else if (entry.playerRole === 'sub') {
+                    roleClass = 'role-pill--sub';
+                    roleLabel = 'Substitute';
                 }
-                addedCount++;
+
+                cellsHTML += `
+                    <td>
+                        <div class="cell-stack">
+                            <div class="slot-btn ${slotClass} notranslate ${isManagementOrAdmin ? '' : 'slot-btn--readonly'}" translate="no"
+                                 ${isManagementOrAdmin ? `onclick="cycleSlot('${member.id}','${d.id}')"` : ''}>${slotLabel}</div>
+                            <div class="attend-pill ${attendClass} ${isManagementOrAdmin ? '' : 'attend-pill--readonly'}"
+                                 ${isManagementOrAdmin ? `onclick="toggleAttended('${member.id}','${d.id}')"` : ''}>${attendLabel}</div>
+                            <div class="role-pill ${roleClass} ${isManagementOrAdmin ? '' : 'role-pill--readonly'}"
+                                 ${isManagementOrAdmin ? `onclick="cycleRole('${member.id}','${d.id}')"` : ''}>${roleLabel}</div>
+                            ${attendancePenaltyBadgeHtml(entry, sessionDate, today)}
+                        </div>
+                    </td>
+                `;
             });
 
-            await saveData();
-            render();
-            alert(`Import completed! Successfully parsed ${addedCount} entries.`);
-        } catch (err) {
-            console.error(err);
-            alert('Error during screenshot import: ' + err.message);
-        } finally {
-            importBtn.innerText = 'UPLOAD SCREENSHOT'; importBtn.disabled = false; screenshotInput.value = '';
+            const totalWeeks = computeAttendancePenaltyWeeks(member.id, today);
+
+            body.insertAdjacentHTML('beforeend', `
+                <tr>
+                    <td class="col-member notranslate" translate="no">${member.name}</td>
+                    ${cellsHTML}
+                    <td class="col-penalty notranslate" translate="no" style="color: ${totalWeeks > 0 ? 'var(--color-not-attended)' : 'var(--color-text-muted)'};">${totalWeeks} weeks</td>
+                </tr>
+            `);
+        });
+    }
+
+    function renderAttendanceFooter() {
+        const footer = document.getElementById('attendanceFooter');
+        let html = `<tr><td class="col-member">A / B COUNT</td>`;
+
+        const activeMembers = getActiveMembers();
+        bgDates.forEach(d => {
+            let countA = 0, countB = 0;
+            activeMembers.forEach(m => {
+                const entry = getEntry(m.id, d.id);
+                if (entry.slot === 'A') countA++;
+                if (entry.slot === 'B') countB++;
+            });
+            html += `<td class="notranslate" translate="no"><span class="ab-count-a">A:${countA}</span> · <span class="ab-count-b">B:${countB}</span></td>`;
+        });
+
+        html += `<td></td></tr>`;
+        footer.innerHTML = html;
+    }
+
+    function renderAttendance(filtered) {
+        renderAttendanceHeader();
+        renderAttendanceBody(filtered);
+        renderAttendanceFooter();
+    }
+
+    function findMemberById(id) {
+        if (!id) return null;
+        return members.find(m => String(m.id) === String(id)) || null;
+    }
+
+    function factionCircleHtml(member) {
+        if (!member) return `<div class="faction-circle faction-circle--empty">·</div>`;
+        let factionClass = 'faction-f';
+        if (member.faction === 'S') factionClass = 'faction-s';
+        if (member.faction === 'R') factionClass = 'faction-r';
+        return `<div class="faction-circle ${factionClass} notranslate" translate="no">${member.faction || 'F'}</div>`;
+    }
+
+    function memberOptionsHtml(selectedId, disabledIds) {
+        disabledIds = disabledIds || new Set();
+        let html = `<option value="">— Unassigned —</option>`;
+        getActiveMembers().forEach(m => {
+            const idStr = String(m.id);
+            const isSelected = idStr === String(selectedId);
+            const isDisabled = !isSelected && disabledIds.has(idStr);
+            html += `<option value="${m.id}" ${isSelected ? 'selected' : ''} ${isDisabled ? 'disabled' : ''}>${m.name}${isDisabled ? ' (on other team)' : ''}</option>`;
+        });
+        return html;
+    }
+
+    function roleLabelOptionsHtml(currentLabel) {
+        let opts = rolePresets.slice();
+        if (!opts.includes(currentLabel)) opts.unshift(currentLabel);
+        let html = opts.map(o => `<option value="${o.replace(/"/g, '&quot;')}" ${o === currentLabel ? 'selected' : ''}>${o}</option>`).join('');
+        html += `<option value="__custom__">✎ One-time Custom Name...</option>`;
+        html += `<option value="__addpreset__">➕ Add New Role to List...</option>`;
+        if (rolePresets.length > 1) {
+            html += `<option value="__removepreset__">🗑 Remove a Role from List...</option>`;
         }
+        return html;
+    }
+
+    function getLatestDateId() {
+        if (bgDates.length === 0) return null;
+        return bgDates[bgDates.length - 1].id;
+    }
+
+    function syncMapAssignmentToAB(memberId, board, roleKey) {
+        if (!memberId) return;
+        const dateId = getLatestDateId();
+        if (!dateId) return;
+        const entry = getEntry(memberId, dateId);
+        entry.slot = board === 'A' ? 'A' : 'B';
+        entry.playerRole = (roleKey === 'substitute') ? 'sub' : 'main';
+        saveAssignments();
+    }
+
+    function renderMap() {
+        document.getElementById('mapLegendCard').style.display = canViewMap ? 'flex' : 'none';
+        renderDotColorPicker();
+        if (!canViewMap) {
+            document.getElementById('mapTableWrapper').innerHTML = `<div class="map-locked-state">This section is available to alliance members, management, and admins only.</div>`;
+            document.getElementById('mapDiagram').innerHTML = '';
+            return;
+        }
+        renderMapTable();
+        renderMapDiagram();
+        setGroupsSidebarOpen(groupsSidebarOpen);
+    }
+
+    function renderDotColorPicker() {
+        if (!isManagementOrAdmin) return;
+        const input = document.getElementById('mapDotColorInput');
+        const label = document.getElementById('mapDotColorPickerLabel');
+        if (!selectedMarker) {
+            input.disabled = true;
+            input.value = '#966426';
+            label.textContent = 'Click a dot/arrow or a teardrop marker on the map to recolor it';
+            return;
+        }
+
+        let activeColor = DEFAULT_DOT_COLOR;
+        if (selectedMarker.type === 'dot') {
+            const boardDots = mapDotsByBoard[activeBoard];
+            if (!boardDots.colors) return;
+            activeColor = boardDots.colors[selectedMarker.index] || DEFAULT_DOT_COLOR;
+            label.textContent = 'Selected arrow color';
+        } else if (selectedMarker.type === 'pin') {
+            const pinColors = mapPinColorsByBoard[activeBoard] || [];
+            activeColor = pinColors[selectedMarker.index] || DEFAULT_DOT_COLOR;
+            label.textContent = 'Selected marker color';
+        }
+        input.disabled = false;
+        input.value = activeColor;
+    }
+
+    function renderMapTable() {
+        const wrap = document.getElementById('mapTableWrapper');
+        const teams = currentTeams();
+        if (teams.length === 0) {
+            wrap.innerHTML = `<div class="map-locked-state">No groups yet. ${isManagementOrAdmin ? 'Click + ADD GROUP to create one.' : ''}</div>`;
+            return;
+        }
+
+        const sortedTeams = [...teams].sort((a, b) => a.groupNumber - b.groupNumber);
+
+        const otherBoard = activeBoard === 'A' ? 'B' : 'A';
+        const otherBoardMemberIds = new Set();
+        mapBoards[otherBoard].forEach(t => {
+            t.roleRows.forEach(r => { if (r.memberId) otherBoardMemberIds.add(String(r.memberId)); });
+        });
+
+        let html = '';
+        sortedTeams.forEach(team => {
+            const numberClickable = isManagementOrAdmin ? `onclick="cycleGroupNumber('${team.id}')" title="Click to change this group's number (cycles 1–10) — does not affect the map marker"` : '';
+            const colorSwatch = isManagementOrAdmin
+                ? `<input type="color" class="map-team-header__color" value="${team.color || '#966426'}" onchange="setTeamColor('${team.id}', this.value)" title="Group color">`
+                : '';
+            const nameField = isManagementOrAdmin
+                ? `<input type="text" class="map-team-header__name-input notranslate" translate="no" placeholder="Name this group…" value="${escapeHtml(team.name || '')}" maxlength="40" onchange="setGroupName('${team.id}', this.value)" title="Label this group (shown in this sidebar list and in the exported PNG once set)">`
+                : `<span class="notranslate" translate="no">${team.name ? escapeHtml(team.name) : 'GROUP'}</span>`;
+            html += `
+                <div class="map-team-block">
+                    <div class="map-team-header" style="background:${team.color || '#5c4127'};">
+                        <div class="map-team-header__title">
+                            ${colorSwatch}
+                            ${nameField}
+                        </div>
+                        <div class="map-team-header__number notranslate ${isManagementOrAdmin ? 'map-team-header__number--clickable' : ''}" translate="no" ${numberClickable}>${team.groupNumber}</div>
+                    </div>
+                    <table class="map-role-table">
+                        <tbody>
+                            ${team.roleRows.map(row => {
+                                const assignedMember = findMemberById(row.memberId);
+                                const power = assignedMember ? (assignedMember.f1Cp || '0G') : '—';
+                                return `
+                                    <tr>
+                                        <td class="map-role-label">
+                                            ${isManagementOrAdmin
+                                                ? `<select class="map-role-select notranslate" translate="no" title="Rename this role row, or manage the shared role list" onchange="changeRoleLabel('${team.id}','${row.key}', this.value)">${roleLabelOptionsHtml(row.label)}</select>`
+                                                : `<span class="notranslate" translate="no">${row.label}</span>`}
+                                        </td>
+                                        <td class="map-role-faction-cell">${factionCircleHtml(assignedMember)}</td>
+                                        <td>
+                                            <select class="map-role-select notranslate" translate="no" ${isManagementOrAdmin ? `onchange="assignMapRole('${team.id}','${row.key}', this.value)"` : 'disabled'}>
+                                                ${memberOptionsHtml(row.memberId, otherBoardMemberIds)}
+                                            </select>
+                                        </td>
+                                        <td class="map-role-power notranslate" translate="no">${power}</td>
+                                        <td>${isManagementOrAdmin ? `<span class="map-role-delete-btn" onclick="deleteGroupRoleRow('${team.id}','${row.key}')" title="Delete this role row (this group only)">×</span>` : ''}</td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                            ${isManagementOrAdmin ? `
+                            <tr><td colspan="5" class="map-role-add-row">
+                                <button class="map-role-add-btn" onclick="addGroupRoleRow('${team.id}')">+ ADD ROLE ROW</button>
+                            </td></tr>` : ''}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        });
+        wrap.innerHTML = html;
+    }
+
+    window.setGroupName = function(teamId, value) {
+        if (!isManagementOrAdmin) return;
+        const team = currentTeams().find(t => t.id === teamId);
+        if (!team) return;
+        team.name = value.trim().slice(0, 40);
+        saveMapBoard(activeBoard);
+    };
+
+    function staticMapBackgroundHtml() {
+        return `
+            <svg class="map-dotted-svg" viewBox="0 0 1093 1096" preserveAspectRatio="xMidYMid slice">
+                <rect x="0" y="0" width="1093" height="1096" fill="#c58f5f"/>
+
+                <g>
+                    <rect x="450" y="618" width="210" height="30" rx="15" fill="#c97b3d"/>
+                    <rect x="468" y="516" width="174" height="106" rx="10" fill="#c97b3d"/>
+                    <polygon points="555,412 458,522 652,522" fill="#c97b3d" stroke="#c97b3d" stroke-width="10" stroke-linejoin="round"/>
+                    <rect x="534" y="560" width="42" height="58" fill="#c58f5f"/>
+                </g>
+
+                <g fill="#f4c94c" stroke="#f4c94c" stroke-width="6" stroke-linejoin="round">
+                    <polygon points="200,92 217,137 265,137 226,165 241,210 200,182 159,210 174,165 135,137 183,137"/>
+                    <polygon points="890,850 907,895 955,895 916,923 931,968 890,940 849,968 864,923 825,895 873,895"/>
+                </g>
+
+                <g fill="#4b7c40" stroke="#4b7c40" stroke-width="9" stroke-linejoin="round">
+                    <path d="M534,105 h42 v25 h25 v42 h-25 v25 h-42 v-25 h-25 v-42 h25 z"/>
+                    <path d="M534,863 h42 v25 h25 v42 h-25 v25 h-42 v-25 h-25 v-42 h25 z"/>
+                </g>
+
+                <!-- Base pouches: drawn as plain inline <path> elements (not <use>/<defs>)
+                     so their fill colors survive export via html2canvas, which does not
+                     reliably resolve <use href="#..."> references when the SVG is cloned
+                     into an off-screen node for rasterization. -->
+                <path d="M58,4 L92,4 Q102,4 102,14 L102,26 Q106,28 118,28 Q138,30 140,46 Q142,60 126,60 Q130,64 132,68 L132,128 Q130,148 100,156 Q75,160 50,156 Q20,148 18,128 L18,68 Q20,64 24,60 Q8,60 10,46 Q12,30 32,28 Q44,28 48,26 L48,14 Q48,4 58,4 Z" transform="translate(835,55)" fill="#4a6fd8"/>
+                <path d="M58,4 L92,4 Q102,4 102,14 L102,26 Q106,28 118,28 Q138,30 140,46 Q142,60 126,60 Q130,64 132,68 L132,128 Q130,148 100,156 Q75,160 50,156 Q20,148 18,128 L18,68 Q20,64 24,60 Q8,60 10,46 Q12,30 32,28 Q44,28 48,26 L48,14 Q48,4 58,4 Z" transform="translate(125,850)" fill="#c33f2f"/>
+            </svg>
+        `;
+    }
+
+    function mapPinSvg(color) {
+        return `
+            <svg viewBox="0 0 100 130" xmlns="http://www.w3.org/2000/svg">
+                <path d="M50,4 L83,43 A44,44 0 1 1 17,43 Z" fill="${color || '#966426'}"/>
+            </svg>
+        `;
+    }
+
+    function renderMapDiagram() {
+        const diagram = document.getElementById('mapDiagram');
+        let html = staticMapBackgroundHtml();
+        html += renderConnectorDotsHtml();
+
+        const teams = currentTeams();
+        const pinColors = mapPinColorsByBoard[activeBoard] || defaultPinColors();
+        MAP_PIN_POSITIONS.forEach((pos, i) => {
+            const team = teams[i];
+            if (team) {
+                const num = (typeof team.number === 'number') ? team.number : 1;
+                const isBlank = num === 0;
+                const pinColor = pinColors[i] || DEFAULT_DOT_COLOR;
+                const isSelected = isManagementOrAdmin && selectedMarker && selectedMarker.type === 'pin' && selectedMarker.index === i;
+                const clickAttr = isManagementOrAdmin ? `onclick="cycleTeamNumber('${team.id}', ${i})" title="Click to cycle this marker's number (1–10) — the marker's shape never changes or disappears · then use the color picker above to set this teardrop's own color"` : '';
+                html += `
+                    <div class="map-pin ${isManagementOrAdmin ? '' : 'map-pin--readonly'} ${isSelected ? 'map-connector-dot--selected' : ''}" style="left:${pos.left}%; top:${pos.top}%;" ${clickAttr}>
+                        ${mapPinSvg(pinColor)}
+                        ${isBlank ? '' : `<span class="map-pin__num notranslate" translate="no">${num}</span>`}
+                    </div>
+                `;
+            } else {
+                html += `
+                    <div class="map-pin map-pin--readonly" style="left:${pos.left}%; top:${pos.top}%; opacity:0.35;" title="No group assigned to this marker">
+                        ${mapPinSvg('#c9ccd6')}
+                        <span class="map-pin__num">·</span>
+                    </div>
+                `;
+            }
+        });
+
+        html += renderLandmarkMarkersHtml();
+        html += renderHouseMarkerHtml();
+
+        diagram.innerHTML = html;
+        attachConnectorDragHandlers();
+    }
+
+    function renderLandmarkMarkersHtml() {
+        // Numbers only — the star/cross shapes themselves live in the static
+        // background SVG and are never redrawn or covered by a circle here.
+        let html = '';
+        const nums = mapLandmarksByBoard[activeBoard] || new Array(LANDMARK_MARKERS.length).fill(0);
+        LANDMARK_MARKERS.forEach((lm, i) => {
+            const num = nums[i] || 0;
+            const isBlank = num === 0;
+            const clickAttr = isManagementOrAdmin ? `onclick="cycleLandmarkNumber(${i})" title="${lm.label}: click to cycle this marker's number (1–10) — the marker's shape never changes, it just shows no number at the start of the cycle"` : `title="${lm.label}"`;
+            html += `
+                <div class="map-pin ${isManagementOrAdmin ? '' : 'map-pin--readonly'}" style="left:${lm.left}%; top:${lm.top}%;" ${clickAttr}>
+                    ${isBlank ? '' : `<span class="map-pin__num notranslate" translate="no">${num}</span>`}
+                </div>
+            `;
+        });
+        return html;
+    }
+
+    function renderHouseMarkerHtml() {
+        // Same idea as the landmarks: the house shape lives in the static
+        // background SVG and is never redrawn — this is just a clickable
+        // number overlay on top of it.
+        const num = mapHouseByBoard[activeBoard] || 0;
+        const isBlank = num === 0;
+        const clickAttr = isManagementOrAdmin ? `onclick="cycleHouseNumber()" title="House: click to cycle this marker's number (1–10) — the marker's shape never changes, it just shows no number at the start of the cycle"` : `title="House"`;
+        return `
+            <div class="map-pin ${isManagementOrAdmin ? '' : 'map-pin--readonly'}" style="left:${HOUSE_POSITION.left}%; top:${HOUSE_POSITION.top}%;" ${clickAttr}>
+                ${isBlank ? '' : `<span class="map-pin__num notranslate" translate="no">${num}</span>`}
+            </div>
+        `;
+    }
+
+    window.cycleLandmarkNumber = function(index) {
+        if (!isManagementOrAdmin) return;
+        const arr = mapLandmarksByBoard[activeBoard];
+        if (!arr || index < 0 || index >= arr.length) return;
+        arr[index] = (arr[index] + 1) % MARKER_CYCLE_STATES;
+        saveMapLandmarks(activeBoard);
+        renderMapDiagram();
+    };
+
+    window.cycleHouseNumber = function() {
+        if (!isManagementOrAdmin) return;
+        mapHouseByBoard[activeBoard] = (mapHouseByBoard[activeBoard] + 1) % MARKER_CYCLE_STATES;
+        saveMapHouse(activeBoard);
+        renderMapDiagram();
+    };
+
+    function connectorDotSvg(color) {
+        return `<svg viewBox="0 0 22 22"><circle cx="11" cy="11" r="8" fill="none" stroke="${color}" stroke-width="2.5"/></svg>`;
+    }
+
+    function connectorArrowSvg(color, degrees) {
+        return `
+            <svg viewBox="0 0 22 22">
+                <g class="map-connector-arrow-inner" style="transform: rotate(${degrees}deg);">
+                    <path d="M2,11 L18,11 M18,11 L12,7 M18,11 L12,15" stroke="${color}" stroke-width="3.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                </g>
+            </svg>
+        `;
+    }
+
+    function renderConnectorDotsHtml() {
+        let html = '';
+        const boardDots = mapDotsByBoard[activeBoard];
+        DOT_POSITIONS.forEach((pos, i) => {
+            const step = boardDots.steps[i] || 0;
+            const color = (boardDots.colors && boardDots.colors[i]) || DEFAULT_DOT_COLOR;
+            const offset = (boardDots.offsets && boardDots.offsets[i]) || { dx: 0, dy: 0 };
+            const isArrow = step !== 0;
+            const isDefaultCircle = !isArrow && color === DEFAULT_DOT_COLOR && offset.dx === 0 && offset.dy === 0;
+            if (hideDefaultCircles && isDefaultCircle) return;
+            const inner = isArrow ? connectorArrowSvg(color, step * DOT_ROTATION_STEP) : connectorDotSvg(color);
+            const isSelected = isManagementOrAdmin && selectedMarker && selectedMarker.type === 'dot' && selectedMarker.index === i;
+            const left = pos.left + offset.dx;
+            const top = pos.top + offset.dy;
+            const titleText = isManagementOrAdmin ? `Click to select &amp; rotate (${step === 0 ? 'currently a dot' : step * DOT_ROTATION_STEP + '°'}) · drag to reposition · double-click to reset position` : '';
+            html += `
+                <div class="map-connector-dot ${isManagementOrAdmin ? '' : 'map-connector-dot--readonly'} ${isArrow ? 'map-connector-dot--arrow' : ''} ${isSelected ? 'map-connector-dot--selected' : ''}" data-dot-index="${i}" style="left:${left}%; top:${top}%;" title="${titleText}">
+                    ${inner}
+                </div>
+            `;
+        });
+        return html;
+    }
+
+    // Drag-to-reposition for connector dots/arrows, layered on top of the
+    // existing click-to-rotate behavior. A short pointer movement threshold
+    // distinguishes a tap (rotate) from a drag (reposition) so both keep
+    // working from the same marker. Double-click/double-tap resets the
+    // marker back to its original, un-dragged position.
+    const DOT_DRAG_THRESHOLD_PX = 5;
+
+    function attachConnectorDragHandlers() {
+        const diagram = document.getElementById('mapDiagram');
+        if (!diagram) return;
+        diagram.querySelectorAll('.map-connector-dot').forEach(el => {
+            const index = parseInt(el.getAttribute('data-dot-index'), 10);
+            if (isNaN(index)) return;
+
+            if (!isManagementOrAdmin) return;
+
+            let pointerDownPos = null;
+            let didDrag = false;
+            let startOffset = null;
+
+            el.addEventListener('pointerdown', (e) => {
+                e.stopPropagation();
+                pointerDownPos = { x: e.clientX, y: e.clientY };
+                didDrag = false;
+                const boardDots = mapDotsByBoard[activeBoard];
+                startOffset = (boardDots.offsets && boardDots.offsets[index]) ? { ...boardDots.offsets[index] } : { dx: 0, dy: 0 };
+                el.setPointerCapture(e.pointerId);
+            });
+
+            el.addEventListener('pointermove', (e) => {
+                if (!pointerDownPos) return;
+                const movedX = e.clientX - pointerDownPos.x;
+                const movedY = e.clientY - pointerDownPos.y;
+                if (!didDrag && Math.hypot(movedX, movedY) < DOT_DRAG_THRESHOLD_PX) return;
+                didDrag = true;
+                el.classList.add('map-connector-dot--dragging');
+
+                const rect = diagram.getBoundingClientRect();
+                const deltaPctX = (movedX / rect.width) * 100;
+                const deltaPctY = (movedY / rect.height) * 100;
+                let newDx = startOffset.dx + deltaPctX;
+                let newDy = startOffset.dy + deltaPctY;
+                newDx = Math.max(-40, Math.min(40, newDx));
+                newDy = Math.max(-40, Math.min(40, newDy));
+
+                const boardDots = mapDotsByBoard[activeBoard];
+                if (!boardDots.offsets) boardDots.offsets = DOT_POSITIONS.map(() => ({ dx: 0, dy: 0 }));
+                boardDots.offsets[index] = { dx: newDx, dy: newDy };
+
+                const base = DOT_POSITIONS[index];
+                el.style.left = (base.left + newDx) + '%';
+                el.style.top = (base.top + newDy) + '%';
+            });
+
+            const finishDrag = (e) => {
+                if (!pointerDownPos) return;
+                el.classList.remove('map-connector-dot--dragging');
+                if (didDrag) {
+                    saveMapDots(activeBoard);
+                } else {
+                    // Treated as a click/tap: cycle rotation as before.
+                    window.cycleConnectorDot(index);
+                }
+                pointerDownPos = null;
+                didDrag = false;
+            };
+
+            el.addEventListener('pointerup', finishDrag);
+            el.addEventListener('pointercancel', () => {
+                pointerDownPos = null;
+                didDrag = false;
+                el.classList.remove('map-connector-dot--dragging');
+            });
+
+            el.addEventListener('dblclick', (e) => {
+                e.stopPropagation();
+                const boardDots = mapDotsByBoard[activeBoard];
+                if (!boardDots.offsets) return;
+                boardDots.offsets[index] = { dx: 0, dy: 0 };
+                saveMapDots(activeBoard);
+                renderMapDiagram();
+            });
+        });
+    }
+
+    window.cycleConnectorDot = function(index) {
+        if (!isManagementOrAdmin) return;
+        const boardDots = mapDotsByBoard[activeBoard];
+        if (index < 0 || index >= boardDots.steps.length) return;
+        boardDots.steps[index] = (boardDots.steps[index] + 1) % DOT_STEPS_PER_CYCLE;
+        selectedMarker = { type: 'dot', index };
+        saveMapDots(activeBoard);
+        renderMapDiagram();
+        renderDotColorPicker();
+    };
+
+    window.setDotColor = function(color) {
+        if (!isManagementOrAdmin) return;
+        if (!selectedMarker) return;
+        if (selectedMarker.type === 'dot') {
+            mapDotsByBoard[activeBoard].colors[selectedMarker.index] = color;
+            saveMapDots(activeBoard);
+            renderMapDiagram();
+        } else if (selectedMarker.type === 'pin') {
+            mapPinColorsByBoard[activeBoard][selectedMarker.index] = color;
+            saveMapPinColors(activeBoard);
+            renderMapDiagram();
+        }
+    };
+
+    window.cycleTeamNumber = function(teamId, pinIndex) {
+        if (!isManagementOrAdmin) return;
+        const team = currentTeams().find(t => t.id === teamId);
+        if (!team) return;
+        const current = (typeof team.number === 'number') ? team.number : 0;
+        team.number = (current + 1) % MARKER_CYCLE_STATES;
+        if (typeof pinIndex === 'number') selectedMarker = { type: 'pin', index: pinIndex };
+        saveMapBoard(activeBoard);
+        renderMapTable();
+        renderMapDiagram();
+        renderDotColorPicker();
+    };
+
+    window.cycleGroupNumber = function(teamId) {
+        if (!isManagementOrAdmin) return;
+        const team = currentTeams().find(t => t.id === teamId);
+        if (!team) return;
+        team.groupNumber = (team.groupNumber % MAX_GROUPS) + 1;
+        saveMapBoard(activeBoard);
+        renderMapTable();
+    };
+
+    window.setTeamColor = function(teamId, color) {
+        if (!isManagementOrAdmin) return;
+        const team = currentTeams().find(t => t.id === teamId);
+        if (!team) return;
+        team.color = color;
+        saveMapBoard(activeBoard);
+        renderMapTable();
+        renderMapDiagram();
+    };
+
+    window.assignMapRole = function(teamId, roleKey, memberId) {
+        if (!isManagementOrAdmin) return;
+        const team = currentTeams().find(t => t.id === teamId);
+        if (!team) return;
+        const row = team.roleRows.find(r => r.key === roleKey);
+        if (!row) return;
+
+        const newMemberId = memberId ? String(memberId) : null;
+
+        if (newMemberId) {
+            const otherBoard = activeBoard === 'A' ? 'B' : 'A';
+            const conflictTeam = mapBoards[otherBoard].find(t =>
+                t.roleRows.some(r => r.memberId === newMemberId)
+            );
+            if (conflictTeam) {
+                const conflictMember = findMemberById(newMemberId);
+                alert(`${conflictMember ? conflictMember.name : 'This member'} is already assigned to Team ${otherBoard} for this session. A member can only be on Team A or Team B, not both.`);
+                renderMapTable();
+                return;
+            }
+        }
+
+        row.memberId = newMemberId;
+        saveMapBoard(activeBoard);
+        syncMapAssignmentToAB(row.memberId, activeBoard, roleKey);
+        renderMapTable();
+    };
+
+    window.changeRoleLabel = function(teamId, roleKey, newLabelVal) {
+        if (!isManagementOrAdmin) return;
+        const team = currentTeams().find(t => t.id === teamId);
+        if (!team) return;
+        const row = team.roleRows.find(r => r.key === roleKey);
+        if (!row) return;
+
+        if (newLabelVal === '__custom__') {
+            const custom = prompt('Enter a one-time custom role name (this will NOT be added to the shared list):', row.label);
+            if (custom !== null && custom.trim() !== '') {
+                row.label = custom.trim();
+                saveMapBoard(activeBoard);
+            }
+            renderMapTable();
+            return;
+        }
+
+        if (newLabelVal === '__addpreset__') {
+            const newRole = prompt('Enter a new role name to add to the dropdown list (saved for everyone, so you don\'t have to retype it again):');
+            if (newRole !== null && newRole.trim() !== '') {
+                const trimmed = newRole.trim();
+                if (rolePresets.includes(trimmed)) {
+                    alert('That role is already in the list.');
+                } else {
+                    rolePresets.push(trimmed);
+                    saveRolePresets();
+                    row.label = trimmed;
+                    saveMapBoard(activeBoard);
+                }
+            }
+            renderMapTable();
+            return;
+        }
+
+        if (newLabelVal === '__removepreset__') {
+            const toRemove = prompt(`Type the exact role name to remove from the shared list:\n\n${rolePresets.join('\n')}`);
+            if (toRemove !== null && toRemove.trim() !== '') {
+                const trimmed = toRemove.trim();
+                if (!rolePresets.includes(trimmed)) {
+                    alert('That role was not found in the list (names are case-sensitive).');
+                } else if (rolePresets.length <= 1) {
+                    alert('You must keep at least one role in the list.');
+                } else if (confirm(`Remove "${trimmed}" from the shared role list? Rows already using that name keep their current label.`)) {
+                    rolePresets = rolePresets.filter(r => r !== trimmed);
+                    saveRolePresets();
+                }
+            }
+            renderMapTable();
+            return;
+        }
+
+        row.label = newLabelVal;
+        saveMapBoard(activeBoard);
+        renderMapTable();
+    };
+
+    window.deleteGroupRoleRow = function(teamId, roleKey) {
+        if (!isManagementOrAdmin) return;
+        const team = currentTeams().find(t => t.id === teamId);
+        if (!team) return;
+        if (team.roleRows.length <= 1) {
+            alert('A group must have at least one role row.');
+            return;
+        }
+        team.roleRows = team.roleRows.filter(r => r.key !== roleKey);
+        saveMapBoard(activeBoard);
+        renderMapTable();
+    };
+
+    window.addGroupRoleRow = function(teamId) {
+        if (!isManagementOrAdmin) return;
+        const team = currentTeams().find(t => t.id === teamId);
+        if (!team) return;
+        const newKey = 'custom_' + Date.now();
+        team.roleRows.push({ key: newKey, label: 'Custom Role', memberId: null });
+        saveMapBoard(activeBoard);
+        renderMapTable();
+    };
+
+    document.getElementById('btnAddTeam').addEventListener('click', async () => {
+        if (!isManagementOrAdmin) return;
+        const teams = currentTeams();
+        if (teams.length >= MAX_GROUPS) {
+            alert('Maximum number of groups reached.');
+            return;
+        }
+        const nextIndex = teams.length;
+        const newTeam = {
+            id: 'team_' + Date.now(),
+            slot: nextIndex,
+            number: (nextIndex % MAX_PIN_NUMBER) + 1,
+            groupNumber: nextIndex + 1,
+            name: '',
+            color: DEFAULT_GROUP_COLORS[nextIndex % DEFAULT_GROUP_COLORS.length],
+            roleRows: DEFAULT_ROLE_DEFS.map(r => ({ key: r.key, label: r.label, memberId: null }))
+        };
+        teams.push(newTeam);
+        await saveMapBoard(activeBoard);
+        renderMap();
     });
-    window.addEventListener('DOMContentLoaded', async () => {
+
+    document.getElementById('btnRemoveTeam').addEventListener('click', async () => {
+        if (!isManagementOrAdmin) return;
+        const teams = currentTeams();
+        if (teams.length <= 1) {
+            alert('You must keep at least one group.');
+            return;
+        }
+        teams.pop();
+        selectedMarker = null;
+        await saveMapBoard(activeBoard);
+        renderMap();
+    });
+
+    function escapeHtml(str) {
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    async function exportMapToPng() {
+        if (typeof html2canvas === 'undefined') {
+            alert('Export library failed to load. Check your connection and try again.');
+            return;
+        }
+        showSaveStatus('saving', 'Exporting…');
+
+        const teams = [...currentTeams()].sort((a, b) => a.groupNumber - b.groupNumber);
+        const wrapper = document.createElement('div');
+        wrapper.style.cssText = 'position:fixed; left:-99999px; top:0; z-index:-1; background:#f5f4ef; padding:28px; display:flex; flex-direction:column; align-items:center; gap:20px; width:1150px; font-family:Montserrat, sans-serif;';
+
+        // Names arranged symmetrically above the map: two mirrored rows,
+        // built outward from the center so the layout balances left/right.
+        const namesRow = document.createElement('div');
+        namesRow.style.cssText = 'display:flex; justify-content:center; align-items:center; gap:16px; flex-wrap:wrap; width:100%;';
+
+        const ordered = [];
+        let left = true;
+        teams.forEach(t => {
+            if (left) { ordered.unshift(t); } else { ordered.push(t); }
+            left = !left;
+        });
+
+        ordered.forEach(team => {
+            // Substitute-role members are underlined in the exported chip so
+            // rally leaders can tell mains and subs apart at a glance.
+            const memberEntries = team.roleRows
+                .filter(r => r.memberId)
+                .map(r => {
+                    const m = findMemberById(r.memberId);
+                    if (!m) return null;
+                    return { name: m.name, isSub: r.key === 'substitute' };
+                })
+                .filter(Boolean);
+
+            const namesHtml = memberEntries.length
+                ? memberEntries.map(e => e.isSub ? `<u>${escapeHtml(e.name)}</u>` : escapeHtml(e.name)).join(', ')
+                : 'Unassigned';
+
+            // The group's own custom name only appears here if one was set —
+            // the #number badge always shows either way.
+            const nameLabelHtml = team.name && team.name.trim()
+                ? ` · ${escapeHtml(team.name.trim())}`
+                : '';
+
+            const chip = document.createElement('div');
+            chip.style.cssText = `display:flex; align-items:center; gap:8px; padding:8px 16px; border-radius:20px; background:${team.color || '#966426'}; color:#ffffff; font-weight:800; font-size:13px; box-shadow:0 1px 3px rgba(0,0,0,0.2);`;
+            chip.innerHTML = `#${team.groupNumber}${nameLabelHtml} · ${namesHtml}`;
+            namesRow.appendChild(chip);
+        });
+
+        const titleEl = document.createElement('div');
+        titleEl.style.cssText = 'font-weight:800; font-size:16px; color:#2d3a91; text-transform:uppercase; letter-spacing:0.5px;';
+        titleEl.innerText = `Black Gold · Team ${activeBoard} · Formation Map`;
+
+        const mapClone = document.getElementById('mapDiagram').cloneNode(true);
+        mapClone.style.position = 'relative';
+        mapClone.style.width = '1050px';
+        mapClone.style.aspectRatio = '1093 / 1096';
+        mapClone.style.maxHeight = 'none';
+
+        wrapper.appendChild(titleEl);
+        wrapper.appendChild(namesRow);
+        wrapper.appendChild(mapClone);
+        document.body.appendChild(wrapper);
+
+        try {
+            const canvas = await html2canvas(wrapper, { backgroundColor: '#f5f4ef', scale: 2, useCORS: true });
+
+            // Convert to a Blob (more reliable across browsers than a raw
+            // data URL, especially on mobile/Safari) and trigger the
+            // download via a link that's actually attached to the page —
+            // some browsers silently no-op link.click() on a detached <a>.
+            const dateStr = new Date().toISOString().slice(0, 10);
+            const filename = `black-gold-map-team-${activeBoard}-${dateStr}.png`;
+
+            const supportsDownloadAttr = 'download' in document.createElement('a');
+
+            await new Promise((resolve) => {
+                canvas.toBlob((blob) => {
+                    if (!blob) { resolve(); return; }
+                    const blobUrl = URL.createObjectURL(blob);
+
+                    if (!supportsDownloadAttr) {
+                        // iOS Safari (and some in-app browsers) ignore the
+                        // download attribute entirely — open the image in a
+                        // new tab so the user can long-press → Save Image.
+                        window.open(blobUrl, '_blank');
+                        setTimeout(() => URL.revokeObjectURL(blobUrl), 15000);
+                        resolve();
+                        return;
+                    }
+
+                    const link = document.createElement('a');
+                    link.href = blobUrl;
+                    link.download = filename;
+                    link.rel = 'noopener';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    // Give the browser a moment to pick up the blob URL before revoking it.
+                    setTimeout(() => URL.revokeObjectURL(blobUrl), 4000);
+                    resolve();
+                }, 'image/png');
+            });
+
+            showSaveStatus('ok', supportsDownloadAttr ? 'Exported' : 'Opened in new tab — long-press to save');
+        } catch (err) {
+            console.error('PNG export failed:', err);
+            showSaveStatus('error', 'Export failed');
+        } finally {
+            document.body.removeChild(wrapper);
+        }
+    }
+
+    // Live sync: re-fetch from Supabase whenever any row in app_data changes,
+    // so edits made on another tab/page (e.g. members.html updating rankings)
+    // show up here without a manual refresh. Requires Realtime to be turned
+    // on for the app_data table in the Supabase dashboard (Database > Replication).
+    function subscribeToAppDataChanges() {
+        db.channel('app_data_changes')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'app_data' }, (payload) => {
+                loadData();
+            })
+            .subscribe();
+    }
+
+    (async function initPage() {
         const ok = await loadCurrentUserAccount();
         if (!ok) {
             window.location.href = 'index.html';
             return;
         }
         renderSidebarUser();
-        loadDataFromCloud();
+        loadData();
         subscribeToAppDataChanges();
-    });
+        switchTab('attendance');
+    })();
 </script>
+
 <script>
     (function () {
         function killGoogleBar() {
