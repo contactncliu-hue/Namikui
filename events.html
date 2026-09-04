@@ -215,7 +215,7 @@ body{font-family:'Open Sans',sans-serif;background:var(--color-bg-main);color:va
       <span class="legend-pill-item"><span class="badge-rank r1">1</span> 1st</span>
       <span class="legend-pill-item"><span class="badge-rank r2">2</span> 2nd</span>
       <span class="legend-pill-item"><span class="badge-rank r3">3</span> 3rd</span>
-      <span class="vs-hint" id="adminHelpText">· Admin/Mgmt: click any cell to toggle attendance. Click date header ✕ to delete a session.</span>
+      <span class="vs-hint" id="adminHelpText">· Admin/Mgmt: click any cell to cycle Not Attended → ✔ Attended → L Late. Click a date header to edit/delete a session.</span>
     </div>
 
     <div class="table-card" id="subViewAttendance">
@@ -339,26 +339,35 @@ function showSaveStatus(kind, text) {
     if (kind !== 'error') saveStatusTimer = setTimeout(() => { saveStatusEl.className = 'save-status'; }, 1500);
 }
 
-// --- Data model (matches the existing app's schema, same as used by
-//     exportAllDataToExcel elsewhere): ---
-// eventDates: [{ id, name, date, isWar }]
-// members[i].events: [true/false, ...]      -- positional, matches eventDates order
-// members[i].eventVotes: ['yes'/'no'/'maybe'/'', ...] -- positional, matches eventDates order
-// members[i].attended: number               -- count of true values in .events
-function eventIndex(ev) { return eventDates.findIndex(e => e.id === ev.id); }
-function ensureMemberArrays(m) {
-    if (!Array.isArray(m.events)) m.events = [];
-    if (!Array.isArray(m.eventVotes)) m.eventVotes = [];
-    while (m.events.length < eventDates.length) m.events.push(false);
-    while (m.eventVotes.length < eventDates.length) m.eventVotes.push('');
-    m.attended = m.events.filter(Boolean).length;
-}
+// --- Data model (confirmed directly against the real Supabase data): ---
+// eventDates: [{ id, name, date, isWar }]                 -- app_data row (key='eventDates')
+// members: [{ id, name, status, ... }]                    -- app_data row (key='members')
+// attendance: { [memberId]: { [eventId]: true | "late" } } -- app_data row (key='attendance')
+//   -- a member/event pair with no entry at all means "not attended".
+//   -- war votes are NOT in this row; they stay on members[i].eventVotes (positional array).
 let members = [];
 let eventDates = [];
+let attendance = {};
 let showDiffMode = false;
 let searchQuery = '';
 let rankingSortMode = 'default';
 let warSortMode = 'default';
+
+function getAttendanceStatus(memberId, eventId) {
+    const rec = attendance[memberId];
+    if (!rec) return undefined;
+    return rec[eventId]; // true | "late" | undefined
+}
+function setAttendanceStatus(memberId, eventId, status) {
+    if (!attendance[memberId]) attendance[memberId] = {};
+    if (status === undefined) delete attendance[memberId][eventId];
+    else attendance[memberId][eventId] = status;
+}
+function ensureMemberEventVotes(m) {
+    if (!Array.isArray(m.eventVotes)) m.eventVotes = [];
+    while (m.eventVotes.length < eventDates.length) m.eventVotes.push('');
+}
+function eventVoteIndex(ev) { return eventDates.findIndex(e => e.id === ev.id); }
 
 let realtimeSubscribed = false;
 function subscribeToAppDataChanges() {
@@ -377,33 +386,41 @@ async function loadDataFromCloud() {
         if (error) throw error;
         (data || []).forEach(row => {
             if (row.key === 'members') members = row.value || [];
+            // NOTE: your Supabase table currently has TWO rows both keyed 'eventDates'
+            // (ids 1 and 7). This loop takes whichever one the query returns last, which
+            // is unreliable. You should delete the duplicate row in Supabase directly —
+            // keep the one your other pages actually use.
             if (row.key === 'eventDates') eventDates = row.value || [];
+            if (row.key === 'attendance') attendance = row.value || {};
         });
     } catch (err) {
         console.error('Error loading data:', err);
         alert('Could not load event data from the server. Please check your connection and reload.');
         return;
     }
-    members.forEach(ensureMemberArrays);
+    members.forEach(ensureMemberEventVotes);
     render();
 }
 
 async function fetchDataOnly() {
     try {
-        const { data, error } = await db.from('app_data').select('*').in('key', ['members','eventDates']);
+        const { data, error } = await db.from('app_data').select('*').in('key', ['members','eventDates','attendance']);
         if (error) throw error;
         (data || []).forEach(row => {
             if (row.key === 'members') members = row.value || [];
             if (row.key === 'eventDates') eventDates = row.value || [];
+            if (row.key === 'attendance') attendance = row.value || {};
         });
     } catch (err) {
         console.error('Error refreshing event data:', err);
         return;
     }
-    members.forEach(ensureMemberArrays);
+    members.forEach(ensureMemberEventVotes);
     render();
 }
 
+// Saves ONLY the eventVotes field on each member (war votes), never touches
+// attendance — attendance lives in its own row and is saved separately below.
 async function saveMembers() {
     showSaveStatus('saving', 'Saving…');
     try {
@@ -416,7 +433,17 @@ async function saveMembers() {
 async function saveEventDates() {
     showSaveStatus('saving', 'Saving…');
     try {
-        const { error } = await db.from('app_data').upsert({ id: 3, key: 'eventDates', value: eventDates }, { onConflict: 'id' });
+        const { error } = await db.from('app_data').upsert({ id: 7, key: 'eventDates', value: eventDates }, { onConflict: 'id' });
+        if (error) { showSaveStatus('error', 'Save failed'); return; }
+        showSaveStatus('ok', 'Saved');
+    } catch (err) { showSaveStatus('error', 'Save failed'); }
+}
+
+// Saves the REAL attendance row: { memberId: { eventId: true | "late" } }
+async function saveAttendance() {
+    showSaveStatus('saving', 'Saving…');
+    try {
+        const { error } = await db.from('app_data').upsert({ id: 4, key: 'attendance', value: attendance }, { onConflict: 'id' });
         if (error) { showSaveStatus('error', 'Save failed'); return; }
         showSaveStatus('ok', 'Saved');
     } catch (err) { showSaveStatus('error', 'Save failed'); }
@@ -450,7 +477,7 @@ document.getElementById('btnAddEvent').addEventListener('click', async () => {
     if (!name || !date) { alert('Please enter an event name and date.'); return; }
     const newEvent = { id: Date.now(), name, date, isWar };
     eventDates.push(newEvent);
-    members.forEach(m => { m.events.push(false); m.eventVotes.push(''); m.attended = m.events.filter(Boolean).length; });
+    members.forEach(m => { ensureMemberEventVotes(m); m.eventVotes.push(''); });
     document.getElementById('newEventNameInput').value = '';
     document.getElementById('newDateInput').value = '';
     document.getElementById('newEventIsWarInput').checked = false;
@@ -484,36 +511,43 @@ document.getElementById('btnDeleteEventModal').addEventListener('click', async (
     if (!confirm('Delete this event? This removes it for all members.')) return;
     const idx = eventDates.findIndex(e => e.id === editingEventId);
     if (idx !== -1) {
-        eventDates.splice(idx, 1);
         members.forEach(m => {
-            if (Array.isArray(m.events)) m.events.splice(idx, 1);
             if (Array.isArray(m.eventVotes)) m.eventVotes.splice(idx, 1);
-            m.attended = (m.events || []).filter(Boolean).length;
         });
+        eventDates.splice(idx, 1);
     }
+    // Also clean up any attendance entries for the deleted event
+    Object.keys(attendance).forEach(memberId => {
+        if (attendance[memberId] && editingEventId in attendance[memberId]) {
+            delete attendance[memberId][editingEventId];
+        }
+    });
     await saveEventDates();
     await saveMembers();
+    await saveAttendance();
     document.getElementById('editEventNameModal').style.display = 'none';
     render();
 });
 
-// --- Attendance / vote toggles (positional, matches eventDates order) ---
+// --- Attendance toggle: cycles Not Attended -> Present -> Late -> Not Attended.
+//     Writes to the real 'attendance' row (memberId -> eventId -> true/"late"). ---
 window.toggleAttendance = function(memberId, eventId) {
     if (!isManagementOrAdmin) return;
-    const m = members.find(x => x.id === memberId);
-    const idx = eventDates.findIndex(e => e.id === eventId);
-    if (!m || idx === -1) return;
-    ensureMemberArrays(m);
-    m.events[idx] = !m.events[idx];
-    m.attended = m.events.filter(Boolean).length;
-    saveMembers().then(render);
+    const cur = getAttendanceStatus(memberId, eventId);
+    let next;
+    if (cur === undefined) next = true;
+    else if (cur === true) next = 'late';
+    else next = undefined; // 'late' -> clear
+    setAttendanceStatus(memberId, eventId, next);
+    saveAttendance().then(render);
 };
+// War votes remain on members[i].eventVotes (positional array) — separate from attendance.
 window.cycleWarVote = function(memberId, eventId) {
     if (!isManagementOrAdmin) return;
     const m = members.find(x => x.id === memberId);
-    const idx = eventDates.findIndex(e => e.id === eventId);
+    const idx = eventVoteIndex({ id: eventId });
     if (!m || idx === -1) return;
-    ensureMemberArrays(m);
+    ensureMemberEventVotes(m);
     const order = ['', 'yes', 'maybe', 'no'];
     const cur = m.eventVotes[idx] || '';
     const curIdx = order.indexOf(cur);
@@ -523,9 +557,13 @@ window.cycleWarVote = function(memberId, eventId) {
 
 // --- Stat helpers ---
 function activeMembers() { return members.filter(m => m.status !== 'removed'); }
+// "Late" counts as attended for count/rate purposes; each event still shows its
+// own status ("late" badge) in the table itself.
 function memberAttendedCount(m, events) {
-    if (!Array.isArray(m.events)) return 0;
-    return events.filter(ev => { const i = eventIndex(ev); return i !== -1 && m.events[i]; }).length;
+    return events.filter(ev => {
+        const s = getAttendanceStatus(m.id, ev.id);
+        return s === true || s === 'late';
+    }).length;
 }
 function memberRate(m, events) {
     if (events.length === 0) return 0;
@@ -598,24 +636,29 @@ function renderAttendanceTable(evs, filteredMembers) {
                 </div>
             </td>`;
         evs.forEach(ev => {
-            const idx = eventIndex(ev);
-            const attended = !!(m.events && m.events[idx]);
+            const status = getAttendanceStatus(m.id, ev.id); // true | "late" | undefined
+            const attended = status === true || status === 'late';
             if (ev.isWar) {
-                const voteRaw = (m.eventVotes && m.eventVotes[idx]) || '';
+                const voteIdx = eventVoteIndex(ev);
+                const voteRaw = (m.eventVotes && m.eventVotes[voteIdx]) || '';
                 const vote = voteRaw || 'none';
                 const voteClass = 'war-vote-badge--' + vote;
                 const voteLabel = vote === 'none' ? '—' : vote.toUpperCase();
                 const clickAttrs = isManagementOrAdmin ? `onclick="cycleWarVote(${m.id},${ev.id})"` : '';
                 const attendClickAttrs = isManagementOrAdmin ? `onclick="toggleAttendance(${m.id},${ev.id})"` : '';
+                const attendLabel = status === 'late' ? 'LATE' : (attended ? 'YES' : 'NO');
                 html += `<td class="col-event col-event--war">
                     <div class="war-cell">
-                        <span class="attend-pill ${attended ? 'attend-pill--yes' : 'attend-pill--no'} ${isManagementOrAdmin ? '' : 'attend-pill--readonly'}" ${attendClickAttrs}>${attended ? 'YES' : 'NO'}</span>
+                        <span class="attend-pill ${attended ? 'attend-pill--yes' : 'attend-pill--no'} ${isManagementOrAdmin ? '' : 'attend-pill--readonly'}" ${attendClickAttrs}>${attendLabel}</span>
                         <span class="war-vote-badge ${voteClass}" ${clickAttrs}>${voteLabel}</span>
                     </div>
                 </td>`;
             } else {
                 const clickAttrs = isManagementOrAdmin ? `onclick="toggleAttendance(${m.id},${ev.id})"` : '';
-                html += `<td class="col-event"><span class="check-toggle" ${clickAttrs}>${attended ? '<span class="check-icon">✔</span>' : '<span class="cross-icon">✕</span>'}</span></td>`;
+                let icon = '<span class="cross-icon">✕</span>';
+                if (status === true) icon = '<span class="check-icon">✔</span>';
+                else if (status === 'late') icon = '<span class="check-icon" style="color:var(--color-gold);">L</span>';
+                html += `<td class="col-event"><span class="check-toggle" ${clickAttrs}>${icon}</span></td>`;
             }
         });
         html += `</tr>`;
@@ -675,9 +718,10 @@ function renderWarTab(evs, activeM) {
         totalRateSum += rate;
         let red = 0, yellow = 0;
         warEvs.forEach(ev => {
-            const idx = eventIndex(ev);
-            const didAttend = !!(m.events && m.events[idx]);
-            const vote = (m.eventVotes && m.eventVotes[idx]) || 'none';
+            const status = getAttendanceStatus(m.id, ev.id);
+            const didAttend = status === true || status === 'late';
+            const voteIdx = eventVoteIndex(ev);
+            const vote = (m.eventVotes && m.eventVotes[voteIdx]) || 'none';
             if (!didAttend) {
                 if (vote === 'yes') red++;
                 else if (vote === 'maybe' || vote === 'none') yellow++;
