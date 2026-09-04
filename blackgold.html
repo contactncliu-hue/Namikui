@@ -157,7 +157,7 @@
         letter-spacing: 0.5px;
     }
 
-    .tab-switch { display: flex; border-radius: 4px; overflow: hidden; border: 2px solid var(--color-primary); }
+    .tab-switch { display: flex; border-radius: 4px; overflow: hidden; border: 2px solid var(--color-primary); flex-wrap: wrap; }
     .tab-switch__btn {
         font-family: var(--font-family-base);
         font-weight: 800;
@@ -351,6 +351,31 @@
     .role-pill--sub { background: var(--color-sub); color: #1e3a38; border: 1px solid #95b8b5; }
     .role-pill--none { background: #f0f1f5; color: #a0a5b8; border: 1px dashed #d1d5db; }
     .role-pill--readonly { cursor: default; }
+
+    .att-penalty-badge {
+        font-size: 8.5px;
+        font-weight: 800;
+        letter-spacing: 0.3px;
+        padding: 2px 7px;
+        border-radius: 8px;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+    .att-penalty-badge--locked { background: #fce8e6; color: #d9381e; border: 1px solid #d9381e; }
+    .att-penalty-badge--countdown { background: #fff3cd; color: #8a6300; border: 1px solid #e0b400; }
+
+    .att-faction-divider td {
+        background: var(--divider-color, #5c4127);
+        color: #ffffff;
+        font-family: var(--font-family-base);
+        font-weight: 800;
+        font-size: 11px;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        padding: 8px 20px !important;
+        border-bottom: none;
+        text-align: left;
+    }
 
     tfoot td {
         background-color: #f4f6fb;
@@ -884,6 +909,7 @@
                 <button class="tab-switch__btn tab-switch__btn--active" id="tabAB" title="A / B Slots">A / B SLOTS</button>
                 <button class="tab-switch__btn" id="tabMap" title="Formation Map">MAP</button>
                 <button class="tab-switch__btn" id="tabCalendar" title="Calendar">CALENDAR</button>
+                <button class="tab-switch__btn" id="tabAttendance" title="Attendance">ATTENDANCE</button>
             </div>
             <div class="search-box" id="abSearchBox">
                 <span class="search-box__icon">🔍</span>
@@ -898,6 +924,10 @@
             <div class="toolbar-spacer" id="calendarToolbarControls" style="display: none;">
                 <input type="date" id="calCalendarPicker" style="display: none; padding: 8px; border: 2px solid var(--color-gold); background: var(--color-gold-bg); border-radius: 4px; font-family: var(--font-family-base); font-weight: 800; font-size: 12px; cursor: pointer;">
                 <button class="btn-gold" id="calBtnAddDate" style="display: none;">+ ADD DATE</button>
+            </div>
+            <div class="toolbar-spacer" id="attendanceToolbarControls" style="display: none;">
+                <input type="date" id="attCalendarPicker" style="display: none; padding: 8px; border: 2px solid var(--color-gold); background: var(--color-gold-bg); border-radius: 4px; font-family: var(--font-family-base); font-weight: 800; font-size: 12px; cursor: pointer;">
+                <button class="btn-gold" id="attBtnAddDate" style="display: none;">+ ADD DATE</button>
             </div>
         </div>
 
@@ -979,6 +1009,31 @@
                             </tr>
                         </thead>
                         <tbody id="calendarBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="attendanceSection" style="display: none;">
+            <div class="legend-row">
+                <div class="legend-item"><span class="slot-badge slot-badge--a">A</span> Slot A</div>
+                <div class="legend-item"><span class="slot-badge slot-badge--b">B</span> Slot B</div>
+                <div class="legend-item"><span class="slot-badge slot-badge--unassigned"></span> Unassigned</div>
+                <div class="legend-item"><span class="status-badge-legend" style="background:#fce8e6; color:#d9381e; border:1px solid #d9381e;">Not Attended</span></div>
+                <div class="legend-item"><span class="status-badge-legend" style="background:#e6f4ea; color:#1f9d55; border:1px solid #1f9d55;">Attended</span></div>
+                <div class="legend-item"><span class="status-badge-legend" style="background:#ffb000; color:#3d2c00; border:1px solid #c98c00;">Main Player</span></div>
+                <div class="legend-item"><span class="status-badge-legend" style="background:#c8e0dd; color:#1e3a38; border:1px solid #95b8b5;">Substitute</span></div>
+                <div class="legend-item"><span class="status-badge-legend" style="background:#fce8e6; color:#d9381e; border:1px solid #d9381e;">Penalty Locked</span></div>
+                <div class="legend-item"><span class="status-badge-legend" style="background:#fff3cd; color:#8a6300; border:1px solid #e0b400;">Countdown</span></div>
+                <span class="legend-hint" id="attendanceLegendHint">· Members are grouped by faction (color bar per group), matching the Members page. Missing an assigned slot starts a 14-day countdown shown on that cell. Once 14 days pass with no Attended mark, a 2-week penalty locks in permanently for that date and is added to the Total Penalty column.</span>
+            </div>
+
+            <div class="table-card">
+                <div class="table-wrapper">
+                    <table>
+                        <thead><tr id="attendanceHeaderRow"></tr></thead>
+                        <tbody id="attendanceBody"></tbody>
+                        <tfoot id="attendanceFooter"></tfoot>
                     </table>
                 </div>
             </div>
@@ -1266,6 +1321,14 @@
     // add/remove entries directly from the dropdown so they don't have to keep
     // retyping the same custom names.
     let rolePresets = DEFAULT_ROLE_PRESETS.slice();
+
+    // Faction sort order + divider colors/labels for the Attendance tab, matching
+    // the same F / S / R faction colors already used elsewhere on this page
+    // (faction-f / faction-s / faction-r circles) so the grouping looks and
+    // sorts the same way it does on the Members page.
+    const FACTION_ORDER = { F: 0, S: 1, R: 2 };
+    const FACTION_DIVIDER_COLORS = { F: '#2563eb', S: '#9333ea', R: '#ea580c', OTHER: '#5c4127' };
+    const FACTION_DIVIDER_LABELS = { F: 'FACTION F', S: 'FACTION S', R: 'FACTION R', OTHER: 'UNASSIGNED FACTION' };
 
     function getActiveMembers() {
         return members.filter(m => m.status !== 'removed');
@@ -1583,8 +1646,14 @@
 
     async function saveMapDots(board) {
         showSaveStatus('saving', 'Saving…');
+        // NOTE: previously hardcoded to id 14/15, which collided with
+        // pre-existing unrelated rows ("notices" / "dataSnapshots") in this
+        // Supabase table. Moved to 25/26, which are unused. If your table
+        // already has rows at 25/26 for something else, change these two
+        // ids (and the ids below for the new Attendance-related saves) to
+        // whatever numbers are actually free in your app_data table.
         const key = board === 'A' ? 'blackGoldMapDotsA' : 'blackGoldMapDotsB';
-        const id = board === 'A' ? 14 : 15;
+        const id = board === 'A' ? 25 : 26;
         try {
             const { error } = await db.from('app_data')
                 .upsert({ id, key, value: mapDotsByBoard[board] }, { onConflict: 'id' });
@@ -1671,20 +1740,24 @@
         document.getElementById('tabAB').classList.toggle('tab-switch__btn--active', tab === 'ab');
         document.getElementById('tabMap').classList.toggle('tab-switch__btn--active', tab === 'map');
         document.getElementById('tabCalendar').classList.toggle('tab-switch__btn--active', tab === 'calendar');
+        document.getElementById('tabAttendance').classList.toggle('tab-switch__btn--active', tab === 'attendance');
 
         document.getElementById('abSlotsSection').style.display = tab === 'ab' ? 'block' : 'none';
         document.getElementById('mapSection').style.display = tab === 'map' ? 'block' : 'none';
         document.getElementById('calendarSection').style.display = tab === 'calendar' ? 'block' : 'none';
+        document.getElementById('attendanceSection').style.display = tab === 'attendance' ? 'block' : 'none';
 
-        document.getElementById('abSearchBox').style.display = tab === 'ab' ? 'block' : 'none';
+        document.getElementById('abSearchBox').style.display = (tab === 'ab' || tab === 'attendance') ? 'block' : 'none';
         document.getElementById('mapToolbarControls').style.display = tab === 'map' ? 'flex' : 'none';
         document.getElementById('calendarToolbarControls').style.display = tab === 'calendar' ? 'flex' : 'none';
+        document.getElementById('attendanceToolbarControls').style.display = tab === 'attendance' ? 'flex' : 'none';
 
         render();
     }
     document.getElementById('tabAB').addEventListener('click', () => switchTab('ab'));
     document.getElementById('tabMap').addEventListener('click', () => switchTab('map'));
     document.getElementById('tabCalendar').addEventListener('click', () => switchTab('calendar'));
+    document.getElementById('tabAttendance').addEventListener('click', () => switchTab('attendance'));
 
     function switchMapSubtab(board) {
         if (!canViewMap) return;
@@ -1740,6 +1813,8 @@
         document.getElementById('mapAdminHint').style.display = isManagementOrAdmin ? 'block' : 'none';
         document.getElementById('calBtnAddDate').style.display = isManagementOrAdmin ? 'inline-block' : 'none';
         document.getElementById('calCalendarPicker').style.display = isManagementOrAdmin ? 'inline-block' : 'none';
+        document.getElementById('attBtnAddDate').style.display = isManagementOrAdmin ? 'inline-block' : 'none';
+        document.getElementById('attCalendarPicker').style.display = isManagementOrAdmin ? 'inline-block' : 'none';
         document.getElementById('mapDotColorPicker').style.display = isManagementOrAdmin ? 'flex' : 'none';
         document.getElementById('mapExportPngBtn').style.display = canViewMap ? 'inline-block' : 'none';
         document.getElementById('mapHideCirclesBtn').style.display = canViewMap ? 'inline-block' : 'none';
@@ -1751,6 +1826,15 @@
             legendHint.style.setProperty('display', 'none', 'important');
         }
 
+        const attendanceLegendHint = document.getElementById('attendanceLegendHint');
+        if (attendanceLegendHint) {
+            if (isManagementOrAdmin) {
+                attendanceLegendHint.style.setProperty('display', 'inline', 'important');
+            } else {
+                attendanceLegendHint.style.setProperty('display', 'none', 'important');
+            }
+        }
+
         if (activeTab === 'ab') {
             renderHeader();
             renderBody(filtered);
@@ -1759,6 +1843,8 @@
             renderMap();
         } else if (activeTab === 'calendar') {
             renderCalendar();
+        } else if (activeTab === 'attendance') {
+            renderAttendance(filtered);
         }
     }
 
@@ -1990,6 +2076,7 @@
 
     document.getElementById('mapBtnAddDate').addEventListener('click', () => addDateFromPicker('mapCalendarPicker'));
     document.getElementById('calBtnAddDate').addEventListener('click', () => addDateFromPicker('calCalendarPicker'));
+    document.getElementById('attBtnAddDate').addEventListener('click', () => addDateFromPicker('attCalendarPicker'));
 
     document.getElementById('searchInput').addEventListener('input', render);
 
@@ -2026,6 +2113,165 @@
             `;
         });
         body.innerHTML = html;
+    }
+
+    // ---- Attendance tab ---------------------------------------------------
+    // Reuses the exact same `assignments` data as the A/B Slots tab (slot,
+    // attended, playerRole per member per session date) — this is simply a
+    // different view over it, grouped by faction and with an auto penalty
+    // countdown, so there's no separate table needed and nothing about it
+    // can drift out of sync with A/B Slots.
+
+    function sortMembersForAttendance(list) {
+        return [...list].sort((a, b) => {
+            const fa = FACTION_ORDER.hasOwnProperty(a.faction) ? FACTION_ORDER[a.faction] : 3;
+            const fb = FACTION_ORDER.hasOwnProperty(b.faction) ? FACTION_ORDER[b.faction] : 3;
+            if (fa !== fb) return fa - fb;
+            return (a.name || '').localeCompare(b.name || '');
+        });
+    }
+
+    function computeAttendancePenaltyWeeks(memberId, today) {
+        let weeks = 0;
+        bgDates.forEach(d => {
+            const entry = getEntry(memberId, d.id);
+            if (entry.slot && !entry.attended) {
+                const sessionDate = parseDateString(d.date);
+                sessionDate.setHours(0, 0, 0, 0);
+                const daysSince = Math.floor((today - sessionDate) / 86400000);
+                if (daysSince >= 14) weeks += 2;
+            }
+        });
+        return weeks;
+    }
+
+    function attendancePenaltyBadgeHtml(entry, sessionDate, today) {
+        if (!entry.slot || entry.attended) return '';
+        const daysSince = Math.floor((today - sessionDate) / 86400000);
+        if (daysSince < 0) return ''; // session hasn't happened yet
+        if (daysSince >= 14) {
+            return `<div class="att-penalty-badge att-penalty-badge--locked">PENALTY LOCKED</div>`;
+        }
+        return `<div class="att-penalty-badge att-penalty-badge--countdown">${14 - daysSince}D TO PENALTY</div>`;
+    }
+
+    function renderAttendanceHeader() {
+        const row = document.getElementById('attendanceHeaderRow');
+        let html = `<th class="col-member">Member</th>`;
+
+        bgDates.forEach((d, idx) => {
+            const dateClickAttr = isManagementOrAdmin ? `onclick="editDate('${d.id}')" title="Click to edit date"` : '';
+            html += `
+                <th>
+                    <div class="date-label notranslate" translate="no" ${dateClickAttr}>${d.date}</div>
+                    <div class="week-label">Week ${idx + 1}</div>
+                    ${isManagementOrAdmin ? `<span class="remove-date-btn" onclick="removeDate('${d.id}')">✕</span>` : ''}
+                </th>
+            `;
+        });
+
+        html += `<th>Total Penalty</th>`;
+        row.innerHTML = html;
+    }
+
+    function renderAttendanceBody(filtered) {
+        const body = document.getElementById('attendanceBody');
+        body.innerHTML = '';
+
+        if (filtered.length === 0) {
+            body.innerHTML = `<tr><td colspan="${2 + bgDates.length}" class="empty-state">No members found.</td></tr>`;
+            return;
+        }
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const sorted = sortMembersForAttendance(filtered);
+        let lastFactionKey = null;
+
+        sorted.forEach(member => {
+            const factionKey = FACTION_ORDER.hasOwnProperty(member.faction) ? member.faction : 'OTHER';
+            if (factionKey !== lastFactionKey) {
+                body.insertAdjacentHTML('beforeend', `
+                    <tr class="att-faction-divider" style="--divider-color:${FACTION_DIVIDER_COLORS[factionKey]};">
+                        <td colspan="${2 + bgDates.length}">${FACTION_DIVIDER_LABELS[factionKey]}</td>
+                    </tr>
+                `);
+                lastFactionKey = factionKey;
+            }
+
+            let cellsHTML = '';
+            bgDates.forEach(d => {
+                const entry = getEntry(member.id, d.id);
+                const sessionDate = parseDateString(d.date);
+                sessionDate.setHours(0, 0, 0, 0);
+
+                const slotClass = entry.slot === 'A' ? 'slot-btn--a' : entry.slot === 'B' ? 'slot-btn--b' : 'slot-btn--unassigned';
+                const slotLabel = entry.slot || '·';
+
+                const attendClass = entry.attended ? 'attend-pill--yes' : 'attend-pill--no';
+                const attendLabel = entry.attended ? 'Attended' : 'Not Attended';
+
+                let roleClass = 'role-pill--none';
+                let roleLabel = 'Role: None';
+                if (entry.playerRole === 'main') {
+                    roleClass = 'role-pill--main';
+                    roleLabel = 'Main Player';
+                } else if (entry.playerRole === 'sub') {
+                    roleClass = 'role-pill--sub';
+                    roleLabel = 'Substitute';
+                }
+
+                cellsHTML += `
+                    <td>
+                        <div class="cell-stack">
+                            <div class="slot-btn ${slotClass} notranslate ${isManagementOrAdmin ? '' : 'slot-btn--readonly'}" translate="no"
+                                 ${isManagementOrAdmin ? `onclick="cycleSlot('${member.id}','${d.id}')"` : ''}>${slotLabel}</div>
+                            <div class="attend-pill ${attendClass} ${isManagementOrAdmin ? '' : 'attend-pill--readonly'}"
+                                 ${isManagementOrAdmin ? `onclick="toggleAttended('${member.id}','${d.id}')"` : ''}>${attendLabel}</div>
+                            <div class="role-pill ${roleClass} ${isManagementOrAdmin ? '' : 'role-pill--readonly'}"
+                                 ${isManagementOrAdmin ? `onclick="cycleRole('${member.id}','${d.id}')"` : ''}>${roleLabel}</div>
+                            ${attendancePenaltyBadgeHtml(entry, sessionDate, today)}
+                        </div>
+                    </td>
+                `;
+            });
+
+            const totalWeeks = computeAttendancePenaltyWeeks(member.id, today);
+
+            body.insertAdjacentHTML('beforeend', `
+                <tr>
+                    <td class="col-member notranslate" translate="no">${member.name}</td>
+                    ${cellsHTML}
+                    <td class="col-penalty notranslate" translate="no" style="color: ${totalWeeks > 0 ? 'var(--color-not-attended)' : 'var(--color-text-muted)'};">${totalWeeks} weeks</td>
+                </tr>
+            `);
+        });
+    }
+
+    function renderAttendanceFooter() {
+        const footer = document.getElementById('attendanceFooter');
+        let html = `<tr><td class="col-member">A / B COUNT</td>`;
+
+        const activeMembers = getActiveMembers();
+        bgDates.forEach(d => {
+            let countA = 0, countB = 0;
+            activeMembers.forEach(m => {
+                const entry = getEntry(m.id, d.id);
+                if (entry.slot === 'A') countA++;
+                if (entry.slot === 'B') countB++;
+            });
+            html += `<td class="notranslate" translate="no"><span class="ab-count-a">A:${countA}</span> · <span class="ab-count-b">B:${countB}</span></td>`;
+        });
+
+        html += `<td></td></tr>`;
+        footer.innerHTML = html;
+    }
+
+    function renderAttendance(filtered) {
+        renderAttendanceHeader();
+        renderAttendanceBody(filtered);
+        renderAttendanceFooter();
     }
 
     function findMemberById(id) {
