@@ -107,9 +107,9 @@ body{font-family:'Open Sans',sans-serif;background:var(--color-bg-main);color:va
 .progress-bar__fill{height:100%;border-radius:5px;}
 .progress-bar__fill.high{background:#2563eb;} .progress-bar__fill.mid{background:#eab308;} .progress-bar__fill.low{background:#dc2626;}
 .progress-text{font-size:12px;font-weight:800;min-width:40px;text-align:right;}
-.war-vote-badge{font-family:var(--font-family-ui);font-size:10px;font-weight:800;padding:3px 9px;border-radius:12px;cursor:pointer;white-space:nowrap;}
+.war-vote-badge{font-family:var(--font-family-ui);font-size:10px;font-weight:800;padding:3px 9px;border-radius:12px;cursor:pointer;white-space:nowrap;display:inline-block;min-width:64px;text-align:center;}
 .war-vote-badge--yes{background:#dcfce7;color:#16a34a;} .war-vote-badge--no{background:#e9ecf1;color:#6b7280;} .war-vote-badge--maybe{background:#fef9c3;color:#b89117;} .war-vote-badge--none{background:#eef0f5;color:#a0a6b5;}
-.attend-pill{font-family:var(--font-family-ui);font-size:9px;font-weight:800;padding:3px 8px;border-radius:10px;cursor:pointer;text-transform:uppercase;white-space:nowrap;}
+.attend-pill{font-family:var(--font-family-ui);font-size:9px;font-weight:800;padding:3px 8px;border-radius:10px;cursor:pointer;text-transform:uppercase;white-space:nowrap;display:inline-block;min-width:64px;text-align:center;}
 .attend-pill--yes{background:#e6f4ea;color:#1f9d55;border:1px solid #1f9d55;}
 .attend-pill--no{background:#fce8e6;color:#d9381e;border:1px solid #d9381e;}
 .attend-pill--late{background:#fffbe6;color:#b89117;border:1px solid #b89117;}
@@ -626,18 +626,18 @@ function rateClass(rate) {
     if (rate >= 50) return 'mid';
     return 'low';
 }
-// Standard competition ranking: ties share the same rank number; the next
-// distinct value's rank equals its 1-based position in the sorted list
-// (e.g. two people tied for 1st -> next person is rank 3, not 2).
+// Dense ranking: ties share the same rank number, and the NEXT distinct
+// value simply gets the next integer — no numbers are ever skipped.
+// e.g. two people tied for 1st -> next distinct person is rank 2 (not 3).
 function assignCompetitionRanks(sortedList, valueFn) {
-    let lastVal = null, lastRank = 0;
-    return sortedList.map((item, idx) => {
+    let lastVal = null, rank = 0;
+    return sortedList.map((item) => {
         const val = valueFn(item);
         if (lastVal === null || val !== lastVal) {
-            lastRank = idx + 1;
+            rank += 1;
             lastVal = val;
         }
-        return { item, rank: lastRank };
+        return { item, rank };
     });
 }
 function rankBadgeClassAndColor(rank) {
@@ -841,8 +841,11 @@ function renderWarTab(evs, activeM) {
             const didAttend = !!m.events[i];
             const vote = m.eventVotes[i] || 'none';
             if (!didAttend) {
-                if (vote === 'yes') red++;
-                else if (vote === 'maybe' || vote === 'none') yellow++;
+                // Only a 'maybe' vote counts as yellow. Everything else that
+                // still resulted in a no-show — voted yes, voted no, or never
+                // voted at all — counts as red.
+                if (vote === 'maybe') yellow++;
+                else red++;
             }
         });
         return { m, attended, rate, red, yellow };
