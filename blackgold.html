@@ -353,16 +353,14 @@
     .role-pill--readonly { cursor: default; }
 
     .att-penalty-badge {
-        font-size: 8.5px;
+        font-size: 9.5px;
         font-weight: 800;
         letter-spacing: 0.3px;
-        padding: 2px 7px;
-        border-radius: 8px;
         text-transform: uppercase;
         white-space: nowrap;
     }
-    .att-penalty-badge--locked { background: #fce8e6; color: #d9381e; border: 1px solid #d9381e; }
-    .att-penalty-badge--countdown { background: #fff3cd; color: #8a6300; border: 1px solid #e0b400; }
+    .att-penalty-badge--locked { color: #d9381e; }
+    .att-penalty-badge--countdown { color: #8a6300; }
 
     .att-faction-divider td {
         background: var(--divider-color, #5c4127);
@@ -907,9 +905,9 @@
         <div class="toolbar-card">
             <div class="tab-switch">
                 <button class="tab-switch__btn tab-switch__btn--active" id="tabAB" title="A / B Slots">A / B SLOTS</button>
+                <button class="tab-switch__btn" id="tabAttendance" title="Attendance">ATTENDANCE</button>
                 <button class="tab-switch__btn" id="tabMap" title="Formation Map">MAP</button>
                 <button class="tab-switch__btn" id="tabCalendar" title="Calendar">CALENDAR</button>
-                <button class="tab-switch__btn" id="tabAttendance" title="Attendance">ATTENDANCE</button>
             </div>
             <div class="search-box" id="abSearchBox">
                 <span class="search-box__icon">🔍</span>
@@ -3034,7 +3032,7 @@
         renderSidebarUser();
         loadData();
         subscribeToAppDataChanges();
-        switchTab('map');
+        switchTab('attendance');
     })();
 </script>
 
