@@ -1023,7 +1023,7 @@
                 <div class="legend-item"><span class="status-badge-legend" style="background:#c8e0dd; color:#1e3a38; border:1px solid #95b8b5;">Substitute</span></div>
                 <div class="legend-item"><span class="status-badge-legend" style="background:#fce8e6; color:#d9381e; border:1px solid #d9381e;">Penalty Locked</span></div>
                 <div class="legend-item"><span class="status-badge-legend" style="background:#fff3cd; color:#8a6300; border:1px solid #e0b400;">Countdown</span></div>
-                <span class="legend-hint" id="attendanceLegendHint">· Members are grouped by faction (color bar per group), matching the Members page. Missing an assigned slot starts a 14-day countdown shown on that cell. Once 14 days pass with no Attended mark, a 2-week penalty locks in permanently for that date and is added to the Total Penalty column.</span>
+                <span class="legend-hint" id="attendanceLegendHint">· Members are grouped by rank (color bar per group), matching the Members page. Missing an assigned slot starts a 14-day countdown shown on that cell. Once 14 days pass with no Attended mark, a 2-week penalty locks in permanently for that date and is added to the Total Penalty column.</span>
             </div>
 
             <div class="table-card">
@@ -1320,13 +1320,13 @@
     // retyping the same custom names.
     let rolePresets = DEFAULT_ROLE_PRESETS.slice();
 
-    // Faction sort order + divider colors/labels for the Attendance tab, matching
-    // the same F / S / R faction colors already used elsewhere on this page
-    // (faction-f / faction-s / faction-r circles) so the grouping looks and
-    // sorts the same way it does on the Members page.
-    const FACTION_ORDER = { F: 0, S: 1, R: 2 };
-    const FACTION_DIVIDER_COLORS = { F: '#2563eb', S: '#9333ea', R: '#ea580c', OTHER: '#5c4127' };
-    const FACTION_DIVIDER_LABELS = { F: 'FACTION F', S: 'FACTION S', R: 'FACTION R', OTHER: 'UNASSIGNED FACTION' };
+    // Rank-group sort order + divider colors/labels for the Attendance tab,
+    // matching the same R5→R4→R3→R2→R1 grouping and colors used on the
+    // Members page (.rank-group-bar--r5 etc.) so this sorts and looks the
+    // same way there does.
+    const RANK_GROUP_ORDER = { R5: 0, R4: 1, R3: 2, R2: 3, R1: 4 };
+    const RANK_GROUP_COLORS = { R5: '#2563eb', R4: '#dc2626', R3: '#ea580c', R2: '#eab308', R1: '#16a34a' };
+    const RANK_GROUP_LABELS = { R5: 'R5', R4: 'R4', R3: 'R3', R2: 'R2', R1: 'R1' };
 
     function getActiveMembers() {
         return members.filter(m => m.status !== 'removed');
@@ -1354,6 +1354,38 @@
             return new Date(`${currentYear}-${parts[0]}-${parts[1]}`);
         }
         return new Date(dateStr);
+    }
+
+    // F1 Power parser (mirrors members.html's parseCpToRaw) — used here only
+    // to compute each member's raw F1 value so the Attendance tab can sort
+    // by F1 Power within a rank group, same as the Members page.
+    function parseCpToRaw(cpStr) {
+        if (!cpStr) return { formatted: '0G', raw: 0 };
+        let cleanStr = cpStr.toString().trim().toUpperCase();
+        let numVal = parseFloat(cleanStr.replace(/[^0-9.]/g, '')) || 0;
+        let isExplicitG = cleanStr.includes('G');
+        let isExplicitM = cleanStr.includes('M');
+        let raw = 0;
+        if (isExplicitG) {
+            raw = numVal * 1000000000;
+        } else if (isExplicitM) {
+            raw = numVal * 1000000;
+        } else {
+            if (numVal >= 0 && numVal <= 999 && !cleanStr.includes('.')) {
+                raw = numVal * 1000000;
+            } else {
+                raw = numVal * 1000000000;
+            }
+        }
+        let formatted = '';
+        if (raw >= 1000000000) {
+            let gVal = raw / 1000000000;
+            formatted = gVal % 1 === 0 ? gVal.toLocaleString() + 'G' : gVal.toFixed(1).replace(/\.0$/, '') + 'G';
+        } else {
+            let mVal = raw / 1000000;
+            formatted = mVal % 1 === 0 ? mVal.toLocaleString() + 'M' : mVal.toFixed(1).replace(/\.0$/, '') + 'M';
+        }
+        return { formatted, raw };
     }
 
     function defaultMapTeams() {
@@ -1435,6 +1467,14 @@
                 });
             }
             bgDates.sort((a, b) => parseDateString(a.date) - parseDateString(b.date));
+
+            // Compute each member's raw F1 Power (for sorting) and freeze
+            // their current rank into frozenRank (for grouping), mirroring
+            // members.html so the Attendance tab groups/sorts identically.
+            members.forEach(m => {
+                m.f1Raw = parseCpToRaw(m.f1Cp || '0G').raw;
+                m.frozenRank = m.rank;
+            });
         } catch (err) {
             console.error('Error loading Black Gold data:', err.message || err);
         }
@@ -2116,16 +2156,16 @@
     // ---- Attendance tab ---------------------------------------------------
     // Reuses the exact same `assignments` data as the A/B Slots tab (slot,
     // attended, playerRole per member per session date) — this is simply a
-    // different view over it, grouped by faction and with an auto penalty
-    // countdown, so there's no separate table needed and nothing about it
-    // can drift out of sync with A/B Slots.
+    // different view over it, grouped by rank (matching the Members page)
+    // and with an auto penalty countdown, so there's no separate table
+    // needed and nothing about it can drift out of sync with A/B Slots.
 
     function sortMembersForAttendance(list) {
         return [...list].sort((a, b) => {
-            const fa = FACTION_ORDER.hasOwnProperty(a.faction) ? FACTION_ORDER[a.faction] : 3;
-            const fb = FACTION_ORDER.hasOwnProperty(b.faction) ? FACTION_ORDER[b.faction] : 3;
-            if (fa !== fb) return fa - fb;
-            return (a.name || '').localeCompare(b.name || '');
+            const rankA = RANK_GROUP_ORDER[a.frozenRank] !== undefined ? RANK_GROUP_ORDER[a.frozenRank] : 99;
+            const rankB = RANK_GROUP_ORDER[b.frozenRank] !== undefined ? RANK_GROUP_ORDER[b.frozenRank] : 99;
+            if (rankA !== rankB) return rankA - rankB;
+            return (b.f1Raw || 0) - (a.f1Raw || 0);
         });
     }
 
@@ -2185,17 +2225,17 @@
         today.setHours(0, 0, 0, 0);
 
         const sorted = sortMembersForAttendance(filtered);
-        let lastFactionKey = null;
+        let lastRankKey = null;
 
         sorted.forEach(member => {
-            const factionKey = FACTION_ORDER.hasOwnProperty(member.faction) ? member.faction : 'OTHER';
-            if (factionKey !== lastFactionKey) {
+            const rankKey = RANK_GROUP_ORDER.hasOwnProperty(member.frozenRank) ? member.frozenRank : 'R1';
+            if (rankKey !== lastRankKey) {
                 body.insertAdjacentHTML('beforeend', `
-                    <tr class="att-faction-divider" style="--divider-color:${FACTION_DIVIDER_COLORS[factionKey]};">
-                        <td colspan="${2 + bgDates.length}">${FACTION_DIVIDER_LABELS[factionKey]}</td>
+                    <tr class="att-faction-divider" style="--divider-color:${RANK_GROUP_COLORS[rankKey]};">
+                        <td colspan="${2 + bgDates.length}">${RANK_GROUP_LABELS[rankKey]}</td>
                     </tr>
                 `);
-                lastFactionKey = factionKey;
+                lastRankKey = rankKey;
             }
 
             let cellsHTML = '';
