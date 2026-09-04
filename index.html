@@ -1212,9 +1212,9 @@
                 const wb = XLSX.utils.book_new();
 
                 const membersSheet = (members || []).map(m => ({
-                    Name: m.name, Attended: m.attended, Rank: m.rank,
-                    Events: (m.events || []).map(e => e ? 'Y' : 'N').join(','),
-                    Votes: (m.eventVotes || []).join(',')
+                    Name: m.name, Attended: memberAttendedCount(m), Rank: m.rank,
+                    Events: eventDates.map(ev => getAttendanceStatus(m.id, ev.id) ? 'Y' : 'N').join(','),
+                    Votes: eventDates.map(ev => getVote(m.id, ev.id) || '').join(',')
                 }));
                 XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(membersSheet.length ? membersSheet : [{Note:'No members'}]), 'Members');
 
@@ -1301,6 +1301,12 @@ let currentUser = {
         let showDiffMode = false;
         let eventDates = [];
         let members = [];
+        // Attendance now lives in its own app_data row, keyed by memberId -> eventId,
+        // written by events.html (id-keyed, not the old parallel-array-on-member model).
+        // { memberId: { eventId: true | 'late' } } — a missing entry means "not attended".
+        let attendanceMap = {};
+        // { memberId: { eventId: 'yes'|'no'|'maybe' } }, also written by events.html.
+        let eventVotesMap = {};
         let auditLogs = [];
         let chatMessages = [];
         let polls = [];
@@ -1329,6 +1335,28 @@ let currentUser = {
         let pendingPhotoUpload = null; // holds { dataUrl } while admin/mgmt picks visibility
         let currentLightboxPhotoId = null;
         let accounts = [];
+
+        // ===== Attendance helpers (mirrors events.html's model exactly, so the two
+        // pages always compute the same attendance count/rate per member/event) =====
+        function getAttendanceStatus(memberId, eventId) {
+            const m = attendanceMap[memberId];
+            if (!m) return false;
+            const v = m[eventId];
+            return v === true ? true : (v === 'late' ? 'late' : false);
+        }
+        function getVote(memberId, eventId) {
+            const m = eventVotesMap[memberId];
+            return m ? (m[eventId] || null) : null;
+        }
+        function memberAttendedCount(m) {
+            let count = 0;
+            eventDates.forEach(ev => { if (getAttendanceStatus(m.id, ev.id)) count++; });
+            return count;
+        }
+        function memberAttendanceRate(m, totalEvents) {
+            if (!totalEvents) return 0;
+            return (memberAttendedCount(m) / totalEvents) * 100;
+        }
 
         // ===== Save concurrency + snapshot/restore system =====
         // Problem this fixes: saveData() used to fire off writes to every app_data row in
@@ -1381,14 +1409,8 @@ let currentUser = {
             if (alreadySorted) return false;
 
             const newEventDates = order.map(i => eventDates[i]);
-            members.forEach(m => {
-                if (Array.isArray(m.events)) {
-                    m.events = order.map(i => !!m.events[i]);
-                }
-                if (Array.isArray(m.eventVotes)) {
-                    m.eventVotes = order.map(i => (m.eventVotes[i] !== undefined ? m.eventVotes[i] : null));
-                }
-            });
+            // NOTE: attendance/votes are now keyed by event.id (not array position), so
+            // re-ordering eventDates no longer requires touching attendanceMap/eventVotesMap.
             eventDates = newEventDates;
             return true;
         }
@@ -1416,25 +1438,33 @@ let currentUser = {
             return true;
         }
 
+        // Parses a fetched app_data row into the matching in-memory variable. Shared by
+        // loadDataFromCloud, fetchAppDataOnly, and the realtime handler so all three
+        // recognize the exact same set of keys (including 'attendance'/'eventVotes',
+        // which events.html now owns).
+        function applyAppDataRow(row) {
+            if (row.key === 'eventDates') eventDates = row.value || [];
+            else if (row.key === 'members') members = row.value || [];
+            else if (row.key === 'attendance') attendanceMap = row.value || {};
+            else if (row.key === 'eventVotes') eventVotesMap = row.value || {};
+            else if (row.key === 'auditLogs') auditLogs = row.value || [];
+            else if (row.key === 'vsData') vsData = row.value || { weeks: [], membersScores: [] };
+            else if (row.key === 'chatMessages') chatMessages = row.value || [];
+            else if (row.key === 'polls') polls = row.value || [];
+            else if (row.key === 'notices') notices = row.value || [];
+            else if (row.key === 'calendarEvents') calendarEvents = row.value || [];
+            else if (row.key === 'noticeAnnouncements') noticeAnnouncements = row.value || [];
+            else if (row.key === 'homePhotos') homePhotos = row.value || [];
+            else if (row.key === 'dataSnapshots') dataSnapshots = row.value || [];
+        }
+
         async function loadDataFromCloud() {
         let loadSucceeded = false;
         try {
                 const { data, error } = await db.from('app_data').select('*').neq('id', 15);
                 if (error) throw error;
                 if (data && data.length > 0) {
-                    data.forEach(row => {
-                        if (row.key === 'eventDates') eventDates = row.value || [];
-                        if (row.key === 'members') members = row.value || [];
-                        if (row.key === 'auditLogs') auditLogs = row.value || [];
-                        if (row.key === 'vsData') vsData = row.value || { weeks: [], membersScores: [] };
-                        if (row.key === 'chatMessages') chatMessages = row.value || [];
-                        if (row.key === 'polls') polls = row.value || [];
-                        if (row.key === 'notices') notices = row.value || [];
-                        if (row.key === 'calendarEvents') calendarEvents = row.value || [];
-                        if (row.key === 'noticeAnnouncements') noticeAnnouncements = row.value || [];
-                        if (row.key === 'homePhotos') homePhotos = row.value || [];
-                        if (row.key === 'dataSnapshots') dataSnapshots = row.value || [];
-                    });
+                    data.forEach(applyAppDataRow);
                 }
            loadSucceeded = true;
            } catch (err) {
@@ -1452,18 +1482,12 @@ let currentUser = {
         // Also normalize war-event vote arrays (`eventVotes`) and backfill `isWar` on old events.
         eventDates.forEach(ev => { if (typeof ev.isWar !== 'boolean') ev.isWar = false; });
         members.forEach(m => {
-            if (typeof m.attended !== 'number' || isNaN(m.attended)) m.attended = 0;
-            if (!Array.isArray(m.events)) m.events = [];
-            while (m.events.length < eventDates.length) m.events.push(false);
-            if (!Array.isArray(m.eventVotes)) m.eventVotes = [];
-            while (m.eventVotes.length < eventDates.length) m.eventVotes.push(null);
             if (!m.rank) m.rank = 'R1';
             m.frozenRank = m.rank;
         });
         // Ensure event columns are always in chronological order, fixing any events
         // that were previously added/edited out of order.
         sortEventsByDate();
-        saveData();
 
         pruneExpiredCalendarEvents();
 
@@ -1488,19 +1512,7 @@ let currentUser = {
                 const { data, error } = await db.from('app_data').select('*').neq('id', 15);
                 if (error) throw error;
                 if (data && data.length > 0) {
-                    data.forEach(row => {
-                        if (row.key === 'eventDates') eventDates = row.value || [];
-                        if (row.key === 'members') members = row.value || [];
-                        if (row.key === 'auditLogs') auditLogs = row.value || [];
-                        if (row.key === 'vsData') vsData = row.value || { weeks: [], membersScores: [] };
-                        if (row.key === 'chatMessages') chatMessages = row.value || [];
-                        if (row.key === 'polls') polls = row.value || [];
-                        if (row.key === 'notices') notices = row.value || [];
-                        if (row.key === 'calendarEvents') calendarEvents = row.value || [];
-                        if (row.key === 'noticeAnnouncements') noticeAnnouncements = row.value || [];
-                        if (row.key === 'homePhotos') homePhotos = row.value || [];
-                        if (row.key === 'dataSnapshots') dataSnapshots = row.value || [];
-                    });
+                    data.forEach(applyAppDataRow);
                 }
             } catch (err) {
                 console.error('Error refreshing from cloud:', err);
@@ -1509,11 +1521,6 @@ let currentUser = {
 
             eventDates.forEach(ev => { if (typeof ev.isWar !== 'boolean') ev.isWar = false; });
             members.forEach(m => {
-                if (typeof m.attended !== 'number' || isNaN(m.attended)) m.attended = 0;
-                if (!Array.isArray(m.events)) m.events = [];
-                while (m.events.length < eventDates.length) m.events.push(false);
-                if (!Array.isArray(m.eventVotes)) m.eventVotes = [];
-                while (m.eventVotes.length < eventDates.length) m.eventVotes.push(null);
                 if (!m.rank) m.rank = 'R1';
                 m.frozenRank = m.rank;
             });
@@ -1546,26 +1553,11 @@ let currentUser = {
                     }
                     const row = payload.new;
                     if (!row || !row.key) { fetchAppDataOnly(); return; }
-                    if (row.key === 'eventDates') eventDates = row.value || [];
-                    else if (row.key === 'members') members = row.value || [];
-                    else if (row.key === 'auditLogs') auditLogs = row.value || [];
-                    else if (row.key === 'vsData') vsData = row.value || { weeks: [], membersScores: [] };
-                    else if (row.key === 'chatMessages') chatMessages = row.value || [];
-                    else if (row.key === 'polls') polls = row.value || [];
-                    else if (row.key === 'notices') notices = row.value || [];
-                    else if (row.key === 'calendarEvents') calendarEvents = row.value || [];
-                    else if (row.key === 'noticeAnnouncements') noticeAnnouncements = row.value || [];
-                    else if (row.key === 'homePhotos') homePhotos = row.value || [];
-                    else if (row.key === 'dataSnapshots') { return; }
-                    else { fetchAppDataOnly(); return; }
+                    if (row.key === 'dataSnapshots') { return; }
+                    applyAppDataRow(row);
 
                     eventDates.forEach(ev => { if (typeof ev.isWar !== 'boolean') ev.isWar = false; });
                     members.forEach(m => {
-                        if (typeof m.attended !== 'number' || isNaN(m.attended)) m.attended = 0;
-                        if (!Array.isArray(m.events)) m.events = [];
-                        while (m.events.length < eventDates.length) m.events.push(false);
-                        if (!Array.isArray(m.eventVotes)) m.eventVotes = [];
-                        while (m.eventVotes.length < eventDates.length) m.eventVotes.push(null);
                         if (!m.rank) m.rank = 'R1';
                         m.frozenRank = m.rank;
                     });
@@ -1610,6 +1602,9 @@ async function fetchSnapshotsOnly() {
         // Restores eventDates + members from a stored snapshot. Admin-only. This itself
         // goes through the normal saveData() path, which means the pre-restore state gets
         // its own snapshot first - so a restore can always be undone too.
+        // NOTE: attendance/votes are no longer part of members[], so restoring a snapshot
+        // only rolls back event definitions and member roster fields (rank, status, etc.) —
+        // not attendance, which events.html owns and snapshots separately.
         window.restoreSnapshot = function(snapshotId) {
             if (currentUser.role !== 'admin') {
                 alert('Only Admin can restore snapshots.');
@@ -1624,11 +1619,6 @@ async function fetchSnapshotsOnly() {
             members = JSON.parse(JSON.stringify(snap.members || []));
             eventDates.forEach(ev => { if (typeof ev.isWar !== 'boolean') ev.isWar = false; });
             members.forEach(m => {
-                if (typeof m.attended !== 'number' || isNaN(m.attended)) m.attended = 0;
-                if (!Array.isArray(m.events)) m.events = [];
-                while (m.events.length < eventDates.length) m.events.push(false);
-                if (!Array.isArray(m.eventVotes)) m.eventVotes = [];
-                while (m.eventVotes.length < eventDates.length) m.eventVotes.push(null);
                 if (!m.rank) m.rank = 'R1';
                 m.frozenRank = m.rank;
             });
@@ -1665,6 +1655,10 @@ async function fetchSnapshotsOnly() {
         //     before starting, which removes the interleaving that was corrupting data.
         // isSavingData additionally tells the realtime listener to hold off refreshing
         // mid-save (see subscribeToAppDataChanges above).
+        // NOTE: this page no longer writes 'attendance' or 'eventVotes' — those rows are
+        // owned by events.html, exactly like 'members' is owned by members.html. Writing
+        // them here (with whatever stale copy happened to be in memory) would risk
+        // clobbering concurrent edits made on events.html.
         async function saveData() {
             const runSave = async () => {
                 isSavingData = true;
@@ -2035,14 +2029,14 @@ window.openRoleAssignModal = function() {
             activeMembers = sortMembersDefaultOrder(activeMembers);
 
             const totalEvents = eventDates.length;
-            const totalAttendedCount = activeMembers.reduce((sum, m) => sum + m.attended, 0);
+            const totalAttendedCount = activeMembers.reduce((sum, m) => sum + memberAttendedCount(m), 0);
             const avgAttendance = activeMembers.length ? (totalAttendedCount / activeMembers.length) : 0;
             const avgRate = totalEvents > 0 ? (avgAttendance / totalEvents) * 100 : 0;
 
             document.getElementById('footerMembersShown').innerText = `${activeMembers.length} members shown`;
 
             // On the home tab, use the avg rate calculated from event attendance data
-            // (managed on events.html, kept in sync here via the eventDates/members rows)
+            // (managed on events.html, kept in sync here via the eventDates/attendance rows)
             document.getElementById('homeKpiMembers').innerText = `${activeMembers.length}/100`;
             document.getElementById('homeKpiRate').innerText = `${avgRate.toFixed(1)}%`;
 
@@ -3208,9 +3202,9 @@ window.openRoleAssignModal = function() {
                 return;
             }
 
-            const recent = eventDates.map((ev, idx) => ({ ev, idx })).slice(-5).reverse();
-            container.innerHTML = recent.map(({ ev, idx }) => {
-                const attendedCount = activeMembers.reduce((sum, m) => sum + ((m.events && m.events[idx]) ? 1 : 0), 0);
+            const recentEvents = eventDates.slice(-5).reverse();
+            container.innerHTML = recentEvents.map(ev => {
+                const attendedCount = activeMembers.reduce((sum, m) => sum + (getAttendanceStatus(m.id, ev.id) ? 1 : 0), 0);
                 const rate = activeMembers.length > 0 ? Math.round((attendedCount / activeMembers.length) * 100) : 0;
                 return `
                     <div class="home-list-row">
@@ -3240,12 +3234,13 @@ window.openRoleAssignModal = function() {
             }
             const totalEvents = eventDates.length;
             body.innerHTML = activeMembers.map((m, idx) => {
-                const rate = totalEvents > 0 ? ((m.attended / totalEvents) * 100).toFixed(1) : 0;
+                const attendedCount = memberAttendedCount(m);
+                const rate = totalEvents > 0 ? ((attendedCount / totalEvents) * 100).toFixed(1) : 0;
                 return `
                     <tr>
                         <td style="text-align: center; color: #a0a6b5;" class="notranslate">${idx + 1}</td>
                         <td style="font-weight: 800; color: #2b3044;" class="notranslate">${m.name}</td>
-                        <td style="text-align: center; font-weight: 800;" class="notranslate">${m.attended}</td>
+                        <td style="text-align: center; font-weight: 800;" class="notranslate">${attendedCount}</td>
                         <td style="font-weight: 800; color: var(--color-primary);" class="notranslate">${rate}%</td>
                     </tr>
                 `;
