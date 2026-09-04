@@ -141,6 +141,7 @@ body{font-family:'Open Sans',sans-serif;background:var(--color-bg-main);color:va
 .rank-group-bar-row td{padding:0;border-bottom:none;}
 .rank-group-bar{display:flex;align-items:center;padding:7px 20px;font-family:var(--font-family-ui);font-weight:800;font-size:11px;letter-spacing:1px;color:#fff;text-transform:uppercase;}
 .rank-group-bar--r5{background:#2563eb;} .rank-group-bar--r4{background:#dc2626;} .rank-group-bar--r3{background:#ea580c;} .rank-group-bar--r2{background:#eab308;} .rank-group-bar--r1{background:#16a34a;}
+.ranking-cards-list .rank-group-bar{border-radius:6px;}
 .sort-mode-bar{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;background:#fff;border:2px solid var(--color-border);border-radius:6px;padding:12px 16px;}
 .sort-mode-bar__label{font-family:var(--font-family-ui);font-size:11px;font-weight:800;color:var(--color-text-muted);text-transform:uppercase;}
 .page-footer{display:flex;justify-content:space-between;align-items:center;margin-top:4px;font-family:var(--font-family-base);font-size:10px;font-weight:700;color:var(--color-text-muted);text-transform:uppercase;letter-spacing:.5px;padding:0 4px;}
@@ -369,18 +370,45 @@ function showSaveStatus(kind, text) {
 }
 
 // =====================================================================
-// DATA MODEL — matches the REAL index.html exactly (confirmed against
-// its actual source). This is the ONLY correct schema:
-//   eventDates: [{ id, name, date, isWar }]                app_data id=1
-//   members[i].events: [true/false, ...]  positional array app_data id=2
-//   members[i].eventVotes: [null/'yes'/'maybe'/'no', ...]  positional
-//   members[i].attended: number (count of true in .events)
-// The 'attendance' row (id=4) found earlier in Supabase is NOT used by
-// the real app — it is orphaned data from something else. This file
-// never reads or writes it, on purpose.
+// DATA MODEL — confirmed directly against production Supabase rows:
+//
+//   app_data.key = 'eventDates'   value: [{ id, date, name, isWar }, ...]
+//   app_data.key = 'members'      value: [{ id, name, cp, rank, faction,
+//                                    level, status, note, f1Cp, f1History,
+//                                    warVotes: {...}  <- LEGACY, read-only,
+//                                    never written by this page anymore },
+//                                    ...]  (this page never writes 'members')
+//   app_data.key = 'attendance'   value: { "<memberId>": { "<eventId>":
+//                                    true | "late" }, ... }  — a missing
+//                                    entry means "not attended". false is
+//                                    NEVER stored.
+//   app_data.key = 'eventVotes'   value: { "<memberId>": { "<eventId>":
+//                                    "yes"|"no"|"maybe" }, ... }  — NEW key,
+//                                    created by this page if it doesn't
+//                                    exist yet, seeded from each member's
+//                                    legacy .warVotes field (which is left
+//                                    untouched on the member record as a
+//                                    backup — nothing is deleted).
+//   app_data.key = 'dataSnapshots' value: [ {...snapshot...}, ... ] — used
+//                                    for index.html's History/Restore tab.
+//
+// Row ids for 'eventDates'/'members'/'dataSnapshots' are looked up live
+// (not hardcoded) in case they ever differ from the historical 1/2/15.
+// The 'attendance' row id is also looked up live (was id 4 as of the last
+// check). 'eventVotes' row id is discovered if the row already exists, or
+// created fresh (id = current max id + 1) on first run.
 // =====================================================================
 let members = [];
 let eventDates = [];
+let attendanceMap = {};   // { memberId: { eventId: true | 'late' } }
+let eventVotes = {};      // { memberId: { eventId: 'yes'|'no'|'maybe' } }
+
+let eventDatesRowId = 1;
+let membersRowId = 2;
+let attendanceRowId = null;
+let eventVotesRowId = null;
+let dataSnapshotsRowId = 15;
+
 let showDiffMode = false;
 let searchQuery = '';
 let rankingSortMode = 'default'; // 'default' | 'rank'
@@ -389,29 +417,35 @@ let collapsedDays = new Set(); // dates whose event columns are collapsed
 
 // ===== Same snapshot + save-queue safety system as index.html, so a
 // restore from index.html's History tab and a save from here are fully
-// compatible and interchangeable. =====
+// compatible and interchangeable. Snapshots now also carry attendance +
+// eventVotes so a restore covers the full picture. =====
 let isSavingData = false;
 let refreshPendingAfterSave = false;
 let saveQueue = Promise.resolve();
 let dataSnapshots = [];
 const MAX_SNAPSHOTS = 15;
 
-function ensureMemberArrays(m) {
-    if (typeof m.attended !== 'number' || isNaN(m.attended)) m.attended = 0;
-    if (!Array.isArray(m.events)) m.events = [];
-    while (m.events.length < eventDates.length) m.events.push(false);
-    if (!Array.isArray(m.eventVotes)) m.eventVotes = [];
-    while (m.eventVotes.length < eventDates.length) m.eventVotes.push(null);
+// Finds the highest existing app_data.id across ALL rows (not just the
+// ones this page cares about), so a brand-new row (like 'eventVotes' on
+// its first run) always gets a genuinely free id instead of colliding
+// with something another page owns.
+async function getNextFreeRowId() {
+    const { data } = await db.from('app_data').select('id');
+    const maxId = (data || []).reduce((mx, r) => Math.max(mx, r.id), 0);
+    return maxId + 1;
 }
 
 async function loadDataFromCloud() {
+    let foundEventVotes = false;
     try {
-        const { data, error } = await db.from('app_data').select('*').in('id', [1, 2, 15]);
+        const { data, error } = await db.from('app_data').select('*').in('key', ['eventDates', 'members', 'attendance', 'eventVotes', 'dataSnapshots']);
         if (error) throw error;
         (data || []).forEach(row => {
-            if (row.key === 'eventDates') eventDates = row.value || [];
-            if (row.key === 'members') members = row.value || [];
-            if (row.key === 'dataSnapshots') dataSnapshots = row.value || [];
+            if (row.key === 'eventDates') { eventDates = row.value || []; eventDatesRowId = row.id; }
+            if (row.key === 'members') { members = row.value || []; membersRowId = row.id; }
+            if (row.key === 'attendance') { attendanceMap = row.value || {}; attendanceRowId = row.id; }
+            if (row.key === 'eventVotes') { eventVotes = row.value || {}; eventVotesRowId = row.id; foundEventVotes = true; }
+            if (row.key === 'dataSnapshots') { dataSnapshots = row.value || []; dataSnapshotsRowId = row.id; }
         });
     } catch (err) {
         console.error('Error loading data:', err);
@@ -419,24 +453,62 @@ async function loadDataFromCloud() {
         return;
     }
     eventDates.forEach(ev => { if (typeof ev.isWar !== 'boolean') ev.isWar = false; });
-    members.forEach(ensureMemberArrays);
+
+    // One-time, non-destructive migration: if 'eventVotes' doesn't exist yet
+    // as its own app_data row, build it from each member's legacy .warVotes
+    // field and create the row. The .warVotes field on each member is left
+    // exactly as-is — nothing is deleted, this only ADDS a new row.
+    if (!foundEventVotes) {
+        const migrated = {};
+        members.forEach(m => {
+            if (m.warVotes && typeof m.warVotes === 'object' && Object.keys(m.warVotes).length > 0) {
+                migrated[m.id] = { ...m.warVotes };
+            }
+        });
+        eventVotes = migrated;
+        try {
+            const newId = await getNextFreeRowId();
+            const { error: insertErr } = await db.from('app_data').insert({ id: newId, key: 'eventVotes', value: migrated });
+            if (!insertErr) {
+                eventVotesRowId = newId;
+            } else {
+                console.error('Could not create eventVotes row (votes will still work this session, but will not persist until this succeeds):', insertErr);
+            }
+        } catch (err) {
+            console.error('Could not create eventVotes row:', err);
+        }
+    }
+
+    // Guard: 'attendance' should already exist in production, but create it
+    // if it's ever genuinely missing so the page never hard-fails.
+    if (!attendanceRowId) {
+        try {
+            const newId = await getNextFreeRowId();
+            const { error: insertErr } = await db.from('app_data').insert({ id: newId, key: 'attendance', value: attendanceMap });
+            if (!insertErr) attendanceRowId = newId;
+        } catch (err) {
+            console.error('Could not create attendance row:', err);
+        }
+    }
+
     render();
 }
 
 async function fetchDataOnly() {
     try {
-        const { data, error } = await db.from('app_data').select('*').in('id', [1, 2]);
+        const { data, error } = await db.from('app_data').select('*').in('key', ['eventDates', 'members', 'attendance', 'eventVotes']);
         if (error) throw error;
         (data || []).forEach(row => {
-            if (row.key === 'eventDates') eventDates = row.value || [];
-            if (row.key === 'members') members = row.value || [];
+            if (row.key === 'eventDates') { eventDates = row.value || []; eventDatesRowId = row.id; }
+            if (row.key === 'members') { members = row.value || []; membersRowId = row.id; }
+            if (row.key === 'attendance') { attendanceMap = row.value || {}; attendanceRowId = row.id; }
+            if (row.key === 'eventVotes') { eventVotes = row.value || {}; eventVotesRowId = row.id; }
         });
     } catch (err) {
         console.error('Error refreshing event data:', err);
         return;
     }
     eventDates.forEach(ev => { if (typeof ev.isWar !== 'boolean') ev.isWar = false; });
-    members.forEach(ensureMemberArrays);
     render();
 }
 
@@ -448,7 +520,7 @@ function subscribeToAppDataChanges() {
         .on('postgres_changes', { event: '*', schema: 'public', table: 'app_data' }, (payload) => {
             if (isSavingData) { refreshPendingAfterSave = true; return; }
             const row = payload.new;
-            if (!row || (row.key !== 'eventDates' && row.key !== 'members')) return;
+            if (!row || !['eventDates', 'members', 'attendance', 'eventVotes'].includes(row.key)) return;
             fetchDataOnly();
         })
         .subscribe();
@@ -461,7 +533,9 @@ function captureSnapshot() {
             timestamp: new Date().toLocaleString(),
             user: currentUser.username || 'System',
             eventDates: JSON.parse(JSON.stringify(eventDates || [])),
-            members: JSON.parse(JSON.stringify(members || []))
+            members: JSON.parse(JSON.stringify(members || [])),
+            attendance: JSON.parse(JSON.stringify(attendanceMap || {})),
+            eventVotes: JSON.parse(JSON.stringify(eventVotes || {}))
         };
         dataSnapshots.unshift(snapshot);
         if (dataSnapshots.length > MAX_SNAPSHOTS) dataSnapshots = dataSnapshots.slice(0, MAX_SNAPSHOTS);
@@ -470,20 +544,24 @@ function captureSnapshot() {
     }
 }
 
-// Single serialized save, matching index.html: snapshot first, then write
-// eventDates (id1) + members (id2) + dataSnapshots (id15), queued so two
-// saves from rapid clicks can never interleave and corrupt each other.
+// Single serialized save: snapshot first, then write eventDates + attendance
+// + eventVotes + dataSnapshots, queued so two saves from rapid clicks can
+// never interleave and corrupt each other. This page NEVER writes 'members'
+// — that row belongs to members.html, and touching it here risks clobbering
+// concurrent edits made there.
 async function saveEventData() {
     const runSave = async () => {
         isSavingData = true;
         showSaveStatus('saving', 'Saving…');
         captureSnapshot();
         try {
-            const results = await Promise.all([
-                db.from('app_data').upsert({ id: 1, key: 'eventDates', value: eventDates }, { onConflict: 'id' }),
-                db.from('app_data').upsert({ id: 2, key: 'members', value: members }, { onConflict: 'id' }),
-                db.from('app_data').upsert({ id: 15, key: 'dataSnapshots', value: dataSnapshots }, { onConflict: 'id' })
-            ]);
+            const writes = [
+                db.from('app_data').upsert({ id: eventDatesRowId, key: 'eventDates', value: eventDates }, { onConflict: 'id' }),
+                db.from('app_data').upsert({ id: dataSnapshotsRowId, key: 'dataSnapshots', value: dataSnapshots }, { onConflict: 'id' })
+            ];
+            if (attendanceRowId) writes.push(db.from('app_data').upsert({ id: attendanceRowId, key: 'attendance', value: attendanceMap }, { onConflict: 'id' }));
+            if (eventVotesRowId) writes.push(db.from('app_data').upsert({ id: eventVotesRowId, key: 'eventVotes', value: eventVotes }, { onConflict: 'id' }));
+            const results = await Promise.all(writes);
             const failed = results.find(r => r && r.error);
             if (failed) { console.error('Save error:', failed.error); showSaveStatus('error', 'Save failed'); return false; }
             showSaveStatus('ok', 'Saved');
@@ -533,7 +611,6 @@ document.getElementById('btnAddEvent').addEventListener('click', async () => {
     const isWar = document.getElementById('newEventIsWarInput').checked;
     if (!name || !date) { alert('Please enter an event name and date.'); return; }
     eventDates.push({ id: Date.now(), name, date, isWar });
-    members.forEach(m => { ensureMemberArrays(m); });
     document.getElementById('newEventNameInput').value = '';
     document.getElementById('newDateInput').value = '';
     document.getElementById('newEventIsWarInput').checked = false;
@@ -566,11 +643,20 @@ document.getElementById('btnDeleteEventModal').addEventListener('click', async (
     if (!confirm('Delete this event? This removes it for all members.')) return;
     const idx = eventDates.findIndex(e => e.id === editingEventId);
     if (idx !== -1) {
+        const deletedId = eventDates[idx].id;
         eventDates.splice(idx, 1);
-        members.forEach(m => {
-            if (Array.isArray(m.events)) m.events.splice(idx, 1);
-            if (Array.isArray(m.eventVotes)) m.eventVotes.splice(idx, 1);
-            m.attended = m.events.filter(Boolean).length;
+        // Clean up any attendance/vote entries pointing at the deleted event.
+        Object.keys(attendanceMap).forEach(mid => {
+            if (attendanceMap[mid] && attendanceMap[mid][deletedId] !== undefined) {
+                delete attendanceMap[mid][deletedId];
+                if (Object.keys(attendanceMap[mid]).length === 0) delete attendanceMap[mid];
+            }
+        });
+        Object.keys(eventVotes).forEach(mid => {
+            if (eventVotes[mid] && eventVotes[mid][deletedId] !== undefined) {
+                delete eventVotes[mid][deletedId];
+                if (Object.keys(eventVotes[mid]).length === 0) delete eventVotes[mid];
+            }
         });
     }
     await saveEventData();
@@ -578,32 +664,50 @@ document.getElementById('btnDeleteEventModal').addEventListener('click', async (
     render();
 });
 
-// --- Toggle attendance (cycles Not Attended -> Attended -> Late -> Not Attended) ---
-// Late is encoded as the string 'late' inside the boolean events[] slot; treated as
-// truthy/attended for counts, and rendered with its own icon/pill.
-window.toggleAttendance = function(memberId, eventIdx) {
+// --- Attendance / vote lookups + toggles (keyed by member id + event id — no
+// positional arrays anymore, so reordering/deleting events can never
+// mis-align data the way a positional array could). ---
+function getAttendanceStatus(memberId, eventId) {
+    const m = attendanceMap[memberId];
+    if (!m) return false;
+    const v = m[eventId];
+    return v === true ? true : (v === 'late' ? 'late' : false);
+}
+function getVote(memberId, eventId) {
+    const m = eventVotes[memberId];
+    return m ? (m[eventId] || null) : null;
+}
+
+// Cycles Not Attended -> Attended -> Late -> Not Attended. "Not Attended" is
+// represented by the ABSENCE of a key (matches production convention — false
+// is never stored).
+window.toggleAttendance = function(memberId, eventId) {
     if (!isManagementOrAdmin) return;
-    const m = members.find(x => x.id === memberId);
-    if (!m) return;
-    ensureMemberArrays(m);
-    const cur = m.events[eventIdx];
-    let next;
-    if (!cur) next = true;
-    else if (cur === true) next = 'late';
-    else next = false;
-    m.events[eventIdx] = next;
-    m.attended = m.events.filter(Boolean).length;
+    if (!attendanceMap[memberId]) attendanceMap[memberId] = {};
+    const cur = attendanceMap[memberId][eventId];
+    if (!cur) {
+        attendanceMap[memberId][eventId] = true;
+    } else if (cur === true) {
+        attendanceMap[memberId][eventId] = 'late';
+    } else {
+        delete attendanceMap[memberId][eventId];
+        if (Object.keys(attendanceMap[memberId]).length === 0) delete attendanceMap[memberId];
+    }
     saveEventData().then(render);
 };
-window.cycleWarVote = function(memberId, eventIdx) {
+window.cycleWarVote = function(memberId, eventId) {
     if (!isManagementOrAdmin) return;
-    const m = members.find(x => x.id === memberId);
-    if (!m) return;
-    ensureMemberArrays(m);
+    if (!eventVotes[memberId]) eventVotes[memberId] = {};
     const order = [null, 'yes', 'maybe', 'no'];
-    const cur = m.eventVotes[eventIdx] || null;
+    const cur = eventVotes[memberId][eventId] || null;
     const idx = order.indexOf(cur);
-    m.eventVotes[eventIdx] = order[(idx + 1) % order.length];
+    const next = order[(idx + 1) % order.length];
+    if (next === null) {
+        delete eventVotes[memberId][eventId];
+        if (Object.keys(eventVotes[memberId]).length === 0) delete eventVotes[memberId];
+    } else {
+        eventVotes[memberId][eventId] = next;
+    }
     saveEventData().then(render);
 };
 
@@ -616,7 +720,13 @@ window.toggleDayCollapse = function(dateStr) {
 
 // --- Stat helpers ---
 function activeMembers() { return members.filter(m => m.status !== 'removed'); }
-function memberAttendedCount(m) { return (m.events || []).filter(Boolean).length; }
+function memberAttendedCount(m) {
+    const map = attendanceMap[m.id];
+    if (!map) return 0;
+    let count = 0;
+    eventDates.forEach(ev => { if (map[ev.id]) count++; });
+    return count;
+}
 function memberRate(m, totalEvents) {
     if (totalEvents === 0) return 0;
     return (memberAttendedCount(m) / totalEvents) * 100;
@@ -648,10 +758,12 @@ function rankBadgeClassAndColor(rank) {
     if (rank === 5) return 'ranking-card--rank-5';
     return '';
 }
+// Same order/colors as members.html's rank-group bars: R5 (top) -> R1 (bottom).
+const RANK_GROUP_ORDER = { R5: 0, R4: 1, R3: 2, R2: 3, R1: 4 };
 
 // --- Render ---
 function render() {
-    const evs = eventDates; // keep in stored order (positional index = array index)
+    const evs = eventDates; // keep in stored order (display order only — lookups are by id)
     const activeM = activeMembers();
     const filteredMembers = activeM.filter(m => m.name.toLowerCase().includes(searchQuery));
 
@@ -738,21 +850,21 @@ function renderAttendanceTable(evs, filteredMembers) {
         dateGroups.forEach(grp => {
             const isCollapsed = collapsedDays.has(grp.date);
             if (isCollapsed) {
-                const dayAttended = grp.indices.filter(i => m.events[i]).length;
+                const dayAttended = grp.indices.filter(i => getAttendanceStatus(m.id, evs[i].id)).length;
                 html += `<td class="day-collapsed-cell notranslate" onclick="toggleDayCollapse('${grp.date}')">${dayAttended}/${grp.indices.length}</td>`;
             } else {
                 grp.indices.forEach(evIdx => {
                     const ev = evs[evIdx];
-                    const status = m.events[evIdx]; // false | true | 'late'
+                    const status = getAttendanceStatus(m.id, ev.id); // false | true | 'late'
                     if (ev.isWar) {
-                        const voteRaw = m.eventVotes[evIdx];
+                        const voteRaw = getVote(m.id, ev.id);
                         const vote = voteRaw || 'none';
                         const voteClass = 'war-vote-badge--' + vote;
                         const voteLabel = vote === 'none' ? '—' : vote.toUpperCase();
                         const attendLabel = status === 'late' ? 'LATE' : (status ? 'ATTENDED' : 'NOT ATTENDED');
                         const attendClass = status === 'late' ? 'attend-pill--late' : (status ? 'attend-pill--yes' : 'attend-pill--no');
-                        const attendClickAttrs = isManagementOrAdmin ? `onclick="toggleAttendance(${m.id},${evIdx})"` : '';
-                        const voteClickAttrs = isManagementOrAdmin ? `onclick="cycleWarVote(${m.id},${evIdx})"` : '';
+                        const attendClickAttrs = isManagementOrAdmin ? `onclick="toggleAttendance(${m.id},${ev.id})"` : '';
+                        const voteClickAttrs = isManagementOrAdmin ? `onclick="cycleWarVote(${m.id},${ev.id})"` : '';
                         html += `<td class="col-event col-event--war">
                             <div class="war-cell">
                                 <span class="attend-pill ${attendClass}" ${attendClickAttrs}>${attendLabel}</span>
@@ -760,7 +872,7 @@ function renderAttendanceTable(evs, filteredMembers) {
                             </div>
                         </td>`;
                     } else {
-                        const clickAttrs = isManagementOrAdmin ? `onclick="toggleAttendance(${m.id},${evIdx})"` : '';
+                        const clickAttrs = isManagementOrAdmin ? `onclick="toggleAttendance(${m.id},${ev.id})"` : '';
                         let icon = '<span class="cross-icon">✕</span>';
                         if (status === true) icon = '<span class="check-icon">✔</span>';
                         else if (status === 'late') icon = '<span class="late-icon">L</span>';
@@ -775,54 +887,71 @@ function renderAttendanceTable(evs, filteredMembers) {
     document.getElementById('tableFooterRow').innerHTML = `<tr><td colspan="${totalCols}" style="padding:12px;font-size:11px;font-weight:800;color:var(--color-text-muted);">Showing ${sorted.length} of ${filteredMembers.length} members</td></tr>`;
 }
 
+function renderRankingCard(m, rank, evs) {
+    const attendedCount = memberAttendedCount(m);
+    const rate = memberRate(m, evs.length);
+    const rc = rateClass(rate);
+    const rankCardClass = rankBadgeClassAndColor(rank);
+    return `<div class="ranking-card ${rankCardClass}">
+        <div class="ranking-card__left">
+            <div class="ranking-card__badge">${rank}</div>
+            <div>
+                <div class="ranking-card__name notranslate">${m.name}</div>
+                <div class="ranking-card__subtext notranslate">${attendedCount}/${evs.length} events attended</div>
+            </div>
+        </div>
+        <div class="ranking-card__right">
+            <div class="ranking-card__bar-wrapper">
+                <div class="progress-bar"><div class="progress-bar__fill ${rc}" style="width:${rate}%;"></div></div>
+            </div>
+            <span class="progress-text attended-${rc}">${rate.toFixed(0)}%</span>
+        </div>
+    </div>`;
+}
+
 function renderRanking(evs, activeM) {
     const list = document.getElementById('rankingCardsList');
     if (activeM.length === 0) { list.innerHTML = `<div style="text-align:center;color:var(--color-text-muted);padding:24px;">No members yet.</div>`; return; }
 
-    let sorted;
     if (rankingSortMode === 'rank') {
-        sorted = [...activeM].sort((a,b) => memberRate(b, evs.length) - memberRate(a, evs.length));
-    } else {
-        // Default order: same roster order as loaded (matches Members tab default grouping)
-        sorted = [...activeM];
+        // Pure attendance-rate performance ranking (dense, no skipped numbers).
+        const sorted = [...activeM].sort((a,b) => memberRate(b, evs.length) - memberRate(a, evs.length));
+        const ranked = assignCompetitionRanks(sorted, m => Math.round(memberRate(m, evs.length) * 100));
+        let html = '';
+        ranked.forEach(({ item: m, rank }) => { html += renderRankingCard(m, rank, evs); });
+        list.innerHTML = html;
+        return;
     }
 
-    const ranked = rankingSortMode === 'rank'
-        ? assignCompetitionRanks(sorted, m => Math.round(memberRate(m, evs.length) * 100))
-        : sorted.map((m, idx) => ({ item: m, rank: idx + 1 }));
-
+    // Default mode: grouped by each member's LIVE tier (member.rank field —
+    // same field members.html edits), with a colored bar whenever the tier
+    // changes (R5 top -> R1 bottom, same colors as members.html). This is
+    // read live every render, so it always reflects whatever was last set
+    // on the Members page — no freezing/caching.
+    const sorted = [...activeM].sort((a,b) => {
+        const ga = RANK_GROUP_ORDER[a.rank] !== undefined ? RANK_GROUP_ORDER[a.rank] : 99;
+        const gb = RANK_GROUP_ORDER[b.rank] !== undefined ? RANK_GROUP_ORDER[b.rank] : 99;
+        return ga - gb;
+    });
     let html = '';
-    ranked.forEach(({ item: m, rank }) => {
-        const attendedCount = memberAttendedCount(m);
-        const rate = memberRate(m, evs.length);
-        const rc = rateClass(rate);
-        const rankCardClass = rankBadgeClassAndColor(rank);
-        html += `<div class="ranking-card ${rankCardClass}">
-            <div class="ranking-card__left">
-                <div class="ranking-card__badge">${rank}</div>
-                <div>
-                    <div class="ranking-card__name notranslate">${m.name}</div>
-                    <div class="ranking-card__subtext notranslate">${attendedCount}/${evs.length} events attended</div>
-                </div>
-            </div>
-            <div class="ranking-card__right">
-                <div class="ranking-card__bar-wrapper">
-                    <div class="progress-bar"><div class="progress-bar__fill ${rc}" style="width:${rate}%;"></div></div>
-                </div>
-                <span class="progress-text attended-${rc}">${rate.toFixed(0)}%</span>
-            </div>
-        </div>`;
+    let lastGroupKey = null;
+    sorted.forEach((m, idx) => {
+        const groupKey = m.rank || 'R1';
+        if (groupKey !== lastGroupKey) {
+            lastGroupKey = groupKey;
+            html += `<div class="rank-group-bar rank-group-bar--${groupKey.toLowerCase()}">${groupKey}</div>`;
+        }
+        html += renderRankingCard(m, idx + 1, evs);
     });
     list.innerHTML = html;
 }
 
 function renderWarTab(evs, activeM) {
-    const warEvIdxs = [];
-    evs.forEach((ev, idx) => { if (ev.isWar) warEvIdxs.push(idx); });
+    const warEvs = evs.filter(e => e.isWar);
     const tbody = document.getElementById('violatorsTableBody');
-    document.getElementById('warKpiPctBase').innerText = warEvIdxs.length + ' war events';
+    document.getElementById('warKpiPctBase').innerText = warEvs.length + ' war events';
 
-    if (warEvIdxs.length === 0) {
+    if (warEvs.length === 0) {
         tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--color-text-muted);">No war events recorded yet.</td></tr>`;
         document.getElementById('warKpiMembers').innerText = activeM.length;
         document.getElementById('warKpiAvgAttendance').innerText = '0.0';
@@ -832,22 +961,20 @@ function renderWarTab(evs, activeM) {
 
     let totalAttended = 0, totalRateSum = 0;
     let rows = activeM.map(m => {
-        const attended = warEvIdxs.filter(i => m.events[i]).length;
-        const rate = (attended / warEvIdxs.length) * 100;
+        let attended = 0, red = 0, yellow = 0;
+        warEvs.forEach(ev => {
+            const didAttend = !!getAttendanceStatus(m.id, ev.id);
+            if (didAttend) { attended++; return; }
+            const vote = getVote(m.id, ev.id) || 'none';
+            // Only a 'maybe' vote counts as yellow. Everything else that
+            // still resulted in a no-show — voted yes, voted no, or never
+            // voted at all — counts as red.
+            if (vote === 'maybe') yellow++;
+            else red++;
+        });
+        const rate = (attended / warEvs.length) * 100;
         totalAttended += attended;
         totalRateSum += rate;
-        let red = 0, yellow = 0;
-        warEvIdxs.forEach(i => {
-            const didAttend = !!m.events[i];
-            const vote = m.eventVotes[i] || 'none';
-            if (!didAttend) {
-                // Only a 'maybe' vote counts as yellow. Everything else that
-                // still resulted in a no-show — voted yes, voted no, or never
-                // voted at all — counts as red.
-                if (vote === 'maybe') yellow++;
-                else red++;
-            }
-        });
         return { m, attended, rate, red, yellow };
     });
 
@@ -867,7 +994,7 @@ function renderWarTab(evs, activeM) {
         html += `<tr>
             <td class="col-rank">${rank}</td>
             <td class="col-name notranslate">${r.m.name}</td>
-            <td style="text-align:center;" class="notranslate">${r.attended}/${warEvIdxs.length}</td>
+            <td style="text-align:center;" class="notranslate">${r.attended}/${warEvs.length}</td>
             <td style="text-align:center;color:#dc2626;" class="notranslate">${r.red}</td>
             <td style="text-align:center;color:#b89117;" class="notranslate">${r.yellow}</td>
             <td class="col-percentage">
