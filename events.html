@@ -842,7 +842,7 @@ function renderAttendanceTable(evs, filteredMembers) {
                     } else {
                         const clickAttrs = isManagementOrAdmin ? `onclick="toggleAttendance(${m.id},${ev.id})"` : '';
                         let icon = '<span class="cross-icon">✕</span>';
-                        if (status === true) icon = '<span class="check-icon">✔</span>';
+                        if (status === true) icon = '<i class="fa-solid fa-check check-icon"></i>';
                         else if (status === 'late') icon = '<span class="late-icon">L</span>';
                         html += `<td class="col-event"><span class="check-toggle" ${clickAttrs}>${icon}</span></td>`;
                     }
