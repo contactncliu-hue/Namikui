@@ -97,8 +97,14 @@ body{font-family:'Open Sans',sans-serif;background:var(--color-bg-main);color:va
 .day-collapse-icon{display:inline-block;width:16px;height:16px;border:2px solid var(--color-primary);border-radius:3px;color:var(--color-primary);font-size:11px;font-weight:800;line-height:12px;margin-bottom:2px;}
 .day-collapsed-cell{text-align:center;cursor:pointer;font-weight:800;color:var(--color-primary);background:#f4f6fb;font-size:12px;}
 .day-collapsed-cell:hover{background:#eceff8;}
+.day-collapsed-cell--full{background:#dbeafe;color:#2563eb;}
+.day-collapsed-cell--full:hover{background:#c9e0fc;}
+.day-collapsed-cell--zero{background:#fdeceb;color:#dc2626;}
+.day-collapsed-cell--zero:hover{background:#fbdcda;}
+.day-collapsed-cell--partial{background:#fef9c3;color:#b89117;}
+.day-collapsed-cell--partial:hover{background:#fdf3a8;}
 .check-toggle{cursor:pointer;padding:6px 10px;border-radius:6px;display:inline-block;}
-.check-icon{color:var(--color-primary);font-weight:800;font-size:16px;}
+.check-icon{color:#2563eb;font-weight:800;font-size:16px;}
 .late-icon{color:var(--color-gold);font-weight:800;font-size:13px;}
 .cross-icon{color:#ccc;font-weight:bold;font-size:16px;}
 .attended-high{color:#2563eb;} .attended-mid{color:#b89117;} .attended-low{color:#dc2626;}
@@ -369,35 +375,6 @@ function showSaveStatus(kind, text) {
     if (kind !== 'error') saveStatusTimer = setTimeout(() => { saveStatusEl.className = 'save-status'; }, 1500);
 }
 
-// =====================================================================
-// DATA MODEL — confirmed directly against production Supabase rows:
-//
-//   app_data.key = 'eventDates'   value: [{ id, date, name, isWar }, ...]
-//   app_data.key = 'members'      value: [{ id, name, cp, rank, faction,
-//                                    level, status, note, f1Cp, f1History,
-//                                    warVotes: {...}  <- LEGACY, read-only,
-//                                    never written by this page anymore },
-//                                    ...]  (this page never writes 'members')
-//   app_data.key = 'attendance'   value: { "<memberId>": { "<eventId>":
-//                                    true | "late" }, ... }  — a missing
-//                                    entry means "not attended". false is
-//                                    NEVER stored.
-//   app_data.key = 'eventVotes'   value: { "<memberId>": { "<eventId>":
-//                                    "yes"|"no"|"maybe" }, ... }  — NEW key,
-//                                    created by this page if it doesn't
-//                                    exist yet, seeded from each member's
-//                                    legacy .warVotes field (which is left
-//                                    untouched on the member record as a
-//                                    backup — nothing is deleted).
-//   app_data.key = 'dataSnapshots' value: [ {...snapshot...}, ... ] — used
-//                                    for index.html's History/Restore tab.
-//
-// Row ids for 'eventDates'/'members'/'dataSnapshots' are looked up live
-// (not hardcoded) in case they ever differ from the historical 1/2/15.
-// The 'attendance' row id is also looked up live (was id 4 as of the last
-// check). 'eventVotes' row id is discovered if the row already exists, or
-// created fresh (id = current max id + 1) on first run.
-// =====================================================================
 let members = [];
 let eventDates = [];
 let attendanceMap = {};   // { memberId: { eventId: true | 'late' } }
@@ -415,20 +392,12 @@ let rankingSortMode = 'default'; // 'default' | 'rank'
 let warSortMode = 'default';
 let collapsedDays = new Set(); // dates whose event columns are collapsed
 
-// ===== Same snapshot + save-queue safety system as index.html, so a
-// restore from index.html's History tab and a save from here are fully
-// compatible and interchangeable. Snapshots now also carry attendance +
-// eventVotes so a restore covers the full picture. =====
 let isSavingData = false;
 let refreshPendingAfterSave = false;
 let saveQueue = Promise.resolve();
 let dataSnapshots = [];
 const MAX_SNAPSHOTS = 15;
 
-// Finds the highest existing app_data.id across ALL rows (not just the
-// ones this page cares about), so a brand-new row (like 'eventVotes' on
-// its first run) always gets a genuinely free id instead of colliding
-// with something another page owns.
 async function getNextFreeRowId() {
     const { data } = await db.from('app_data').select('id');
     const maxId = (data || []).reduce((mx, r) => Math.max(mx, r.id), 0);
@@ -454,10 +423,6 @@ async function loadDataFromCloud() {
     }
     eventDates.forEach(ev => { if (typeof ev.isWar !== 'boolean') ev.isWar = false; });
 
-    // One-time, non-destructive migration: if 'eventVotes' doesn't exist yet
-    // as its own app_data row, build it from each member's legacy .warVotes
-    // field and create the row. The .warVotes field on each member is left
-    // exactly as-is — nothing is deleted, this only ADDS a new row.
     if (!foundEventVotes) {
         const migrated = {};
         members.forEach(m => {
@@ -479,8 +444,6 @@ async function loadDataFromCloud() {
         }
     }
 
-    // Guard: 'attendance' should already exist in production, but create it
-    // if it's ever genuinely missing so the page never hard-fails.
     if (!attendanceRowId) {
         try {
             const newId = await getNextFreeRowId();
@@ -544,11 +507,6 @@ function captureSnapshot() {
     }
 }
 
-// Single serialized save: snapshot first, then write eventDates + attendance
-// + eventVotes + dataSnapshots, queued so two saves from rapid clicks can
-// never interleave and corrupt each other. This page NEVER writes 'members'
-// — that row belongs to members.html, and touching it here risks clobbering
-// concurrent edits made there.
 async function saveEventData() {
     const runSave = async () => {
         isSavingData = true;
@@ -645,7 +603,6 @@ document.getElementById('btnDeleteEventModal').addEventListener('click', async (
     if (idx !== -1) {
         const deletedId = eventDates[idx].id;
         eventDates.splice(idx, 1);
-        // Clean up any attendance/vote entries pointing at the deleted event.
         Object.keys(attendanceMap).forEach(mid => {
             if (attendanceMap[mid] && attendanceMap[mid][deletedId] !== undefined) {
                 delete attendanceMap[mid][deletedId];
@@ -664,9 +621,6 @@ document.getElementById('btnDeleteEventModal').addEventListener('click', async (
     render();
 });
 
-// --- Attendance / vote lookups + toggles (keyed by member id + event id — no
-// positional arrays anymore, so reordering/deleting events can never
-// mis-align data the way a positional array could). ---
 function getAttendanceStatus(memberId, eventId) {
     const m = attendanceMap[memberId];
     if (!m) return false;
@@ -678,9 +632,6 @@ function getVote(memberId, eventId) {
     return m ? (m[eventId] || null) : null;
 }
 
-// Cycles Not Attended -> Attended -> Late -> Not Attended. "Not Attended" is
-// represented by the ABSENCE of a key (matches production convention — false
-// is never stored).
 window.toggleAttendance = function(memberId, eventId) {
     if (!isManagementOrAdmin) return;
     if (!attendanceMap[memberId]) attendanceMap[memberId] = {};
@@ -711,14 +662,12 @@ window.cycleWarVote = function(memberId, eventId) {
     saveEventData().then(render);
 };
 
-// --- Day grouping (collapse toggle) ---
 window.toggleDayCollapse = function(dateStr) {
     if (collapsedDays.has(dateStr)) collapsedDays.delete(dateStr);
     else collapsedDays.add(dateStr);
     render();
 };
 
-// --- Stat helpers ---
 function activeMembers() { return members.filter(m => m.status !== 'removed'); }
 function memberAttendedCount(m) {
     const map = attendanceMap[m.id];
@@ -736,9 +685,6 @@ function rateClass(rate) {
     if (rate >= 50) return 'mid';
     return 'low';
 }
-// Dense ranking: ties share the same rank number, and the NEXT distinct
-// value simply gets the next integer — no numbers are ever skipped.
-// e.g. two people tied for 1st -> next distinct person is rank 2 (not 3).
 function assignCompetitionRanks(sortedList, valueFn) {
     let lastVal = null, rank = 0;
     return sortedList.map((item) => {
@@ -758,12 +704,11 @@ function rankBadgeClassAndColor(rank) {
     if (rank === 5) return 'ranking-card--rank-5';
     return '';
 }
-// Same order/colors as members.html's rank-group bars: R5 (top) -> R1 (bottom).
 const RANK_GROUP_ORDER = { R5: 0, R4: 1, R3: 2, R2: 3, R1: 4 };
 
 // --- Render ---
 function render() {
-    const evs = eventDates; // keep in stored order (display order only — lookups are by id)
+    const evs = eventDates;
     const activeM = activeMembers();
     const filteredMembers = activeM.filter(m => m.name.toLowerCase().includes(searchQuery));
 
@@ -786,7 +731,6 @@ function render() {
 }
 
 function renderAttendanceTable(evs, filteredMembers) {
-    // Group events by date for the day-group header row
     const dateGroups = [];
     evs.forEach((ev, idx) => {
         let grp = dateGroups.find(g => g.date === ev.date);
@@ -830,15 +774,32 @@ function renderAttendanceTable(evs, filteredMembers) {
         document.getElementById('tableFooterRow').innerHTML = '';
         return;
     }
-    const sorted = [...filteredMembers].sort((a,b) => memberRate(b, evs.length) - memberRate(a, evs.length));
+
+    // Sort strictly by live rank group (R5 -> R1, mirrors members.html),
+    // preserving relative order within each group (stable sort) — matches
+    // the Attendance tab's single "default" arrangement. No rate-sort here;
+    // only the Ranking and War tabs offer a Default/By-Rank toggle.
+    const sorted = [...filteredMembers].sort((a,b) => {
+        const ga = RANK_GROUP_ORDER[a.rank] !== undefined ? RANK_GROUP_ORDER[a.rank] : 99;
+        const gb = RANK_GROUP_ORDER[b.rank] !== undefined ? RANK_GROUP_ORDER[b.rank] : 99;
+        return ga - gb;
+    });
+
     let html = '';
-    sorted.forEach((m, idx) => {
-        const rank = idx + 1;
+    let lastGroupKey = null;
+    let rowNum = 0;
+    sorted.forEach((m) => {
+        const groupKey = m.rank || 'R1';
+        if (groupKey !== lastGroupKey) {
+            lastGroupKey = groupKey;
+            html += `<tr class="rank-group-bar-row"><td colspan="${totalCols}"><div class="rank-group-bar rank-group-bar--${groupKey.toLowerCase()}">${groupKey}</div></td></tr>`;
+        }
+        rowNum += 1;
         const attendedCount = memberAttendedCount(m);
         const rate = memberRate(m, evs.length);
         const rc = rateClass(rate);
         html += `<tr>
-            <td class="col-rank">${rank}</td>
+            <td class="col-rank">${rowNum}</td>
             <td class="col-name notranslate">${m.name}</td>
             <td class="col-attended notranslate">${attendedCount}/${evs.length}</td>
             <td class="col-percentage">
@@ -851,7 +812,14 @@ function renderAttendanceTable(evs, filteredMembers) {
             const isCollapsed = collapsedDays.has(grp.date);
             if (isCollapsed) {
                 const dayAttended = grp.indices.filter(i => getAttendanceStatus(m.id, evs[i].id)).length;
-                html += `<td class="day-collapsed-cell notranslate" onclick="toggleDayCollapse('${grp.date}')">${dayAttended}/${grp.indices.length}</td>`;
+                const dayTotal = grp.indices.length;
+                let dayClass = 'day-collapsed-cell';
+                if (dayTotal > 0) {
+                    if (dayAttended === dayTotal) dayClass += ' day-collapsed-cell--full';
+                    else if (dayAttended === 0) dayClass += ' day-collapsed-cell--zero';
+                    else dayClass += ' day-collapsed-cell--partial';
+                }
+                html += `<td class="${dayClass} notranslate" onclick="toggleDayCollapse('${grp.date}')">${dayAttended}/${dayTotal}</td>`;
             } else {
                 grp.indices.forEach(evIdx => {
                     const ev = evs[evIdx];
@@ -914,7 +882,6 @@ function renderRanking(evs, activeM) {
     if (activeM.length === 0) { list.innerHTML = `<div style="text-align:center;color:var(--color-text-muted);padding:24px;">No members yet.</div>`; return; }
 
     if (rankingSortMode === 'rank') {
-        // Pure attendance-rate performance ranking (dense, no skipped numbers).
         const sorted = [...activeM].sort((a,b) => memberRate(b, evs.length) - memberRate(a, evs.length));
         const ranked = assignCompetitionRanks(sorted, m => Math.round(memberRate(m, evs.length) * 100));
         let html = '';
@@ -923,11 +890,6 @@ function renderRanking(evs, activeM) {
         return;
     }
 
-    // Default mode: grouped by each member's LIVE tier (member.rank field —
-    // same field members.html edits), with a colored bar whenever the tier
-    // changes (R5 top -> R1 bottom, same colors as members.html). This is
-    // read live every render, so it always reflects whatever was last set
-    // on the Members page — no freezing/caching.
     const sorted = [...activeM].sort((a,b) => {
         const ga = RANK_GROUP_ORDER[a.rank] !== undefined ? RANK_GROUP_ORDER[a.rank] : 99;
         const gb = RANK_GROUP_ORDER[b.rank] !== undefined ? RANK_GROUP_ORDER[b.rank] : 99;
@@ -966,9 +928,6 @@ function renderWarTab(evs, activeM) {
             const didAttend = !!getAttendanceStatus(m.id, ev.id);
             if (didAttend) { attended++; return; }
             const vote = getVote(m.id, ev.id) || 'none';
-            // Only a 'maybe' vote counts as yellow. Everything else that
-            // still resulted in a no-show — voted yes, voted no, or never
-            // voted at all — counts as red.
             if (vote === 'maybe') yellow++;
             else red++;
         });
