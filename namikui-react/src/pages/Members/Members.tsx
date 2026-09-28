@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 import styles from './Members.module.css';
 import { useAuth } from '../../context/AuthContext';
 import { ROW, logAudit, mutateRow, useAppRow } from '../../lib/appData';
@@ -49,8 +49,8 @@ export function Members() {
       return matchesStatus && matchesSearch;
     });
     list.sort((a, b) => {
-      const rankA = RANK_GROUP_ORDER[a.frozenRank || 'R1'] ?? 99;
-      const rankB = RANK_GROUP_ORDER[b.frozenRank || 'R1'] ?? 99;
+      const rankA = RANK_GROUP_ORDER[a.rank || 'R1'] ?? 99;
+      const rankB = RANK_GROUP_ORDER[b.rank || 'R1'] ?? 99;
       if (rankA !== rankB) return rankA - rankB;
       return (b.f1Raw || 0) - (a.f1Raw || 0);
     });
@@ -260,12 +260,12 @@ export function Members() {
                 filtered.map((member, index) => {
                   const rank = index + 1;
                   const rowClass = rank === 1 ? styles.rank1 : rank === 2 ? styles.rank2 : rank === 3 ? styles.rank3 : '';
-                  const groupKey = member.frozenRank || 'R1';
+                  const groupKey = member.rank || 'R1';
                   const showGroupBar = groupKey !== lastGroupKey;
                   lastGroupKey = groupKey;
                   const barClass = (styles as Record<string, string>)['bar' + groupKey] || styles.barR1;
                   return (
-                    <>
+                    <Fragment key={member.id}>
                       {showGroupBar && (
                         <tr key={`group-${groupKey}-${member.id}`} className={styles.rankGroupBarRow}>
                           <td colSpan={colSpan}>
@@ -274,7 +274,6 @@ export function Members() {
                         </tr>
                       )}
                       <MemberRow
-                        key={member.id}
                         member={member}
                         rank={rank}
                         rowClass={rowClass}
@@ -291,7 +290,7 @@ export function Members() {
                         onOpenHistory={() => setHistoryMemberId(member.id)}
                         onRemove={() => void removeMember(member.id)}
                       />
-                    </>
+                    </Fragment>
                   );
                 })
               )}
