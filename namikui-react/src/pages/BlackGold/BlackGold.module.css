@@ -19,8 +19,8 @@
 .legendItem { display: flex; align-items: center; gap: 6px; }
 .legendHint { color: var(--color-text-muted); font-weight: 600; font-size: 11px; }
 .slotBadge { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: var(--font-family-ui); font-weight: 800; font-size: 11px; flex-shrink: 0; }
-.slotBadgeA { border: 2px solid var(--color-a); color: var(--color-a); background: white; }
-.slotBadgeB { border: 2px solid var(--color-b); color: var(--color-b); background: white; }
+.slotBadgeA { border: 2px solid #e68900; color: white; background: #ff9800; }
+.slotBadgeB { border: 2px solid #5f8c88; color: white; background: #7fa8a3; }
 .slotBadgeUnassigned { border: 2px dashed var(--color-unassigned); background: white; }
 .statusBadge { padding: 2px 8px; border-radius: 10px; font-size: 9px; font-weight: 800; text-transform: uppercase; }
 
@@ -43,8 +43,8 @@
 
 .cellStack { display: flex; flex-direction: column; align-items: center; gap: 5px; }
 .slotBtn { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 12px; cursor: pointer; user-select: none; background: none; border: none; }
-.slotBtnA { border: 2px solid var(--color-a); color: var(--color-a); background: white; }
-.slotBtnB { border: 2px solid var(--color-b); color: var(--color-b); background: white; }
+.slotBtnA { border: 2px solid #e68900; color: white; background: #ff9800; }
+.slotBtnB { border: 2px solid #5f8c88; color: white; background: #7fa8a3; }
 .slotBtnUnassigned { border: 2px dashed var(--color-unassigned); background: white; color: transparent; }
 .slotBtnReadonly { cursor: default; }
 

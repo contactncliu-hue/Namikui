@@ -5,12 +5,11 @@ import { useAppData } from '../../context/AppDataContext';
 import { readRowByKey, writeRowByKey } from '../../lib/appData';
 import { activeMembers } from '../Events/eventsUtils';
 import { sortDates, getEntry, parseDateString } from './blackGoldUtils';
-import ABTable from './components/ABTable';
 import AttendanceTable from './components/AttendanceTable';
 import CalendarTab from './components/CalendarTab';
 import type { BlackGoldAssignments, BlackGoldDate, BlackGoldEntry } from './blackGoldTypes';
 
-type Tab = 'ab' | 'attendance' | 'calendar';
+type Tab = 'attendance' | 'calendar';
 
 export function BlackGold() {
   const { currentUser } = useAuth();
@@ -21,7 +20,7 @@ export function BlackGold() {
   const [dates, setDates] = useState<BlackGoldDate[]>([]);
   const [assignments, setAssignments] = useState<BlackGoldAssignments>({});
   const [bgLoading, setBgLoading] = useState(true);
-  const [tab, setTab] = useState<Tab>('ab');
+  const [tab, setTab] = useState<Tab>('attendance');
   const [search, setSearch] = useState('');
   const [newDate, setNewDate] = useState('');
 
@@ -154,9 +153,6 @@ export function BlackGold() {
 
       <div className={styles.toolbarCard}>
         <div className={styles.tabSwitch}>
-          <button className={`${styles.tabBtn} ${tab === 'ab' ? styles.tabBtnActive : ''}`} onClick={() => setTab('ab')}>
-            A / B SLOTS
-          </button>
           <button className={`${styles.tabBtn} ${tab === 'attendance' ? styles.tabBtnActive : ''}`} onClick={() => setTab('attendance')}>
             ATTENDANCE
           </button>
@@ -164,7 +160,7 @@ export function BlackGold() {
             CALENDAR
           </button>
         </div>
-        {(tab === 'ab' || tab === 'attendance') && (
+        {tab === 'attendance' && (
           <div className={styles.searchBox}>
             <input type="text" className={styles.searchInput} placeholder="🔍 Search member..." value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
@@ -179,7 +175,7 @@ export function BlackGold() {
         )}
       </div>
 
-      {(tab === 'ab' || tab === 'attendance') && (
+      {tab === 'attendance' && (
         <div className={styles.legendRow}>
           <div className={styles.legendItem}>
             <span className={`${styles.slotBadge} ${styles.slotBadgeA}`}>A</span> Slot A
@@ -222,18 +218,6 @@ export function BlackGold() {
 
       {isLoading ? (
         <div style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: 24 }}>Loading…</div>
-      ) : tab === 'ab' ? (
-        <ABTable
-          dates={dates}
-          members={filtered}
-          assignments={assignments}
-          canEdit={isStaff}
-          onEditDate={(id) => void editDate(id)}
-          onRemoveDate={(id) => void removeDate(id)}
-          onCycleSlot={cycleSlot}
-          onToggleAttended={toggleAttended}
-          onCycleRole={cycleRole}
-        />
       ) : tab === 'attendance' ? (
         <AttendanceTable
           dates={dates}
