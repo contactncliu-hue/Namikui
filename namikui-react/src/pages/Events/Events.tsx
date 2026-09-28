@@ -3,7 +3,7 @@ import styles from './Events.module.css';
 import { useAuth } from '../../context/AuthContext';
 import { useAppData } from '../../context/AppDataContext';
 import { ROW, mutateRow, mutateRowByKey } from '../../lib/appData';
-import { activeMembers, rateClass } from './eventsUtils';
+import { activeMembers, rateClass, attendanceWeight } from './eventsUtils';
 import AttendanceTable from './components/AttendanceTable';
 import RankingList from './components/RankingList';
 import WarTable from './components/WarTable';
@@ -291,9 +291,12 @@ export function Events() {
     alert(`Created "${newEvent.name}" and marked ${appliedCount} member(s) attended.`);
   };
 
-  const totalAttendedSum = active.reduce((s, m) => s + eventDates.filter((ev) => getAttendanceStatus(m.id, ev.id)).length, 0);
+  const totalAttendedSum = active.reduce(
+    (s, m) => s + eventDates.reduce((s2, ev) => s2 + attendanceWeight(getAttendanceStatus(m.id, ev.id)), 0),
+    0
+  );
   const totalRatesSum = active.reduce((s, m) => {
-    const count = eventDates.filter((ev) => getAttendanceStatus(m.id, ev.id)).length;
+    const count = eventDates.reduce((s2, ev) => s2 + attendanceWeight(getAttendanceStatus(m.id, ev.id)), 0);
     return s + (eventDates.length ? (count / eventDates.length) * 100 : 0);
   }, 0);
   const avgAttendance = active.length ? (totalAttendedSum / active.length).toFixed(1) : '0.0';

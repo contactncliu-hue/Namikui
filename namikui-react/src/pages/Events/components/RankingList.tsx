@@ -1,6 +1,6 @@
 import styles from '../Events.module.css';
 import type { EventDate, Member } from '../../../types';
-import { RANK_GROUP_ORDER, assignCompetitionRanks, memberRate, rateClass } from '../eventsUtils';
+import { RANK_GROUP_ORDER, assignCompetitionRanks, memberRate, rateClass, attendanceWeight } from '../eventsUtils';
 
 interface Props {
   events: EventDate[];
@@ -43,7 +43,8 @@ function Card({ member, rank, attendedCount, total }: { member: Member; rank: nu
 }
 
 export default function RankingList({ events, members, sortMode, getAttendanceStatus }: Props) {
-  const attendedCount = (m: Member) => events.filter((ev) => getAttendanceStatus(m.id, ev.id)).length;
+  const attendedCount = (m: Member) =>
+    events.reduce((s, ev) => s + attendanceWeight(getAttendanceStatus(m.id, ev.id)), 0);
 
   if (members.length === 0) {
     return <div style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: 24 }}>No members yet.</div>;

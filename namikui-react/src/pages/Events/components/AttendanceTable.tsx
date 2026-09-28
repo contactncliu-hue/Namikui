@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import styles from '../Events.module.css';
 import type { EventDate, Member } from '../../../types';
-import { RANK_GROUP_ORDER, memberRate, rateClass } from '../eventsUtils';
+import { RANK_GROUP_ORDER, memberRate, rateClass, attendanceWeight } from '../eventsUtils';
 
 interface DayGroup {
   date: string;
@@ -35,7 +35,7 @@ export default function AttendanceTable({
 }: Props) {
   const dayGroups = useMemo(() => {
     const groups: DayGroup[] = [];
-    events.forEach((ev) => {
+    [...events].sort((a, b) => a.date.localeCompare(b.date) || a.id - b.id).forEach((ev) => {
       let g = groups.find((x) => x.date === ev.date);
       if (!g) {
         g = { date: ev.date, events: [] };
@@ -56,7 +56,14 @@ export default function AttendanceTable({
 
   const totalCols = 4 + dayGroups.reduce((s, g) => s + (collapsedDays.has(g.date) ? 1 : g.events.length), 0);
 
-  const memberAttendedCount = (m: Member) => events.filter((ev) => getAttendanceStatus(m.id, ev.id)).length;
+  const memberAttendedCount = (m: Member) =>
+    events.reduce((s, ev) => s + attendanceWeight(getAttendanceStatus(m.id, ev.id)), 0);
+
+  const eventTotal = (evs: EventDate[]) =>
+    sorted.reduce(
+      (s, m) => s + evs.reduce((s2, ev) => s2 + attendanceWeight(getAttendanceStatus(m.id, ev.id)), 0),
+      0
+    );
 
   let lastGroupKey: string | null = null;
 
@@ -152,7 +159,7 @@ export default function AttendanceTable({
                       {dayGroups.map((g) => {
                         const isCollapsed = collapsedDays.has(g.date);
                         if (isCollapsed) {
-                          const dayAttended = g.events.filter((ev) => getAttendanceStatus(m.id, ev.id)).length;
+                          const dayAttended = g.events.reduce((s, ev) => s + attendanceWeight(getAttendanceStatus(m.id, ev.id)), 0);
                           const dayTotal = g.events.length;
                           let dayClass = styles.dayCollapsedCell;
                           if (dayTotal > 0) {
@@ -219,6 +226,29 @@ export default function AttendanceTable({
           </tbody>
           {sorted.length > 0 && (
             <tfoot>
+              {(['ATTENDED', 'NOT ATTENDED'] as const).map((label) => (
+                <tr key={label}>
+                  <td colSpan={4} style={{ padding: 12, fontSize: 11, fontWeight: 800, color: 'var(--color-text-muted)' }}>
+                    {label}
+                  </td>
+                  {dayGroups.map((g) => {
+                    const cellGroups = collapsedDays.has(g.date) ? [g.events] : g.events.map((ev) => [ev]);
+                    return cellGroups.map((evs, i) => {
+                      const att = eventTotal(evs);
+                      const val = label === 'ATTENDED' ? att : sorted.length * evs.length - att;
+                      return (
+                        <td
+                          key={`${g.date}-${i}`}
+                          className={`${styles.colEvent} notranslate`}
+                          style={{ fontWeight: 800, color: label === 'ATTENDED' ? 'green' : 'crimson' }}
+                        >
+                          {val}
+                        </td>
+                      );
+                    });
+                  })}
+                </tr>
+              ))}
               <tr>
                 <td colSpan={totalCols} style={{ padding: 12, fontSize: 11, fontWeight: 800, color: 'var(--color-text-muted)' }}>
                   Showing {sorted.length} members

@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import styles from '../Events.module.css';
 import type { EventDate, Member } from '../../../types';
-import { RANK_GROUP_ORDER, assignCompetitionRanks, memberRate, rateClass } from '../eventsUtils';
+import { RANK_GROUP_ORDER, assignCompetitionRanks, memberRate, rateClass, attendanceWeight } from '../eventsUtils';
 
 interface Props {
   warEvents: EventDate[];
@@ -62,9 +62,9 @@ export default function WarTable({ warEvents, members, sortMode, getAttendanceSt
       let red = 0;
       let yellow = 0;
       warEvents.forEach((ev) => {
-        const didAttend = !!getAttendanceStatus(m.id, ev.id);
-        if (didAttend) {
-          attended++;
+        const status = getAttendanceStatus(m.id, ev.id);
+        if (status) {
+          attended += attendanceWeight(status);
           return;
         }
         const vote = getVote(m.id, ev.id) || 'none';

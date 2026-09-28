@@ -30,3 +30,8 @@ export function assignCompetitionRanks<T>(sortedDesc: T[], valueFn: (item: T) =>
 export function activeMembers(members: Member[]): Member[] {
   return members.filter((m) => m.status !== 'removed');
 }
+
+export function attendanceWeight(status: boolean | 'late' | undefined): number {
+  if (status === 'late') return 0.5;
+  return status ? 1 : 0;
+}
