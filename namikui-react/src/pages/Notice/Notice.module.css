@@ -36,21 +36,21 @@
 
 .ganttWrapper { border: 2px solid var(--color-border); border-radius: 6px; background: white; overflow: hidden; }
 .ganttScroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-.ganttGrid { min-width: max-content; }
+.ganttGrid { min-width: calc(var(--gantt-days) * var(--gantt-col-w)); }
 .ganttBody { position: relative; }
 .todayStripe { position: absolute; top: 0; bottom: 0; background-color: rgba(243, 168, 8, 0.1); border-left: 2px solid var(--color-gold); border-right: 2px solid var(--color-gold); z-index: 0; pointer-events: none; }
 
-.ganttGroupHeader { font-family: var(--font-family-ui); font-size: 12px; font-weight: 800; color: var(--color-primary-dark); text-transform: uppercase; letter-spacing: 0.5px; padding: 10px 14px; background-color: #eceff8; border-bottom: 2px solid var(--color-primary); border-top: 1px solid var(--color-border-light); position: relative; z-index: 1; width: calc(var(--gantt-days) * var(--gantt-col-w)); }
+.ganttGroupHeader { font-family: var(--font-family-ui); font-size: 12px; font-weight: 800; color: var(--color-primary-dark); text-transform: uppercase; letter-spacing: 0.5px; padding: 10px 14px; background-color: #eceff8; border-bottom: 2px solid var(--color-primary); border-top: 1px solid var(--color-border-light); position: relative; z-index: 1; width: 100%; }
 
-.ganttHeaderRow { display: flex; width: calc(var(--gantt-days) * var(--gantt-col-w)); border-bottom: 2px solid var(--color-primary); background-color: #e9ecf7; position: relative; z-index: 2; }
-.ganttHeaderCell { flex: 0 0 var(--gantt-col-w); width: var(--gantt-col-w); padding: 8px 4px; text-align: center; font-family: var(--font-family-ui); border-right: 1px solid var(--color-border-light); }
+.ganttHeaderRow { display: flex; width: 100%; border-bottom: 2px solid var(--color-primary); background-color: #e9ecf7; position: relative; z-index: 2; }
+.ganttHeaderCell { flex: 1 1 0; min-width: 0; padding: 8px 4px; text-align: center; font-family: var(--font-family-ui); border-right: 1px solid var(--color-border-light); }
 .dow { font-size: 10px; font-weight: 800; color: var(--color-text-muted); text-transform: uppercase; }
 .dayNum { font-size: 14px; font-weight: 800; color: var(--color-text-dark); }
 .headerToday { background-color: var(--color-gold-bg); }
 .headerToday .dayNum { color: var(--color-gold); }
 .headerWeekend { background-color: #f7f7f4; }
 
-.ganttRow { position: relative; width: calc(var(--gantt-days) * var(--gantt-col-w)); min-height: 54px; border-bottom: 1px solid var(--color-border-light); }
+.ganttRow { position: relative; width: 100%; min-height: 54px; border-bottom: 1px solid var(--color-border-light); }
 .ganttRow:nth-child(even) { background-color: #fafbfd; }
 
 .ganttBar { position: absolute; top: 6px; height: 42px; border-radius: 7px; display: flex; flex-direction: column; justify-content: center; gap: 1px; padding: 5px 10px; font-family: var(--font-family-ui); color: #ffffff; white-space: nowrap; overflow: hidden; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18); }
@@ -88,3 +88,10 @@
 .swatchRow { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
 .swatch { width: 28px; height: 28px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; padding: 0; }
 .swatchSelected { border-color: var(--color-text-dark); box-shadow: 0 0 0 2px white inset; }
+
+/* Server / local time toggle */
+.modeToggle { display: inline-flex; border: 2px solid var(--color-primary); border-radius: 4px; overflow: hidden; }
+.modeBtn { font-family: var(--font-family-ui); font-weight: 800; font-size: 11px; letter-spacing: 0.5px; color: var(--color-primary); background: white; border: none; padding: 6px 12px; cursor: pointer; }
+.modeBtn + .modeBtn { border-left: 2px solid var(--color-primary); }
+.modeBtnActive { background: var(--color-primary); color: white; }
+.timeHint { font-family: var(--font-family-ui); font-size: 11px; font-weight: 700; color: var(--color-text-muted); margin: -8px 0 16px; }

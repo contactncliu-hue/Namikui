@@ -40,8 +40,7 @@ export function canSee(visibility: Visibility | undefined, role: string | null):
 }
 
 export function getGanttWindow(offset: number, count: number): Date[] {
-  const start = new Date();
-  start.setHours(0, 0, 0, 0);
+  const start = parseDate(serverTodayStr());
   start.setDate(start.getDate() + offset);
   return Array.from({ length: count }, (_, i) => {
     const d = new Date(start);
@@ -53,7 +52,7 @@ export function getGanttWindow(offset: number, count: number): Date[] {
 // One-time events disappear 7 days after they end. Repeating events never expire.
 export function isExpired(ev: CalendarEvent): boolean {
   if (ev.type !== 'custom' || !ev.date) return false;
-  const today = parseDate(dateStrOf(new Date()));
+  const today = parseDate(serverTodayStr());
   const end = parseDate(ev.endDate || ev.date);
   return daysBetween(end, today) > 7;
 }
@@ -110,4 +109,52 @@ export function buildGanttBars(windowDays: Date[], events: CalendarEvent[]): Gan
   });
 
   return bars;
+}
+
+// ---- Server time ----
+// Game reset is 10:00 China time (UTC+8) = 02:00 UTC = server midnight, so the server clock is UTC-2.
+export const SERVER_OFFSET_MIN = -120;
+export type TimeMode = 'server' | 'local';
+const pad2 = (n: number) => String(n).padStart(2, '0');
+
+export function serverTodayStr(): string {
+  const s = new Date(Date.now() + SERVER_OFFSET_MIN * 60000);
+  return `${s.getUTCFullYear()}-${pad2(s.getUTCMonth() + 1)}-${pad2(s.getUTCDate())}`;
+}
+
+// Converts an HH:MM time between server and local time. dayShift = how many days the result
+// lands before/after the reference date (e.g. server 23:00 can be local 01:00 the next day).
+export function shiftTime(t: string, dateStr: string, from: TimeMode, to: TimeMode): { time: string; dayShift: number } {
+  if (!t || from === to) return { time: t, dayShift: 0 };
+  const [y, mo, d] = dateStr.split('-').map(Number);
+  const [h, mi] = t.split(':').map(Number);
+  const baseDay = Date.UTC(y, mo - 1, d);
+  if (from === 'server') {
+    const utc = Date.UTC(y, mo - 1, d, h, mi) - SERVER_OFFSET_MIN * 60000;
+    const l = new Date(utc);
+    return {
+      time: `${pad2(l.getHours())}:${pad2(l.getMinutes())}`,
+      dayShift: Math.round((Date.UTC(l.getFullYear(), l.getMonth(), l.getDate()) - baseDay) / 86400000),
+    };
+  }
+  const utc = new Date(y, mo - 1, d, h, mi).getTime();
+  const sv = new Date(utc + SERVER_OFFSET_MIN * 60000);
+  return {
+    time: `${pad2(sv.getUTCHours())}:${pad2(sv.getUTCMinutes())}`,
+    dayShift: Math.round((Date.UTC(sv.getUTCFullYear(), sv.getUTCMonth(), sv.getUTCDate()) - baseDay) / 86400000),
+  };
+}
+
+export function dayShiftLabel(n: number): string {
+  return n === 0 ? '' : ` (${n > 0 ? '+' : '−'}${Math.abs(n)}d)`;
+}
+
+export function readTimeMode(): TimeMode {
+  try { return localStorage.getItem('noticeTimeMode') === 'local' ? 'local' : 'server'; } catch { return 'server'; }
+}
+export function writeTimeMode(m: TimeMode): void {
+  try { localStorage.setItem('noticeTimeMode', m); } catch { /* ignore */ }
+}
+export function localZoneName(): string {
+  try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch { return 'local'; }
 }

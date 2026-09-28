@@ -2,7 +2,11 @@ import { useMemo, useState } from 'react';
 import type { CSSProperties } from 'react';
 import styles from '../Notice.module.css';
 import type { CalendarEvent } from '../noticeTypes';
-import { MONTHS, WEEKDAYS, buildGanttBars, canSee, dateStrOf, formatEventTime, getGanttWindow } from '../ganttUtils';
+import {
+  MONTHS, WEEKDAYS, buildGanttBars, canSee, dateStrOf, dayShiftLabel, formatEventTime, getGanttWindow,
+  localZoneName, readTimeMode, serverTodayStr, shiftTime, writeTimeMode,
+} from '../ganttUtils';
+import type { TimeMode } from '../ganttUtils';
 
 const VISIBLE_DAYS = 10;
 const COL_W = 96;
@@ -19,12 +23,17 @@ const byName = (a: CalendarEvent, b: CalendarEvent) => a.name.localeCompare(b.na
 
 export default function GanttTimeline({ events, role, isStaff, onAdd, onEdit }: Props) {
   const [offset, setOffset] = useState(0);
+  const [mode, setMode] = useState<TimeMode>(readTimeMode);
+  const changeMode = (m: TimeMode) => {
+    setMode(m);
+    writeTimeMode(m);
+  };
 
   const days = useMemo(() => getGanttWindow(offset, VISIBLE_DAYS), [offset]);
   const visible = useMemo(() => events.filter((ev) => canSee(ev.visibility, role)), [events, role]);
   const bars = useMemo(() => buildGanttBars(days, visible), [days, visible]);
 
-  const todayStr = dateStrOf(new Date());
+  const todayStr = serverTodayStr();
   const todayIdx = days.findIndex((d) => dateStrOf(d) === todayStr);
   const first = days[0];
   const last = days[days.length - 1];
@@ -64,8 +73,11 @@ export default function GanttTimeline({ events, role, isStaff, onAdd, onEdit }: 
               .map((seg) => {
                 const leftPct = (seg.startIdx / VISIBLE_DAYS) * 100;
                 const widthPct = (seg.span / VISIBLE_DAYS) * 100;
-                const timeLabel = ev.time
-                  ? `${formatEventTime(ev.time)}${ev.endTime ? ' – ' + formatEventTime(ev.endTime) : ''} (Server Time)`
+                const refDate = dateStrOf(days[seg.startIdx]);
+                const st = ev.time ? shiftTime(ev.time, refDate, 'server', mode) : null;
+                const et = ev.endTime ? shiftTime(ev.endTime, refDate, 'server', mode) : null;
+                const timeLabel = st
+                  ? `${formatEventTime(st.time)}${mode === 'local' ? dayShiftLabel(st.dayShift) : ''}${et ? ' – ' + formatEventTime(et.time) : ''} (${mode === 'local' ? 'Local' : 'Server'})`
                   : '';
                 const subLabel = seg.dateLabel + (timeLabel ? ' · ' + timeLabel : '');
                 return (
@@ -116,7 +128,17 @@ export default function GanttTimeline({ events, role, isStaff, onAdd, onEdit }: 
 
       <div className={styles.toolbar}>
         <span className={`${styles.toolbarText} notranslate`}>{rangeLabel}</span>
-        <span className={styles.toolbarNote}>· Times shown in 24h Server Time</span>
+        <div className={styles.modeToggle}>
+          <button type="button" className={`${styles.modeBtn} ${mode === 'server' ? styles.modeBtnActive : ''}`} onClick={() => changeMode('server')}>
+            SERVER
+          </button>
+          <button type="button" className={`${styles.modeBtn} ${mode === 'local' ? styles.modeBtnActive : ''}`} onClick={() => changeMode('local')}>
+            LOCAL
+          </button>
+        </div>
+        <span className={styles.toolbarNote}>
+          {mode === 'server' ? '· 24h Server Time (UTC-2)' : `· 24h your local time (${localZoneName()}) · days follow server date`}
+        </span>
         <div className={styles.legend}>
           {legendItems.map((ev) => (
             <span key={ev.name} className={styles.legendItem}>

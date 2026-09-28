@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import styles from '../Notice.module.css';
 import type { CalendarEvent, EventCategory, RepeatType, Visibility } from '../noticeTypes';
-import { addDays, dateStrOf } from '../ganttUtils';
+import { addDays, dayShiftLabel, readTimeMode, serverTodayStr, shiftTime } from '../ganttUtils';
+import type { TimeMode } from '../ganttUtils';
 
 const COLORS = ['#2563eb', '#dc2626', '#eab308', '#16a34a', '#ec4899'];
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -14,7 +15,7 @@ interface Props {
 }
 
 export default function CalendarEventModal({ event, onClose, onSave, onDelete }: Props) {
-  const today = dateStrOf(new Date());
+  const today = serverTodayStr();
   const isCustom = !!event && event.type === 'custom';
 
   const [name, setName] = useState(event?.name ?? '');
@@ -31,6 +32,19 @@ export default function CalendarEventModal({ event, onClose, onSave, onDelete }:
   const [visibility, setVisibility] = useState<Visibility>(event?.visibility ?? 'everyone');
   const [color, setColor] = useState(event?.color ?? COLORS[0]);
   const [saving, setSaving] = useState(false);
+  const [timeMode, setTimeMode] = useState<TimeMode>(readTimeMode);
+
+  // time/endTime state always holds SERVER time; the inputs just display it in the chosen mode
+  const refDate = type === 'custom' && startDate ? startDate : today;
+  const shown = (t: string) => shiftTime(t, refDate, 'server', timeMode).time;
+  const fromInput = (v: string) => (v ? shiftTime(v, refDate, timeMode, 'server').time : '');
+  const toLocal = time ? shiftTime(time, refDate, 'server', 'local') : null;
+  const timeHint =
+    !time || !toLocal
+      ? ''
+      : timeMode === 'local'
+        ? `Saves as ${time} server time${dayShiftLabel(shiftTime(shown(time), refDate, 'local', 'server').dayShift)}`
+        : `Local equivalent: ${toLocal.time}${dayShiftLabel(toLocal.dayShift)}`;
 
   const handleStartChange = (value: string) => {
     setStartDate(value);
@@ -134,7 +148,7 @@ export default function CalendarEventModal({ event, onClose, onSave, onDelete }:
 
         {type === 'custom' && (
           <>
-            <label className={styles.fieldLabel}>Start Date &amp; End Date (max 7 days)</label>
+            <label className={styles.fieldLabel}>Start Date &amp; End Date (server dates, max 7 days)</label>
             <div className={`${styles.fieldRow} ${styles.fieldRowSpaced}`}>
               <input type="date" value={startDate} onChange={(e) => handleStartChange(e.target.value)} />
               <input
@@ -182,11 +196,20 @@ export default function CalendarEventModal({ event, onClose, onSave, onDelete }:
           </>
         )}
 
-        <label className={styles.fieldLabel}>Start Time &amp; End Time — Server Time, 24h (optional)</label>
-        <div className={`${styles.fieldRow} ${styles.fieldRowSpaced}`}>
-          <input type="time" value={time} onChange={(e) => setTime(e.target.value)} title="Start Time (Server Time, 24h)" />
-          <input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} title="End Time (Server Time, 24h)" />
+        <label className={styles.fieldLabel}>Start Time &amp; End Time — 24h (optional)</label>
+        <div className={styles.modeToggle} style={{ marginBottom: 10 }}>
+          <button type="button" className={`${styles.modeBtn} ${timeMode === 'server' ? styles.modeBtnActive : ''}`} onClick={() => setTimeMode('server')}>
+            SERVER TIME
+          </button>
+          <button type="button" className={`${styles.modeBtn} ${timeMode === 'local' ? styles.modeBtnActive : ''}`} onClick={() => setTimeMode('local')}>
+            LOCAL TIME
+          </button>
         </div>
+        <div className={`${styles.fieldRow} ${styles.fieldRowSpaced}`}>
+          <input type="time" value={shown(time)} onChange={(e) => setTime(fromInput(e.target.value))} title="Start Time" />
+          <input type="time" value={shown(endTime)} onChange={(e) => setEndTime(fromInput(e.target.value))} title="End Time" />
+        </div>
+        {timeHint && <div className={styles.timeHint}>{timeHint}</div>}
 
         <label className={styles.fieldLabel}>Visible To</label>
         <select value={visibility} onChange={(e) => setVisibility(e.target.value as Visibility)}>
