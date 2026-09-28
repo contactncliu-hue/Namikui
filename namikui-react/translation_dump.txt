@@ -1,0 +1,446 @@
+===== I18N FILES =====
+----- src/i18n/translations.ts -----
+export type LanguageCode = 'en' | 'vi' | 'zh' | 'pt' | 'ar' | 'ko' | 'es';
+
+type TranslationEntry = Record<LanguageCode, string>;
+
+// Only UI copy goes here — never member names, event names, dates,
+// percentages, or anything that comes from data. Add one entry per
+// string as we migrate each file.
+export const translations = {
+  homepage: {
+    en: 'HOMEPAGE', vi: 'TRANG CHỦ', zh: '首页', pt: 'PÁGINA INICIAL',
+    ar: 'الصفحة الرئيسية', ko: '홈페이지', es: 'INICIO',
+  },
+  notice: {
+    en: 'NOTICE', vi: 'THÔNG BÁO', zh: '公告', pt: 'AVISO',
+    ar: 'إشعار', ko: '공지사항', es: 'AVISO',
+  },
+  members: {
+    en: 'MEMBERS', vi: 'THÀNH VIÊN', zh: '成员', pt: 'MEMBROS',
+    ar: 'الأعضاء', ko: '멤버', es: 'MIEMBROS',
+  },
+  blackGold: {
+    en: 'BLACK GOLD', vi: 'BLACK GOLD', zh: '黑金', pt: 'BLACK GOLD',
+    ar: 'بلاك غولد', ko: '블랙골드', es: 'BLACK GOLD',
+  },
+  eventAttendance: {
+    en: 'EVENT ATTENDANCE', vi: 'ĐIỂM DANH SỰ KIỆN', zh: '活动出席', pt: 'PRESENÇA NO EVENTO',
+    ar: 'حضور الفعاليات', ko: '이벤트 출석', es: 'ASISTENCIA AL EVENTO',
+  },
+  vsPoints: {
+    en: 'VS POINTS', vi: 'ĐIỂM VS', zh: 'VS积分', pt: 'PONTOS VS',
+    ar: 'نقاط VS', ko: 'VS 포인트', es: 'PUNTOS VS',
+  },
+  managementAdmin: {
+    en: 'MANAGEMENT & ADMIN', vi: 'QUẢN LÝ & QUẢN TRỊ', zh: '管理与后台', pt: 'GESTÃO E ADMIN',
+    ar: 'الإدارة والتحكم', ko: '관리 및 운영', es: 'GESTIÓN Y ADMIN',
+  },
+  discussionRoom: {
+    en: 'DISCUSSION ROOM', vi: 'PHÒNG THẢO LUẬN', zh: '讨论室', pt: 'SALA DE DISCUSSÃO',
+    ar: 'غرفة النقاش', ko: '토론방', es: 'SALA DE DISCUSIÓN',
+  },
+  editHistoryAudit: {
+    en: 'EDIT HISTORY & AUDIT', vi: 'LỊCH SỬ CHỈNH SỬA', zh: '编辑历史与审计', pt: 'HISTÓRICO E AUDITORIA',
+    ar: 'سجل التعديلات والتدقيق', ko: '편집 기록 및 감사', es: 'HISTORIAL Y AUDITORÍA',
+  },
+  assignUserRoles: {
+    en: 'ASSIGN USER ROLES', vi: 'PHÂN QUYỀN NGƯỜI DÙNG', zh: '分配用户角色', pt: 'ATRIBUIR FUNÇÕES',
+    ar: 'تعيين أدوار المستخدمين', ko: '사용자 역할 지정', es: 'ASIGNAR ROLES',
+  },
+  logOut: {
+    en: 'LOG OUT', vi: 'ĐĂNG XUẤT', zh: '登出', pt: 'SAIR',
+    ar: 'تسجيل الخروج', ko: '로그아웃', es: 'CERRAR SESIÓN',
+  },
+  role: {
+    en: 'Role:', vi: 'Vai trò:', zh: '角色：', pt: 'Função:',
+    ar: 'الدور:', ko: '역할:', es: 'Rol:',
+  },
+  toggleMenu: {
+    en: 'Toggle menu', vi: 'Bật/tắt menu', zh: '切换菜单', pt: 'Alternar menu',
+    ar: 'تبديل القائمة', ko: '메뉴 전환', es: 'Alternar menú',
+  },
+} satisfies Record<string, TranslationEntry>;
+
+export type TranslationKey = keyof typeof translations;
+
+===== LANGUAGE SWITCHER =====
+import { useLanguage } from '../../context/LanguageContext';
+import type { LanguageCode } from '../../i18n/translations';
+import styles from './LanguageSwitcher.module.css';
+
+const LANGUAGE_LABELS: Record<LanguageCode, string> = {
+  en: 'English',
+  vi: 'Tiếng Việt',
+  zh: '中文',
+  pt: 'Português',
+  ar: 'العربية',
+  ko: '한국어',
+  es: 'Español',
+};
+
+export default function LanguageSwitcher() {
+  const { language, setLanguage } = useLanguage();
+
+  return (
+    <select
+      className={styles.select}
+      value={language}
+      onChange={(e) => setLanguage(e.target.value as LanguageCode)}
+      aria-label="Change language"
+    >
+      {Object.entries(LANGUAGE_LABELS).map(([code, label]) => (
+        <option key={code} value={code}>
+          {label}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+===== HARDCODED STRINGS =====
+src/lib/appData.ts:23:export async function readRow<T>(id: number): Promise<T[] | null> {
+src/lib/appData.ts:43:export async function mutateRow<T>(id: number, key: string, mutate: (current: T[]) => T[]): Promise<T[] | null> {
+src/lib/appData.ts:117:export async function readRowByKey<T>(key: string): Promise<T | null> {
+src/lib/appData.ts:143:export async function mutateRowByKey<T>(key: string, defaultValue: T, mutate: (current: T) => T): Promise<T | null> {
+src/context/AuthContext.tsx:9:  login: (username: string, password: string) => Promise<{ ok: true } | { ok: false; message: string }>;
+src/context/AuthContext.tsx:10:  createAccount: (username: string, password: string) => Promise<{ ok: true } | { ok: false; message: string }>;
+src/context/AuthContext.tsx:11:  logout: () => Promise<void>;
+src/context/AuthContext.tsx:12:  refreshAccounts: () => Promise<void>;
+src/context/AuthContext.tsx:59:        return { ok: false as const, message: 'Please fill out both username and password.' };
+src/context/AuthContext.tsx:72:        return { ok: false as const, message: 'Your account could not be found. Please contact an Admin.' };
+src/context/AuthContext.tsx:83:        return { ok: false as const, message: 'Please enter a username and password.' };
+src/context/AppDataContext.tsx:4:  EventDate,
+src/context/AppDataContext.tsx:5:  Member,
+src/context/AppDataContext.tsx:6:  AttendanceMap,
+src/context/AppDataContext.tsx:7:  EventVotesMap,
+src/context/AppDataContext.tsx:8:  VsData,
+src/context/AppDataContext.tsx:9:  HomePhoto,
+src/context/AppDataContext.tsx:10:  NoticeAnnouncement,
+src/context/AppDataContext.tsx:22:  refresh: () => Promise<void>;
+src/pages/Members/Members.tsx:24:  const username = currentUser.username ?? 'Unknown';
+src/pages/Members/Members.tsx:68:      alert('Could not save the change. Please try again.');
+src/pages/Members/Members.tsx:91:    const factions: Array<'F' | 'S' | 'R'> = ['F', 'S', 'R'];
+src/pages/Members/Members.tsx:126:    if (!window.confirm(`Are you sure you want to permanently remove ${m.name} from the roster?`)) return;
+src/pages/Members/Members.tsx:129:      alert('Could not remove the member. Please try again.');
+src/pages/Members/Members.tsx:138:      alert('Only Admin users can delete history items.');
+src/pages/Members/Members.tsx:168:      alert('Could not add the member. Please try again.');
+src/pages/Members/Members.tsx:205:              placeholder="🔍 Search member, CP..."
+src/pages/Members/Members.tsx:224:        ℹ️ <strong>Combat Power &amp; F1 Power Manual:</strong> Combat Power uses standard comma formatting.
+src/pages/Members/Members.tsx:236:                <th>Combat Power (CP)</th>
+src/pages/Members/Members.tsx:237:                <th>F1 Power</th>
+src/pages/Members/Members.tsx:238:                <th>Faction</th>
+src/pages/Members/Members.tsx:239:                <th>Level</th>
+src/pages/Members/Members.tsx:240:                <th>Rank</th>
+src/pages/Members/Members.tsx:241:                <th>Diff</th>
+src/pages/Members/Members.tsx:242:                <th>Note</th>
+src/pages/Members/Members.tsx:243:                {canEditCols && <th>Action</th>}
+src/pages/Members/Members.tsx:256:                    No members found.
+src/pages/Members/memberUtils.ts:20:  } else if (numVal >= 0 && numVal <= 999 && !cleanStr.includes('.')) {
+src/pages/Members/memberUtils.ts:37:  return new Date().toISOString().replace('T', ' ').substring(0, 16);
+src/pages/Members/components/MemberRow.tsx:85:              title="Active"
+src/pages/Members/components/MemberRow.tsx:93:              title="Inactive"
+src/pages/Members/components/MemberRow.tsx:101:              title="Removed"
+src/pages/Members/components/MemberRow.tsx:113:              onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
+src/pages/Members/components/MemberRow.tsx:114:              placeholder="Member name..."
+src/pages/Members/components/MemberRow.tsx:120:            title={canEdit ? 'Click to cycle rank' : undefined}
+src/pages/Members/components/MemberRow.tsx:133:          onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
+src/pages/Members/components/MemberRow.tsx:134:          placeholder="e.g. 5,390,000,000"
+src/pages/Members/components/MemberRow.tsx:145:            onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
+src/pages/Members/components/MemberRow.tsx:146:            placeholder="0G"
+src/pages/Members/components/MemberRow.tsx:157:          title={canEdit ? 'Click to cycle faction (F, S, R)' : undefined}
+src/pages/Members/components/MemberRow.tsx:187:          onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
+src/pages/Members/components/MemberRow.tsx:188:          placeholder="Add note..."
+src/pages/Members/components/AddMemberModal.tsx:7:  onSave: (fields: { name: string; cp: string; faction: 'F' | 'S' | 'R'; level: string }) => Promise<void>;
+src/pages/Members/components/AddMemberModal.tsx:24:      alert('Please enter a member name.');
+src/pages/Members/components/AddMemberModal.tsx:38:        <h3>Add New Member</h3>
+src/pages/Members/components/AddMemberModal.tsx:39:        <label>In-Game Name</label>
+src/pages/Members/components/AddMemberModal.tsx:40:        <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Enter fighter name..." />
+src/pages/Members/components/AddMemberModal.tsx:41:        <label>Combat Power (CP)</label>
+src/pages/Members/components/AddMemberModal.tsx:42:        <input type="text" value={cp} onChange={(e) => setCp(e.target.value)} placeholder="e.g. 5,390,000,000" />
+src/pages/Members/components/AddMemberModal.tsx:43:        <label>Initial Faction</label>
+src/pages/Members/components/AddMemberModal.tsx:45:          <option value="F">F (Blue)</option>
+src/pages/Members/components/AddMemberModal.tsx:46:          <option value="S">S (Purple)</option>
+src/pages/Members/components/AddMemberModal.tsx:47:          <option value="R">R (Orange)</option>
+src/pages/Members/components/AddMemberModal.tsx:49:        <label>Level (1-30 or i1-i10)</label>
+src/pages/Members/components/AddMemberModal.tsx:59:            Cancel
+src/pages/Members/components/AddMemberModal.tsx:62:            {saving ? 'Saving…' : 'Save Member'}
+src/pages/Members/components/F1HistoryModal.tsx:22:        <label>Recorded Entries</label>
+src/pages/Members/components/F1HistoryModal.tsx:26:              No historical records found.
+src/pages/Members/components/F1HistoryModal.tsx:46:            Close
+src/pages/Login/Login.tsx:38:      alert(result.message);
+src/pages/Login/Login.tsx:45:    alert(`Account ${createdName} successfully created! You can now log in using these details.`);
+src/pages/Login/Login.tsx:67:            LOG IN
+src/pages/Login/Login.tsx:70:            Create Account
+src/pages/Login/Login.tsx:78:            <h3>System Login</h3>
+src/pages/Login/Login.tsx:82:              placeholder="Username (admin, manager, member...)"
+src/pages/Login/Login.tsx:88:              placeholder="Password"
+src/pages/Login/Login.tsx:91:              onKeyDown={(e) => e.key === 'Enter' && handleSubmitLogin()}
+src/pages/Login/Login.tsx:95:                Cancel
+src/pages/Login/Login.tsx:98:                {loggingIn ? 'Logging in…' : 'Login'}
+src/pages/Login/Login.tsx:108:            <h3>Create New Account</h3>
+src/pages/Login/Login.tsx:111:              placeholder="Choose Username"
+src/pages/Login/Login.tsx:117:              placeholder="Choose Password"
+src/pages/Login/Login.tsx:122:              New accounts are registered as Members by default. Only an Admin can assign roles after logging in.
+src/pages/Login/Login.tsx:126:                Cancel
+src/pages/Login/Login.tsx:129:                Register
+src/pages/History/History.tsx:19:  const username = currentUser.username ?? 'Unknown';
+src/pages/History/History.tsx:29:      !window.confirm(
+src/pages/History/History.tsx:37:      const [curEvents, curMembers] = await Promise.all([readRow<unknown>(ROW.eventDates), readRow<unknown>(ROW.members)]);
+src/pages/History/History.tsx:39:        alert('Could not read the current data, so nothing was changed.');
+src/pages/History/History.tsx:53:        alert('Could not save a safety snapshot first, so nothing was restored.');
+src/pages/History/History.tsx:59:        alert('The restore only partly worked. Restore the safety snapshot at the top of the list to go back.');
+src/pages/History/History.tsx:63:      alert('Snapshot restored.');
+src/pages/History/History.tsx:84:          Detailed accountability log showing who added data, modified records, or deleted parameters across the workspace.
+src/pages/History/History.tsx:90:                <th>Timestamp</th>
+src/pages/History/History.tsx:91:                <th>User Account</th>
+src/pages/History/History.tsx:92:                <th>Action Type</th>
+src/pages/History/History.tsx:93:                <th>Description Details</th>
+src/pages/History/History.tsx:128:                <th>Timestamp</th>
+src/pages/History/History.tsx:129:                <th>Saved By</th>
+src/pages/History/History.tsx:130:                <th>Events</th>
+src/pages/History/History.tsx:131:                <th>Members</th>
+src/pages/History/History.tsx:132:                <th>Action</th>
+src/pages/History/History.tsx:149:                        {busyId === snap.id ? 'Restoring…' : 'Restore'}
+src/pages/Roles/Roles.tsx:15:  { value: 'member', label: 'Member' },
+src/pages/Roles/Roles.tsx:16:  { value: 'alliance', label: 'Alliance Member' },
+src/pages/Roles/Roles.tsx:17:  { value: 'management', label: 'Management' },
+src/pages/Roles/Roles.tsx:18:  { value: 'admin', label: 'Admin' },
+src/pages/Roles/Roles.tsx:23:  const username = currentUser.username ?? 'Unknown';
+src/pages/Roles/Roles.tsx:53:      !window.confirm('You are changing your own role. If you remove Admin you will lose access to this page. Continue?')
+src/pages/Roles/Roles.tsx:62:      alert('Could not update role. Please try again.');
+src/pages/Roles/Roles.tsx:66:      alert('The role was not changed. The database did not allow the update.');
+src/pages/Roles/Roles.tsx:101:                <th>Username</th>
+src/pages/Roles/Roles.tsx:102:                <th>Current Role</th>
+src/pages/Roles/Roles.tsx:103:                <th>New Role</th>
+src/pages/Roles/Roles.tsx:138:                          {savingId === acc.user_id ? 'Saving…' : 'Save'}
+src/pages/VsPoints/VsPoints.tsx:88:  const persist = async (updater: (cur: VsData) => VsData): Promise<boolean> => {
+src/pages/VsPoints/VsPoints.tsx:93:      alert('Could not save. Please try again.');
+src/pages/VsPoints/VsPoints.tsx:115:      alert('Please select a date.');
+src/pages/VsPoints/VsPoints.tsx:121:      alert('A column for this date already exists.');
+src/pages/VsPoints/VsPoints.tsx:132:    if (!window.confirm(`Remove session date ${target}?`)) return;
+src/pages/VsPoints/VsPoints.tsx:146:      alert('A column for this date already exists.');
+src/pages/VsPoints/VsPoints.tsx:187:      alert('Please select at least one date to archive.');
+src/pages/VsPoints/VsPoints.tsx:190:    if (!window.confirm(`Archive ${selectedDates.length} selected date(s)? Their totals are saved, then removed from the live table.`)) return;
+src/pages/VsPoints/VsPoints.tsx:208:      alert(`Archived ${selectedDates.length} date(s).`);
+src/pages/VsPoints/VsPoints.tsx:215:    if (!window.confirm(`Permanently delete the archived cycle from ${arc.cycleStartDate || '—'} to ${arc.cycleEndDate || '—'}? This cannot be undone.`)) return;
+src/pages/VsPoints/VsPoints.tsx:233:            TABLE
+src/pages/VsPoints/VsPoints.tsx:246:              <option value="weekly">Weekly</option>
+src/pages/VsPoints/VsPoints.tsx:247:              <option value="daily">Daily</option>
+src/pages/VsPoints/VsPoints.tsx:279:        <span>TOP 5:</span>
+src/pages/VsPoints/VsPoints.tsx:291:        <div style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: 24 }}>Loading…</div>
+src/pages/VsPoints/VsPoints.tsx:309:                DEFAULT
+src/pages/VsPoints/VsPoints.tsx:312:                BY POINTS
+src/pages/VsPoints/VsPoints.tsx:333:          title="Select Ranking Cycle Dates"
+src/pages/VsPoints/VsPoints.tsx:344:          title="Select Dates to Archive"
+src/pages/VsPoints/VsPoints.tsx:345:          description="Choose which session dates to move into the archive. Their totals are saved, then those dates are removed from the live table."
+src/pages/VsPoints/components/DateSelectModal.tsx:13:  onConfirm: (selectedDates: string[]) => Promise<void>;
+src/pages/VsPoints/components/DateSelectModal.tsx:56:          <button onClick={() => setAll(true)}>Select all</button>
+src/pages/VsPoints/components/DateSelectModal.tsx:57:          <button onClick={() => setAll(false)}>Select none</button>
+src/pages/VsPoints/components/DateSelectModal.tsx:62:            const type = getWeekType(wk) === 'daily' ? 'Daily' : 'Weekly';
+src/pages/VsPoints/components/DateSelectModal.tsx:74:            Cancel
+src/pages/VsPoints/components/RankingCards.tsx:35:        const typeLabel = getWeekType(wk) === 'daily' ? 'Day' : 'Wk';
+src/pages/VsPoints/components/RankingCards.tsx:41:            title={isStaff ? 'Click to edit this score' : undefined}
+src/pages/VsPoints/components/WeeklyTable.tsx:70:                        onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
+src/pages/VsPoints/components/WeeklyTable.tsx:76:                        title={isStaff ? 'Click to edit this date' : undefined}
+src/pages/VsPoints/components/WeeklyTable.tsx:84:                      title={isStaff ? 'Click to switch between Weekly and Daily' : undefined}
+src/pages/VsPoints/components/WeeklyTable.tsx:86:                      {type === 'daily' ? 'Daily' : 'Weekly'}
+src/pages/VsPoints/components/WeeklyTable.tsx:102:                  No members found.
+src/pages/VsPoints/components/ArchivesModal.tsx:17:          Past Cycles
+src/pages/VsPoints/components/ArchivesModal.tsx:46:                      <span style={{ color: 'var(--color-text-muted)' }}>No member data recorded.</span>
+src/pages/VsPoints/components/ArchivesModal.tsx:65:            Close
+src/pages/Notice/useNoticeData.ts:15:async function mutateRow<T>(id: number, key: string, mutate: (current: T[]) => T[]): Promise<T[] | null> {
+src/pages/Notice/Notice.tsx:34:      alert('Could not save the event. Please try again.');
+src/pages/Notice/Notice.tsx:48:      alert('Could not delete the event. Please try again.');
+src/pages/Notice/Notice.tsx:62:      alert('Could not save the announcement. Please try again.');
+src/pages/Notice/Notice.tsx:65:    const audience = fields.visibility === 'alliance' ? 'Alliance Members + Staff Only' : 'Everyone';
+src/pages/Notice/Notice.tsx:68:      `${existing ? 'Updated' : 'Posted'} notice board announcement: "${fields.title}" (visible to: ${audience})`
+src/pages/Notice/Notice.tsx:77:      alert('Could not delete the announcement. Please try again.');
+src/pages/Notice/ganttUtils.ts:3:export const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+src/pages/Notice/ganttUtils.ts:4:export const WEEKDAYS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+src/pages/Notice/noticeAuth.ts:5:  return { username: currentUser.username ?? 'Unknown', role: currentUser.role };
+src/pages/Notice/components/NoticeBoard.tsx:14:const visibilityLabel = (v: Visibility) => (v === 'alliance' ? 'Alliance Members + Staff Only' : 'Everyone');
+src/pages/Notice/components/NoticeBoard.tsx:31:        Clan updates, upcoming schedules, and main notices posted by management tier staff.
+src/pages/Notice/components/NoticeBoard.tsx:49:                      Edit
+src/pages/Notice/components/GanttTimeline.tsx:6:  MONTHS, WEEKDAYS, buildGanttBars, canSee, dateStrOf, dayShiftLabel, formatEventTime, getGanttWindow,
+src/pages/Notice/components/GanttTimeline.tsx:62:  const renderGroup = (label: string, icon: string, list: CalendarEvent[]) => {
+src/pages/Notice/components/GanttTimeline.tsx:80:                  ? `${formatEventTime(st.time)}${mode === 'local' ? dayShiftLabel(st.dayShift) : ''}${et ? ' – ' + formatEventTime(et.time) : ''} (${mode === 'local' ? 'Local' : 'Server'})`
+src/pages/Notice/components/GanttTimeline.tsx:133:            SERVER
+src/pages/Notice/components/GanttTimeline.tsx:136:            LOCAL
+src/pages/Notice/components/GanttTimeline.tsx:174:                        {isToday ? 'Today' : `${MONTHS[d.getMonth()]} ${d.getDate()}`}
+src/pages/Notice/components/GanttTimeline.tsx:182:                  {isStaff ? 'No events scheduled yet. Click "+ ADD EVENT" to create one.' : 'No events scheduled yet.'}
+src/pages/Notice/components/GanttTimeline.tsx:186:                  {renderGroup('Alliance Events', '🛡️', allianceEvents)}
+src/pages/Notice/components/GanttTimeline.tsx:187:                  {renderGroup('War Events', '⚔️', warEvents)}
+src/pages/Notice/components/CalendarEventModal.tsx:8:const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+src/pages/Notice/components/CalendarEventModal.tsx:13:  onSave: (ev: CalendarEvent) => Promise<void>;
+src/pages/Notice/components/CalendarEventModal.tsx:14:  onDelete: (id: number) => Promise<void>;
+src/pages/Notice/components/CalendarEventModal.tsx:53:    setEndDate((cur) => (cur < value ? value : cur > max ? max : cur));
+src/pages/Notice/components/CalendarEventModal.tsx:58:      alert('Please enter an event name.');
+src/pages/Notice/components/CalendarEventModal.tsx:75:        alert('Please select a start date.');
+src/pages/Notice/components/CalendarEventModal.tsx:82:        alert('Events can last a maximum of 7 days. The end date has been adjusted.');
+src/pages/Notice/components/CalendarEventModal.tsx:90:        alert('Please select a starting date for the biweekly event.');
+src/pages/Notice/components/CalendarEventModal.tsx:97:        alert('Please enter a valid day of month (1-31).');
+src/pages/Notice/components/CalendarEventModal.tsx:113:    if (!window.confirm(`Delete calendar event "${event.name}"?`)) return;
+src/pages/Notice/components/CalendarEventModal.tsx:131:        <h3>{event ? 'Edit Calendar Event' : 'Add Calendar Event'}</h3>
+src/pages/Notice/components/CalendarEventModal.tsx:133:        <input type="text" placeholder="Event Name" value={name} onChange={(e) => setName(e.target.value)} />
+src/pages/Notice/components/CalendarEventModal.tsx:137:          <option value="alliance">Alliance Event</option>
+src/pages/Notice/components/CalendarEventModal.tsx:138:          <option value="war">War Event</option>
+src/pages/Notice/components/CalendarEventModal.tsx:143:          <option value="custom">One-Time / Date Range</option>
+src/pages/Notice/components/CalendarEventModal.tsx:144:          <option value="weekly">Weekly</option>
+src/pages/Notice/components/CalendarEventModal.tsx:145:          <option value="biweekly">Every 2 Weeks</option>
+src/pages/Notice/components/CalendarEventModal.tsx:146:          <option value="monthly">Monthly</option>
+src/pages/Notice/components/CalendarEventModal.tsx:192:              placeholder="e.g. 15"
+src/pages/Notice/components/CalendarEventModal.tsx:202:            SERVER TIME
+src/pages/Notice/components/CalendarEventModal.tsx:205:            LOCAL TIME
+src/pages/Notice/components/CalendarEventModal.tsx:209:          <input type="time" value={shown(time)} onChange={(e) => setTime(fromInput(e.target.value))} title="Start Time" />
+src/pages/Notice/components/CalendarEventModal.tsx:210:          <input type="time" value={shown(endTime)} onChange={(e) => setEndTime(fromInput(e.target.value))} title="End Time" />
+src/pages/Notice/components/CalendarEventModal.tsx:216:          <option value="everyone">Everyone</option>
+src/pages/Notice/components/CalendarEventModal.tsx:217:          <option value="alliance">Alliance Members + Staff Only</option>
+src/pages/Notice/components/CalendarEventModal.tsx:226:              aria-label={`Color ${c}`}
+src/pages/Notice/components/CalendarEventModal.tsx:237:              Delete
+src/pages/Notice/components/CalendarEventModal.tsx:241:            Cancel
+src/pages/Notice/components/CalendarEventModal.tsx:244:            {saving ? 'Saving…' : 'Save'}
+src/pages/Notice/components/AnnouncementModal.tsx:8:  onSave: (fields: AnnouncementFields) => Promise<void>;
+src/pages/Notice/components/AnnouncementModal.tsx:9:  onDelete: (id: number) => Promise<void>;
+src/pages/Notice/components/AnnouncementModal.tsx:20:      alert('Please fill out both title and content.');
+src/pages/Notice/components/AnnouncementModal.tsx:33:    if (!window.confirm(`Delete announcement "${announcement.title}"?`)) return;
+src/pages/Notice/components/AnnouncementModal.tsx:45:        <h3>{announcement ? 'Edit Announcement' : 'Add Announcement'}</h3>
+src/pages/Notice/components/AnnouncementModal.tsx:46:        <input type="text" placeholder="Announcement Title" value={title} onChange={(e) => setTitle(e.target.value)} />
+src/pages/Notice/components/AnnouncementModal.tsx:48:          placeholder="Announcement Details..."
+src/pages/Notice/components/AnnouncementModal.tsx:55:          <option value="everyone">Everyone</option>
+src/pages/Notice/components/AnnouncementModal.tsx:56:          <option value="alliance">Alliance Members + Staff Only</option>
+src/pages/Notice/components/AnnouncementModal.tsx:61:              Delete
+src/pages/Notice/components/AnnouncementModal.tsx:65:            Cancel
+src/pages/Notice/components/AnnouncementModal.tsx:68:            {saving ? 'Saving…' : 'Post'}
+src/pages/Events/eventsUtils.ts:17:export function assignCompetitionRanks<T>(sortedDesc: T[], valueFn: (item: T) => number): Array<{ item: T; rank: number }> {
+src/pages/Events/Events.tsx:30:  const username = currentUser.username ?? 'Unknown';
+src/pages/Events/Events.tsx:93:      alert('Please enter an event name and date.');
+src/pages/Events/Events.tsx:100:      alert('Could not add the event. Please try again.');
+src/pages/Events/Events.tsx:116:      alert('Could not save the event. Please try again.');
+src/pages/Events/Events.tsx:151:      alert('The delete only partly completed. Please refresh and check the event list.');
+src/pages/Events/Events.tsx:172:      alert('Could not save attendance. Please try again.');
+src/pages/Events/Events.tsx:196:      alert('Could not save the vote. Please try again.');
+src/pages/Events/Events.tsx:235:      alert(`${failed.length} screenshot(s) failed:\n\n${failed.map((f) => `${f.name}: ${f.reason}`).join('\n\n')}`);
+src/pages/Events/Events.tsx:254:    setReviewName(firstEventName || 'Imported War Event');
+src/pages/Events/Events.tsx:267:    const newEvent: EventDate = { id: Date.now(), name: reviewName.trim() || 'Imported War Event', date: reviewDate, isWar: reviewIsWar };
+src/pages/Events/Events.tsx:270:      alert('Could not add the event. Please try again.');
+src/pages/Events/Events.tsx:291:    alert(`Created "${newEvent.name}" and marked ${appliedCount} member(s) attended.`);
+src/pages/Events/Events.tsx:320:            ATTENDANCE
+src/pages/Events/Events.tsx:323:            RANKING
+src/pages/Events/Events.tsx:333:            placeholder="🔍 Search member..."
+src/pages/Events/Events.tsx:347:                placeholder="Event Name"
+src/pages/Events/Events.tsx:425:        <div style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: 24 }}>Loading…</div>
+src/pages/Events/Events.tsx:448:                DEFAULT
+src/pages/Events/Events.tsx:454:                BY RANK
+src/pages/Events/Events.tsx:472:                DEFAULT
+src/pages/Events/Events.tsx:478:                BY RANK
+src/pages/Events/importUtils.ts:19:  return str.normalize('NFKD').replace(/[\u0300-\u036f]/g, '')
+src/pages/Events/importUtils.ts:72:      method: 'POST',
+src/pages/Events/importUtils.ts:73:      headers: { 'Content-Type': 'application/json' },
+src/pages/Events/components/EditEventModal.tsx:8:  onSave: (fields: { name: string; date: string; isWar: boolean }) => Promise<void>;
+src/pages/Events/components/EditEventModal.tsx:9:  onDelete: () => Promise<void>;
+src/pages/Events/components/EditEventModal.tsx:28:    if (!window.confirm('Delete this event? This removes it for all members.')) return;
+src/pages/Events/components/EditEventModal.tsx:40:        <h3>Edit Event</h3>
+src/pages/Events/components/EditEventModal.tsx:41:        <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Event Name" />
+src/pages/Events/components/EditEventModal.tsx:48:            Delete Event
+src/pages/Events/components/EditEventModal.tsx:51:            Cancel
+src/pages/Events/components/EditEventModal.tsx:54:            {saving ? 'Saving…' : 'Save'}
+src/pages/Events/components/AttendanceTable.tsx:119:                  No members found.
+src/pages/Events/components/AttendanceTable.tsx:182:                            const attendLabel = status === 'late' ? 'LATE' : status ? 'ATTENDED' : 'NOT ATTENDED';
+src/pages/Events/components/AttendanceTable.tsx:229:              {(['ATTENDED', 'NOT ATTENDED'] as const).map((label) => (
+src/pages/Events/components/AttendanceTable.tsx:238:                      const val = label === 'ATTENDED' ? att : sorted.length * evs.length - att;
+src/pages/Events/components/AttendanceTable.tsx:243:                          style={{ fontWeight: 800, color: label === 'ATTENDED' ? 'green' : 'crimson' }}
+src/pages/Events/components/ImportReviewModal.tsx:40:      <option value="">— Skip —</option>
+src/pages/Events/components/ImportReviewModal.tsx:68:          <input type="text" placeholder="Event Name" value={eventName} onChange={(e) => onEventNameChange(e.target.value)} style={{ flex: 1, minWidth: 140 }} />
+src/pages/Events/components/ImportReviewModal.tsx:81:          <div style={{ fontSize: 12, color: 'var(--color-text-muted)', padding: 8 }}>No confidently matched rows.</div>
+src/pages/Events/components/ImportReviewModal.tsx:96:          <summary style={{ cursor: 'pointer', fontSize: 11, fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>Raw OCR output</summary>
+src/pages/Events/components/RankingList.tsx:50:    return <div style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: 24 }}>No members yet.</div>;
+src/pages/Events/components/WarTable.tsx:86:      return <div style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: 24 }}>No war events recorded yet.</div>;
+src/pages/Events/components/WarTable.tsx:89:      return <div style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: 24 }}>No members yet.</div>;
+src/pages/Discussion/Discussion.tsx:13:  const username = currentUser.username ?? 'Unknown';
+src/pages/Discussion/Discussion.tsx:27:  // Re-check every 30s so polls move to "Archived" when their timer runs out
+src/pages/Discussion/Discussion.tsx:45:      alert('Could not send the message. Please try again.');
+src/pages/Discussion/Discussion.tsx:71:      alert('Could not save the poll. Please try again.');
+src/pages/Discussion/Discussion.tsx:75:    log(existing ? 'ADMIN_EDIT_POLL' : 'CREATE_POLL', `${existing ? 'Edited' : 'Created'} poll: "${fields.question}"`);
+src/pages/Discussion/Discussion.tsx:85:          flags.rejection = 'This poll has already closed and cannot accept new votes.';
+src/pages/Discussion/Discussion.tsx:89:          flags.rejection = 'You have already voted on this poll. Changing votes is disabled.';
+src/pages/Discussion/Discussion.tsx:99:      alert('Could not record your vote. Please try again.');
+src/pages/Discussion/Discussion.tsx:104:      alert(flags.rejection);
+src/pages/Discussion/Discussion.tsx:108:    log('VOTE_POLL', `Voted on poll: "${q}"`);
+src/pages/Discussion/Discussion.tsx:121:      alert('Could not remove the vote. Please try again.');
+src/pages/Discussion/Discussion.tsx:131:    if (!window.confirm(`Archive poll "${poll.question}" now? This will close it to voting immediately.`)) return;
+src/pages/Discussion/Discussion.tsx:136:      alert('Could not archive the poll. Please try again.');
+src/pages/Discussion/Discussion.tsx:141:    log('ADMIN_ARCHIVE_POLL', `Admin archived poll early: "${poll.question}"`);
+src/pages/Discussion/Discussion.tsx:146:    if (!window.confirm(`Permanently delete poll "${poll.question}"?`)) return;
+src/pages/Discussion/Discussion.tsx:149:      alert('Could not delete the poll. Please try again.');
+src/pages/Discussion/Discussion.tsx:161:      alert('Only Admin can edit notices.');
+src/pages/Discussion/Discussion.tsx:174:      alert('Could not save the notice. Please try again.');
+src/pages/Discussion/Discussion.tsx:178:    log(existing ? 'ADMIN_EDIT_NOTICE' : 'CREATE_NOTICE', `${existing ? 'Admin edited official notice' : 'Posted notice'}: "${fields.title}"`);
+src/pages/Discussion/Discussion.tsx:184:    if (!window.confirm(`Delete notice "${notice.title}"?`)) return;
+src/pages/Discussion/Discussion.tsx:187:      alert('Could not delete the notice. Please try again.');
+src/pages/Discussion/Discussion.tsx:206:  const activePolls = polls.filter((p) => now <= p.expiresAt);
+src/pages/Discussion/Discussion.tsx:248:                Create time-bounded polls, official management notices, and view archived polls.
+src/pages/Discussion/Discussion.tsx:295:                              Edit
+src/pages/Discussion/components/NoticeModal.tsx:9:  onSave: (fields: { title: string; content: string }) => Promise<void>;
+src/pages/Discussion/components/NoticeModal.tsx:10:  onDelete: (notice: OfficialNotice) => Promise<void>;
+src/pages/Discussion/components/NoticeModal.tsx:20:      alert('Please fill out both notice title and content.');
+src/pages/Discussion/components/NoticeModal.tsx:44:        <h3>{notice ? 'Edit Management Notice' : 'Add Management Notice'}</h3>
+src/pages/Discussion/components/NoticeModal.tsx:45:        <input type="text" placeholder="Notice Title" value={title} onChange={(e) => setTitle(e.target.value)} />
+src/pages/Discussion/components/NoticeModal.tsx:46:        <textarea placeholder="Notice Details..." rows={4} value={content} onChange={(e) => setContent(e.target.value)} />
+src/pages/Discussion/components/NoticeModal.tsx:50:              Delete
+src/pages/Discussion/components/NoticeModal.tsx:54:            Cancel
+src/pages/Discussion/components/NoticeModal.tsx:57:            {saving ? 'Saving…' : 'Post Notice'}
+src/pages/Discussion/components/PollCard.tsx:31:              Delete
+src/pages/Discussion/components/PollCard.tsx:62:            Edit
+src/pages/Discussion/components/PollCard.tsx:67:                Archive
+src/pages/Discussion/components/PollCard.tsx:70:                Delete
+src/pages/Discussion/components/PollCard.tsx:90:                  Vote
+src/pages/Discussion/components/ChatPanel.tsx:8:  onSend: (text: string) => Promise<boolean>;
+src/pages/Discussion/components/ChatPanel.tsx:37:        Confidential communication channel restricted strictly to Management and Admin personnel.
+src/pages/Discussion/components/ChatPanel.tsx:62:          placeholder="Type message..."
+src/pages/Discussion/components/ChatPanel.tsx:66:            if (e.key === 'Enter') void send();
+src/pages/Discussion/components/ChatPanel.tsx:70:          Send
+src/pages/Discussion/components/PollModal.tsx:9:  onSave: (fields: PollFields) => Promise<void>;
+src/pages/Discussion/components/PollModal.tsx:10:  onDelete: (poll: Poll) => Promise<void>;
+src/pages/Discussion/components/PollModal.tsx:26:      alert('A poll can have a maximum of 8 options.');
+src/pages/Discussion/components/PollModal.tsx:34:      alert('A poll needs at least 2 options.');
+src/pages/Discussion/components/PollModal.tsx:42:      alert('Please enter a poll question.');
+src/pages/Discussion/components/PollModal.tsx:47:      alert('Please enter at least two options.');
+src/pages/Discussion/components/PollModal.tsx:71:        <h3>{poll ? 'Edit Poll' : 'Create New Poll'}</h3>
+src/pages/Discussion/components/PollModal.tsx:74:          placeholder="Poll Question (e.g. Next Guild Event Timing?)"
+src/pages/Discussion/components/PollModal.tsx:81:            <input type="text" placeholder={`Option ${i + 1}`} value={o.text} onChange={(e) => setOptionText(i, e.target.value)} />
+src/pages/Discussion/components/PollModal.tsx:97:              <option value="86400">24 Hours</option>
+src/pages/Discussion/components/PollModal.tsx:98:              <option value="259200">3 Days</option>
+src/pages/Discussion/components/PollModal.tsx:99:              <option value="604800">1 Week</option>
+src/pages/Discussion/components/PollModal.tsx:107:              Delete Poll
+src/pages/Discussion/components/PollModal.tsx:111:            Cancel
+src/pages/Discussion/components/PollModal.tsx:114:            {saving ? 'Saving…' : 'Publish Poll'}
+src/pages/BlackGold/BlackGold.tsx:43:      alert('Could not save. Please try again.');
+src/pages/BlackGold/BlackGold.tsx:50:  const persistAssignments = async (updater: (cur: BlackGoldAssignments) => BlackGoldAssignments): Promise<boolean> => {
+src/pages/BlackGold/BlackGold.tsx:55:      alert('Could not save. Please try again.');
+src/pages/BlackGold/BlackGold.tsx:73:    const next = entry.slot === null ? 'A' : entry.slot === 'A' ? 'B' : null;
+src/pages/BlackGold/BlackGold.tsx:98:      alert('Date cannot be empty.');
+src/pages/BlackGold/BlackGold.tsx:105:      alert('Another session with this date already exists.');
+src/pages/BlackGold/BlackGold.tsx:114:    if (!window.confirm(`Remove session "${d ? d.date : ''}"? This also clears all slots, attendance, and role markers for it.`)) return;
+src/pages/BlackGold/BlackGold.tsx:129:      alert('Please select a date.');
+src/pages/BlackGold/BlackGold.tsx:135:      alert('This date is already added.');
+src/pages/BlackGold/BlackGold.tsx:157:            ATTENDANCE
+src/pages/BlackGold/BlackGold.tsx:160:            CALENDAR
+src/pages/BlackGold/BlackGold.tsx:191:              Not Attended
+src/pages/BlackGold/BlackGold.tsx:196:              Attended
+src/pages/BlackGold/BlackGold.tsx:201:              Main Player
+src/pages/BlackGold/BlackGold.tsx:206:              Substitute
+src/pages/BlackGold/BlackGold.tsx:220:        <div style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: 24 }}>Loading…</div>
+src/pages/BlackGold/components/CalendarTab.tsx:23:              <th>Week</th>
+src/pages/BlackGold/components/CalendarTab.tsx:24:              <th>A Count</th>
+src/pages/BlackGold/components/CalendarTab.tsx:25:              <th>B Count</th>
+src/pages/BlackGold/components/CalendarTab.tsx:26:              <th>Action</th>
+src/pages/BlackGold/components/AttendanceTable.tsx:75:              <th>Total Penalty</th>
+src/pages/BlackGold/components/AttendanceTable.tsx:82:                  No members found.
+src/pages/BlackGold/components/SlotCell.tsx:17:  const attendLabel = entry.attended ? 'Attended' : 'Not Attended';
+src/pages/BlackGold/components/SlotCell.tsx:19:  let roleLabel = 'Role: None';
+src/pages/BlackGold/components/SlotCell.tsx:20:  if (entry.playerRole === 'main') { roleClass = styles.roleMain; roleLabel = 'Main Player'; }
+src/pages/BlackGold/components/SlotCell.tsx:21:  else if (entry.playerRole === 'sub') { roleClass = styles.roleSub; roleLabel = 'Substitute'; }
+src/components/DashboardLayout.tsx:13:          <span>♦ Loopy's Playground · Alliance Management Tool</span>
+src/components/LanguageSwitcher/LanguageSwitcher.tsx:6:  en: 'English',
+src/components/LanguageSwitcher/LanguageSwitcher.tsx:23:      aria-label="Change language"
