@@ -1,7 +1,8 @@
 import { useMemo } from 'react';
 import styles from '../Events.module.css';
 import type { EventDate, Member } from '../../../types';
-import { RANK_GROUP_ORDER, memberRate, rateClass, attendanceWeight } from '../eventsUtils';
+import { compareByRankThenF1 } from '../../../lib/memberSort';
+import { memberRate, rateClass, attendanceWeight } from '../eventsUtils';
 
 interface DayGroup {
   date: string;
@@ -47,11 +48,7 @@ export default function AttendanceTable({
   }, [events]);
 
   const sorted = useMemo(() => {
-    return [...members].sort((a, b) => {
-      const ga = RANK_GROUP_ORDER[a.rank] ?? 99;
-      const gb = RANK_GROUP_ORDER[b.rank] ?? 99;
-      return ga - gb;
-    });
+    return [...members].sort(compareByRankThenF1);
   }, [members]);
 
   const totalCols = 4 + dayGroups.reduce((s, g) => s + (collapsedDays.has(g.date) ? 1 : g.events.length), 0);

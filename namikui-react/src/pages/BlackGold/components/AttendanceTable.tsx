@@ -3,6 +3,7 @@ import type { BlackGoldAssignments, BlackGoldDate } from '../blackGoldTypes';
 import type { Member } from '../../../types';
 import { RANK_GROUP_COLORS, RANK_GROUP_ORDER, getEntry, parseDateString } from '../blackGoldUtils';
 import SlotCell from './SlotCell';
+import { compareByRankThenF1 } from '../../../lib/memberSort';
 
 interface Props {
   dates: BlackGoldDate[];
@@ -43,12 +44,7 @@ export default function AttendanceTable({ dates, members, assignments, canEdit, 
   today.setHours(0, 0, 0, 0);
   const colSpan = 2 + dates.length;
 
-  const sorted = [...members].sort((a, b) => {
-    const ra = RANK_GROUP_ORDER[a.rank] ?? 99;
-    const rb = RANK_GROUP_ORDER[b.rank] ?? 99;
-    if (ra !== rb) return ra - rb;
-    return (b.f1Raw || 0) - (a.f1Raw || 0);
-  });
+  const sorted = [...members].sort(compareByRankThenF1);
 
   let lastGroupKey: string | null = null;
 

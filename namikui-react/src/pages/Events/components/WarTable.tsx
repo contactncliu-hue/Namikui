@@ -1,7 +1,8 @@
 import { useMemo } from 'react';
 import styles from '../Events.module.css';
 import type { EventDate, Member } from '../../../types';
-import { RANK_GROUP_ORDER, assignCompetitionRanks, memberRate, rateClass, attendanceWeight } from '../eventsUtils';
+import { compareByRankThenF1 } from '../../../lib/memberSort';
+import { assignCompetitionRanks, memberRate, rateClass, attendanceWeight } from '../eventsUtils';
 
 interface Props {
   warEvents: EventDate[];
@@ -101,7 +102,7 @@ export default function WarTable({ warEvents, members, sortMode, getAttendanceSt
       );
     }
 
-    const sorted = [...stats].sort((a, b) => (RANK_GROUP_ORDER[a.m.rank] ?? 99) - (RANK_GROUP_ORDER[b.m.rank] ?? 99));
+    const sorted = [...stats].sort((a, b) => compareByRankThenF1(a.m, b.m));
     let lastGroupKey: string | null = null;
     return (
       <div className={styles.rankingList}>
