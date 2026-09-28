@@ -1,0 +1,332 @@
+import { useMemo, useState } from 'react';
+import styles from './Members.module.css';
+import { useAuth } from '../../context/AuthContext';
+import { ROW, logAudit, mutateRow, useAppRow } from '../../lib/appData';
+import { RANK_GROUP_ORDER, nowStamp, parseCpToRaw, parseCpWithCommas } from './memberUtils';
+import MemberRow from './components/MemberRow';
+import AddMemberModal from './components/AddMemberModal';
+import F1HistoryModal from './components/F1HistoryModal';
+import type { Member } from '../../types';
+
+type StatusFilter = 'all' | 'active' | 'inactive' | 'removed';
+
+// Normalizes a raw member row: recomputes formatted CP/F1 fields from stored
+// raw values so display stays consistent, and backfills required fields.
+function normalize(m: Member): Member {
+  const cp = parseCpWithCommas(m.cp);
+  const f1 = parseCpToRaw(m.f1Cp || '0G');
+  const history = m.f1History && m.f1History.length > 0 ? m.f1History : [{ date: nowStamp(), val: f1.formatted }];
+  return { ...m, cp: cp.formatted, rawCp: cp.raw, f1Cp: f1.formatted, f1Raw: f1.raw, f1History: history, frozenRank: m.frozenRank || m.rank };
+}
+
+export function Members() {
+  const { currentUser } = useAuth();
+  const username = currentUser.username ?? 'Unknown';
+  const role = currentUser.role;
+  const canEdit = role === 'admin' || role === 'management';
+  const isAdmin = role === 'admin';
+
+  const { rows: rawMembers, setRows: setMembers, loading } = useAppRow<Member>(ROW.members, true);
+  const members = useMemo(() => rawMembers.map(normalize), [rawMembers]);
+
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [search, setSearch] = useState('');
+  const [showDiff, setShowDiff] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
+  const [historyMemberId, setHistoryMemberId] = useState<number | null>(null);
+
+  const log = (type: string, details: string) => void logAudit(username, role, type, details);
+
+  const activeOrInactive = members.filter((m) => m.status !== 'removed');
+
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase();
+    const list = members.filter((m) => {
+      let matchesStatus = false;
+      if (statusFilter === 'all') matchesStatus = m.status !== 'removed';
+      else matchesStatus = m.status === statusFilter;
+      const matchesSearch = m.name.toLowerCase().includes(q) || (m.cp || '').toLowerCase().includes(q);
+      return matchesStatus && matchesSearch;
+    });
+    list.sort((a, b) => {
+      const rankA = RANK_GROUP_ORDER[a.frozenRank || 'R1'] ?? 99;
+      const rankB = RANK_GROUP_ORDER[b.frozenRank || 'R1'] ?? 99;
+      if (rankA !== rankB) return rankA - rankB;
+      return (b.f1Raw || 0) - (a.f1Raw || 0);
+    });
+    return list;
+  }, [members, statusFilter, search]);
+
+  const historyMember = historyMemberId != null ? members.find((m) => m.id === historyMemberId) ?? null : null;
+
+  // Applies a change to one member and persists the whole roster.
+  const patchMember = async (id: number, patch: Partial<Member>) => {
+    const next = await mutateRow<Member>(ROW.members, 'members', (cur) =>
+      cur.map((m) => (m.id === id ? { ...m, ...patch } : m))
+    );
+    if (!next) {
+      alert('Could not save the change. Please try again.');
+      return false;
+    }
+    setMembers(next);
+    return true;
+  };
+
+  const setStatus = async (id: number, status: 'active' | 'inactive' | 'removed') => {
+    if (!canEdit) return;
+    await patchMember(id, { status });
+  };
+
+  const cycleRank = async (id: number) => {
+    if (!canEdit) return;
+    const ranks = ['R1', 'R2', 'R3', 'R4', 'R5'];
+    const m = rawMembers.find((x) => x.id === id);
+    if (!m) return;
+    const idx = ranks.indexOf(m.rank);
+    await patchMember(id, { rank: ranks[(idx + 1) % ranks.length] });
+  };
+
+  const cycleFaction = async (id: number) => {
+    if (!canEdit) return;
+    const factions: Array<'F' | 'S' | 'R'> = ['F', 'S', 'R'];
+    const m = rawMembers.find((x) => x.id === id);
+    if (!m) return;
+    const idx = factions.indexOf(m.faction || 'F');
+    await patchMember(id, { faction: factions[(idx + 1) % factions.length] });
+  };
+
+  const updateCp = async (id: number, val: string) => {
+    if (!canEdit) return;
+    const parsed = parseCpWithCommas(val);
+    await patchMember(id, { cp: parsed.formatted, rawCp: parsed.raw });
+  };
+
+  const updateF1 = async (id: number, val: string) => {
+    if (!canEdit) return;
+    const m = rawMembers.find((x) => x.id === id);
+    if (!m) return;
+    const parsed = parseCpToRaw(val);
+    const history = m.f1History && Array.isArray(m.f1History) ? m.f1History : [];
+    await patchMember(id, {
+      f1Cp: parsed.formatted,
+      f1Raw: parsed.raw,
+      f1History: [...history, { date: nowStamp(), val: parsed.formatted }],
+    });
+  };
+
+  const updateMeta = async (id: number, field: 'name' | 'level' | 'note', val: string) => {
+    if (!canEdit) return;
+    await patchMember(id, { [field]: val } as Partial<Member>);
+  };
+
+  const removeMember = async (id: number) => {
+    if (!canEdit) return;
+    const m = rawMembers.find((x) => x.id === id);
+    if (!m) return;
+    if (!window.confirm(`Are you sure you want to permanently remove ${m.name} from the roster?`)) return;
+    const next = await mutateRow<Member>(ROW.members, 'members', (cur) => cur.filter((x) => x.id !== id));
+    if (!next) {
+      alert('Could not remove the member. Please try again.');
+      return;
+    }
+    setMembers(next);
+    log('REMOVE_MEMBER', `Removed member: ${m.name}`);
+  };
+
+  const deleteHistoryEntry = async (memberId: number, index: number) => {
+    if (!isAdmin) {
+      alert('Only Admin users can delete history items.');
+      return;
+    }
+    const m = rawMembers.find((x) => x.id === memberId);
+    if (!m || !m.f1History) return;
+    const nextHistory = m.f1History.filter((_, i) => i !== index);
+    await patchMember(memberId, { f1History: nextHistory });
+  };
+
+  const addMember = async (fields: { name: string; cp: string; faction: 'F' | 'S' | 'R'; level: string }) => {
+    const parsedCp = parseCpWithCommas(fields.cp);
+    const initialF1 = parseCpToRaw('0G');
+    const newMember: Member = {
+      id: Date.now(),
+      name: fields.name,
+      cp: parsedCp.formatted,
+      rawCp: parsedCp.raw,
+      f1Cp: initialF1.formatted,
+      f1Raw: initialF1.raw,
+      f1History: [{ date: nowStamp(), val: initialF1.formatted }],
+      faction: fields.faction,
+      level: fields.level,
+      rank: 'R1',
+      status: 'active',
+      note: '',
+      attended: 0,
+      events: [],
+    };
+    const next = await mutateRow<Member>(ROW.members, 'members', (cur) => [...cur, newMember]);
+    if (!next) {
+      alert('Could not add the member. Please try again.');
+      return;
+    }
+    setMembers(next);
+    log('ADD_MEMBER', `Added member: ${fields.name}`);
+    setAddOpen(false);
+  };
+
+  const canEditCols = canEdit;
+  const colSpan = canEditCols ? 10 : 9;
+
+  let lastGroupKey: string | null = null;
+
+  return (
+    <div className={styles.page}>
+      <div className={styles.pageHeader}>
+        <h1 className={styles.pageTitle}>Members</h1>
+        <div className={styles.pageSubtitle}>{activeOrInactive.length} members total</div>
+      </div>
+
+      <section className={styles.controlsCard}>
+        <div className={styles.controlsLeft}>
+          <div className={styles.btnGroup}>
+            {(['all', 'active', 'inactive', 'removed'] as StatusFilter[]).map((s) => (
+              <button
+                key={s}
+                className={`${styles.btnToggle} ${statusFilter === s ? styles.btnToggleActive : ''}`}
+                onClick={() => setStatusFilter(s)}
+              >
+                {s.toUpperCase()}
+              </button>
+            ))}
+          </div>
+          <div className={styles.searchBox}>
+            <input
+              type="text"
+              className={styles.searchInput}
+              placeholder="🔍 Search member, CP..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+          <button className={styles.btnAction} onClick={() => setShowDiff((v) => !v)}>
+            📈 ± DIFF
+          </button>
+        </div>
+        {canEdit && (
+          <div className={styles.controlsRight}>
+            <button className={`${styles.btnAction} ${styles.btnGold}`} onClick={() => setAddOpen(true)}>
+              ＋ ADD MEMBER
+            </button>
+          </div>
+        )}
+      </section>
+
+      <div className={styles.manualBox}>
+        ℹ️ <strong>Combat Power &amp; F1 Power Manual:</strong> Combat Power uses standard comma formatting.
+        F1 Power automatically handles G/M parsing and sorting. Press Enter to save changes instantly — each new
+        value appends a history record used for the ± DIFF calculation.
+      </div>
+
+      <div className={styles.tableCard}>
+        <div className={styles.tableWrap}>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th className={styles.colRank}>#</th>
+                <th className={styles.thName}>In-Game Name</th>
+                <th>Combat Power (CP)</th>
+                <th>F1 Power</th>
+                <th>Faction</th>
+                <th>Level</th>
+                <th>Rank</th>
+                <th>Diff</th>
+                <th>Note</th>
+                {canEditCols && <th>Action</th>}
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td colSpan={colSpan} className={styles.mutedCell}>
+                    Loading roster…
+                  </td>
+                </tr>
+              ) : filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={colSpan} className={styles.mutedCell}>
+                    No members found.
+                  </td>
+                </tr>
+              ) : (
+                filtered.map((member, index) => {
+                  const rank = index + 1;
+                  const rowClass = rank === 1 ? styles.rank1 : rank === 2 ? styles.rank2 : rank === 3 ? styles.rank3 : '';
+                  const groupKey = member.frozenRank || 'R1';
+                  const showGroupBar = groupKey !== lastGroupKey;
+                  lastGroupKey = groupKey;
+                  const barClass = (styles as Record<string, string>)['bar' + groupKey] || styles.barR1;
+                  return (
+                    <>
+                      {showGroupBar && (
+                        <tr key={`group-${groupKey}-${member.id}`} className={styles.rankGroupBarRow}>
+                          <td colSpan={colSpan}>
+                            <div className={`${styles.rankGroupBar} ${barClass}`}>{groupKey}</div>
+                          </td>
+                        </tr>
+                      )}
+                      <MemberRow
+                        key={member.id}
+                        member={member}
+                        rank={rank}
+                        rowClass={rowClass}
+                        canEdit={canEdit}
+                        showDiff={showDiff}
+                        onSetStatus={(s) => void setStatus(member.id, s)}
+                        onCycleRank={() => void cycleRank(member.id)}
+                        onCycleFaction={() => void cycleFaction(member.id)}
+                        onUpdateCp={(v) => void updateCp(member.id, v)}
+                        onUpdateF1={(v) => void updateF1(member.id, v)}
+                        onUpdateName={(v) => void updateMeta(member.id, 'name', v)}
+                        onUpdateLevel={(v) => void updateMeta(member.id, 'level', v)}
+                        onUpdateNote={(v) => void updateMeta(member.id, 'note', v)}
+                        onOpenHistory={() => setHistoryMemberId(member.id)}
+                        onRemove={() => void removeMember(member.id)}
+                      />
+                    </>
+                  );
+                })
+              )}
+            </tbody>
+            {filtered.length > 0 && (
+              <tfoot>
+                <tr className={styles.tfootRow}>
+                  <td colSpan={colSpan}>
+                    Showing {filtered.length} of {activeOrInactive.length} active/inactive members
+                  </td>
+                </tr>
+              </tfoot>
+            )}
+          </table>
+        </div>
+      </div>
+
+      <div className={styles.pageFooter}>
+        <span>♦ Loopy's Playground · Alliance Management Tool</span>
+        <span className="notranslate">
+          {filtered.length}/{activeOrInactive.length} members shown
+        </span>
+      </div>
+
+      {addOpen && <AddMemberModal onClose={() => setAddOpen(false)} onSave={addMember} />}
+      {historyMember && (
+        <F1HistoryModal
+          member={historyMember}
+          isAdmin={isAdmin}
+          onClose={() => setHistoryMemberId(null)}
+          onDeleteEntry={(idx) => void deleteHistoryEntry(historyMember.id, idx)}
+        />
+      )}
+    </div>
+  );
+}
+
+export default Members;

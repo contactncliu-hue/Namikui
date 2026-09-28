@@ -1,0 +1,65 @@
+:root {
+  --login-bg: #ffffff;
+  --login-primary-blue: #324796;
+  --login-light-blue: #c3d2f8;
+  --login-text-title: #2d4187;
+  --login-text-guest: #4f63a8;
+  --login-btn-bg: #f3a808;
+  --login-btn-hover: #e29a00;
+  --login-btn-text: #ffffff;
+  --login-star: #f3a808;
+
+  --color-bg-main: #f5f4ef;
+  --color-bg-card: #ffffff;
+  --color-bg-sidebar: #ffffff;
+  --color-primary: #3b52a4;
+  --color-primary-dark: #2d3a91;
+  --color-primary-light: #eceff8;
+  --color-text-dark: #2b3044;
+  --color-text-muted: #8c93a6;
+  --color-text-light: #a0a6b5;
+  --color-border: #3b52a4;
+  --color-border-light: #e2e5ed;
+  --color-yellow-bg: #fffdf0;
+  --color-yellow-border: #e2cb6b;
+  --color-yellow-text: #b89117;
+  --color-gold: #f3a808;
+  --color-gold-bg: #fffdf0;
+  --color-not-attended: #d9381e;
+
+  --font-family-base: 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-family-ui: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-family-title: 'Cinzel', serif;
+  --font-family-logo: 'Noto Sans SC', sans-serif;
+
+  --font-xs: 12px;
+  --font-sm: 14px;
+  --font-md: 16px;
+  --font-lg: 20px;
+  --font-xl: 24px;
+  --font-xxl: 32px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-family-base);
+  background-color: var(--color-bg-main);
+  color: var(--color-text-dark);
+  min-height: 100vh;
+  font-size: var(--font-sm);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}

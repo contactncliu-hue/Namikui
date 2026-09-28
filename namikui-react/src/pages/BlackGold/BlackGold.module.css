@@ -1,0 +1,73 @@
+.page { display: flex; flex-direction: column; gap: 16px; }
+.pageHeader { margin-bottom: 4px; }
+.pageTitle { font-family: var(--font-family-ui); font-weight: 800; font-size: 34px; letter-spacing: -1px; color: var(--color-primary-dark); text-transform: uppercase; margin: 0; }
+.pageSubtitle { font-family: var(--font-family-ui); font-weight: 700; font-size: 14px; color: var(--color-text-muted); margin-top: 4px; }
+
+.toolbarCard { background: white; border: 2px solid var(--color-primary); border-radius: 6px; padding: 16px 20px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.tabSwitch { display: flex; border-radius: 4px; overflow: hidden; border: 2px solid var(--color-primary); }
+.tabBtn { font-family: var(--font-family-ui); font-weight: 800; font-size: 12px; letter-spacing: 0.5px; color: var(--color-primary); background: white; border: none; padding: 10px 18px; cursor: pointer; }
+.tabBtn + .tabBtn { border-left: 2px solid var(--color-primary); }
+.tabBtnActive { background: var(--color-primary); color: white; }
+.searchBox { flex-grow: 1; max-width: 300px; }
+.searchInput { width: 100%; padding: 9px 12px; border: 1px solid #d1d5db; background-color: #f7f6f0; border-radius: 4px; font-size: 13px; font-family: var(--font-family-ui); outline: none; }
+.toolbarRight { margin-left: auto; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.dateInput { padding: 8px; border: 2px solid var(--color-gold); background: var(--color-gold-bg); border-radius: 4px; font-family: var(--font-family-ui); font-weight: 800; font-size: 12px; }
+.btnGold { background-color: var(--color-gold-bg); border: 2px solid var(--color-gold); color: var(--color-gold); font-family: var(--font-family-ui); font-weight: 800; font-size: 12px; padding: 10px 18px; border-radius: 4px; cursor: pointer; }
+.btnGold:hover:not(:disabled) { background-color: var(--color-gold); color: white; }
+
+.legendRow { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; font-family: var(--font-family-ui); font-weight: 700; font-size: 12px; color: var(--color-text-dark); padding: 0 4px; }
+.legendItem { display: flex; align-items: center; gap: 6px; }
+.legendHint { color: var(--color-text-muted); font-weight: 600; font-size: 11px; }
+.slotBadge { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: var(--font-family-ui); font-weight: 800; font-size: 11px; flex-shrink: 0; }
+.slotBadgeA { border: 2px solid var(--color-a); color: var(--color-a); background: white; }
+.slotBadgeB { border: 2px solid var(--color-b); color: var(--color-b); background: white; }
+.slotBadgeUnassigned { border: 2px dashed var(--color-unassigned); background: white; }
+.statusBadge { padding: 2px 8px; border-radius: 10px; font-size: 9px; font-weight: 800; text-transform: uppercase; }
+
+.tableCard { background: white; border: 2px solid var(--color-primary); border-radius: 6px; overflow: hidden; }
+.tableWrap { overflow-x: auto; }
+.table { width: 100%; border-collapse: collapse; font-family: var(--font-family-ui); }
+.table th { background-color: #e9ecf7; padding: 14px 12px; font-size: 11px; font-weight: 800; color: var(--color-primary-dark); text-transform: uppercase; border-bottom: 2px solid var(--color-primary); white-space: nowrap; text-align: center; }
+.thMember { text-align: left !important; padding-left: 20px !important; }
+.dateLabel { font-size: 13px; font-weight: 800; color: var(--color-text-dark); cursor: pointer; }
+.dateLabel:hover { text-decoration: underline; color: var(--color-primary); }
+.weekLabel { font-size: 9px; font-weight: 700; color: var(--color-text-muted); text-transform: none; margin-top: 2px; }
+.removeDateBtn { display: inline-block; margin-top: 4px; color: #d9381e; cursor: pointer; font-size: 10px; font-weight: 800; background: none; border: none; }
+.removeDateBtn:hover { text-decoration: underline; }
+
+.table td { padding: 12px; border-bottom: 1px solid var(--color-border-light); text-align: center; vertical-align: middle; }
+.colRank { color: var(--color-text-muted); font-weight: 700; width: 40px; }
+.colMember { text-align: left; padding-left: 20px; font-weight: 800; color: var(--color-text-dark); }
+.colPenalty { font-weight: 800; }
+.mutedCell { text-align: center; padding: 40px 20px; color: var(--color-text-muted); font-weight: 700; }
+
+.cellStack { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+.slotBtn { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 12px; cursor: pointer; user-select: none; background: none; border: none; }
+.slotBtnA { border: 2px solid var(--color-a); color: var(--color-a); background: white; }
+.slotBtnB { border: 2px solid var(--color-b); color: var(--color-b); background: white; }
+.slotBtnUnassigned { border: 2px dashed var(--color-unassigned); background: white; color: transparent; }
+.slotBtnReadonly { cursor: default; }
+
+.attendPill { font-size: 9px; font-weight: 800; letter-spacing: 0.3px; padding: 3px 8px; border-radius: 10px; cursor: pointer; text-transform: uppercase; white-space: nowrap; border: none; }
+.attendYes { background: #e6f4ea; color: var(--color-attended); border: 1px solid var(--color-attended); }
+.attendNo { background: #fce8e6; color: var(--color-not-attended); border: 1px solid var(--color-not-attended); }
+.attendReadonly { cursor: default; }
+
+.rolePill { font-size: 9px; font-weight: 800; letter-spacing: 0.3px; padding: 3px 8px; border-radius: 10px; cursor: pointer; text-transform: uppercase; white-space: nowrap; border: none; }
+.roleMain { background: var(--color-main); color: #3d2c00; border: 1px solid #c98c00; }
+.roleSub { background: var(--color-sub); color: #1e3a38; border: 1px solid #95b8b5; }
+.roleNone { background: #f0f1f5; color: #a0a5b8; border: 1px dashed #d1d5db; }
+.roleReadonly { cursor: default; }
+
+.penaltyBadge { font-size: 9.5px; font-weight: 800; letter-spacing: 0.3px; text-transform: uppercase; white-space: nowrap; }
+.penaltyLocked { color: #d9381e; }
+.penaltyCountdown { color: #8a6300; }
+
+.factionDividerRow td { background-color: var(--divider-color, #5c4127); color: white; font-family: var(--font-family-ui); font-weight: 800; font-size: 11px; letter-spacing: 0.5px; text-transform: uppercase; padding: 8px 20px !important; border-bottom: none; text-align: left; }
+
+.tfootRow td { background-color: #f4f6fb; border-top: 2px solid var(--color-primary); padding: 12px; font-size: 11px; font-weight: 800; color: var(--color-text-muted); text-align: center; }
+.tfootRow .colMember { color: var(--color-primary-dark); }
+.abCountA { color: var(--color-a); }
+.abCountB { color: var(--color-b); }
+
+.pageFooter { display: flex; justify-content: space-between; align-items: center; margin-top: 4px; font-family: var(--font-family-ui); font-size: 10px; font-weight: 700; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.5px; padding: 0 4px; }

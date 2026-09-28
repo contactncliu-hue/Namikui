@@ -1,0 +1,79 @@
+.page { display: flex; flex-direction: column; gap: 16px; }
+.pageTitle { font-family: var(--font-family-ui); font-weight: 800; font-size: 34px; letter-spacing: -1px; color: var(--color-primary-dark); text-transform: uppercase; line-height: 1.1; margin: 0; }
+.pageSubtext { font-family: var(--font-family-ui); font-size: 14px; font-weight: 700; color: var(--color-text-muted); margin-top: 4px; }
+
+.controlsCard { background: white; border: 2px solid var(--color-border); border-radius: 6px; padding: 16px 20px; display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+.btnGroup { display: flex; background: #edf2f7; padding: 3px; border-radius: 4px; flex-wrap: wrap; }
+.btnToggle { padding: 8px 16px; font-weight: 800; font-size: 11px; border: none; background: transparent; color: var(--color-text-muted); cursor: pointer; font-family: var(--font-family-ui); border-radius: 3px; }
+.btnToggleActive { background-color: var(--color-primary-dark); color: white; }
+
+.card { background: white; border: 2px solid var(--color-border); border-radius: 8px; padding: 32px; }
+.cardTitle { font-family: var(--font-family-ui); font-weight: 800; font-size: 16px; color: var(--color-text-dark); margin: 0 0 8px 0; }
+.cardDesc { font-size: 12px; color: var(--color-text-muted); margin-bottom: 16px; }
+.empty { text-align: center; padding: 32px 0; color: var(--color-text-muted); font-family: var(--font-family-ui); font-weight: 600; font-size: 13px; }
+
+/* Chat */
+.chatCard { display: flex; flex-direction: column; height: 60vh; min-height: 380px; }
+.chatBox { flex-grow: 1; overflow-y: auto; border: 1px solid var(--color-border-light); border-radius: 6px; padding: 12px; display: flex; flex-direction: column; gap: 10px; background: #fafafa; margin-bottom: 12px; }
+.chatMsg { background: white; padding: 10px 14px; border-radius: 6px; border: 1px solid var(--color-border-light); }
+.chatMeta { display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px; color: var(--color-text-muted); }
+.chatUser { font-weight: 800; color: var(--color-primary); }
+.chatText { font-size: 13px; color: var(--color-text-dark); word-break: break-word; }
+.chatInputRow { display: flex; gap: 10px; }
+.chatInput { flex-grow: 1; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-family: var(--font-family-base); }
+
+/* Announcements area */
+.announceTop { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
+.announceBtns { display: flex; gap: 10px; flex-wrap: wrap; }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+@media (max-width: 900px) { .grid { grid-template-columns: 1fr; } .card { padding: 20px; } }
+.sectionTitle { font-size: 14px; text-transform: uppercase; color: var(--color-primary); margin: 0 0 10px 0; border-bottom: 2px solid var(--color-primary); padding-bottom: 6px; }
+.sectionTitleMuted { font-size: 14px; text-transform: uppercase; color: var(--color-text-muted); margin: 20px 0 10px 0; border-bottom: 2px solid var(--color-border-light); padding-bottom: 6px; }
+.stack { display: flex; flex-direction: column; gap: 12px; }
+
+.pollCard { background: white; border: 1px solid var(--color-border); border-radius: 6px; padding: 16px; }
+.pollCardClosed { background: #f1f3f7; border: 1px solid var(--color-border-light); border-radius: 6px; padding: 14px; opacity: 0.85; }
+.pollTop { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.pollQuestion { font-weight: 800; font-size: 14px; color: var(--color-primary-dark); margin-bottom: 4px; }
+.pollActions { display: flex; gap: 8px; flex-shrink: 0; }
+.actionLink { cursor: pointer; font-weight: 800; font-size: 11px; background: none; border: none; padding: 0; font-family: var(--font-family-ui); }
+.linkPrimary { color: var(--color-primary); }
+.linkGold { color: #b89117; }
+.linkRed { color: #dc2626; }
+.pollMeta { font-size: 11px; color: var(--color-text-muted); margin-bottom: 12px; }
+.options { display: flex; flex-direction: column; gap: 8px; }
+.option { border: 1px solid var(--color-border-light); border-radius: 4px; padding: 8px; background: #fafafa; }
+.optionTop { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.optionText { font-weight: 700; font-size: 13px; }
+.voteResult { font-size: 11px; font-weight: 800; color: var(--color-primary); white-space: nowrap; }
+.voters { font-size: 10px; color: #dc2626; margin-top: 4px; }
+.voterX { cursor: pointer; font-weight: bold; background: none; border: none; color: #dc2626; padding: 0; }
+.closedRow { font-size: 12px; display: flex; justify-content: space-between; }
+
+.noticeCard { background: white; border: 1px solid var(--color-border); border-radius: 6px; padding: 16px; }
+.noticeTop { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; gap: 10px; }
+.noticeTitle { font-weight: 800; font-size: 14px; color: var(--color-primary); }
+.noticeDate { font-size: 11px; color: var(--color-text-muted); }
+.noticeBody { font-size: 13px; color: var(--color-text-dark); line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
+
+/* Buttons */
+.btnAction { background: white; border: 2px solid var(--color-primary); color: var(--color-primary); font-weight: 800; font-size: 12px; padding: 10px 18px; border-radius: 4px; cursor: pointer; font-family: var(--font-family-ui); display: inline-flex; align-items: center; gap: 8px; }
+.btnAction:disabled { opacity: 0.6; cursor: default; }
+.btnGold { border-color: var(--color-gold); color: var(--color-gold); background: var(--color-gold-bg); letter-spacing: 0.5px; }
+.btnGold:hover:not(:disabled) { background-color: var(--color-gold); color: white; }
+.btnPrimary { background: #3b52a4; color: white; }
+.btnDanger { color: #dc2626; border-color: #dc2626; }
+.btnSmallGold { background: white; border: 2px solid var(--color-gold); color: var(--color-gold); font-family: var(--font-family-ui); font-weight: 800; font-size: 11px; padding: 6px 12px; border-radius: 6px; cursor: pointer; }
+.btnSmallGold:hover { background-color: var(--color-gold); color: white; }
+
+/* Modals */
+.overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.4); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 16px; }
+.modalCard { background: white; padding: 32px; border-radius: 10px; width: 100%; max-width: 500px; border: 2px solid var(--color-primary); max-height: 90vh; overflow-y: auto; }
+.modalCard h3 { margin: 0 0 16px 0; color: var(--color-text-dark); font-size: 16px; font-family: var(--font-family-title); }
+.modalCard input, .modalCard select, .modalCard textarea { width: 100%; padding: 14px; margin-bottom: 16px; border: 1px solid #ccc; border-radius: 6px; font-size: var(--font-sm); font-family: var(--font-family-base); outline: none; }
+.modalCard textarea { resize: vertical; }
+.modalBtns { display: flex; justify-content: flex-end; gap: 12px; flex-wrap: wrap; }
+.fieldLabel { font-size: 11px; font-weight: 800; color: var(--color-text-muted); margin-bottom: 6px; text-transform: uppercase; display: block; }
+.optionDraftRow { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
+.optionDraftRow input { margin-bottom: 0; flex-grow: 1; }
+.removeBtn { background: none; border: none; cursor: pointer; color: #dc2626; font-weight: 800; padding: 6px 8px; }
