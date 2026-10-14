@@ -1,78 +1,386 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useAppData, getActiveMembers } from '../../context/AppDataContext';
+import { parseCpToRaw, parseCpWithCommas, RANK_GROUP_ORDER } from '../Members/memberUtils';
+import {
+  DEFAULT_ALLIANCES,
+  DEFAULT_INFO,
+  fmtCountdown,
+  fmtPower,
+  mergeInfo,
+  newAlliance,
+  parsePower,
+  useKeyRow,
+  useNow,
+} from '../../lib/homeData';
+import type { Alliance, HomeInfo, LinkMap, MoveEntry, ShieldMap } from '../../lib/homeData';
 import styles from './Home.module.css';
 
-const MEDAL_COLORS = ['#f3a808', '#a0aec0', '#b7791f', '#3182ce', '#e53e3e'];
+type StrKey = Exclude<keyof HomeInfo, 'parts' | 'overrides'>;
+type PartKey = keyof HomeInfo['parts'];
+const PARTS: Array<[PartKey, string]> = [
+  ['hero', 'Hero'],
+  ['science', 'Science'],
+  ['vehicle', 'Vehicle'],
+  ['buildings', 'Buildings'],
+  ['pet', 'Pet'],
+];
+
+function Countdown({ until }: { until: number }) {
+  const now = useNow(1000);
+  const left = until - now;
+  return <>{left > 0 ? fmtCountdown(left) : 'expired'}</>;
+}
+
+function Stat({ label, value, sub }: { label: string; value: React.ReactNode; sub?: React.ReactNode }) {
+  return (
+    <div className={styles.statBlock}>
+      <div className={styles.statLabel}>{label}</div>
+      <div className={styles.statBig}>{value}</div>
+      {sub ? <div className={styles.statSub}>{sub}</div> : null}
+    </div>
+  );
+}
+
+function Chips({ items }: { items: Array<[string, () => void]> }) {
+  return (
+    <div className={styles.chipRow}>
+      {items.map(([label, fn]) => (
+        <button key={label} type="button" className={styles.chip} onClick={fn}>
+          ✎ {label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function Kv({ label, children, onEdit }: { label: string; children: React.ReactNode; onEdit?: () => void }) {
+  return (
+    <div className={styles.kv}>
+      <div className={styles.kvLabel}>{label}</div>
+      <div className={styles.kvValue}>
+        {children}
+        {onEdit && (
+          <button type="button" className={styles.editBtn} onClick={onEdit}>
+            ✎
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default function Home() {
-  const { currentUser } = useAuth();
-  const { eventDates, members, vsData, homePhotos, noticeAnnouncements, getAttendanceStatus, memberAttendedCount } =
+  const { currentUser, accounts } = useAuth();
+  const { eventDates, members, homePhotos, noticeAnnouncements, getAttendanceStatus, memberAttendedCount } =
     useAppData();
 
-  const canViewData =
-    currentUser.role === 'admin' || currentUser.role === 'management' || currentUser.role === 'alliance';
+  const role = currentUser.role;
+  const username = currentUser.username ?? '';
+  const canEdit = role === 'admin' || role === 'management';
+  const isStaff = canEdit || role === 'alliance';
 
-  const activeMembers = useMemo(() => getActiveMembers(members), [members]);
+  const { value: rawInfo, update: updateInfo } = useKeyRow<HomeInfo>('homeInfo', DEFAULT_INFO);
+  const { value: rawAlliances, update: updateAlliances } = useKeyRow<Alliance[]>('homeAlliances', DEFAULT_ALLIANCES);
+  const { value: shields, update: updateShields } = useKeyRow<ShieldMap>('homeShields', {});
+  const { value: links, update: updateLinks } = useKeyRow<LinkMap>('homeLinks', {});
+  const { value: moves, update: updateMoves } = useKeyRow<MoveEntry[]>('moves', []);
+
+  const info = useMemo(() => mergeInfo(rawInfo), [rawInfo]);
+  const list = rawAlliances.length ? rawAlliances : DEFAULT_ALLIANCES;
+  const main = list.find((a) => a.isMain) ?? list[0];
+  const now = useNow(30000);
+
+  const [vsFor, setVsFor] = useState<number | null>(null);
+  const [vsWith, setVsWith] = useState<number | null>(null);
+
+  const active = useMemo(() => getActiveMembers(members), [members]);
+
+  // ---------- auto values ----------
+  const mainCombatAuto = useMemo(
+    () => active.reduce((s, m) => s + parseCpWithCommas(m.cp).raw, 0),
+    [active]
+  );
+  const mainCombat = info.overrides.main_combat ? parsePower(info.overrides.main_combat) : mainCombatAuto;
+  const mainMembers = info.overrides.main_members ?? `${active.length}/100`;
+
+  const stateCombatAuto =
+    mainCombat + list.filter((a) => a.id !== main.id).reduce((s, a) => s + parsePower(a.combat), 0);
+  const stateCombat = info.overrides.state_combat ?? fmtPower(stateCombatAuto);
+
+  const hitter = useMemo(() => {
+    let bestName = '';
+    let bestVal = 0;
+    for (const m of active) {
+      const v = m.f1Raw ?? parseCpToRaw(m.f1Cp).raw;
+      if (v > bestVal) {
+        bestVal = v;
+        bestName = m.name;
+      }
+    }
+    return { name: bestName, val: fmtPower(bestVal) };
+  }, [active]);
 
   const avgRate = useMemo(() => {
     const totalEvents = eventDates.length;
-    if (!totalEvents || !activeMembers.length) return 0;
-    const totalAttended = activeMembers.reduce((sum, m) => sum + memberAttendedCount(m), 0);
-    return (totalAttended / activeMembers.length / totalEvents) * 100;
-  }, [eventDates, activeMembers, memberAttendedCount]);
-
-  const topContributors = useMemo(() => {
-    const activeNames = new Set(activeMembers.map((m) => m.name.toLowerCase()));
-    const weeksCount = vsData.weeks.length;
-    if (weeksCount === 0) return [];
-    const recentWeekIdx = weeksCount - 1;
-    return vsData.membersScores
-      .filter((ms) => activeNames.has(ms.name.toLowerCase()))
-      .map((ms) => ({ name: ms.name, recentScore: ms.scores[recentWeekIdx] ?? 0 }))
-      .sort((a, b) => b.recentScore - a.recentScore)
-      .slice(0, 5)
-      .filter((s) => s.recentScore > 0 || vsData.membersScores.some((m) => m.scores.some((sc) => sc > 0)));
-  }, [vsData, activeMembers]);
+    if (!totalEvents || !active.length) return 0;
+    const totalAttended = active.reduce((sum, m) => sum + memberAttendedCount(m), 0);
+    return (totalAttended / active.length / totalEvents) * 100;
+  }, [eventDates, active, memberAttendedCount]);
 
   const recentEvents = useMemo(() => eventDates.slice(-5).reverse(), [eventDates]);
 
+  const memberList = useMemo(
+    () =>
+      [...active].sort((a, b) => {
+        const ra = RANK_GROUP_ORDER[a.rank || 'R1'] ?? 99;
+        const rb = RANK_GROUP_ORDER[b.rank || 'R1'] ?? 99;
+        if (ra !== rb) return ra - rb;
+        return (b.f1Raw ?? parseCpToRaw(b.f1Cp).raw) - (a.f1Raw ?? parseCpToRaw(a.f1Cp).raw);
+      }),
+    [active]
+  );
+
   const visiblePhotos = useMemo(
-    () =>
-      homePhotos.filter((p) =>
-        p.visibility === 'alliance'
-          ? currentUser.role === 'admin' || currentUser.role === 'management' || currentUser.role === 'alliance'
-          : true
-      ),
-    [homePhotos, currentUser.role]
+    () => homePhotos.filter((p) => (p.visibility === 'alliance' ? isStaff : true)),
+    [homePhotos, isStaff]
   );
-
   const visibleNotices = useMemo(
-    () =>
-      noticeAnnouncements
-        .filter((n) =>
-          n.visibility === 'alliance'
-            ? currentUser.role === 'admin' || currentUser.role === 'management' || currentUser.role === 'alliance'
-            : true
-        )
-        .slice(0, 3),
-    [noticeAnnouncements, currentUser.role]
+    () => noticeAnnouncements.filter((n) => (n.visibility === 'alliance' ? isStaff : true)).slice(0, 3),
+    [noticeAnnouncements, isStaff]
   );
 
-  if (!canViewData) {
-    return (
-      <section className={styles.view}>
-        <div className={styles.pageHeader}>
-          <h1 className={styles.pageTitle}>Home Dashboard</h1>
-          <div className={styles.pageSubtext}>Welcome to Loopy's Playground Alliance Management Dashboard</div>
-        </div>
-        <div className={styles.emptyState}>
-          🔒 This content is only available to Alliance Members and Staff. Ask an Admin to assign you the Alliance
-          role.
-        </div>
-      </section>
+  // ---------- standing ----------
+  const rows = list.map((a) => ({ a, gp: parsePower(a.gamePower) })).sort((x, y) => y.gp - x.gp);
+  const maxGp = Math.max(1, ...rows.map((r) => r.gp));
+  const mainGp = parsePower(main.gamePower);
+  const mainPos = rows.findIndex((r) => r.a.id === main.id) + 1;
+  const second = rows.find((r) => r.a.id !== main.id);
+  const standingNote =
+    mainGp && mainPos === 1 && second && second.gp
+      ? `${main.tag} is first of ${rows.length} by game power, ${fmtPower(mainGp - second.gp)} clear of [${second.a.tag}].`
+      : mainGp
+      ? `${main.tag} is #${mainPos} of ${rows.length} by game power.`
+      : 'Enter game power on each alliance card to rank them.';
+
+  const troopsRaw = parsePower(info.troops);
+  const total = info.troops ? fmtPower(mainCombat + troopsRaw) : '-';
+
+  // ---------- shields & links ----------
+  const norm = (s: string) => s.trim().toLowerCase();
+  const linkedId = (u: string): number | null => {
+    if (u in links) return links[u] || null;
+    const m = members.find((x) => x.status !== 'removed' && norm(x.name) === norm(u));
+    return m ? m.id : null;
+  };
+  const myId = linkedId(username);
+  const myMember = myId !== null ? members.find((m) => m.id === myId && m.status !== 'removed') : undefined;
+  const myShield = myMember ? shields[myMember.id] : undefined;
+  const shieldedNow = active.filter((m) => (shields[m.id]?.until ?? 0) > now).length;
+
+  const setShield = (memberId: number, hours: number) =>
+    updateShields((cur) => {
+      const n = { ...cur };
+      if (!hours) delete n[memberId];
+      else n[memberId] = { until: Date.now() + hours * 3600000, hours };
+      return n;
+    });
+
+  const linkValue = (u: string) => (u in links ? (links[u] ? String(links[u]) : 'none') : 'auto');
+  const setLink = (u: string, v: string) =>
+    updateLinks((cur) => {
+      const n = { ...cur };
+      if (v === 'auto') delete n[u];
+      else n[u] = v === 'none' ? 0 : Number(v);
+      return n;
+    });
+
+  // ---------- admin edit helpers ----------
+  const editInfo = async (key: StrKey, label: string) => {
+    const v = window.prompt(label, info[key]);
+    if (v === null) return;
+    await updateInfo((c) => ({ ...mergeInfo(c), [key]: v.trim() }));
+  };
+  const editPart = async (k: PartKey, label: string) => {
+    const v = window.prompt(`${label} combat power (e.g. 7.11B)`, info.parts[k]);
+    if (v === null) return;
+    await updateInfo((c) => {
+      const m = mergeInfo(c);
+      return { ...m, parts: { ...m.parts, [k]: v.trim() } };
+    });
+  };
+  const editOverride = async (key: string, label: string) => {
+    const v = window.prompt(`${label} - leave empty to go back to auto`, info.overrides[key] ?? '');
+    if (v === null) return;
+    await updateInfo((c) => {
+      const m = mergeInfo(c);
+      const o = { ...m.overrides };
+      if (v.trim()) o[key] = v.trim();
+      else delete o[key];
+      return { ...m, overrides: o };
+    });
+  };
+  const editAlliance = async (a: Alliance, field: keyof Alliance, label: string) => {
+    const v = window.prompt(label, String(a[field] ?? ''));
+    if (v === null) return;
+    await updateAlliances((cur) =>
+      (cur.length ? cur : DEFAULT_ALLIANCES).map((x) => (x.id === a.id ? { ...x, [field]: v.trim() } : x))
     );
-  }
+  };
+  const addAlliance = async () => {
+    const name = window.prompt('Alliance name');
+    if (!name || !name.trim()) return;
+    const tag = window.prompt('Alliance tag (e.g. SDL)') ?? '';
+    await updateAlliances((cur) => [
+      ...(cur.length ? cur : DEFAULT_ALLIANCES),
+      newAlliance(Date.now(), name.trim(), tag.trim()),
+    ]);
+  };
+  const removeAlliance = async (a: Alliance) => {
+    if (!window.confirm(`Remove ${a.name}? The state total will update.`)) return;
+    await updateAlliances((cur) => (cur.length ? cur : DEFAULT_ALLIANCES).filter((x) => x.id !== a.id));
+  };
+
+  const recentMoves = moves.filter((m) => m.ts >= Date.now() - 30 * 86400000);
+  const ago = (ts: number) => {
+    const d = Math.floor((Date.now() - ts) / 86400000);
+    if (d >= 1) return `${d}d ago`;
+    const h = Math.floor((Date.now() - ts) / 3600000);
+    return h >= 1 ? `${h}h ago` : 'just now';
+  };
+  const moveText = (m: MoveEntry) =>
+    m.type === 'join'
+      ? m.from ? `joined from ${m.from}` : 'joined'
+      : m.type === 'leave'
+      ? m.to ? `left for ${m.to}` : 'left'
+      : 'renamed';
+  const editMove = async (m: MoveEntry) => {
+    const field = m.type === 'join' ? 'from' : 'to';
+    const v = window.prompt(m.type === 'join' ? 'Joined from which alliance?' : 'Left for which alliance?', m[field] ?? '');
+    if (v === null) return;
+    await updateMoves((cur) => cur.map((x) => (x.id === m.id ? { ...x, [field]: v.trim() } : x)));
+  };
+  const delMove = async (m: MoveEntry) => {
+    if (!window.confirm(`Delete this entry for ${m.name}?`)) return;
+    await updateMoves((cur) => cur.filter((x) => x.id !== m.id));
+  };
+  const renderMoves = (type: MoveEntry['type']) => {
+    const items = recentMoves.filter((m) => m.type === type);
+    if (!items.length) return <div className={styles.emptyMini}>None</div>;
+    return items.map((m) => (
+      <div key={m.id} className={styles.moveRow}>
+        <div>
+          <div className={styles.moveName}>
+            {m.name}
+            {m.type === 'rename' && <span className={styles.moveSub}> was {m.oldName}</span>}
+          </div>
+          <div className={styles.moveSub}>
+            {moveText(m)} · {ago(m.ts)}
+            {m.cp ? ` · CP ${m.cp}` : ''}
+          </div>
+        </div>
+        {canEdit && (
+          <div className={styles.moveBtns}>
+            {m.type !== 'rename' && (
+              <button type="button" className={styles.editBtn} onClick={() => void editMove(m)}>
+                ✎
+              </button>
+            )}
+            <button type="button" className={styles.editBtn} onClick={() => void delMove(m)}>
+              ✕
+            </button>
+          </div>
+        )}
+      </div>
+    ));
+  };
+
+  // ---------- VS compare ----------
+  const metrics = (a: Alliance) => {
+    const isMain = a.id === main.id;
+    return {
+      gp: parsePower(a.gamePower),
+      combat: isMain ? mainCombat : parsePower(a.combat),
+      members: isMain ? mainMembers : a.members || '-',
+      rank: a.stateRank || '-',
+    };
+  };
+  const openVs = (a: Alliance) => {
+    setVsFor(a.id);
+    setVsWith(list.find((x) => x.id !== a.id)?.id ?? null);
+  };
+  const vsA = vsFor !== null ? list.find((a) => a.id === vsFor) : undefined;
+  const vsB = vsA ? list.find((a) => a.id === vsWith) ?? list.find((a) => a.id !== vsA.id) : undefined;
+
+  // ---------- alliance card ----------
+  const renderAlliance = (a: Alliance) => {
+    const isMain = a.id === main.id;
+    const gp = parsePower(a.gamePower);
+    const combat = isMain ? fmtPower(mainCombat) : a.combat ? fmtPower(parsePower(a.combat)) : '-';
+    const chips: Array<[string, () => void]> = [
+      ['Name', () => void editAlliance(a, 'name', 'Alliance name')],
+      ['Tag', () => void editAlliance(a, 'tag', 'Tag (e.g. z0.0)')],
+      ['Leader', () => void editAlliance(a, 'leader', 'Leader')],
+      ['Founded', () => void editAlliance(a, 'founded', 'Founded date')],
+      ['Icon URL', () => void editAlliance(a, 'icon', 'Icon image URL')],
+      ['Game power', () => void editAlliance(a, 'gamePower', 'Game power (e.g. 116B)')],
+      ['Change', () => void editAlliance(a, 'change', 'Change (e.g. no change, +1.2B)')],
+      ['State rank', () => void editAlliance(a, 'stateRank', 'State rank (e.g. 1st of 16)')],
+      ['Trend', () => void editAlliance(a, 'trend', 'Trend')],
+    ];
+    if (isMain) {
+      chips.push(
+        ['Combat (override)', () => void editOverride('main_combat', 'Combat power (e.g. 23.0B)')],
+        ['Members (override)', () => void editOverride('main_members', 'Members (e.g. 91/100)')]
+      );
+    } else {
+      chips.push(
+        ['Combat power', () => void editAlliance(a, 'combat', 'Combat power (e.g. 20B)')],
+        ['Members', () => void editAlliance(a, 'members', 'Members (e.g. 82/100)')],
+        ['Remove', () => void removeAlliance(a)]
+      );
+    }
+    return (
+      <div key={a.id} className={styles.card}>
+        <div className={styles.allianceHead}>
+          {a.icon ? <img className={styles.iconImg} src={a.icon} alt="" /> : <div className={styles.iconBox}>🛡️</div>}
+          <div className={styles.headText}>
+            <div className={styles.allianceName}>
+              [{a.tag || '-'}] {a.name}
+            </div>
+            <div className={styles.allianceSub}>
+              State 277 · led by {a.leader || '-'} · founded {a.founded || '-'}
+              {a.trend ? ` · ${a.trend}` : ''}
+            </div>
+          </div>
+          <button type="button" className={styles.btnVs} onClick={() => openVs(a)}>
+            VS
+          </button>
+        </div>
+        {canEdit && <Chips items={chips} />}
+        <div className={styles.statGrid}>
+          <Stat label="COMBAT POWER" value={combat} sub={isMain ? 'auto from Members' : undefined} />
+          <Stat label="GAME POWER" value={a.gamePower || '-'} sub={a.change || undefined} />
+          <Stat
+            label="STATE RANK"
+            value={a.stateRank || '-'}
+            sub={!isMain && gp && mainGp ? `${fmtPower(gp - mainGp)} vs ${main.tag}` : undefined}
+          />
+          <Stat label="MEMBERS" value={isMain ? mainMembers : a.members || '-'} />
+        </div>
+      </div>
+    );
+  };
+
+  const standingChips: Array<[string, () => void]> = [
+    ...PARTS.map(([k, l]): [string, () => void] => [l, () => void editPart(k, l)]),
+    ['Troops', () => void editInfo('troops', 'Troops (e.g. 52.8B)')],
+    ['Legion score', () => void editInfo('legionScore', 'Legion score (e.g. 4.64B)')],
+    ['Legion rank', () => void editInfo('legionRank', 'Legion rank (e.g. #1 of 3)')],
+  ];
+
+  const ma = vsA ? metrics(vsA) : null;
+  const mb = vsB ? metrics(vsB) : null;
 
   return (
     <section className={styles.view}>
@@ -81,6 +389,41 @@ export default function Home() {
         <div className={styles.pageSubtext}>Welcome to Loopy's Playground Alliance Management Dashboard</div>
       </div>
 
+      {/* My shield */}
+      <div className={styles.shieldBar}>
+        <div className={styles.shieldTitle}>🛡️ MY SHIELD</div>
+        {!myMember ? (
+          <div className={styles.shieldStatus}>Your account is not linked to a member yet. Ask an admin to link it.</div>
+        ) : (
+          <>
+            <div className={styles.shieldStatus}>
+              {myMember.name}:{' '}
+              {myShield && myShield.until > Date.now() ? (
+                <strong>
+                  <Countdown until={myShield.until} />
+                </strong>
+              ) : (
+                'no active shield'
+              )}
+            </div>
+            <div className={styles.moveBtns}>
+              <button type="button" className={styles.btnShield} onClick={() => void setShield(myMember.id, 8)}>
+                Start 8h
+              </button>
+              <button type="button" className={styles.btnShield} onClick={() => void setShield(myMember.id, 24)}>
+                Start 24h
+              </button>
+              {myShield && myShield.until > Date.now() && (
+                <button type="button" className={styles.btnShield} onClick={() => void setShield(myMember.id, 0)}>
+                  Clear
+                </button>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Photos */}
       <div className={`${styles.card} ${styles.accentGold}`}>
         <div className={styles.cardHeader}>
           <div className={styles.cardHeaderTitle}>🖼️ RECENT PHOTOS / VIDEOS</div>
@@ -98,79 +441,319 @@ export default function Home() {
         )}
       </div>
 
-      <div className={styles.quadGrid}>
-        <div className={styles.card}>
-          <div className={styles.statLabel}>TOTAL MEMBERS</div>
-          <div className={styles.statRow}>
-            <div className={styles.statValue}>{activeMembers.length}/100</div>
-            <div className={styles.statIcon}>👥</div>
+      {/* State 277 */}
+      <div className={styles.card}>
+        <div className={styles.allianceHead}>
+          <div className={styles.iconBox}>🏛️</div>
+          <div className={styles.headText}>
+            <div className={styles.allianceName}>State 277</div>
+            <div className={styles.allianceSub}>
+              Peer rank {info.peerRank || '-'} · peer score {info.peerScore || '-'}
+            </div>
           </div>
         </div>
-        <div className={styles.card}>
-          <div className={styles.statLabel}>EVENT ATTENDANCE</div>
-          <div className={styles.statRow}>
-            <div className={`${styles.statValue} ${styles.statValueGold}`}>{avgRate.toFixed(1)}%</div>
-            <div className={styles.statIcon}>📅</div>
-          </div>
+        {canEdit && (
+          <Chips
+            items={[
+              ['Peer rank', () => void editInfo('peerRank', 'Peer rank (e.g. #19 of 86)')],
+              ['Peer score', () => void editInfo('peerScore', 'Peer score (e.g. 82/100)')],
+              ['Shields up %', () => void editInfo('shieldsUp', 'Shields up (e.g. 2%)')],
+              ['Combat (override)', () => void editOverride('state_combat', 'State combat power')],
+              ['Hitter (override)', () => void editOverride('hitter_val', 'Hardest hitter value')],
+            ]}
+          />
+        )}
+        <div className={styles.statGrid}>
+          <Stat label="COMBAT POWER" value={stateCombat} sub="all alliances" />
+          <Stat label="PEER SCORE" value={info.peerScore || '-'} sub={info.peerRank || undefined} />
+          <Stat
+            label="HARDEST HITTER"
+            value={info.overrides.hitter_val ?? hitter.val}
+            sub={hitter.name ? `${hitter.name} (highest F1 CP)` : undefined}
+          />
+          <Stat label="SHIELDS UP" value={info.shieldsUp || '-'} />
         </div>
       </div>
 
-      <div className={styles.quadGrid}>
-        <div className={styles.card}>
-          <div className={styles.cardHeaderTitle} style={{ marginBottom: 18 }}>
-            ⚔️ TOP 5 CONTRIBUTORS
-          </div>
-          {topContributors.length === 0 ? (
-            <div className={styles.emptyState}>No VS points recorded yet.</div>
-          ) : (
-            <div className={styles.list}>
-              {topContributors.map((c, idx) => (
-                <div key={c.name} className={styles.listRow}>
-                  <div className={styles.listRowLeft}>
-                    <span className={styles.medal} style={{ background: MEDAL_COLORS[idx] }}>
-                      {idx + 1}
-                    </span>
-                    <span className={styles.listRowName}>{c.name}</span>
-                  </div>
-                  <div className={styles.listRowValue}>
-                    {c.recentScore.toLocaleString()}
-                    <span className={styles.listRowUnit}> pts</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+      {/* Alliance cards: z0.0 first */}
+      {[main, ...list.filter((a) => a.id !== main.id)].map(renderAlliance)}
+      {canEdit && (
+        <div>
+          <button type="button" className={styles.btnShield} onClick={() => void addAlliance()}>
+            ＋ Add alliance
+          </button>
         </div>
+      )}
 
-        <div className={styles.card}>
-          <div className={styles.cardHeaderTitle} style={{ marginBottom: 18 }}>
-            📅 RECENT EVENTS
-          </div>
-          {recentEvents.length === 0 ? (
-            <div className={styles.emptyState}>No events recorded yet.</div>
-          ) : (
-            <div className={styles.list}>
-              {recentEvents.map((ev) => {
-                const attendedCount = activeMembers.reduce(
-                  (sum, m) => sum + (getAttendanceStatus(m.id, ev.id) ? 1 : 0),
-                  0
-                );
-                const rate = activeMembers.length ? Math.round((attendedCount / activeMembers.length) * 100) : 0;
+      {/* Standing */}
+      <div className={styles.card}>
+        <div className={styles.cardHeader}>
+          <div className={styles.cardHeaderTitle}>🏆 STANDING</div>
+        </div>
+        <div className={styles.noteLine}>{standingNote}</div>
+        <div className={styles.tableWrap}>
+          <table className={styles.dataTable}>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>ALLIANCE</th>
+                <th></th>
+                <th>GAME POWER</th>
+                <th>CHANGE</th>
+                <th>COMBAT</th>
+                <th>GAP TO {main.tag.toUpperCase()}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map(({ a, gp }, i) => {
+                const isMain = a.id === main.id;
                 return (
-                  <div key={ev.id} className={styles.listRow}>
-                    <div className={styles.eventRowLeft}>
-                      <span className={styles.eventRowName}>{ev.name || 'Event'}</span>
-                      <span className={styles.eventRowDate}>{ev.date}</span>
-                    </div>
-                    <span className={styles.eventRowRate}>{rate}% attended</span>
-                  </div>
+                  <tr key={a.id} className={isMain ? styles.rowMain : undefined}>
+                    <td>{i + 1}</td>
+                    <td>
+                      [{a.tag}] {a.name}
+                    </td>
+                    <td>
+                      <div className={styles.barTrack}>
+                        <div className={styles.barFill} style={{ width: `${(gp / maxGp) * 100}%` }} />
+                      </div>
+                    </td>
+                    <td>{a.gamePower || '-'}</td>
+                    <td>{a.change || '-'}</td>
+                    <td>{isMain ? fmtPower(mainCombat) : a.combat ? fmtPower(parsePower(a.combat)) : '-'}</td>
+                    <td>{isMain ? '' : gp && mainGp ? fmtPower(gp - mainGp) : '-'}</td>
+                  </tr>
                 );
               })}
-            </div>
-          )}
+            </tbody>
+          </table>
+        </div>
+
+        <div className={styles.cardHeaderTitle} style={{ marginTop: 22 }}>
+          COMBAT POWER BY PART
+        </div>
+        {canEdit && (
+          <div style={{ marginTop: 10 }}>
+            <Chips items={standingChips} />
+          </div>
+        )}
+        <div className={styles.partsGrid}>
+          {PARTS.map(([k, l]) => (
+            <Stat
+              key={k}
+              label={l.toUpperCase()}
+              value={info.parts[k] || '-'}
+              sub={
+                info.parts[k] && mainCombat
+                  ? `${Math.round((parsePower(info.parts[k]) / mainCombat) * 100)}% of combat`
+                  : undefined
+              }
+            />
+          ))}
+        </div>
+        <div className={styles.footGrid}>
+          <Stat label="TOTAL" value={total} sub="combat + troops" />
+          <Stat label="TROOPS" value={info.troops || '-'} />
+          <Stat label="LEGION SCORE" value={info.legionScore || '-'} sub={info.legionRank || undefined} />
         </div>
       </div>
 
+      {/* On the map */}
+      <div className={styles.card}>
+        <div className={styles.cardHeader}>
+          <div className={styles.cardHeaderTitle}>🗺️ ON THE MAP</div>
+        </div>
+        {canEdit && (
+          <Chips
+            items={[
+              ['Hive centre', () => void editInfo('hiveCentre', 'Hive centre (e.g. X430 Y534)')],
+              ['In the hive', () => void editInfo('inHive', 'In the hive (number)')],
+              ['Spread out', () => void editInfo('spreadOut', 'Spread out (number)')],
+              ['Headquarters', () => void editInfo('headquarters', 'Headquarters level range (e.g. Lv 70-80)')],
+              ['Read time', () => void editInfo('mapRead', 'Map read time (e.g. Oct 13)')],
+            ]}
+          />
+        )}
+        <Kv label="Hive centre">{info.hiveCentre || '-'}</Kv>
+        <Kv label="In the hive">
+          {info.inHive || '-'}
+          {info.spreadOut ? ` · ${info.spreadOut} spread out` : ''}
+        </Kv>
+        <Kv label="Shielded now">
+          {shieldedNow} of {active.length} members
+        </Kv>
+        <Kv label="Headquarters">{info.headquarters || '-'}</Kv>
+        <Kv label="Map read">{info.mapRead || '-'}</Kv>
+
+        {canEdit && (
+          <details className={styles.details}>
+            <summary>Manage shields &amp; account links</summary>
+            <div className={styles.cardHeaderTitle} style={{ margin: '14px 0 8px' }}>
+              SHIELDS
+            </div>
+            {active.map((m) => {
+              const s = shields[m.id];
+              return (
+                <div key={m.id} className={styles.shieldRow}>
+                  <span className={styles.listRowName}>{m.name}</span>
+                  <span className={styles.moveSub}>
+                    {s && s.until > Date.now() ? <Countdown until={s.until} /> : '-'}
+                  </span>
+                  <span className={styles.moveBtns}>
+                    <button type="button" className={styles.chip} onClick={() => void setShield(m.id, 8)}>
+                      8h
+                    </button>
+                    <button type="button" className={styles.chip} onClick={() => void setShield(m.id, 24)}>
+                      24h
+                    </button>
+                    <button type="button" className={styles.chip} onClick={() => void setShield(m.id, 0)}>
+                      Clear
+                    </button>
+                  </span>
+                </div>
+              );
+            })}
+            <div className={styles.cardHeaderTitle} style={{ margin: '18px 0 8px' }}>
+              ACCOUNT LINKS
+            </div>
+            {accounts.map((acc) => (
+              <div key={acc.user_id} className={styles.linkRow}>
+                <span className={styles.listRowName}>
+                  {acc.username} <span className={styles.moveSub}>({acc.role})</span>
+                </span>
+                <select
+                  className={styles.select}
+                  style={{ marginBottom: 0 }}
+                  value={linkValue(acc.username)}
+                  onChange={(e) => void setLink(acc.username, e.target.value)}
+                >
+                  <option value="auto">Auto (match name)</option>
+                  <option value="none">No member</option>
+                  {memberList.map((m) => (
+                    <option key={m.id} value={String(m.id)}>
+                      {m.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ))}
+          </details>
+        )}
+      </div>
+
+      {/* Taking members */}
+      <div className={styles.card}>
+        <div className={styles.cardHeader}>
+          <div className={styles.cardHeaderTitle}>📥 TAKING MEMBERS</div>
+        </div>
+        <Kv label="Joining" onEdit={canEdit ? () => void editInfo('joining', 'Joining rule') : undefined}>
+          {info.joining || '-'}
+        </Kv>
+        <Kv label="Join power" onEdit={canEdit ? () => void editInfo('joinPower', 'Join power (e.g. 1.00B)') : undefined}>
+          {info.joinPower || '-'}
+        </Kv>
+        <Kv label="Description" onEdit={canEdit ? () => void editInfo('description', 'Description') : undefined}>
+          {info.description || '-'}
+        </Kv>
+      </div>
+
+      {/* Who moved */}
+      <div className={styles.card}>
+        <div className={styles.cardHeader}>
+          <div className={styles.cardHeaderTitle}>🔀 WHO MOVED · 30D</div>
+          <div className={styles.moveSub}>
+            {recentMoves.filter((m) => m.type === 'join').length} in ·{' '}
+            {recentMoves.filter((m) => m.type === 'leave').length} out
+          </div>
+        </div>
+        <div className={styles.movedGrid}>
+          <div>
+            <div className={styles.statLabel}>JOINED</div>
+            {renderMoves('join')}
+          </div>
+          <div>
+            <div className={styles.statLabel}>LEFT</div>
+            {renderMoves('leave')}
+          </div>
+          <div>
+            <div className={styles.statLabel}>NAME CHANGES</div>
+            {renderMoves('rename')}
+          </div>
+        </div>
+      </div>
+
+      {/* Event attendance */}
+      <div className={styles.card}>
+        <div className={styles.cardHeader}>
+          <div className={styles.cardHeaderTitle}>📅 EVENT ATTENDANCE</div>
+        </div>
+        <div className={styles.statRow} style={{ marginBottom: 18 }}>
+          <div className={`${styles.statValue} ${styles.statValueGold}`}>{avgRate.toFixed(1)}%</div>
+          <div className={styles.statIcon}>📅</div>
+        </div>
+        <div className={styles.cardHeaderTitle} style={{ marginBottom: 12 }}>
+          RECENT EVENTS
+        </div>
+        {recentEvents.length === 0 ? (
+          <div className={styles.emptyState}>No events recorded yet.</div>
+        ) : (
+          <div className={styles.list}>
+            {recentEvents.map((ev) => {
+              const attendedCount = active.reduce((sum, m) => sum + (getAttendanceStatus(m.id, ev.id) ? 1 : 0), 0);
+              const rate = active.length ? Math.round((attendedCount / active.length) * 100) : 0;
+              return (
+                <div key={ev.id} className={styles.listRow}>
+                  <div className={styles.eventRowLeft}>
+                    <span className={styles.eventRowName}>{ev.name || 'Event'}</span>
+                    <span className={styles.eventRowDate}>{ev.date}</span>
+                  </div>
+                  <span className={styles.eventRowRate}>{rate}% attended</span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Member list (z0.0, synced from Members) */}
+      <div className={styles.card}>
+        <div className={styles.cardHeader}>
+          <div className={styles.cardHeaderTitle}>👥 MEMBER LIST · [{main.tag}]</div>
+          <div className={styles.moveSub}>{memberList.length} members</div>
+        </div>
+        <div className={styles.tableWrap}>
+          <table className={styles.dataTable}>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>NAME</th>
+                <th>RANK</th>
+                <th>COMBAT POWER</th>
+                <th>F1 POWER</th>
+                <th>FACTION</th>
+                <th>LEVEL</th>
+                <th>STATUS</th>
+              </tr>
+            </thead>
+            <tbody>
+              {memberList.map((m, i) => (
+                <tr key={m.id}>
+                  <td>{i + 1}</td>
+                  <td>{m.name}</td>
+                  <td>{m.rank || 'R1'}</td>
+                  <td>{parseCpWithCommas(m.cp).formatted}</td>
+                  <td>{parseCpToRaw(m.f1Cp).formatted}</td>
+                  <td>{m.faction || '-'}</td>
+                  <td>{m.level || '-'}</td>
+                  <td>{m.status ?? 'active'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Notices */}
       <div className={`${styles.card} ${styles.accentRed}`}>
         <div className={styles.cardHeader}>
           <div className={styles.cardHeaderTitle}>📣 NOTICES</div>
@@ -191,6 +774,45 @@ export default function Home() {
           </div>
         )}
       </div>
+
+      {/* VS compare */}
+      {vsA && vsB && ma && mb && (
+        <div className={styles.modalBack} onClick={() => setVsFor(null)}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.cardHeader}>
+              <div className={styles.cardHeaderTitle}>⚔️ VS</div>
+              <button type="button" className={styles.chip} onClick={() => setVsFor(null)}>
+                ✕ Close
+              </button>
+            </div>
+            <select className={styles.select} value={vsB.id} onChange={(e) => setVsWith(Number(e.target.value))}>
+              {list
+                .filter((x) => x.id !== vsA.id)
+                .map((x) => (
+                  <option key={x.id} value={x.id}>
+                    [{x.tag}] {x.name}
+                  </option>
+                ))}
+            </select>
+            <table className={styles.dataTable}>
+              <thead>
+                <tr>
+                  <th></th>
+                  <th>[{vsA.tag}]</th>
+                  <th>[{vsB.tag}]</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td>Game power</td><td>{fmtPower(ma.gp)}</td><td>{fmtPower(mb.gp)}</td></tr>
+                <tr><td>Combat power</td><td>{fmtPower(ma.combat)}</td><td>{fmtPower(mb.combat)}</td></tr>
+                <tr><td>Members</td><td>{ma.members}</td><td>{mb.members}</td></tr>
+                <tr><td>State rank</td><td>{ma.rank}</td><td>{mb.rank}</td></tr>
+                <tr><td>Game power gap</td><td colSpan={2}>{ma.gp && mb.gp ? fmtPower(ma.gp - mb.gp) : '-'}</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

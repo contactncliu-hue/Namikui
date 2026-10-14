@@ -7,6 +7,7 @@ import MemberRow from './components/MemberRow';
 import AddMemberModal from './components/AddMemberModal';
 import F1HistoryModal from './components/F1HistoryModal';
 import type { Member } from '../../types';
+import { logMove } from '../../lib/homeData';
 
 type StatusFilter = 'all' | 'active' | 'inactive' | 'removed';
 
@@ -74,7 +75,13 @@ export function Members() {
 
   const setStatus = async (id: number, status: 'active' | 'inactive' | 'removed') => {
     if (!canEdit) return;
-    await patchMember(id, { status });
+    const prev = rawMembers.find((x) => x.id === id);
+    const saved = await patchMember(id, { status });
+    if (saved && prev) {
+      const was = prev.status ?? 'active';
+      if (was !== 'removed' && status === 'removed') void logMove({ type: 'leave', name: prev.name, cp: prev.cp });
+      if (was === 'removed' && status !== 'removed') void logMove({ type: 'join', name: prev.name, cp: prev.cp });
+    }
   };
 
   const cycleRank = async (id: number) => {
@@ -116,7 +123,11 @@ export function Members() {
 
   const updateMeta = async (id: number, field: 'name' | 'level' | 'note', val: string) => {
     if (!canEdit) return;
-    await patchMember(id, { [field]: val } as Partial<Member>);
+    const prev = rawMembers.find((x) => x.id === id);
+    const saved = await patchMember(id, { [field]: val } as Partial<Member>);
+    if (saved && field === 'name' && prev && val.trim() && prev.name !== val.trim()) {
+      void logMove({ type: 'rename', name: val.trim(), oldName: prev.name });
+    }
   };
 
   const removeMember = async (id: number) => {
@@ -131,6 +142,7 @@ export function Members() {
     }
     setMembers(next);
     log('REMOVE_MEMBER', `Removed member: ${m.name}`);
+    if (m.status !== 'removed') void logMove({ type: 'leave', name: m.name, cp: m.cp });
   };
 
   const deleteHistoryEntry = async (memberId: number, index: number) => {
@@ -170,6 +182,7 @@ export function Members() {
     }
     setMembers(next);
     log('ADD_MEMBER', `Added member: ${fields.name}`);
+    void logMove({ type: 'join', name: fields.name, cp: parsedCp.formatted });
     setAddOpen(false);
   };
 
