@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useAppData, getActiveMembers } from '../../context/AppDataContext';
 import { parseCpToRaw, parseCpWithCommas, RANK_GROUP_ORDER } from '../Members/memberUtils';
@@ -14,6 +14,8 @@ import {
   useNow,
 } from '../../lib/homeData';
 import type { Alliance, HomeInfo, LinkMap, MoveEntry, ShieldMap } from '../../lib/homeData';
+import { enablePush } from '../../lib/push';
+import { db } from '../../lib/supabase';
 import styles from './Home.module.css';
 
 type StrKey = Exclude<keyof HomeInfo, 'parts' | 'overrides'>;
@@ -85,14 +87,69 @@ export default function Home() {
   const { value: shields, update: updateShields } = useKeyRow<ShieldMap>('homeShields', {});
   const { value: links, update: updateLinks } = useKeyRow<LinkMap>('homeLinks', {});
   const { value: moves, update: updateMoves } = useKeyRow<MoveEntry[]>('moves', []);
+  const { value: extraPhotos, update: updatePhotos } = useKeyRow<any[]>('homePhotosAdded', []);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [linkOpen, setLinkOpen] = useState(false);
+  const [lbIdx, setLbIdx] = useState<number | null>(null);
+  const isAdmin = role === 'admin';
+
+  const shrink = (file: File) =>
+    new Promise<string>((res, rej) => {
+      const r = new FileReader();
+      r.onload = () => {
+        const img = new Image();
+        img.onload = () => {
+          const sc = Math.min(1, 1000 / Math.max(img.width, img.height));
+          const c = document.createElement('canvas');
+          c.width = img.width * sc;
+          c.height = img.height * sc;
+          c.getContext('2d')!.drawImage(img, 0, 0, c.width, c.height);
+          res(c.toDataURL('image/jpeg', 0.8));
+        };
+        img.onerror = rej;
+        img.src = r.result as string;
+      };
+      r.onerror = rej;
+      r.readAsDataURL(file);
+    });
+
+  const uploadPhoto = async (file: File, i: number): Promise<string> => {
+    const blob = await (await fetch(await shrink(file))).blob();
+    const path = `${Date.now()}-${i}.jpg`;
+    const { error } = await db.storage.from('home-photos').upload(path, blob, { contentType: 'image/jpeg' });
+    if (error) throw error;
+    return db.storage.from('home-photos').getPublicUrl(path).data.publicUrl;
+  };
+
+  const addPhotos = async (files: FileList | null) => {
+    if (!files?.length) return;
+    const added = await Promise.all(
+      Array.from(files).map(async (f, i) => ({
+        id: Date.now() + i,
+        dataUrl: await uploadPhoto(f, i),
+        uploader: username,
+        visibility: 'public',
+      }))
+    );
+    await updatePhotos((cur) => [...added, ...cur]);
+    if (fileRef.current) fileRef.current.value = '';
+  };
+  const delPhoto = async (id: number) => {
+    if (!window.confirm('Delete this photo?')) return;
+    const hit = extraPhotos.find((x) => x.id === id);
+    const path = hit?.dataUrl?.split('/home-photos/')[1];
+    if (path) await db.storage.from('home-photos').remove([path]);
+    await updatePhotos((cur) => cur.filter((x) => x.id !== id));
+  };
 
   const info = useMemo(() => mergeInfo(rawInfo), [rawInfo]);
   const list = rawAlliances.length ? rawAlliances : DEFAULT_ALLIANCES;
   const main = list.find((a) => a.isMain) ?? list[0];
   const now = useNow(30000);
 
-  const [vsFor, setVsFor] = useState<number | null>(null);
-  const [vsWith, setVsWith] = useState<number | null>(null);
+  const [vsOpen, setVsOpen] = useState(false);
+  const [vsA, setVsA] = useState({ name: '', server: '' });
+  const [vsB, setVsB] = useState({ name: '', server: '' });
 
   const active = useMemo(() => getActiveMembers(members), [members]);
 
@@ -118,7 +175,7 @@ export default function Home() {
         bestName = m.name;
       }
     }
-    return { name: bestName, val: fmtPower(bestVal) };
+    return { name: bestName, val: fmtPower(bestVal).replace(/B$/, 'G') };
   }, [active]);
 
   const avgRate = useMemo(() => {
@@ -142,8 +199,8 @@ export default function Home() {
   );
 
   const visiblePhotos = useMemo(
-    () => homePhotos.filter((p) => (p.visibility === 'alliance' ? isStaff : true)),
-    [homePhotos, isStaff]
+    () => [...extraPhotos, ...homePhotos].filter((p) => (p.visibility === 'alliance' ? isStaff : true)),
+    [extraPhotos, homePhotos, isStaff]
   );
   const visibleNotices = useMemo(
     () => noticeAnnouncements.filter((n) => (n.visibility === 'alliance' ? isStaff : true)).slice(0, 3),
@@ -295,22 +352,12 @@ export default function Home() {
     ));
   };
 
-  // ---------- VS compare ----------
-  const metrics = (a: Alliance) => {
-    const isMain = a.id === main.id;
-    return {
-      gp: parsePower(a.gamePower),
-      combat: isMain ? mainCombat : parsePower(a.combat),
-      members: isMain ? mainMembers : a.members || '-',
-      rank: a.stateRank || '-',
-    };
-  };
+  // ---------- VS ----------
   const openVs = (a: Alliance) => {
-    setVsFor(a.id);
-    setVsWith(list.find((x) => x.id !== a.id)?.id ?? null);
+    setVsA({ name: a.name, server: '277' });
+    setVsB({ name: '', server: '' });
+    setVsOpen(true);
   };
-  const vsA = vsFor !== null ? list.find((a) => a.id === vsFor) : undefined;
-  const vsB = vsA ? list.find((a) => a.id === vsWith) ?? list.find((a) => a.id !== vsA.id) : undefined;
 
   // ---------- alliance card ----------
   const renderAlliance = (a: Alliance) => {
@@ -343,7 +390,7 @@ export default function Home() {
     return (
       <div key={a.id} className={styles.card}>
         <div className={styles.allianceHead}>
-          {a.icon ? <img className={styles.iconImg} src={a.icon} alt="" /> : <div className={styles.iconBox}>🛡️</div>}
+          {a.icon ? <img className={styles.iconImg} src={a.icon} alt="" /> : null}
           <div className={styles.headText}>
             <div className={styles.allianceName}>
               [{a.tag || '-'}] {a.name}
@@ -379,19 +426,121 @@ export default function Home() {
     ['Legion rank', () => void editInfo('legionRank', 'Legion rank (e.g. #1 of 3)')],
   ];
 
-  const ma = vsA ? metrics(vsA) : null;
-  const mb = vsB ? metrics(vsB) : null;
 
   return (
     <section className={styles.view}>
       <div className={styles.pageHeader}>
         <h1 className={styles.pageTitle}>Home Dashboard</h1>
         <div className={styles.pageSubtext}>Welcome to Loopy's Playground Alliance Management Dashboard</div>
+        <div>
+          <button type="button" className={styles.btnShield} onClick={async () => alert({ ok: 'Notifications on', denied: 'Permission denied', unsupported: 'Not supported here', error: 'Could not save' }[await enablePush(username)])}>
+            Enable notifications
+          </button>
+        </div>
+        {isAdmin && (
+          <div>
+            <button type="button" className={styles.btnShield} onClick={() => setLinkOpen(true)}>
+              Link accounts
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Recent photos */}
+      <div className={`${styles.card} ${styles.accentGold}`}>
+        <div className={styles.cardHeader}>
+          <div className={styles.cardHeaderTitle}>RECENT PHOTOS</div>
+          {canEdit && (
+            <>
+              <button type="button" className={styles.btnShield} onClick={() => fileRef.current?.click()}>
+                ＋ Add photos
+              </button>
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/*"
+                multiple
+                hidden
+                onChange={(e) => void addPhotos(e.target.files)}
+              />
+            </>
+          )}
+        </div>
+        {visiblePhotos.length === 0 ? (
+          <div className={styles.emptyState}>No photos yet.</div>
+        ) : (
+          <div className={styles.photoRow}>
+            {visiblePhotos.slice(0, 8).map((p, i) => (
+              <div key={p.id} className={styles.photoThumb} onClick={() => setLbIdx(i)}>
+                <img src={p.dataUrl} alt={p.uploader} />
+                {canEdit && extraPhotos.some((x) => x.id === p.id) && (
+                  <button type="button" className={styles.photoDel} onClick={(e) => { e.stopPropagation(); void delPhoto(p.id); }}>
+                    ✕
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Notices */}
+      <div className={`${styles.card} ${styles.accentRed}`}>
+        <div className={styles.cardHeader}>
+          <div className={styles.cardHeaderTitle}>NOTICES</div>
+        </div>
+        {visibleNotices.length === 0 ? (
+          <div className={styles.emptyState}>No notices yet.</div>
+        ) : (
+          <div>
+            {visibleNotices.map((n) => (
+              <div key={n.id} className={styles.noticeRow}>
+                <div className={styles.noticeTop}>
+                  <span className={styles.noticeName}>{n.title}</span>
+                  <span className={styles.noticeDate}>{n.date}</span>
+                </div>
+                <div className={styles.noticeDesc}>{n.content}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Event attendance */}
+      <div className={styles.card}>
+        <div className={styles.cardHeader}>
+          <div className={styles.cardHeaderTitle}>EVENT ATTENDANCE</div>
+        </div>
+        <div className={styles.statRow} style={{ marginBottom: 18 }}>
+          <div className={`${styles.statValue} ${styles.statValueGold}`}>{avgRate.toFixed(1)}%</div>
+        </div>
+        <div className={styles.cardHeaderTitle} style={{ marginBottom: 12 }}>
+          RECENT EVENTS
+        </div>
+        {recentEvents.length === 0 ? (
+          <div className={styles.emptyState}>No events recorded yet.</div>
+        ) : (
+          <div className={styles.list}>
+            {recentEvents.map((ev) => {
+              const attendedCount = active.reduce((sum, m) => sum + (getAttendanceStatus(m.id, ev.id) ? 1 : 0), 0);
+              const rate = active.length ? Math.round((attendedCount / active.length) * 100) : 0;
+              return (
+                <div key={ev.id} className={styles.listRow}>
+                  <div className={styles.eventRowLeft}>
+                    <span className={styles.eventRowName}>{ev.name || 'Event'}</span>
+                    <span className={styles.eventRowDate}>{ev.date}</span>
+                  </div>
+                  <span className={styles.eventRowRate}>{rate}% attended</span>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* My shield */}
       <div className={styles.shieldBar}>
-        <div className={styles.shieldTitle}>🛡️ MY SHIELD</div>
+        <div className={styles.shieldTitle}>MY SHIELD</div>
         {!myMember ? (
           <div className={styles.shieldStatus}>Your account is not linked to a member yet. Ask an admin to link it.</div>
         ) : (
@@ -423,28 +572,10 @@ export default function Home() {
         )}
       </div>
 
-      {/* Photos */}
-      <div className={`${styles.card} ${styles.accentGold}`}>
-        <div className={styles.cardHeader}>
-          <div className={styles.cardHeaderTitle}>🖼️ RECENT PHOTOS / VIDEOS</div>
-        </div>
-        {visiblePhotos.length === 0 ? (
-          <div className={styles.emptyState}>No photos or videos yet.</div>
-        ) : (
-          <div className={styles.photoRow}>
-            {visiblePhotos.slice(0, 8).map((p) => (
-              <div key={p.id} className={styles.photoThumb}>
-                <img src={p.dataUrl} alt={p.uploader} />
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
       {/* State 277 */}
       <div className={styles.card}>
         <div className={styles.allianceHead}>
-          <div className={styles.iconBox}>🏛️</div>
+          {info.stateIcon ? <img className={styles.iconImg} src={info.stateIcon} alt="" /> : null}
           <div className={styles.headText}>
             <div className={styles.allianceName}>State 277</div>
             <div className={styles.allianceSub}>
@@ -457,7 +588,7 @@ export default function Home() {
             items={[
               ['Peer rank', () => void editInfo('peerRank', 'Peer rank (e.g. #19 of 86)')],
               ['Peer score', () => void editInfo('peerScore', 'Peer score (e.g. 82/100)')],
-              ['Shields up %', () => void editInfo('shieldsUp', 'Shields up (e.g. 2%)')],
+              ['Icon URL', () => void editInfo('stateIcon', 'State 277 icon image URL')],
               ['Combat (override)', () => void editOverride('state_combat', 'State combat power')],
               ['Hitter (override)', () => void editOverride('hitter_val', 'Hardest hitter value')],
             ]}
@@ -471,7 +602,6 @@ export default function Home() {
             value={info.overrides.hitter_val ?? hitter.val}
             sub={hitter.name ? `${hitter.name} (highest F1 CP)` : undefined}
           />
-          <Stat label="SHIELDS UP" value={info.shieldsUp || '-'} />
         </div>
       </div>
 
@@ -488,7 +618,7 @@ export default function Home() {
       {/* Standing */}
       <div className={styles.card}>
         <div className={styles.cardHeader}>
-          <div className={styles.cardHeaderTitle}>🏆 STANDING</div>
+          <div className={styles.cardHeaderTitle}>STANDING</div>
         </div>
         <div className={styles.noteLine}>{standingNote}</div>
         <div className={styles.tableWrap}>
@@ -561,7 +691,7 @@ export default function Home() {
       {/* On the map */}
       <div className={styles.card}>
         <div className={styles.cardHeader}>
-          <div className={styles.cardHeaderTitle}>🗺️ ON THE MAP</div>
+          <div className={styles.cardHeaderTitle}>ON THE MAP</div>
         </div>
         {canEdit && (
           <Chips
@@ -644,7 +774,7 @@ export default function Home() {
       {/* Taking members */}
       <div className={styles.card}>
         <div className={styles.cardHeader}>
-          <div className={styles.cardHeaderTitle}>📥 TAKING MEMBERS</div>
+          <div className={styles.cardHeaderTitle}>TAKING MEMBERS</div>
         </div>
         <Kv label="Joining" onEdit={canEdit ? () => void editInfo('joining', 'Joining rule') : undefined}>
           {info.joining || '-'}
@@ -660,7 +790,7 @@ export default function Home() {
       {/* Who moved */}
       <div className={styles.card}>
         <div className={styles.cardHeader}>
-          <div className={styles.cardHeaderTitle}>🔀 WHO MOVED · 30D</div>
+          <div className={styles.cardHeaderTitle}>WHO MOVED · 30D</div>
           <div className={styles.moveSub}>
             {recentMoves.filter((m) => m.type === 'join').length} in ·{' '}
             {recentMoves.filter((m) => m.type === 'leave').length} out
@@ -682,134 +812,105 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Event attendance */}
-      <div className={styles.card}>
-        <div className={styles.cardHeader}>
-          <div className={styles.cardHeaderTitle}>📅 EVENT ATTENDANCE</div>
-        </div>
-        <div className={styles.statRow} style={{ marginBottom: 18 }}>
-          <div className={`${styles.statValue} ${styles.statValueGold}`}>{avgRate.toFixed(1)}%</div>
-          <div className={styles.statIcon}>📅</div>
-        </div>
-        <div className={styles.cardHeaderTitle} style={{ marginBottom: 12 }}>
-          RECENT EVENTS
-        </div>
-        {recentEvents.length === 0 ? (
-          <div className={styles.emptyState}>No events recorded yet.</div>
-        ) : (
-          <div className={styles.list}>
-            {recentEvents.map((ev) => {
-              const attendedCount = active.reduce((sum, m) => sum + (getAttendanceStatus(m.id, ev.id) ? 1 : 0), 0);
-              const rate = active.length ? Math.round((attendedCount / active.length) * 100) : 0;
-              return (
-                <div key={ev.id} className={styles.listRow}>
-                  <div className={styles.eventRowLeft}>
-                    <span className={styles.eventRowName}>{ev.name || 'Event'}</span>
-                    <span className={styles.eventRowDate}>{ev.date}</span>
-                  </div>
-                  <span className={styles.eventRowRate}>{rate}% attended</span>
-                </div>
-              );
-            })}
+      {/* Photo viewer */}
+      {lbIdx !== null && visiblePhotos[lbIdx] && (
+        <div
+          className={styles.lightbox}
+          tabIndex={0}
+          autoFocus
+          onClick={() => setLbIdx(null)}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') setLbIdx(null);
+            if (e.key === 'ArrowRight') setLbIdx((lbIdx + 1) % visiblePhotos.length);
+            if (e.key === 'ArrowLeft') setLbIdx((lbIdx - 1 + visiblePhotos.length) % visiblePhotos.length);
+          }}
+        >
+          <button type="button" className={styles.lbClose} onClick={() => setLbIdx(null)}>Close</button>
+          {visiblePhotos.length > 1 && (
+            <button type="button" className={`${styles.lbNav} ${styles.lbPrev}`}
+              onClick={(e) => { e.stopPropagation(); setLbIdx((lbIdx - 1 + visiblePhotos.length) % visiblePhotos.length); }}>
+              &#8249;
+            </button>
+          )}
+          <img className={styles.lbImg} src={visiblePhotos[lbIdx].dataUrl} alt="" onClick={(e) => e.stopPropagation()} />
+          {visiblePhotos.length > 1 && (
+            <button type="button" className={`${styles.lbNav} ${styles.lbNext}`}
+              onClick={(e) => { e.stopPropagation(); setLbIdx((lbIdx + 1) % visiblePhotos.length); }}>
+              &#8250;
+            </button>
+          )}
+          <div className={styles.lbCount}>
+            {lbIdx + 1} / {visiblePhotos.length}
+            {visiblePhotos[lbIdx].uploader ? ` · ${visiblePhotos[lbIdx].uploader}` : ''}
           </div>
-        )}
-      </div>
-
-      {/* Member list (z0.0, synced from Members) */}
-      <div className={styles.card}>
-        <div className={styles.cardHeader}>
-          <div className={styles.cardHeaderTitle}>👥 MEMBER LIST · [{main.tag}]</div>
-          <div className={styles.moveSub}>{memberList.length} members</div>
         </div>
-        <div className={styles.tableWrap}>
-          <table className={styles.dataTable}>
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>NAME</th>
-                <th>RANK</th>
-                <th>COMBAT POWER</th>
-                <th>F1 POWER</th>
-                <th>FACTION</th>
-                <th>LEVEL</th>
-                <th>STATUS</th>
-              </tr>
-            </thead>
-            <tbody>
-              {memberList.map((m, i) => (
-                <tr key={m.id}>
-                  <td>{i + 1}</td>
-                  <td>{m.name}</td>
-                  <td>{m.rank || 'R1'}</td>
-                  <td>{parseCpWithCommas(m.cp).formatted}</td>
-                  <td>{parseCpToRaw(m.f1Cp).formatted}</td>
-                  <td>{m.faction || '-'}</td>
-                  <td>{m.level || '-'}</td>
-                  <td>{m.status ?? 'active'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      )}
 
-      {/* Notices */}
-      <div className={`${styles.card} ${styles.accentRed}`}>
-        <div className={styles.cardHeader}>
-          <div className={styles.cardHeaderTitle}>📣 NOTICES</div>
-        </div>
-        {visibleNotices.length === 0 ? (
-          <div className={styles.emptyState}>No notices yet.</div>
-        ) : (
-          <div>
-            {visibleNotices.map((n) => (
-              <div key={n.id} className={styles.noticeRow}>
-                <div className={styles.noticeTop}>
-                  <span className={styles.noticeName}>{n.title}</span>
-                  <span className={styles.noticeDate}>{n.date}</span>
-                </div>
-                <div className={styles.noticeDesc}>{n.content}</div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* VS compare */}
-      {vsA && vsB && ma && mb && (
-        <div className={styles.modalBack} onClick={() => setVsFor(null)}>
+      {/* Link accounts */}
+      {linkOpen && (
+        <div className={styles.modalBack} onClick={() => setLinkOpen(false)}>
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
             <div className={styles.cardHeader}>
-              <div className={styles.cardHeaderTitle}>⚔️ VS</div>
-              <button type="button" className={styles.chip} onClick={() => setVsFor(null)}>
+              <div className={styles.cardHeaderTitle}>LINK ACCOUNTS</div>
+              <button type="button" className={styles.chip} onClick={() => setLinkOpen(false)}>
                 ✕ Close
               </button>
             </div>
-            <select className={styles.select} value={vsB.id} onChange={(e) => setVsWith(Number(e.target.value))}>
-              {list
-                .filter((x) => x.id !== vsA.id)
-                .map((x) => (
-                  <option key={x.id} value={x.id}>
-                    [{x.tag}] {x.name}
-                  </option>
-                ))}
-            </select>
-            <table className={styles.dataTable}>
-              <thead>
-                <tr>
-                  <th></th>
-                  <th>[{vsA.tag}]</th>
-                  <th>[{vsB.tag}]</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr><td>Game power</td><td>{fmtPower(ma.gp)}</td><td>{fmtPower(mb.gp)}</td></tr>
-                <tr><td>Combat power</td><td>{fmtPower(ma.combat)}</td><td>{fmtPower(mb.combat)}</td></tr>
-                <tr><td>Members</td><td>{ma.members}</td><td>{mb.members}</td></tr>
-                <tr><td>State rank</td><td>{ma.rank}</td><td>{mb.rank}</td></tr>
-                <tr><td>Game power gap</td><td colSpan={2}>{ma.gp && mb.gp ? fmtPower(ma.gp - mb.gp) : '-'}</td></tr>
-              </tbody>
-            </table>
+            {accounts.map((acc) => (
+              <div key={acc.user_id} className={styles.linkRow}>
+                <span className={styles.listRowName}>
+                  {acc.username} <span className={styles.moveSub}>({acc.role})</span>
+                </span>
+                <select
+                  className={styles.select}
+                  style={{ marginBottom: 0 }}
+                  value={linkValue(acc.username)}
+                  onChange={(e) => void setLink(acc.username, e.target.value)}
+                >
+                  <option value="auto">Auto (match name)</option>
+                  <option value="none">No member</option>
+                  {memberList.map((m) => (
+                    <option key={m.id} value={String(m.id)}>
+                      {m.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {vsOpen && (
+        <div className={styles.modalBack} onClick={() => setVsOpen(false)}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.cardHeader}>
+              <div className={styles.cardHeaderTitle}>VS</div>
+              <button type="button" className={styles.chip} onClick={() => setVsOpen(false)}>
+                Close
+              </button>
+            </div>
+            <div className={styles.statLabel}>Alliance 1</div>
+            <input className={styles.select} placeholder="Alliance name" value={vsA.name}
+              onChange={(e) => setVsA({ ...vsA, name: e.target.value })} />
+            <input className={styles.select} placeholder="Server (e.g. 277)" value={vsA.server}
+              onChange={(e) => setVsA({ ...vsA, server: e.target.value })} />
+            <div className={styles.statLabel}>Alliance 2</div>
+            <input className={styles.select} placeholder="Alliance name" value={vsB.name}
+              onChange={(e) => setVsB({ ...vsB, name: e.target.value })} />
+            <input className={styles.select} placeholder="Server (e.g. 301)" value={vsB.server}
+              onChange={(e) => setVsB({ ...vsB, server: e.target.value })} />
+            <div className={styles.vsResult}>
+              <div className={styles.vsSide}>
+                <div className={styles.vsName}>{vsA.name || '-'}</div>
+                <div className={styles.moveSub}>Server {vsA.server || '-'}</div>
+              </div>
+              <div className={styles.vsMid}>VS</div>
+              <div className={styles.vsSide}>
+                <div className={styles.vsName}>{vsB.name || '-'}</div>
+                <div className={styles.moveSub}>Server {vsB.server || '-'}</div>
+              </div>
+            </div>
           </div>
         </div>
       )}

@@ -146,7 +146,7 @@ export default function MemberRow({
             placeholder="0G"
           />
           <button className={styles.historyBadge} onClick={onOpenHistory}>
-            🕐 History ({historyCount})
+            History ({historyCount})
           </button>
         </div>
       </td>
@@ -191,7 +191,7 @@ export default function MemberRow({
       {canEdit && (
         <td>
           <button className={`${styles.btnAction} ${styles.btnDanger}`} onClick={onRemove} title="Delete Member">
-            🗑
+            
           </button>
         </td>
       )}

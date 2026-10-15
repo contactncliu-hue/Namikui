@@ -213,14 +213,14 @@ export function Events() {
             RANKING
           </button>
           <button className={`${styles.btnToggle} ${tab === 'war' ? styles.btnToggleActive : ''}`} onClick={() => setTab('war')}>
-            ⚠ WAR
+            WAR
           </button>
         </div>
         <div className={styles.searchBox}>
           <input
             type="text"
             className={styles.searchInput}
-            placeholder="🔍 Search member..."
+            placeholder="Search member..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />

@@ -34,7 +34,7 @@ export default function F1HistoryModal({ member, isAdmin, onClose, onDeleteEntry
                 </div>
                 {isAdmin && (
                   <button className={styles.btnDanger + ' ' + styles.btnAction} onClick={() => onDeleteEntry(index)}>
-                    🗑
+                    
                   </button>
                 )}
               </div>

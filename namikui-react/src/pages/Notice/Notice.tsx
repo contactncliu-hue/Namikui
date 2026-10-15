@@ -91,7 +91,7 @@ export function Notice() {
       {!canView ? (
         <div className={styles.card}>
           <div className={styles.empty}>
-            🔒 This content is only available to Alliance Members and Staff. Ask an Admin to assign you the Alliance role.
+            This content is only available to Alliance Members and Staff. Ask an Admin to assign you the Alliance role.
           </div>
         </div>
       ) : (

@@ -35,6 +35,7 @@ export interface HomeInfo {
   joining: string;
   joinPower: string;
   description: string;
+  stateIcon: string;
 }
 
 export type ShieldMap = Record<string, { until: number; hours: number }>;
@@ -57,7 +58,7 @@ export const DEFAULT_INFO: HomeInfo = {
   parts: { hero: '', science: '', vehicle: '', buildings: '', pet: '' },
   troops: '', legionScore: '', legionRank: '',
   hiveCentre: '', inHive: '', spreadOut: '', headquarters: '', mapRead: '',
-  joining: '', joinPower: '', description: '',
+  joining: '', joinPower: '', description: '', stateIcon: '',
 };
 
 export function mergeInfo(v: Partial<HomeInfo> | null | undefined): HomeInfo {

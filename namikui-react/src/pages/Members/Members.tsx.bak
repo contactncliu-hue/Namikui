@@ -202,13 +202,13 @@ export function Members() {
             <input
               type="text"
               className={styles.searchInput}
-              placeholder="🔍 Search member, CP..."
+              placeholder="Search member, CP..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
           <button className={styles.btnAction} onClick={() => setShowDiff((v) => !v)}>
-            📈 ± DIFF
+            ± DIFF
           </button>
         </div>
         {canEdit && (
@@ -221,7 +221,7 @@ export function Members() {
       </section>
 
       <div className={styles.manualBox}>
-        ℹ️ <strong>Combat Power &amp; F1 Power Manual:</strong> Combat Power uses standard comma formatting.
+        ℹ<strong>Combat Power &amp; F1 Power Manual:</strong> Combat Power uses standard comma formatting.
         F1 Power automatically handles G/M parsing and sorting. Press Enter to save changes instantly — each new
         value appends a history record used for the ± DIFF calculation.
       </div>

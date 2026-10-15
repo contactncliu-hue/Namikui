@@ -46,7 +46,7 @@ export function Events() {
 
   // --- Screenshot import state ---
   const [importing, setImporting] = useState(false);
-  const [importStatus, setImportStatus] = useState('📥 IMPORT WAR EVENT');
+  const [importStatus, setImportStatus] = useState('IMPORT WAR EVENT');
   const [reviewOpen, setReviewOpen] = useState(false);
   const [reviewRows, setReviewRows] = useState<ImportRow[]>([]);
   const [reviewMatchedCount, setReviewMatchedCount] = useState(0);
@@ -257,7 +257,7 @@ export function Events() {
     setReviewOpen(true);
 
     setImporting(false);
-    setImportStatus('📥 IMPORT WAR EVENT');
+    setImportStatus('IMPORT WAR EVENT');
     e.target.value = '';
   };
 
@@ -323,14 +323,14 @@ export function Events() {
             RANKING
           </button>
           <button className={`${styles.btnToggle} ${tab === 'war' ? styles.btnToggleActive : ''}`} onClick={() => setTab('war')}>
-            ⚠ WAR
+            WAR
           </button>
         </div>
         <div className={styles.searchBox}>
           <input
             type="text"
             className={styles.searchInput}
-            placeholder="🔍 Search member..."
+            placeholder="Search member..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -361,7 +361,7 @@ export function Events() {
                 onClick={() => document.getElementById('warImportInput')?.click()}
                 disabled={importing}
               >
-                {importing ? importStatus : '📥 IMPORT WAR EVENT'}
+                {importing ? importStatus : 'IMPORT WAR EVENT'}
               </button>
               <input
                 id="warImportInput"

@@ -226,13 +226,13 @@ export function Discussion() {
       <div className={styles.controlsCard}>
         <div className={styles.btnGroup}>
           <button className={`${styles.btnToggle} ${tab === 'chat' ? styles.btnToggleActive : ''}`} onClick={() => setTab('chat')}>
-            💬 CHAT
+            CHAT
           </button>
           <button
             className={`${styles.btnToggle} ${tab === 'announcement' ? styles.btnToggleActive : ''}`}
             onClick={() => setTab('announcement')}
           >
-            📣 ANNOUNCEMENTS &amp; NOTICES
+            ANNOUNCEMENTS &amp; NOTICES
           </button>
         </div>
       </div>

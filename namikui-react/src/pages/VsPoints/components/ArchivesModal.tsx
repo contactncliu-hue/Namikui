@@ -34,7 +34,7 @@ export default function ArchivesModal({ archives, isStaff, onClose, onDeleteEntr
                     <span>Cycle {cycleNumber}</span>
                     {isStaff && (
                       <button className={styles.archiveDeleteBtn} onClick={() => onDeleteEntry(archiveIdx)}>
-                        🗑 Delete
+                        Delete
                       </button>
                     )}
                   </div>

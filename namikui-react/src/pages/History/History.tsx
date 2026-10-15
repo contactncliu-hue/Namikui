@@ -116,7 +116,7 @@ export function History() {
       </div>
 
       <div className={styles.card}>
-        <h2 className={styles.title}>🕐 Data Snapshots &amp; Restore</h2>
+        <h2 className={styles.title}>Data Snapshots &amp; Restore</h2>
         <p className={styles.desc}>
           Snapshots of Event Attendance data (event definitions and the member roster). Restoring saves your current data as a
           new snapshot first, so a restore can always be undone.

@@ -108,7 +108,7 @@ export default function GanttTimeline({ events, role, isStaff, onAdd, onEdit }: 
   return (
     <div className={styles.card}>
       <div className={styles.cardHeaderRow}>
-        <h2 className={styles.cardTitle}>📅 EVENT TIMELINE</h2>
+        <h2 className={styles.cardTitle}>EVENT TIMELINE</h2>
         <div className={styles.headerActions}>
           <div className={styles.navGroup}>
             <button className={styles.navBtn} aria-label="Earlier" onClick={() => setOffset((o) => o - 7)}>
@@ -183,8 +183,8 @@ export default function GanttTimeline({ events, role, isStaff, onAdd, onEdit }: 
                 </div>
               ) : (
                 <>
-                  {renderGroup('Alliance Events', '🛡️', allianceEvents)}
-                  {renderGroup('War Events', '⚔️', warEvents)}
+                  {renderGroup('Alliance Events', '', allianceEvents)}
+                  {renderGroup('War Events', '', warEvents)}
                 </>
               )}
             </div>

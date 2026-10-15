@@ -233,11 +233,11 @@ export function VsPoints() {
             TABLE
           </button>
           <button className={`${styles.subTab} ${tab === 'ranking' ? styles.subTabActive : ''}`} onClick={() => setTab('ranking')}>
-            🏆 RANKING
+            RANKING
           </button>
         </div>
         <div className={styles.searchBox}>
-          <input type="text" className={styles.searchInput} placeholder="🔍 Search member..." value={search} onChange={(e) => setSearch(e.target.value)} />
+          <input type="text" className={styles.searchInput} placeholder="Search member..." value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
         {isStaff && (
           <div className={styles.toolbarRight}>
@@ -262,15 +262,15 @@ export function VsPoints() {
           {isStaff && (
             <>
               <button className={styles.btnAction} onClick={() => setCycleModalOpen(true)}>
-                📅 SELECT CYCLE DATES
+                SELECT CYCLE DATES
               </button>
               <button className={styles.btnGold} onClick={() => setArchiveModalOpen(true)}>
-                📦 ARCHIVE DATES
+                ARCHIVE DATES
               </button>
             </>
           )}
           <button className={styles.btnAction} onClick={() => setArchivesViewOpen(true)}>
-            🗂 VIEW ARCHIVES ({(vsData.archives || []).length})
+            VIEW ARCHIVES ({(vsData.archives || []).length})
           </button>
         </div>
       </div>
@@ -346,7 +346,7 @@ export function VsPoints() {
           description="Choose which session dates to move into the archive. Their totals are saved, then those dates are removed from the live table."
           vsData={vsData}
           initiallyChecked={() => true}
-          confirmLabel="📦 ARCHIVE SELECTED"
+          confirmLabel="ARCHIVE SELECTED"
           onClose={() => setArchiveModalOpen(false)}
           onConfirm={archiveSelected}
         />

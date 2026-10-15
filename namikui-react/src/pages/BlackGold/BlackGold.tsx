@@ -162,7 +162,7 @@ export function BlackGold() {
         </div>
         {tab === 'attendance' && (
           <div className={styles.searchBox}>
-            <input type="text" className={styles.searchInput} placeholder="🔍 Search member..." value={search} onChange={(e) => setSearch(e.target.value)} />
+            <input type="text" className={styles.searchInput} placeholder="Search member..." value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
         )}
         {isStaff && (

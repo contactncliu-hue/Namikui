@@ -20,7 +20,7 @@ export default function NoticeBoard({ announcements, role, isStaff, loading, onA
   return (
     <div className={`${styles.card} ${styles.cardAccentRed}`}>
       <div className={styles.cardHeaderRow}>
-        <h2 className={styles.cardTitle}>📣 NOTICE BOARD</h2>
+        <h2 className={styles.cardTitle}>NOTICE BOARD</h2>
         {isStaff && (
           <button className={styles.btnOutlineGold} onClick={onAdd}>
             + ADD ANNOUNCEMENT
