@@ -8,9 +8,11 @@
   --sb-green: #719A90;
   --sb-dark-green: #3E7B67;
   --sb-red: #A82828;
-  background: url('/sidebar/bg.png') center top / cover no-repeat;
+  background: url('/sidebar/bg.png') center bottom / cover no-repeat;
 }
-.sb-theme[data-lang="en"] { font-family: 'SbDaruma', sans-serif; }
+.sb-theme[data-lang="en"],
+.sb-theme[data-lang="pt"],
+.sb-theme[data-lang="es"] { font-family: 'SbDaruma', sans-serif; }
 .sb-theme[data-lang="ko"] { font-family: 'SbKeris', sans-serif; }
 .sb-theme[data-lang="zh"] { font-family: 'SbSenty', sans-serif; }
 .sb-theme[data-lang="vi"] { font-family: 'SbStreet', sans-serif; }
