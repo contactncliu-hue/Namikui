@@ -1,0 +1,28 @@
+@font-face { font-family: 'SbDaruma'; src: url('/fonts/DarumaDropOne-Regular.ttf'); font-display: swap; }
+@font-face { font-family: 'SbKeris'; src: url('/fonts/KERISKEDU_B.otf'); font-display: swap; }
+@font-face { font-family: 'SbSenty'; src: url('/fonts/SentyWatermelon.ttf'); font-display: swap; }
+@font-face { font-family: 'SbStreet'; src: url('/fonts/StreetSignSans_1.3.otf'); font-display: swap; }
+
+.sb-theme {
+  --sb-blue: #283CA8;
+  --sb-green: #719A90;
+  --sb-dark-green: #3E7B67;
+  --sb-red: #A82828;
+  background: url('/sidebar/bg.png') center top / cover no-repeat;
+}
+.sb-theme[data-lang="en"] { font-family: 'SbDaruma', sans-serif; }
+.sb-theme[data-lang="ko"] { font-family: 'SbKeris', sans-serif; }
+.sb-theme[data-lang="zh"] { font-family: 'SbSenty', sans-serif; }
+.sb-theme[data-lang="vi"] { font-family: 'SbStreet', sans-serif; }
+
+.sb-plate {
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  border: none;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.sb-plate-green { background-image: url('/sidebar/plate-green.png'); color: var(--sb-green); }
+.sb-plate-blue  { background-image: url('/sidebar/plate-blue.png');  color: var(--sb-blue); }
+.sb-plate-pink  { background-image: url('/sidebar/plate-pink.png');  color: var(--sb-red); }
+.sb-plate-green.active { color: var(--sb-dark-green); }
