@@ -1,0 +1,10 @@
+@font-face { font-family: 'NoticeDaruma'; src: url('/fonts/DarumaDropOne-Regular.ttf') format('truetype'); font-display: swap; }
+@font-face { font-family: 'NoticeKeris'; src: url('/fonts/KERISKEDU_B.otf') format('opentype'); font-display: swap; }
+@font-face { font-family: 'NoticeWatermelon'; src: url('/fonts/SentyWatermelon.ttf') format('truetype'); font-display: swap; }
+@font-face { font-family: 'NoticeStreet'; src: url('/fonts/StreetSignSans_1.3.otf') format('opentype'); font-display: swap; }
+
+:root { --notice-font: 'NoticeDaruma', 'Montserrat', sans-serif; }
+html[lang='ko'] { --notice-font: 'NoticeKeris', 'Montserrat', sans-serif; }
+html[lang='zh'] { --notice-font: 'NoticeWatermelon', 'Noto Sans SC', sans-serif; }
+html[lang='vi'] { --notice-font: 'NoticeStreet', 'Montserrat', sans-serif; }
+html[lang='ar'] { --notice-font: 'Noto Sans Arabic', 'Segoe UI', Tahoma, Arial, sans-serif; }

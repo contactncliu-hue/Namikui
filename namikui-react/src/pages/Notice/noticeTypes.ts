@@ -1,5 +1,5 @@
 export type Visibility = 'everyone' | 'alliance';
-export type EventCategory = 'alliance' | 'war';
+export type EventCategory = 'alliance' | 'war' | 'permanent';
 export type RepeatType = 'custom' | 'weekly' | 'biweekly' | 'monthly';
 
 export interface CalendarEvent {

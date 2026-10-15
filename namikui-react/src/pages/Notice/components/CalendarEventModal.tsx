@@ -4,7 +4,7 @@ import type { CalendarEvent, EventCategory, RepeatType, Visibility } from '../no
 import { addDays, dayShiftLabel, readTimeMode, serverTodayStr, shiftTime } from '../ganttUtils';
 import type { TimeMode } from '../ganttUtils';
 
-const COLORS = ['#2563eb', '#dc2626', '#eab308', '#16a34a', '#ec4899'];
+const COLORS = ['#97DCB7', '#2B4553', '#FCD692', '#FCC73E'];
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 interface Props {

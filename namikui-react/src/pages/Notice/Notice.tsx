@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import styles from './Notice.module.css';
+import './noticeFonts.css';
 import { useNoticeUser } from './noticeAuth';
 import { useNoticeData } from './useNoticeData';
 import GanttTimeline from './components/GanttTimeline';
@@ -102,6 +103,8 @@ export function Notice() {
             isStaff={isStaff}
             onAdd={() => setEventModal('new')}
             onEdit={(ev) => setEventModal(ev)}
+            onSaveEvent={saveEvent}
+            onDeleteEvent={deleteEvent}
           />
           <NoticeBoard
             announcements={announcements}
