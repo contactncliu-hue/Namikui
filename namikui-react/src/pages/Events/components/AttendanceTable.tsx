@@ -51,7 +51,7 @@ export default function AttendanceTable({
     return [...members].sort(compareByRankThenF1);
   }, [members]);
 
-  const totalCols = 4 + dayGroups.reduce((s, g) => s + (collapsedDays.has(g.date) ? 1 : g.events.length), 0);
+  const totalCols = 6 + dayGroups.reduce((s, g) => s + (collapsedDays.has(g.date) ? 1 : g.events.length), 0);
 
   const memberAttendedCount = (m: Member) =>
     events.reduce((s, ev) => s + attendanceWeight(getAttendanceStatus(m.id, ev.id)), 0);
@@ -70,19 +70,22 @@ export default function AttendanceTable({
         <table className={styles.table}>
           <thead>
             <tr>
+<th className={`${styles.cap} ${styles.capL} ${styles.capTop}`} />
               <th colSpan={4} style={{ borderBottom: 'none' }} />
               {dayGroups.map((g) => {
                 const isCollapsed = collapsedDays.has(g.date);
                 const colspan = isCollapsed ? 1 : g.events.length;
                 return (
-                  <th key={g.date} colSpan={colspan} className={styles.dayGroupHeader} onClick={() => onToggleDay(g.date)}>
-                    {g.events.length > 1 && <span className={styles.dayCollapseIcon}>{isCollapsed ? '+' : '−'}</span>}{' '}
+                  <th key={g.date} colSpan={colspan} className={`${styles.dayGroupHeader} ${isCollapsed || g.events.length < 2 ? styles.dayGroupShort : ''}`} onClick={() => onToggleDay(g.date)}>
+                    {g.events.length > 1 && <img src="/assets/events/date-toggle.png" alt="" className={`${styles.dayToggleImg} ${isCollapsed ? styles.dayToggleOff : ''}`} />}{' '}
                     <div className={`${styles.dayGroupDate} notranslate`}>{g.date}</div>
                   </th>
                 );
               })}
-            </tr>
+            <th className={`${styles.cap} ${styles.capR} ${styles.capTop}`} /></tr>
+            <tr className={styles.dividerRow}><th colSpan={totalCols} className={styles.dividerCell} /></tr>
             <tr>
+<th className={`${styles.cap} ${styles.capL} ${styles.capBot}`} />
               <th className={styles.colRank}>#</th>
               <th className={styles.colName}>MEMBER</th>
               <th className={styles.colAttended}>ATTENDED</th>
@@ -107,7 +110,7 @@ export default function AttendanceTable({
                   </th>
                 ));
               })}
-            </tr>
+            <th className={`${styles.cap} ${styles.capR} ${styles.capBot}`} /></tr>
           </thead>
           <tbody>
             {sorted.length === 0 ? (
@@ -135,6 +138,7 @@ export default function AttendanceTable({
                       </tr>
                     )}
                     <tr key={m.id}>
+<td className={`${styles.cap} ${styles.capL}`} />
                       <td className={styles.colRank}>{idx + 1}</td>
                       <td className={`${styles.colName} notranslate`}>{m.name}</td>
                       <td className={`${styles.colAttended} notranslate`}>
@@ -201,7 +205,7 @@ export default function AttendanceTable({
                           }
                           let icon = <span className={styles.crossIcon}>✕</span>;
                           if (status === true) icon = <span className={styles.checkIcon}>✓</span>;
-                          else if (status === 'late') icon = <span className={styles.lateIcon}>L</span>;
+                          else if (status === 'late') icon = <span className={styles.latePill}>LATE</span>;
                           return (
                             <td key={ev.id} className={styles.colEvent}>
                               <span
@@ -215,7 +219,7 @@ export default function AttendanceTable({
                           );
                         });
                       })}
-                    </tr>
+                    <td className={`${styles.cap} ${styles.capR}`} /></tr>
                   </>
                 );
               })
@@ -225,7 +229,7 @@ export default function AttendanceTable({
             <tfoot>
               {(['ATTENDED', 'NOT ATTENDED'] as const).map((label) => (
                 <tr key={label}>
-                  <td colSpan={4} style={{ padding: 12, fontSize: 11, fontWeight: 800, color: 'var(--color-text-muted)' }}>
+                  <td colSpan={5} style={{ padding: 12, fontSize: 11, fontWeight: 800, color: 'var(--color-text-muted)' }}>
                     {label}
                   </td>
                   {dayGroups.map((g) => {

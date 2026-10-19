@@ -126,21 +126,18 @@ export default function WarTable({ warEvents, members, sortMode, getAttendanceSt
     <>
       <section className={styles.warStatGrid}>
         <div className={styles.warStatCard}>
-          <div className={styles.warStatLabel}>Members</div>
-          <div className={`${styles.warStatValue} notranslate`}>{members.length}</div>
-        </div>
-        <div className={styles.warStatCard}>
-          <div className={styles.warStatLabel}>Avg War Attendance</div>
           <div className={`${styles.warStatValue} notranslate`}>{avgAttendance}</div>
+          <div className={styles.warStatLabel}>Avg War Attendance</div>
         </div>
         <div className={styles.warStatCard}>
-          <div className={styles.warStatLabel}>Avg War Rate</div>
           <div className={`${styles.warStatValue} notranslate`}>{avgRate}</div>
+          <div className={styles.warStatLabel}>Avg War Rate</div>
         </div>
         <div className={styles.warStatCard}>
+          <div className={`${styles.warStatValue} notranslate`}>{warEvents.length}</div>
           <div className={styles.warStatLabel}>Pct Base</div>
-          <div className={`${styles.warStatValue} notranslate`}>{warEvents.length} war events</div>
         </div>
+        <img className={styles.warFish} src="/assets/events/fish.png" alt="" />
       </section>
 
       {body}

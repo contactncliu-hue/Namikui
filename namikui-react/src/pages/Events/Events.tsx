@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState, useEffect } from 'react';
 import styles from './Events.module.css';
 import { useAuth } from '../../context/AuthContext';
 import { useAppData } from '../../context/AppDataContext';
@@ -27,6 +27,21 @@ const MAX_SNAPSHOTS = 15;
 
 export function Events() {
   const { currentUser } = useAuth();
+  const pageRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const saved: Array<[HTMLElement, string]> = [];
+    let el = pageRef.current ? pageRef.current.parentElement : null;
+    while (el) {
+      const cs = getComputedStyle(el);
+      if (cs.backgroundColor !== 'rgba(0, 0, 0, 0)' || cs.backgroundImage !== 'none') {
+        saved.push([el, el.style.background]);
+        el.style.background = 'transparent';
+      }
+      el = el.parentElement;
+    }
+    return () => saved.forEach(([n, b]) => { n.style.background = b; });
+  }, []);
+
   const username = currentUser.username ?? 'Unknown';
   const role = currentUser.role;
   const isStaff = role === 'admin' || role === 'management';
@@ -85,6 +100,14 @@ export function Events() {
       eventVotes: eventVotesMap,
     };
     await mutateRow<Snapshot>(ROW.dataSnapshots, 'dataSnapshots', (cur) => [snapshot, ...cur].slice(0, MAX_SNAPSHOTS));
+  };
+
+  const lastSnapRef = useRef(0);
+  const snapshotThrottled = () => {
+    const now = Date.now();
+    if (now - lastSnapRef.current < 120000) return;
+    lastSnapRef.current = now;
+    void captureSnapshot();
   };
 
   const addEvent = async () => {
@@ -156,7 +179,7 @@ export function Events() {
 
   const toggleAttendance = async (memberId: number, eventId: number) => {
     if (!isStaff) return;
-    await captureSnapshot();
+    snapshotThrottled();
     const ok = await mutateRowByKey<AttendanceMap>('attendance', {}, (cur) => {
       const next: AttendanceMap = { ...cur, [memberId]: { ...(cur[memberId] || {}) } };
       const curVal = next[memberId][eventId];
@@ -177,7 +200,7 @@ export function Events() {
 
   const cycleVote = async (memberId: number, eventId: number) => {
     if (!isStaff) return;
-    await captureSnapshot();
+    snapshotThrottled();
     const order: Array<'yes' | 'maybe' | 'no' | null> = [null, 'yes', 'maybe', 'no'];
     const ok = await mutateRowByKey<EventVotesMap>('eventVotes', {}, (cur) => {
       const next: EventVotesMap = { ...cur, [memberId]: { ...(cur[memberId] || {}) } };
@@ -306,7 +329,11 @@ export function Events() {
   const warEvents = useMemo(() => eventDates.filter((e) => e.isWar), [eventDates]);
 
   return (
-    <div className={styles.page}>
+    <div className={styles.page} ref={pageRef}>
+      <div className={styles.bgLayer} aria-hidden="true">
+        <img className={styles.bgPagoda} src="/assets/events/bg-pagoda.png" alt="" />
+        <img className={styles.bgBonsai} src="/assets/events/bg-bonsai.png" alt="" />
+      </div>
       <div className={styles.pageHeader}>
         <h1 className={styles.pageTitle}>Event Attendance</h1>
         <div className={`${styles.pageSubtitle} notranslate`}>
@@ -327,6 +354,7 @@ export function Events() {
           </button>
         </div>
         <div className={styles.searchBox}>
+          <img className={styles.searchGlass} src="/assets/events/search-glass.png" alt="" />
           <input
             type="text"
             className={styles.searchInput}
@@ -376,7 +404,8 @@ export function Events() {
         </div>
       </section>
 
-      <section className={styles.kpiGrid}>
+      {tab !== 'war' && (
+        <section className={styles.kpiGrid}>
         <div className={styles.kpiCard}>
           <div className={styles.kpiLabel}>Members</div>
           <div className={`${styles.kpiValue} notranslate`}>{active.length}</div>
@@ -393,9 +422,10 @@ export function Events() {
         </div>
         <div className={styles.kpiCard}>
           <div className={styles.kpiLabel}>Pct Base</div>
-          <div className={`${styles.kpiValue} ${styles.kpiGold} notranslate`}>{eventDates.length} events</div>
+          <div className={`${styles.kpiValue} ${styles.kpiGold} notranslate`}>{eventDates.length}</div>
         </div>
       </section>
+      )}
 
       <div className={styles.legendBar}>
         <span className={styles.legendPill}>
