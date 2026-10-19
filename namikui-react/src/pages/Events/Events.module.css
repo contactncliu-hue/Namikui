@@ -357,3 +357,13 @@
 
 /* tree: flipped (correct), cropped by the left edge, lower like the reference */
 .bgPagoda { transform: scaleX(-1); width: min(62vw, 700px); left: calc(min(62vw, 700px) * -0.3); top: 22vh; }
+
+/* background like the reference: teal fading to pale green, faint tree */
+.bgLayer { background: linear-gradient(180deg, #4f808d 0%, #7fb3a8 42%, #b9d3ae 78%, #dbe6c3 100%); }
+.bgPagoda { opacity: 0.3; }
+
+/* text colors for the lighter background */
+.pageTitle { color: var(--color-primary-dark); }
+.pageSubtitle { color: rgba(255, 255, 255, 0.8); }
+.legendBar { color: #2f4a55; }
+.hint, .page > p { color: rgba(255, 255, 255, 0.85); }

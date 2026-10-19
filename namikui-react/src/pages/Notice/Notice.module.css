@@ -165,3 +165,8 @@
   .nbFlower { width: 64px; height: 64px; left: -48px; }
   .nbItem { padding-left: 32px; }
 }
+/* NOTICE-INSET */
+.tlCard { padding: 18px; }
+.tlBanner { border-radius: 12px; margin-bottom: 6px; }
+.tlFrame { margin: 0 4px; }
+@media (max-width: 640px) { .tlCard { padding: 10px; } .tlFrame { margin: 0; } }

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import styles from './Notice.module.css';
 import './noticeFonts.css';
 import { useNoticeUser } from './noticeAuth';
@@ -27,6 +27,13 @@ export function Notice() {
 
   const [eventModal, setEventModal] = useState<CalendarEvent | 'new' | null>(null);
   const [annModal, setAnnModal] = useState<NoticeAnnouncement | 'new' | null>(null);
+
+  // NOTICE-BG: page gradient while this tab is open
+  useEffect(() => {
+    const prev = document.body.style.background;
+    document.body.style.background = 'linear-gradient(180deg, #9db083 0%, #c8d3a4 45%, #f7f3c9 100%) fixed';
+    return () => { document.body.style.background = prev; };
+  }, []);
 
   const saveEvent = async (ev: CalendarEvent) => {
     const isNew = !calendarEvents.some((e) => e.id === ev.id);
